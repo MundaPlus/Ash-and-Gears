@@ -8,3 +8,8 @@ export * from "./path.ts";
 export * from "./pawn.ts";
 export * from "./needs.ts";
 export * from "./ai.ts";
+export * from "./work.ts";
+export * from "./designations.ts";
+export * from "./construction.ts";
+export * from "./hauling.ts";
+export * from "./rooms.ts";

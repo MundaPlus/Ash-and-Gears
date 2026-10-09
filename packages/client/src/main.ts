@@ -1,13 +1,27 @@
 import { Application, Container, Graphics } from "pixi.js";
 import { h, render } from "preact";
 import { loadCoreContent, t } from "@wc/data";
-import { countItems, Game, moodTarget, NEEDS, NO_THING, pawnName, TICKS_PER_SECOND, type Pawn } from "@wc/sim";
+import {
+  activeWorkTypes,
+  countItems,
+  DESIG_KINDS,
+  Game,
+  moodTarget,
+  NEEDS,
+  NO_THING,
+  pawnName,
+  roomAt,
+  tempAt,
+  TICKS_PER_SECOND,
+  type Pawn,
+} from "@wc/sim";
+import { ToolController } from "./input/tools.ts";
 import { Camera } from "./input/camera.ts";
 import { PawnRenderer } from "./render/pawns.ts";
 import { makePlaceholderTextures, TILE } from "./render/textures.ts";
 import { WorldRenderer } from "./render/world.ts";
 import { Hud } from "./ui/Hud.tsx";
-import { actions, store, type ColonistSummary, type PawnDetail } from "./ui/store.ts";
+import { actions, store, type BuildOption, type ColonistSummary, type PawnDetail, type WorkRow } from "./ui/store.ts";
 
 /** Most sim ticks per frame, so a slow frame cannot snowball. */
 const MAX_TICKS_PER_FRAME = 12;
@@ -39,6 +53,7 @@ async function boot() {
   app.stage.addChild(world);
   const renderer = new WorldRenderer(game, tex);
   world.addChild(renderer.root);
+  const tools = new ToolController(game, world);
   const pawnsR = new PawnRenderer(game, tex);
   world.addChild(pawnsR.root);
   const night = new Graphics();
@@ -47,6 +62,23 @@ async function boot() {
   const camera = new Camera(app.canvas, world, { w: game.map.w * TILE, h: game.map.h * TILE });
   camera.centerOn((game.home.x + 0.5) * TILE, (game.home.y + 0.5) * TILE);
   camera.zoom = 1.5;
+  camera.onRightClick = () => actions.setTool(null);
+
+  actions.setTool = (spec) => {
+    tools.set(spec);
+    camera.tool = spec ? tools : null;
+    let label: string | null = null;
+    if (spec?.kind === "build") label = t("tool.build", { name: t(spec.defKind === "floor" ? `floor.${spec.def}` : `thing.${spec.def}`) });
+    else if (spec?.kind === "order") label = t("tool.order", { name: t(`order.${spec.desig}`) });
+    else if (spec?.kind === "cancel") label = t("tool.cancel");
+    else if (spec?.kind === "zone") label = t("tool.zone", { name: t(`zone.${spec.zone}`) });
+    store.set({ toolLabel: label ? `${label} · ${t("tool.hint")}` : null, menu: null });
+  };
+  actions.setWork = (id, work, value) => {
+    const p = game.pawns.get(id);
+    if (p) p.work[work] = value;
+    store.set({ workRows: workRows() });
+  };
 
   let speed = 1;
   let paused = false;
@@ -62,6 +94,8 @@ async function boot() {
     const n = Math.max(0, Math.min(game.map.layers.length - 1, l));
     renderer.setLayer(n);
     pawnsR.layer = n;
+    tools.layer = n;
+    tools.cancel();
     store.set({ layer: n, inspect: null });
   };
   actions.selectPawn = (id, center) => {
@@ -93,6 +127,12 @@ async function boot() {
     else lines.push(t("inspect.walk", { v: td.walkCost }));
     if (td.fertility > 0) lines.push(t("inspect.fertility", { v: Math.round(td.fertility * 100) }));
     if (td.water) lines.push(t("inspect.water", { v: td.water }));
+    const room = roomAt(game, renderer.layer, x, y);
+    lines.push(room && !room.outdoor ? t("inspect.room", { size: room.size }) : t("inspect.outdoors"));
+    lines.push(t("inspect.temp", { v: Math.round(tempAt(game, renderer.layer, x, y)) }));
+    const bp = L.blueprint[i] !== NO_THING ? game.blueprints.get(L.blueprint[i]) : undefined;
+    if (bp) lines.push(t("inspect.blueprint", { name: t(bp.kind === "floor" ? `floor.${game.reg.floors.list[bp.def].id}` : `thing.${game.reg.things.list[bp.def].id}`) }));
+    if (L.desig[i]) lines.push(t("inspect.order", { name: t(`order.${DESIG_KINDS[L.desig[i] - 1]}`) }));
     let title = t(`terrain.${td.id}`);
     const th = L.thing[i];
     if (th !== NO_THING) {
@@ -110,7 +150,23 @@ async function boot() {
     store.set({ inspect: { title, lines } });
   }
 
-  const jobKey = (p: Pawn) => (p.mentalBreak ? "sulk" : (p.job?.kind ?? "none"));
+  const jobKey = (p: Pawn) =>
+    p.mentalBreak ? "job.sulk" : p.job?.kind === "work" ? `task.${p.job.data!.task}` : `job.${p.job?.kind ?? "none"}`;
+
+  function workRows(): WorkRow[] {
+    return [...game.pawns.values()].map((p) => ({
+      id: p.id,
+      nick: p.nick,
+      color: hex(PawnRenderer.colorOf(p)),
+      work: { ...p.work },
+      skills: Object.fromEntries(game.reg.skills.list.map((s, i) => [s.id, p.skills[i].level])),
+    }));
+  }
+
+  const buildOptions: BuildOption[] = [
+    ...game.reg.things.list.filter((d) => d.build).map((d) => ({ defKind: "thing" as const, def: d.id, menu: d.build!.menu, cost: Object.entries(d.build!.cost).map(([item, n]) => ({ item, n })) })),
+    ...game.reg.floors.list.map((d) => ({ defKind: "floor" as const, def: d.id, menu: "floor", cost: Object.entries(d.build.cost).map(([item, n]) => ({ item, n })) })),
+  ];
 
   function pawnDetail(p: Pawn): PawnDetail {
     const thoughts = [
@@ -166,7 +222,11 @@ async function boot() {
     } else if (e.key === "1" || e.key === "2" || e.key === "3") actions.setSpeed(Number(e.key));
     else if (e.key === "PageUp") actions.setLayer(renderer.layer - 1);
     else if (e.key === "PageDown") actions.setLayer(renderer.layer + 1);
-    else if (e.key === "Escape") actions.closeInspect();
+    else if (e.key === "Escape") {
+      if (tools.spec) actions.setTool(null);
+      else if (store.state.menu) actions.openMenu(null);
+      else actions.closeInspect();
+    }
   });
 
   let fpsFrames = 0, fpsTime = 0, uiTime = 0, clock = 0;
@@ -202,6 +262,7 @@ async function boot() {
         season: t(`season.${tm.season}`, { year: tm.year }),
         fps: fpsTime > 1 ? Math.round(fpsFrames / fpsTime) : store.state.fps,
         colonists: colonists(),
+        ...(store.state.menu === "work" ? { workRows: workRows() } : {}),
         pawn: sel ? pawnDetail(sel) : null,
         resources: [
           { id: "food", count: countItems(game, "canned_food") },
@@ -216,7 +277,7 @@ async function boot() {
     }
   });
 
-  store.set({ seed, layerCount: game.map.layers.length });
+  store.set({ seed, layerCount: game.map.layers.length, buildOptions, workTypes: activeWorkTypes(), workRows: workRows() });
   render(h(Hud, {}), document.getElementById("ui")!);
 
   // Debug and test hook (spec 10, "Debug and test hooks").
@@ -233,6 +294,7 @@ async function boot() {
       setSpeed: actions.setSpeed,
       setLayer: actions.setLayer,
       selectPawn: actions.selectPawn,
+      setTool: actions.setTool,
       pause: () => (paused = true),
       ready: true,
     },

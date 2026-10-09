@@ -26,10 +26,27 @@ export const TerrainDef = z.object({
   /** Radiation per in-game hour while standing on it. */
   radiation: z.number().min(0).default(0),
   buildable: z.boolean().default(true),
+  /** Work ticks to mine (solid) or clear (rubble) at work speed 1. */
+  work: z.number().int().positive().default(150),
+  /** Rubble-like terrain: "clear" turns it into this terrain and drops clearYield. */
+  clearTo: id.optional(),
+  clearYield: z.record(id, z.number().int().positive()).optional(),
 });
 export type TerrainDef = z.infer<typeof TerrainDef>;
 
 export const ThingKind = z.enum(["structure", "plant", "furniture", "stairs", "item"]);
+
+/** How the player builds something. Absent = cannot be built (ruins, plants). */
+export const BuildInfo = z.object({
+  cost: z.record(id, z.number().int().positive()),
+  /** Work ticks at work speed 1. */
+  work: z.number().int().positive(),
+  /** Build menu group. */
+  menu: z.enum(["structure", "furniture", "production", "power", "defense", "floor"]),
+  /** Research project that unlocks it (M6). */
+  research: id.optional(),
+});
+export type BuildInfo = z.infer<typeof BuildInfo>;
 
 export const ThingDef = z.object({
   id,
@@ -48,6 +65,23 @@ export const ThingDef = z.object({
   lootChance: z.number().min(0).max(1).default(0),
   /** Stairs link this layer offset: -1 = up, +1 = down. */
   stairs: z.number().int().optional(),
+  build: BuildInfo.optional(),
+  /** Work ticks to salvage (ruins) or cut (plants) at work speed 1. */
+  work: z.number().int().positive().default(100),
+  /** Doors are walkable but close rooms. */
+  door: z.boolean().default(false),
+  /** 0..1. How well a wall or door keeps heat in. */
+  insulation: z.number().min(0).max(1).default(0.5),
+  beauty: z.number().default(0),
+  /** Beds: rest gain multiplier. */
+  bed: z.object({ efficiency: z.number().positive(), thought: id }).optional(),
+  /** Heat output in degrees per in-game hour into its room. Negative cools. */
+  heat: z.number().default(0),
+  /** Light radius in tiles. */
+  light: z.number().min(0).default(0),
+  /** Seats and tables raise comfort while eating (M4). */
+  seat: z.boolean().default(false),
+  table: z.boolean().default(false),
 });
 export type ThingDef = z.infer<typeof ThingDef>;
 
@@ -63,6 +97,16 @@ export const ItemDef = z.object({
   hydration: z.number().min(0).default(0),
 });
 export type ItemDef = z.infer<typeof ItemDef>;
+
+export const FloorDef = z.object({
+  id,
+  color,
+  build: BuildInfo,
+  beauty: z.number().default(0),
+  /** Replaces the terrain walk cost while the floor exists. */
+  walkCost: z.number().positive().default(0.9),
+});
+export type FloorDef = z.infer<typeof FloorDef>;
 
 export const SkillDef = z.object({ id });
 export type SkillDef = z.infer<typeof SkillDef>;
@@ -103,9 +147,12 @@ export const Content = z.object({
   terrain: z.array(TerrainDef),
   things: z.array(ThingDef),
   items: z.array(ItemDef),
+  floors: z.array(FloorDef),
   skills: z.array(SkillDef),
   traits: z.array(TraitDef),
   thoughts: z.array(ThoughtDef),
   names: NameLists,
+  /** Loot table for salvage rolls: item id -> [min, max]. */
+  loot: z.record(id, z.tuple([z.number().int().min(0), z.number().int().positive()])),
 });
 export type Content = z.infer<typeof Content>;

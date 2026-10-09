@@ -36,6 +36,9 @@ export interface TextureSet {
   terrain: Texture[];
   things: Texture[];
   items: Texture[];
+  floors: Texture[];
+  /** Order markers by Desig code (index 0 unused). */
+  desig: Texture[];
   pawn: Texture;
   shadow: Texture;
 }
@@ -106,6 +109,35 @@ export function makePlaceholderTextures(reg: Registry): TextureSet {
     return toTexture(c);
   });
 
+  const floors = reg.floors.list.map((def, s) => {
+    const [c, g] = canvas();
+    for (let y = 0; y < TILE; y += 8)
+      for (let x = 0; x < TILE; x += 8) {
+        g.fillStyle = shade(def.color, 0.92 + hash(x, y, s + 50) * 0.14);
+        g.fillRect(x, y, 8, 8);
+        g.fillStyle = shade(def.color, 0.7);
+        g.fillRect(x, y + 7, 8, 1);
+        g.fillRect(x + 7, y, 1, 8);
+      }
+    return toTexture(c);
+  });
+
+  const desig = ["", "S", "M", "C", "X"].map((glyph, i) => {
+    const [c, g] = canvas();
+    if (i === 0) return toTexture(c);
+    g.strokeStyle = "rgba(239,216,164,.9)";
+    g.lineWidth = 2;
+    g.setLineDash([4, 3]);
+    g.strokeRect(2, 2, TILE - 4, TILE - 4);
+    g.fillStyle = "rgba(27,23,20,.8)";
+    g.fillRect(TILE - 13, 1, 12, 12);
+    g.fillStyle = "#efd8a4";
+    g.font = "bold 10px monospace";
+    g.textAlign = "center";
+    g.fillText(glyph, TILE - 7, 11);
+    return toTexture(c);
+  });
+
   // Survivor placeholder: white so each pawn can be tinted. Head, body, legs.
   const [pc, pg] = canvas();
   pg.fillStyle = "#ffffff";
@@ -124,5 +156,5 @@ export function makePlaceholderTextures(reg: Registry): TextureSet {
   sg.fill();
   const shadow = toTexture(sc);
 
-  return { terrain, things, items, pawn, shadow };
+  return { terrain, things, items, floors, desig, pawn, shadow };
 }

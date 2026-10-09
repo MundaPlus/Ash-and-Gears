@@ -5,6 +5,13 @@
  */
 import type { Container } from "pixi.js";
 
+export interface ToolHandler {
+  down(wx: number, wy: number): void;
+  move(wx: number, wy: number): void;
+  up(wx: number, wy: number): void;
+  cancel(): void;
+}
+
 export const MIN_ZOOM = 0.12;
 export const MAX_ZOOM = 4;
 const DRAG_THRESHOLD = 6;
@@ -18,7 +25,13 @@ export class Camera {
   private dragStart: { x: number; y: number } | null = null;
   private dragging = false;
   private pinchDist = 0;
+  /** Pointer id that drives the active tool, or null. */
+  private toolPointer: number | null = null;
+  /** Pointer id that pans with the right or middle mouse button. */
+  private panPointer: number | null = null;
   onTap: (worldX: number, worldY: number) => void = () => {};
+  /** Active tool (build, orders, zones). With a tool, left drag / one finger works the tool. */
+  tool: ToolHandler | null = null;
 
   constructor(
     private el: HTMLElement,
@@ -91,10 +104,24 @@ export class Camera {
   private onDown(e: PointerEvent) {
     this.el.setPointerCapture(e.pointerId);
     this.pointers.set(e.pointerId, { x: e.offsetX, y: e.offsetY });
+    if (e.pointerType === "mouse" && e.button !== 0) {
+      this.panPointer = e.pointerId;
+      return;
+    }
     if (this.pointers.size === 1) {
       this.dragStart = { x: e.offsetX, y: e.offsetY };
       this.dragging = false;
+      if (this.tool) {
+        this.toolPointer = e.pointerId;
+        const w = this.screenToWorld(e.offsetX, e.offsetY);
+        this.tool.down(w.x, w.y);
+      }
     } else if (this.pointers.size === 2) {
+      // A second finger turns any tool drag into a pinch.
+      if (this.toolPointer !== null) {
+        this.tool?.cancel();
+        this.toolPointer = null;
+      }
       this.pinchDist = this.pinchDistance();
       this.dragging = true; // a pinch is never a tap
     }
@@ -106,6 +133,16 @@ export class Camera {
     const dx = e.offsetX - p.x, dy = e.offsetY - p.y;
     p.x = e.offsetX;
     p.y = e.offsetY;
+    if (e.pointerId === this.panPointer) {
+      this.x -= dx / this.zoom;
+      this.y -= dy / this.zoom;
+      return;
+    }
+    if (e.pointerId === this.toolPointer) {
+      const w = this.screenToWorld(e.offsetX, e.offsetY);
+      this.tool?.move(w.x, w.y);
+      return;
+    }
     if (this.pointers.size === 2) {
       const d = this.pinchDistance();
       const [a, b] = [...this.pointers.values()];
@@ -125,6 +162,22 @@ export class Camera {
   }
 
   private onUp(e: PointerEvent) {
+    if (e.pointerId === this.panPointer) {
+      this.panPointer = null;
+      this.pointers.delete(e.pointerId);
+      // A right click without a drag cancels the tool.
+      if (e.type === "pointerup" && e.button === 2 && this.tool) this.onRightClick();
+      return;
+    }
+    if (e.pointerId === this.toolPointer) {
+      this.toolPointer = null;
+      this.pointers.delete(e.pointerId);
+      const w = this.screenToWorld(e.offsetX, e.offsetY);
+      if (e.type === "pointerup") this.tool?.up(w.x, w.y);
+      else this.tool?.cancel();
+      if (this.pointers.size === 0) this.dragStart = null;
+      return;
+    }
     const wasTap = this.pointers.size === 1 && !this.dragging && e.type === "pointerup";
     this.pointers.delete(e.pointerId);
     if (wasTap) {
@@ -136,6 +189,8 @@ export class Camera {
       this.dragging = false;
     }
   }
+
+  onRightClick: () => void = () => {};
 
   private pinchDistance() {
     const [a, b] = [...this.pointers.values()];

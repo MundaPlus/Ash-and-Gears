@@ -1,0 +1,5 @@
+[
+  { "id": "wood_floor", "color": "#9a7448", "beauty": 1, "walkCost": 0.85, "build": { "cost": { "wood": 3 }, "work": 40, "menu": "floor" } },
+  { "id": "scrap_tiles", "color": "#7d6a5c", "beauty": 0, "walkCost": 0.85, "build": { "cost": { "scrap": 3 }, "work": 50, "menu": "floor" } },
+  { "id": "stone_tiles", "color": "#a8a097", "beauty": 2, "walkCost": 0.8, "build": { "cost": { "stone": 3 }, "work": 70, "menu": "floor" } }
+]

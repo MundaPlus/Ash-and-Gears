@@ -33,12 +33,53 @@ export interface ItemStack {
   contaminated?: boolean;
 }
 
+/** Player orders on tiles. */
+export const Desig = { none: 0, salvage: 1, mine: 2, clear: 3, cut: 4 } as const;
+export type DesigKind = Exclude<keyof typeof Desig, "none">;
+export const DESIG_KINDS: DesigKind[] = ["salvage", "mine", "clear", "cut"];
+
+export interface Blueprint {
+  id: number;
+  /** "thing" uses Registry.things, "floor" uses Registry.floors. */
+  kind: "thing" | "floor";
+  def: number;
+  layer: number;
+  x: number;
+  y: number;
+  /** Materials still missing: item index -> count. */
+  need: Record<number, number>;
+  /** Work ticks left once all materials are in. */
+  work: number;
+}
+
+export interface Zone {
+  id: number;
+  kind: "stockpile" | "grow";
+  layer: number;
+  /** Allowed item categories (stockpile). */
+  allow: string[];
+  /** Crop def id (grow zones, M4). */
+  crop?: string;
+}
+
 export class Layer {
   readonly terrain: Uint8Array;
   /** Entity id of the structure, plant or stairs on this tile, or NO_THING. */
   readonly thing: Int32Array;
   /** Entity id of the item stack lying on this tile, or NO_THING. One stack per tile. */
   readonly item: Int32Array;
+  /** Floor index + 1, or 0 for no floor. */
+  readonly floor: Uint8Array;
+  /** 1 if the tile has a roof. Underground tiles always count as roofed. */
+  readonly roof: Uint8Array;
+  /** Room id (see rooms.ts), or -1 for walls and solid rock. */
+  readonly room: Int32Array;
+  /** Zone id, or NO_THING. */
+  readonly zone: Int32Array;
+  /** Blueprint id waiting to be built here, or NO_THING. */
+  readonly blueprint: Int32Array;
+  /** Player order on this tile (Desig enum), 0 = none. */
+  readonly desig: Uint8Array;
   /** Change counter per chunk. Bumped by touch(); renderers redraw a chunk when it changes. */
   readonly chunkVersion: Uint32Array;
   readonly chunksX: number;
@@ -51,6 +92,12 @@ export class Layer {
     this.terrain = new Uint8Array(w * h);
     this.thing = new Int32Array(w * h).fill(NO_THING);
     this.item = new Int32Array(w * h).fill(NO_THING);
+    this.floor = new Uint8Array(w * h);
+    this.roof = new Uint8Array(w * h);
+    this.room = new Int32Array(w * h).fill(-1);
+    this.zone = new Int32Array(w * h).fill(NO_THING);
+    this.blueprint = new Int32Array(w * h).fill(NO_THING);
+    this.desig = new Uint8Array(w * h);
     this.chunksX = Math.ceil(w / CHUNK);
     this.chunkVersion = new Uint32Array(this.chunksX * Math.ceil(h / CHUNK));
   }

@@ -27,7 +27,7 @@ export function PawnPanel() {
         <i class="swatch" style={{ background: p.color }} /> {p.name}
       </h2>
       <p class="sub">
-        {t("pawn.age", { age: p.age })} · {t("pawn.doing", { job: t(`job.${p.job}`) })}
+        {t("pawn.age", { age: p.age })} · {t("pawn.doing", { job: t(p.job) })}
       </p>
       <Bar value={p.mood / 100} label={t("pawn.mood")} />
       <h3>{t("pawn.needs")}</h3>

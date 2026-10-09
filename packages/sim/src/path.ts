@@ -81,7 +81,10 @@ export class PathFinder {
     this.stamp = new Uint32Array(this.size);
     this.closed = new Uint32Array(this.size);
     this.reach = new Int32Array(this.size);
-    this.minCost = Math.min(...game.reg.terrain.list.filter((t) => t.walkCost > 0).map((t) => t.walkCost));
+    this.minCost = Math.min(
+      ...game.reg.terrain.list.filter((t) => t.walkCost > 0).map((t) => t.walkCost),
+      ...game.reg.floors.list.map((f) => f.walkCost),
+    );
   }
 
   node(p: Pos): number {
@@ -98,10 +101,7 @@ export class PathFinder {
 
   /** Cost to step onto a tile, or 0 if blocked. */
   private enterCost(layer: number, x: number, y: number): number {
-    const game = this.game;
-    if (!game.walkable(layer, x, y)) return 0;
-    const L = game.map.layers[layer];
-    return game.reg.terrain.list[L.terrain[L.i(x, y)]].walkCost;
+    return this.game.walkCost(layer, x, y);
   }
 
   /** Layer offset of stairs on this tile, or 0. */

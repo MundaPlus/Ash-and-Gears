@@ -3,6 +3,11 @@
  */
 import type { Game } from "./game.ts";
 import { addMemory, hasTraitFlag, NEED_DECAY, type Pawn } from "./pawn.ts";
+import { tempAt } from "./rooms.ts";
+
+/** Comfortable temperature range without clothes (spec 01 says 16-26 with clothes widening it). */
+export const COMFORT_MIN = 12;
+export const COMFORT_MAX = 28;
 
 /** Hours of ground sleep to refill rest from 0 to 1. A bed is faster (M3). */
 const SLEEP_HOURS = 8;
@@ -36,6 +41,11 @@ function situational(game: Game, p: Pawn): string[] {
   else if (thirst < 0.25) out.push("thirsty");
   if (rest < 0.05) out.push("exhausted");
   else if (rest < 0.25) out.push("tired");
+  const temp = tempAt(game, p.layer, p.x, p.y);
+  if (temp < COMFORT_MIN - 12) out.push("freezing");
+  else if (temp < COMFORT_MIN) out.push("cold");
+  else if (temp > COMFORT_MAX + 10) out.push("sweltering");
+  else if (temp > COMFORT_MAX) out.push("hot");
   return out;
 }
 

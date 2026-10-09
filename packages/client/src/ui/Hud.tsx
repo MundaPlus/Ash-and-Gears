@@ -3,6 +3,7 @@ import { ColonistBar } from "./ColonistBar.tsx";
 import { PawnPanel } from "./PawnPanel.tsx";
 import { actions, useStore } from "./store.ts";
 import { Toasts } from "./Toasts.tsx";
+import { Toolbar } from "./Toolbar.tsx";
 
 export function Hud() {
   const s = useStore();
@@ -20,6 +21,7 @@ export function Hud() {
         <ColonistBar />
       </div>
       <Toasts />
+      <Toolbar />
       <PawnPanel />
       <header class="topbar">
         <div class="clock" data-testid="clock">

@@ -87,12 +87,39 @@ export class WorldRenderer {
     c.root.removeChildren().forEach((ch) => ch.destroy());
     const things: Sprite[] = [];
     const items: Sprite[] = [];
+    const overlays: Sprite[] = [];
+    const marks: Sprite[] = [];
     for (let y = c.cy * CHUNK; y < Math.min(L.h, (c.cy + 1) * CHUNK); y++)
       for (let x = c.cx * CHUNK; x < Math.min(L.w, (c.cx + 1) * CHUNK); x++) {
         const i = L.i(x, y);
-        const s = new Sprite(this.tex.terrain[L.terrain[i]]);
+        const fl = L.floor[i];
+        const s = new Sprite(fl ? this.tex.floors[fl - 1] : this.tex.terrain[L.terrain[i]]);
         s.position.set((x - c.cx * CHUNK) * TILE, (y - c.cy * CHUNK) * TILE);
         c.root.addChild(s);
+        const z = L.zone[i];
+        if (z !== NO_THING) {
+          const zs = new Sprite(Texture.WHITE);
+          zs.width = zs.height = TILE;
+          zs.position.copyFrom(s.position);
+          zs.tint = g.zones.get(z)?.kind === "grow" ? 0x9fd14a : 0x6fa0ff;
+          zs.alpha = 0.16;
+          overlays.push(zs);
+        }
+        const bpId = L.blueprint[i];
+        if (bpId !== NO_THING) {
+          const bp = g.blueprints.get(bpId)!;
+          const bs = new Sprite(bp.kind === "floor" ? this.tex.floors[bp.def] : this.tex.things[bp.def]);
+          bs.position.copyFrom(s.position);
+          bs.tint = 0xa8d0ff;
+          bs.alpha = Object.values(bp.need).some((n) => n > 0) ? 0.55 : 0.8;
+          overlays.push(bs);
+        }
+        const d = L.desig[i];
+        if (d) {
+          const ds = new Sprite(this.tex.desig[d]);
+          ds.position.copyFrom(s.position);
+          marks.push(ds);
+        }
         const it = L.item[i];
         if (it !== NO_THING) {
           const st = g.items.get(it)!;
@@ -109,8 +136,10 @@ export class WorldRenderer {
         }
       }
     // Items and things after all terrain, so tall sprites are never covered by the next row of ground.
+    for (const t of overlays) c.root.addChild(t);
     for (const t of items) c.root.addChild(t);
     for (const t of things) c.root.addChild(t);
+    for (const t of marks) c.root.addChild(t);
     c.version = version;
   }
 

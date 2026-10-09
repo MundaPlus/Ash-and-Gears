@@ -36,6 +36,21 @@ export interface Toast {
   until: number;
 }
 
+export interface BuildOption {
+  defKind: "thing" | "floor";
+  def: string;
+  menu: string;
+  cost: { item: string; n: number }[];
+}
+
+export interface WorkRow {
+  id: number;
+  nick: string;
+  color: string;
+  work: Record<string, number>;
+  skills: Record<string, number>;
+}
+
 export interface UiState {
   speed: number;
   paused: boolean;
@@ -50,6 +65,13 @@ export interface UiState {
   pawn: PawnDetail | null;
   toasts: Toast[];
   resources: { id: string; count: number }[];
+  /** Open toolbar menu. */
+  menu: "build" | "orders" | "zones" | "work" | null;
+  /** i18n key + params describing the active tool, or null. */
+  toolLabel: string | null;
+  buildOptions: BuildOption[];
+  workTypes: string[];
+  workRows: WorkRow[];
 }
 
 type Listener = () => void;
@@ -69,6 +91,11 @@ class Store {
     pawn: null,
     toasts: [],
     resources: [],
+    menu: null,
+    toolLabel: null,
+    buildOptions: [],
+    workTypes: [],
+    workRows: [],
   };
   private listeners = new Set<Listener>();
 
@@ -96,6 +123,9 @@ export const actions = {
   togglePause: () => {},
   setLayer: (_l: number) => {},
   selectPawn: (_id: number | null, _center = false) => {},
+  setTool: (_spec: import("../input/tools.ts").ToolSpec | null) => {},
+  setWork: (_pawn: number, _work: string, _value: number) => {},
+  openMenu: (m: UiState["menu"]) => store.set({ menu: store.state.menu === m ? null : m }),
   closeInspect: () => {
     store.set({ inspect: null });
     actions.selectPawn(null);

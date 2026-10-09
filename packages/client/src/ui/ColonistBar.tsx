@@ -10,7 +10,7 @@ export function ColonistBar() {
           key={c.id}
           class={`colonist ${s.pawn?.id === c.id ? "sel" : ""}`}
           onClick={() => actions.selectPawn(c.id, true)}
-          title={`${c.nick} · ${t(`job.${c.job}`)}`}
+          title={`${c.nick} · ${t(c.job)}`}
         >
           <i class="swatch" style={{ background: c.color }} />
           <span class="nick">{c.nick}</span>

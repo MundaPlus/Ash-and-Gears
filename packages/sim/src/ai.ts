@@ -4,11 +4,13 @@
  * Work jobs (build, haul, mine...) register through registerJob/registerWorkGiver in later milestones.
  */
 import type { Game } from "./game.ts";
-import { takeFromStack } from "./items.ts";
-import { NO_THING } from "./map.ts";
+import { dropItems, takeFromStack } from "./items.ts";
+import { NO_THING, type ItemStack } from "./map.ts";
 import { isSleepTime, tickNeeds } from "./needs.ts";
+import { isRoofed } from "./rooms.ts";
 import type { Pos } from "./path.ts";
 import { addMemory, hasTraitFlag, type Job, type Pawn } from "./pawn.ts";
+import { workOrder } from "./worktypes.ts";
 
 /** Tiles per tick at walk cost 1 (3 tiles per real second at 1x). */
 export const WALK_SPEED = 0.15;
@@ -30,6 +32,11 @@ export interface WorkGiver {
 const workGivers: WorkGiver[] = [];
 export function registerWorkGiver(g: WorkGiver): void {
   workGivers.push(g);
+}
+
+/** Work types that have at least one giver (the ones that matter right now). */
+export function activeWorkTypes(): string[] {
+  return [...new Set(workGivers.map((g) => g.workType))];
 }
 
 // ---------------------------------------------------------------- reservations
@@ -68,8 +75,7 @@ export function atGoal(p: Pawn): boolean {
 
 function stepCost(game: Game, p: Pawn, next: Pos): number {
   if (next.layer !== p.layer) return STAIRS_STEP_COST;
-  const L = game.map.layers[next.layer];
-  const c = game.reg.terrain.list[L.terrain[L.i(next.x, next.y)]].walkCost;
+  const c = game.walkCost(next.layer, next.x, next.y);
   return next.x !== p.x && next.y !== p.y ? c * Math.SQRT2 : c;
 }
 
@@ -123,6 +129,10 @@ export function tickPawns(game: Game): void {
 
 export function endJob(game: Game, p: Pawn, failed: boolean): void {
   releaseAll(game, p);
+  if (p.carrying) {
+    dropItems(game, p.carrying.def, p.carrying.count, p.layer, p.x, p.y, !!p.carrying.contaminated);
+    p.carrying = null;
+  }
   p.job = null;
   p.path = null;
   p.goal = null;
@@ -159,7 +169,8 @@ export function think(game: Game, p: Pawn): void {
   }
   if (n.thirst < 0.45 && startJob(game, p, drinkJob(game, p, false))) return;
   if (n.hunger < 0.4 && startJob(game, p, eatJob(game, p, false))) return;
-  for (const g of workGivers) if (startJob(game, p, g.give(game, p))) return;
+  for (const w of workOrder(p))
+    for (const g of workGivers) if (g.workType === w && startJob(game, p, g.give(game, p))) return;
   startJob(game, p, wanderJob(game, p, false));
 }
 
@@ -168,9 +179,14 @@ export function think(game: Game, p: Pawn): void {
 const dist2 = (a: Pos, b: Pos) => (a.x - b.x) ** 2 + (a.y - b.y) ** 2 + (a.layer !== b.layer ? 400 : 0);
 
 /** Nearest reachable, unreserved item stack that matches. */
-export function findItem(game: Game, p: Pawn, match: (defIdx: number, contaminated: boolean) => boolean): number | null {
+export function findItem(
+  game: Game,
+  p: Pawn,
+  match: (defIdx: number, contaminated: boolean) => boolean,
+  extra?: (s: ItemStack) => boolean,
+): number | null {
   const cands = [...game.items.values()].filter(
-    (s) => s.layer >= 0 && match(s.def, !!s.contaminated) && !isReserved(game, `item:${s.id}`, p),
+    (s) => s.layer >= 0 && match(s.def, !!s.contaminated) && !isReserved(game, `item:${s.id}`, p) && (!extra || extra(s)),
   );
   cands.sort((a, b) => dist2(p, a) - dist2(p, b));
   for (const s of cands.slice(0, 12)) if (game.path.canReach(p, s)) return s.id;
@@ -278,14 +294,37 @@ registerJob("drink", (game, p, job) => {
 
 // ---------------------------------------------------------------- jobs: sleep
 
+/** The pawn's own bed, or a free unowned bed it can reach (which it then claims). */
+function findBed(game: Game, p: Pawn): number | null {
+  const own = p.bedId !== null ? game.things.get(p.bedId) : undefined;
+  if (own && game.reg.things.list[own.def].bed && !isReserved(game, `thing:${own.id}`, p) && game.path.canReach(p, own)) return own.id;
+  if (own === undefined) p.bedId = null;
+  const owned = new Set([...game.pawns.values()].map((o) => o.bedId));
+  const beds = [...game.things.values()]
+    .filter((t) => game.reg.things.list[t.def].bed && !owned.has(t.id) && !isReserved(game, `thing:${t.id}`, p))
+    .sort((a, b) => dist2(p, a) - dist2(p, b));
+  for (const b of beds) {
+    if (!game.path.canReach(p, b)) continue;
+    p.bedId = b.id;
+    return b.id;
+  }
+  return null;
+}
+
 function sleepJob(game: Game, p: Pawn): Job | null {
-  // Beds come in M3. Until then: a free ground spot near home.
+  const bed = findBed(game, p);
+  if (bed !== null && reserve(game, `thing:${bed}`, p)) {
+    const t = game.things.get(bed)!;
+    const def = game.reg.things.list[t.def];
+    return { kind: "sleep", stage: 0, target: { layer: t.layer, x: t.x, y: t.y }, data: { efficiency: def.bed!.efficiency, thought: def.bed!.thought } };
+  }
+  // No bed: a free ground spot near home, roofed if possible.
   const h = game.home;
   for (let tries = 0; tries < 30; tries++) {
     const x = h.x + game.aiRng.int(-5, 5), y = h.y + game.aiRng.int(-5, 5);
     const pos = { layer: h.layer, x, y };
     const L = game.map.layers[h.layer];
-    if (!game.walkable(h.layer, x, y) || L.item[L.i(x, y)] !== NO_THING) continue;
+    if (!game.walkable(h.layer, x, y) || L.item[L.i(x, y)] !== NO_THING || L.blueprint[L.i(x, y)] !== NO_THING) continue;
     if (!reserve(game, `tile:${h.layer},${x},${y}`, p)) continue;
     if (!game.path.canReach(p, pos)) {
       game.reservations.delete(`tile:${h.layer},${x},${y}`);
@@ -310,7 +349,8 @@ registerJob("sleep", (game, p, job) => {
   const wake = p.needs.rest >= 0.99 || (p.needs.rest > 0.7 && !isSleepTime(game, p));
   const urgent = p.needs.thirst < 0.2 || p.needs.hunger < 0.2;
   if (!wake && !urgent) return "run";
-  addMemory(game, p, "slept_on_ground");
+  addMemory(game, p, (job.data?.thought as string) ?? "slept_on_ground");
+  if (!isRoofed(game, p.layer, p.x, p.y)) addMemory(game, p, "slept_outside");
   return "done";
 });
 

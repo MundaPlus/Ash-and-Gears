@@ -74,6 +74,10 @@ export interface Pawn {
   thinkCooldown: number;
   asleep: boolean;
   carrying: ItemStack | null;
+  /** Work priority per work type: 0 = off, 1 = highest .. 4 = lowest. */
+  work: Record<string, number>;
+  /** Bed this survivor owns, if any. */
+  bedId: number | null;
 }
 
 export const XP_PER_LEVEL = (level: number) => 1000 + level * 250;
@@ -181,5 +185,7 @@ export function makeSurvivor(game: Game, layer: number, x: number, y: number, us
     thinkCooldown: 0,
     asleep: false,
     carrying: null,
+    work: {},
+    bedId: null,
   };
 }

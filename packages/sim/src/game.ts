@@ -2,7 +2,7 @@
  * The game state and the fixed-step tick loop. No DOM. Runs in the browser and in Node.
  */
 import type { Content } from "@wc/data";
-import { GameMap, NO_THING, type ItemStack, type Thing } from "./map.ts";
+import { GameMap, NO_THING, type Blueprint, type ItemStack, type Thing, type Zone } from "./map.ts";
 import { generateHomeMap } from "./mapgen.ts";
 import { PathFinder } from "./path.ts";
 import type { Pawn } from "./pawn.ts";
@@ -10,6 +10,8 @@ import { Registry } from "./registry.ts";
 import { Rng } from "./rng.ts";
 import { tickPawns } from "./ai.ts";
 import { setupStart } from "./start.ts";
+import "./systems.ts";
+import { ensureRooms, tickTemperature, type Room } from "./rooms.ts";
 
 /** Sim ticks per real second at 1x speed. */
 export const TICKS_PER_SECOND = 20;
@@ -44,6 +46,18 @@ export class Game {
   readonly things = new Map<number, Thing>();
   readonly items = new Map<number, ItemStack>();
   readonly pawns = new Map<number, Pawn>();
+  readonly blueprints = new Map<number, Blueprint>();
+  readonly zones = new Map<number, Zone>();
+  /** Node ids (layer * w * h + tile) that carry a player order. */
+  readonly desigTiles = new Set<number>();
+  rooms = new Map<number, Room>();
+  roomsVersion = -1;
+  /** Extra degrees from weather (M4 sets it). */
+  weatherTempOffset = 0;
+  /** Work left per task target, so interrupted work resumes. Key: "task:layer,x,y". */
+  readonly progress = new Map<string, number>();
+  /** Bumped when walls, doors or solid terrain change. Rooms are rebuilt when it changes. */
+  wallVersion = 0;
   /** Job target reservations: key -> pawn id. Keys look like "item:12" or "tile:0,4,5". */
   readonly reservations = new Map<string, number>();
   /** Colony center. Survivors sleep and idle near it until they have beds and rooms. */
@@ -83,6 +97,7 @@ export class Game {
     const g = new Game(content, opts);
     generateHomeMap(g);
     setupStart(g);
+    ensureRooms(g);
     return g;
   }
 
@@ -126,6 +141,7 @@ export class Game {
     this.mapVersion++;
     const d = this.reg.things.list[def];
     if (d.blocks || d.stairs) this.pathVersion++;
+    if (d.wall) this.wallVersion++;
     return t;
   }
 
@@ -139,16 +155,32 @@ export class Game {
     this.mapVersion++;
     const d = this.reg.things.list[t.def];
     if (d.blocks || d.stairs) this.pathVersion++;
+    if (d.wall) this.wallVersion++;
   }
 
   /** True if a pawn can stand on this tile. */
   walkable(layer: number, x: number, y: number): boolean {
+    return this.walkCost(layer, x, y) > 0;
+  }
+
+  /** Cost to walk onto a tile, or 0 if it is blocked. Floors replace the terrain cost. */
+  walkCost(layer: number, x: number, y: number): number {
     const L = this.map.layers[layer];
-    if (!L.inBounds(x, y)) return false;
+    if (!L.inBounds(x, y)) return 0;
     const i = L.i(x, y);
-    if (this.reg.terrain.list[L.terrain[i]].walkCost === 0) return false;
+    const td = this.reg.terrain.list[L.terrain[i]];
+    if (td.walkCost === 0) return 0;
     const th = L.thing[i];
-    return th === NO_THING || !this.reg.things.list[this.things.get(th)!.def].blocks;
+    if (th !== NO_THING && this.reg.things.list[this.things.get(th)!.def].blocks) return 0;
+    const fl = L.floor[i];
+    return fl ? this.reg.floors.list[fl - 1].walkCost : td.walkCost;
+  }
+
+  /** Def of the thing on a tile, if any. */
+  thingDefAt(layer: number, x: number, y: number) {
+    const L = this.map.layers[layer];
+    const th = L.thing[L.i(x, y)];
+    return th === NO_THING ? null : this.reg.things.list[this.things.get(th)!.def];
   }
 
   /** Change the terrain of a tile (mining, clearing). */
@@ -158,11 +190,14 @@ export class Game {
     L.touch(x, y);
     this.mapVersion++;
     this.pathVersion++;
+    this.wallVersion++;
   }
 
   /** Advance one fixed sim tick. Systems are added here milestone by milestone. */
   step(): void {
     this.tick++;
+    ensureRooms(this);
+    tickTemperature(this);
     tickPawns(this);
   }
 }
