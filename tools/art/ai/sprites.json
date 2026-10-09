@@ -1,0 +1,16 @@
+{
+  "_doc": "AI sprite list. size = [w, h] in pixels at 32 px per tile. texture = fill the whole tile (walls, floors). neg = extra negative prompt.",
+  "style": "pixel art game sprite, single object, centered, simple readable shapes, thick dark outline, flat colors, post-apocalyptic, plain white background",
+  "sprites": {
+    "survivor": { "size": [32, 32], "tries": 6, "prompt": "chibi proportions, big head, short body, survivor with patched jacket, scarf and backpack, full body standing, front view", "neg": "realistic proportions, tall, thin" },
+    "raider": { "size": [32, 32], "tries": 6, "prompt": "chibi proportions, big head, short body, wasteland raider in studded leather vest, red bandana, goggles, metal shoulder pad, cargo pants, full body standing, front view", "neg": "realistic proportions, tall, thin, shirtless, bare chest" },
+    "rad_rat": { "size": [32, 32], "tries": 4, "prompt": "mutant radioactive rat with glowing green spots, side view" },
+    "glowcorn_plant": { "size": [32, 32], "tries": 4, "prompt": "mutant corn plant with glowing green cobs, side view" },
+    "car_wreck": { "size": [32, 32], "tries": 4, "prompt": "rusted wrecked car, three quarter top-down view" },
+    "canned_food": { "size": [32, 32], "tries": 4, "prompt": "game item icon, tin can of food with a paper label printed with beans, slightly dented, front view", "neg": "face, eyes, mouth, character, creature" },
+    "scrap_bed": { "size": [64, 64], "tries": 4, "prompt": "double bed seen from directly above, top-down view, rusty metal frame, worn mattress, two pillows at the top, patched blanket" },
+    "scrap_bench": { "size": [64, 32], "tries": 4, "prompt": "rusty scrap metal workbench with tools, three quarter top-down view" },
+    "scrap_generator": { "size": [64, 32], "tries": 4, "prompt": "small diesel generator made of scrap with exhaust pipe, three quarter top-down view" },
+    "scrap_wall": { "size": [32, 32], "tries": 4, "texture": true, "prompt": "seamless square texture tile, wall of rusty corrugated metal sheets with rivets and patches, flat front view, fills the whole square edge to edge", "neg": "face, eyes, object, background" }
+  }
+}

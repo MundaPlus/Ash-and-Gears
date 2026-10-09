@@ -75,6 +75,10 @@ export function bleedRate(p: Pawn): number {
     const b = (KIND[i.kind]?.bleed ?? 0) * i.dmg * Math.max(0, 1 - (i.age ?? 0) / CLOT_HOURS);
     r += i.tended ? b * (1 - i.tended) * 0.25 : b;
   }
+  // Fair but dangerous (spec 12): lying still halves bleeding, and near death the body slows it
+  // again, so a rescue after the fight usually comes in time.
+  if (p.health.downed) r *= 0.5;
+  if (p.health.bloodLoss > 0.8) r *= 0.5;
   return r;
 }
 
@@ -127,7 +131,19 @@ export function damage(game: Game, p: Pawn, dmg: number, kind: string, part?: Pa
 function checkParts(game: Game, p: Pawn, part: PartId, kind: string) {
   if (!game.pawns.has(p.id)) return;
   if (partDamage(p, part) < partMax(game, p, part)) return updateDowned(game, p);
-  if (VITAL.includes(part)) return kill(game, p, kind);
+  if (VITAL.includes(part)) {
+    // Fair but dangerous (spec 12): a survivor who is still standing goes down instead of dying,
+    // unless the single blow is huge. A second bad hit, or one while downed, still kills.
+    const last = p.health.injuries[p.health.injuries.length - 1];
+    const max = partMax(game, p, part);
+    if (p.faction === "colony" && !p.health.downed && last && last.part === part && last.dmg < max * 0.6) {
+      last.dmg = Math.max(0, last.dmg - (partDamage(p, part) - (max - 0.5)));
+      p.health.downed = true;
+      game.message("msg.downed", { name: p.nick }, "bad");
+      return;
+    }
+    return kill(game, p, kind);
+  }
   // A destroyed limb is lost for good.
   p.health.missing.push(part);
   p.health.injuries = p.health.injuries.filter((i) => i.part !== part);
