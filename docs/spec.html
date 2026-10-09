@@ -1,0 +1,1546 @@
+<title>Wasteland Colony Spec</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil+Display:wght@700;800&family=Barlow:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: field-manual spec. Sticky chapter list on the left, one reading column on the right. */
+:root {
+  --bg: #eceef0; --surface: #f8f9fa; --fg: #1d2125; --muted: #58616a; --line: #cdd3d8;
+  --rust: #a8481a; --hazard: #b98a00; --hazard-bg: #f7efd2;
+  --display: "Big Shoulders Stencil Display", Impact, "Arial Narrow", sans-serif;
+  --body: "Barlow", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #14171a; --surface: #1c2024; --fg: #e2e5e8; --muted: #9aa3ab; --line: #2e343a;
+  --rust: #e27b44; --hazard: #e0b52a; --hazard-bg: #2a2512; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #14171a; --surface: #1c2024; --fg: #e2e5e8; --muted: #9aa3ab; --line: #2e343a;
+  --rust: #e27b44; --hazard: #e0b52a; --hazard-bg: #2a2512; color-scheme: dark; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { background: var(--bg); color: var(--fg); font: 17px/1.6 var(--body); }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 20px; padding-block: 0 64px;
+  display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 48px; }
+header.top { grid-column: 1 / -1; padding-block: 40px 28px; border-bottom: 2px solid var(--fg); }
+.status { font: 600 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+  display: flex; flex-wrap: wrap; gap: 8px 18px; }
+.status b { color: var(--hazard); }
+h1 { font: 800 clamp(44px, 8vw, 88px)/.92 var(--display); letter-spacing: .01em; margin: 14px 0 12px; text-wrap: balance; }
+.lede { max-width: 62ch; color: var(--muted); margin: 0; font-size: 18px; }
+.gates { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; padding: 0; list-style: none; }
+.gates li { font: 400 13px/1 var(--mono); border: 1px solid var(--line); background: var(--surface); padding: 8px 10px; }
+.gates li.now { border-color: var(--rust); color: var(--rust); font-weight: 600; }
+nav.toc { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 20px); align-self: start; margin-top: 32px; }
+nav.toc p { font: 600 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+nav.toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+nav.toc a { display: flex; gap: 10px; padding: 6px 8px; color: var(--fg); text-decoration: none; font-weight: 600; font-size: 15px; border-left: 2px solid transparent; }
+nav.toc a:hover, nav.toc a:focus-visible { border-left-color: var(--rust); background: var(--surface); outline: none; }
+nav.toc .n { font: 400 13px/1.7 var(--mono); color: var(--muted); }
+main { min-width: 0; max-width: 760px; }
+section { padding-top: 40px; border-bottom: 1px solid var(--line); padding-bottom: 32px; scroll-margin-top: 12px; }
+.chap { font: 600 12px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--rust); margin: 0; }
+h2 { font: 700 clamp(34px, 5vw, 48px)/1 var(--display); margin: 8px 0 18px; text-wrap: balance; }
+h3 { font: 700 26px/1.1 var(--display); margin: 34px 0 10px; letter-spacing: .01em; scroll-margin-top: 12px; }
+h4 { font: 600 15px/1.3 var(--mono); text-transform: uppercase; letter-spacing: .05em; margin: 24px 0 6px; color: var(--muted); }
+p, li { max-width: 68ch; }
+ul, ol { padding-left: 1.3em; }
+li { margin: 3px 0; }
+li::marker { color: var(--rust); }
+strong { font-weight: 600; }
+code { font: 400 .86em var(--mono); background: var(--surface); border: 1px solid var(--line); padding: 1px 5px; }
+pre { background: var(--surface); border: 1px solid var(--line); padding: 14px; overflow-x: auto; line-height: 1.35; }
+pre code { border: 0; padding: 0; background: none; font-size: 13px; }
+.tbl { overflow-x: auto; margin: 14px 0; border: 1px solid var(--line); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 15px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; vertical-align: top; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+th { font: 600 12px/1.3 var(--mono); text-transform: uppercase; letter-spacing: .05em; color: var(--muted); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+aside.demo { margin-top: 30px; padding: 16px 18px 10px; background: var(--hazard-bg);
+  border: 1px solid var(--hazard); background-image: repeating-linear-gradient(-45deg, var(--hazard) 0 10px, transparent 10px 20px);
+  background-size: 100% 6px; background-repeat: no-repeat; background-color: var(--hazard-bg); padding-top: 22px; }
+aside.demo .tag { font: 600 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--hazard); }
+aside.demo p { margin: 8px 0; }
+footer { grid-column: 2; color: var(--muted); font-size: 14px; padding-top: 24px; }
+@media (max-width: 860px) {
+  .wrap { grid-template-columns: minmax(0, 1fr); gap: 0; padding-inline: 16px; }
+  nav.toc { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 2; margin: 0 -16px; padding: 8px 16px;
+    background: var(--bg); border-bottom: 1px solid var(--line); }
+  nav.toc p { display: none; }
+  nav.toc ol { display: flex; overflow-x: auto; gap: 4px; scrollbar-width: none; }
+  nav.toc a { white-space: nowrap; border: 1px solid var(--line); background: var(--surface); font-size: 14px; }
+  footer { grid-column: 1; }
+  section, h3 { scroll-margin-top: 60px; }
+  body { font-size: 16px; }
+}
+</style>
+<div class="wrap">
+  <header class="top">
+    <div class="status"><span>Game spec</span><span>Code name: wasteland-colony</span><span><b>Draft v0.1</b></span><span>2026-10-09</span></div>
+    <h1>Wasteland Colony</h1>
+    <p class="lede">A post-apocalyptic colony sim with progressive automation. RimWorld-style survivors, Factorio-style machines, dark humor. For web and mobile. Title picked later.</p>
+    <ol class="gates" aria-label="Decision gates">
+      <li class="now">Gate 1 · Spec review (now)</li>
+      <li>Gate 2 · Art style choice</li>
+      <li>Gate 3 · Demo review</li>
+    </ol>
+  </header>
+  <nav class="toc" aria-label="Chapters"><p>Chapters</p><ol><li><a href="#s00"><span class="n">00</span>Overview</a></li><li><a href="#s01"><span class="n">01</span>Survivors (colonists)</a></li><li><a href="#s02"><span class="n">02</span>World</a></li><li><a href="#s03"><span class="n">03</span>Building</a></li><li><a href="#s04"><span class="n">04</span>Economy, food and water</a></li><li><a href="#s05"><span class="n">05</span>Automation and tech</a></li><li><a href="#s06"><span class="n">06</span>Combat and threats</a></li><li><a href="#s07"><span class="n">07</span>Story, scenarios and endings</a></li><li><a href="#s08"><span class="n">08</span>UI and UX</a></li><li><a href="#s09"><span class="n">09</span>Art and audio</a></li><li><a href="#s10"><span class="n">10</span>Technical architecture</a></li><li><a href="#s11"><span class="n">11</span>Roadmap</a></li></ol></nav>
+  <main><section id="s00"><p class="chap">Chapter 00</p><h2>Overview</h2><p>Status: DRAFT v0.1 (2026-10-09). Code name: <code>wasteland-colony</code>. Title: picked later.</p>
+<h3 id="s00-1">Elevator pitch</h3>
+<p>The bombs fell. The survivors joked about it. Lead a small group of survivors in a ruined world. Build a home in the rubble. Keep them fed, sane and alive. Salvage the old world's machines. Slowly let the machines do the work. Then reach for a bigger goal: light, rescue or the stars.</p>
+<h3 id="s00-2">Inspirations</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Game</th>
+<th>What we take</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RimWorld</td>
+<td>Indirect control, small cast with stories, storytellers, mood, drafting</td>
+</tr>
+<tr>
+<td>Dwarf Fortress</td>
+<td>Underground layers, deep simulation, emergent chaos</td>
+</tr>
+<tr>
+<td>Factorio</td>
+<td>Production chains, belts, power, the joy of automation</td>
+</tr>
+<tr>
+<td>Fallout 1/2</td>
+<td>Post-apocalyptic world, dark humor, factions, scavenging</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="s00-3">Design pillars</h3>
+<ol>
+<li><strong>Every survivor is a story.</strong> 3–20 survivors. Each has a name, a past, traits, relationships and a body that can break.</li>
+<li><strong>From scrap to machines.</strong> The colony starts with bare hands. Tech replaces labor step by step. Late game, survivors manage machines, not haul rocks.</li>
+<li><strong>The wasteland pushes back.</strong> Raiders, mutants, radiation and the survivors themselves create the drama.</li>
+<li><strong>Laugh so you do not cry.</strong> Dark humor in names, events, item descriptions and mood thoughts. The world is grim. The writing is not solemn.</li>
+<li><strong>Readable on a phone.</strong> Desktop-first, but every system must be playable on a phone screen.</li>
+</ol>
+<h3 id="s00-4">Target player</h3>
+<ul>
+<li>Fans of RimWorld, Dwarf Fortress, Factorio, Oxygen Not Included.</li>
+<li>Plays sessions of 20 minutes (mobile) to 3 hours (desktop).</li>
+<li>Likes stories that come from systems, not scripts.</li>
+</ul>
+<h3 id="s00-5">Platforms</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Platform</th>
+<th>Phase</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Web browser (desktop)</td>
+<td>Demo</td>
+</tr>
+<tr>
+<td>Web browser (mobile, PWA)</td>
+<td>Demo</td>
+</tr>
+<tr>
+<td>Android / iOS app (Capacitor)</td>
+<td>After demo</td>
+</tr>
+<tr>
+<td>Desktop app / Steam (Tauri or Electron)</td>
+<td>Optional, after demo</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="s00-6">Game modes</h3>
+<ul>
+<li><strong>Story mode</strong>: choose one of three storylines (see <code>07-story.md</code>). Ends with a win or a colony wipe.</li>
+<li><strong>Sandbox</strong>: no goal. Play forever.</li>
+<li><strong>Scenarios</strong>: fixed maps with goals and a score.</li>
+<li><strong>Permadeath</strong>: an option for any mode. One autosave. No reload.</li>
+</ul>
+<h3 id="s00-7">Core loop</h3>
+<ol>
+<li>Survivors gather, salvage, build, farm and craft.</li>
+<li>The colony grows. It faces events, raids and disasters.</li>
+<li>Research and salvaged blueprints unlock new tech.</li>
+<li>Tech unlocks automation. Survivors are free for expeditions and defense.</li>
+<li>Expeditions on the world map bring blueprints, trade and allies.</li>
+<li>The story goal advances.</li>
+</ol>
+<h3 id="s00-8">Scope phases</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Demo</td>
+<td>Home map, 1 underground layer, 3 survivors, core needs, building, farming, water, radiation event, mutant raid, research tier 1, power, first belt and crafter, save/load</td>
+</tr>
+<tr>
+<td>Alpha</td>
+<td>All survivor systems, raiders, factions, world map, expeditions, trade, outposts, 2 underground layers, tech tiers 1–3</td>
+</tr>
+<tr>
+<td>Beta</td>
+<td>Three storylines, scenarios, robots and tier 4 tech, full music, mod loader, mobile app</td>
+</tr>
+<tr>
+<td>1.0</td>
+<td>Balance, polish, more languages, optional Steam build, optional cloud saves</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="s00-9">Out of scope</h3>
+<ul>
+<li>Multiplayer.</li>
+<li>Full z-levels like Dwarf Fortress (we use a few separate layers).</li>
+<li>Animated sprites with many frames (texel-studio makes single frames; we use small procedural motion instead).</li>
+</ul></section><section id="s01"><p class="chap">Chapter 01</p><h2>Survivors (colonists)</h2><h3 id="s01-1">Count</h3>
+<ul>
+<li>Start: 3 survivors (scenario can change this).</li>
+<li>Soft cap: 20. Storyteller lowers join events above 15.</li>
+<li>New survivors join by: wanderer events, rescue, recruit prisoners, trade, story events, births (post-alpha, optional).</li>
+</ul>
+<h3 id="s01-2">Identity</h3>
+<p>Each survivor has:</p>
+<ul>
+<li>Name and nickname (generated, sometimes funny: "Two-Can Mendez").</li>
+<li>Age, gender (cosmetic and pronoun only), portrait built from parts.</li>
+<li><strong>Backstory</strong>: one pre-war job + one post-war life. Each gives skill bonuses, maybe a work restriction ("Ex-Banker: will not do dumb labor").</li>
+<li>1–3 <strong>traits</strong>.</li>
+<li>10 <strong>skills</strong>.</li>
+<li>Body with parts (health).</li>
+<li>Relationship list.</li>
+<li>Thought log (recent mood thoughts).</li>
+</ul>
+<h3 id="s01-3">Needs</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Drops when</th>
+<th>Fix</th>
+<th>Low effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Hunger</td>
+<td>Always</td>
+<td>Eat food</td>
+<td>Mood penalty, then starving damage</td>
+</tr>
+<tr>
+<td>Rest</td>
+<td>Awake</td>
+<td>Sleep in bed (better), on floor (worse)</td>
+<td>Slow work, then collapse</td>
+</tr>
+<tr>
+<td>Thirst</td>
+<td>Always</td>
+<td>Drink clean water</td>
+<td>Faster than hunger. Dirty water: disease risk, rad dose</td>
+</tr>
+<tr>
+<td>Recreation</td>
+<td>Working</td>
+<td>Chat, games, booze, jukebox</td>
+<td>Mood penalty</td>
+</tr>
+<tr>
+<td>Comfort</td>
+<td>Standing, sitting on floor</td>
+<td>Chairs, beds</td>
+<td>Small mood penalty</td>
+</tr>
+<tr>
+<td>Beauty</td>
+<td>Ugly or dirty rooms</td>
+<td>Clean rooms, decoration</td>
+<td>Small mood penalty</td>
+</tr>
+<tr>
+<td>Outdoors</td>
+<td>Inside for long</td>
+<td>Go outside (if air is safe)</td>
+<td>Small mood penalty</td>
+</tr>
+</tbody>
+</table></div>
+<p>Thirst is a confirmed addition for the setting (user approved). Clean water is a key resource.</p>
+<h3 id="s01-4">Mood</h3>
+<ul>
+<li>Mood is 0–100. It is the sum of base + all active thoughts.</li>
+<li>Thoughts have value, duration and stack limits. Examples:</li>
+<li>"Ate a fine meal" +5. "Ate raw mutant meat" −7. "Ate raw mutant meat (Iron Stomach)" +2.</li>
+<li>"Slept outside in acid rain" −8. "Friend died" −20. "Saw a corpse" −3.</li>
+<li><strong>Mental breaks</strong> below thresholds:</li>
+<li>Minor (&lt; 35): sulk, binge eat, hide in room, rant at the sky.</li>
+<li>Major (&lt; 20): drunken rampage, food hoarding, insult spree, "tries to start a cult".</li>
+<li>Extreme (&lt; 5): violent rage, run away into the wasteland, destroy a machine.</li>
+<li><strong>Inspiration</strong> above 85 (chance): faster work, better crafting, a free research boost.</li>
+</ul>
+<h3 id="s01-5">Skills (0–20)</h3>
+<p>Shooting, Melee, Construction, Mining, Cooking, Farming, Crafting, Medicine, Scavenging, Technology (research + machines), Social.</p>
+<ul>
+<li>Skills grow by use. Skills slowly decay above level 10 when unused.</li>
+<li><strong>Passion</strong> (none / interested / burning) changes learning speed and mood from doing that work.</li>
+</ul>
+<h3 id="s01-6">Traits (examples, full list in data)</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Trait</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Iron Stomach</td>
+<td>Can eat raw and rotten food without penalty</td>
+</tr>
+<tr>
+<td>Rad-Hardened</td>
+<td>50% less radiation dose</td>
+</tr>
+<tr>
+<td>Paranoid</td>
+<td>Mood penalty without walls; bonus when guarding</td>
+</tr>
+<tr>
+<td>Optimist / Pessimist</td>
+<td>Base mood +/−</td>
+</tr>
+<tr>
+<td>Hoarder</td>
+<td>Happy near full stockpiles</td>
+</tr>
+<tr>
+<td>Tinkerer</td>
+<td>Faster machine repair; sometimes "improves" machines (random effect)</td>
+</tr>
+<tr>
+<td>Lazy</td>
+<td>20% slower work; more recreation need</td>
+</tr>
+<tr>
+<td>Night Owl</td>
+<td>Prefers night work</td>
+</tr>
+<tr>
+<td>Cannibal</td>
+<td>Human meat is fine. Others dislike them</td>
+</tr>
+<tr>
+<td>Lucky Idiot</td>
+<td>Low skills; survives things they should not</td>
+</tr>
+<tr>
+<td>Pyromaniac</td>
+<td>Random fire-starting break</td>
+</tr>
+<tr>
+<td>Old-Worlder</td>
+<td>Remembers before the war. Tech bonus. Sad about everything</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="s01-7">Health</h3>
+<ul>
+<li>Body parts: head, torso, 2 arms, 2 hands, 2 legs, 2 feet, eyes, internal organs (simplified: heart, lungs, stomach, liver).</li>
+<li>Injuries: cut, bruise, gunshot, bite, burn, fracture. Each has bleed rate, pain and heal time.</li>
+<li>Conditions: infection, disease (from dirty water/food), radiation sickness (stages), hypothermia, heatstroke, addiction.</li>
+<li>Capacities derived from parts: moving, manipulation, sight, consciousness, breathing.</li>
+<li><strong>Radiation dose</strong> is a counter. It slowly drops. Stages: none → mild (nausea) → serious (weakness) → severe (organ damage) → lethal. Rad-Away-style medicine lowers it.</li>
+<li>Medicine: bandages, scrap medkits, old-world medkits. Doctor skill sets quality.</li>
+<li>Prosthetics: scrap limbs (weak, cheap) → old-world bionics (strong, rare, from expeditions).</li>
+</ul>
+<h3 id="s01-8">Relationships</h3>
+<ul>
+<li>Opinion of each other survivor: −100 to +100. Changes from chats, insults, shared events, traits.</li>
+<li>Relation types: friend, rival, lover, spouse, ex, family.</li>
+<li>Events: romance, breakups, fights, grief for dead.</li>
+<li>Social skill improves chats and trade.</li>
+</ul>
+<h3 id="s01-9">Work</h3>
+<ul>
+<li>Work types: Doctor, Firefight, Patient/Rest, Cook, Hunt, Construct, Grow, Mine, Salvage, Smith/Craft, Tech (research + machines), Haul, Clean, Guard.</li>
+<li><strong>Work priority grid</strong>: survivors × work types, values 1–4 or off. Simple mode: on/off only.</li>
+<li>Schedule: hours set to sleep / work / recreation / anything.</li>
+<li>Survivor can be <strong>drafted</strong> (see <code>06-combat-threats.md</code>).</li>
+</ul>
+<aside class="demo"><span class="tag">In the first demo</span>
+<p>Hunger, rest, thirst, mood with ~20 thoughts, minor breaks only, 6 skills, 8 traits, simple health (HP per body region, bleeding, rad dose), no relationships beyond opinion number.</p></aside></section><section id="s02"><p class="chap">Chapter 02</p><h2>World</h2><h3 id="s02-1">Home map</h3>
+<ul>
+<li>Size options: small 128×128, medium 200×200 (default), large 256×256 tiles. Mobile default: small.</li>
+<li>One tile = one survivor-sized cell.</li>
+<li>Map generated from a seed + the world-map site (biome, ruin density, water, hills).</li>
+</ul>
+<h4>Surface terrain</h4>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Terrain</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cracked asphalt</td>
+<td>Fast walking, no farming</td>
+</tr>
+<tr>
+<td>Dirt / dry soil</td>
+<td>Farmable (poor)</td>
+</tr>
+<tr>
+<td>Rich soil (rare)</td>
+<td>Farmable (good)</td>
+</tr>
+<tr>
+<td>Sand / ash</td>
+<td>Slow, no farming</td>
+</tr>
+<tr>
+<td>Rubble</td>
+<td>Slow; can be cleared for scrap</td>
+</tr>
+<tr>
+<td>Shallow water / sludge</td>
+<td>Dirty water source, slow</td>
+</tr>
+<tr>
+<td>Toxic pool</td>
+<td>Damages, rad source</td>
+</tr>
+<tr>
+<td>Rock outcrop</td>
+<td>Mineable, entrance to underground</td>
+</tr>
+</tbody>
+</table></div>
+<h4>Map features</h4>
+<ul>
+<li><strong>Ruins</strong>: collapsed houses, a gas station, a supermarket, a factory, a car park. Can be salvaged for scrap, parts, sometimes blueprints and loot crates.</li>
+<li><strong>Wrecks</strong>: cars, buses, a crashed plane (rare). Salvage gives metal and parts.</li>
+<li><strong>Dead trees and mutant shrubs</strong>: wood source.</li>
+<li><strong>Resource deposits</strong>: scrap piles, stone, coal seam (underground), old fuel tank.</li>
+<li><strong>Hidden things</strong>: a sealed bunker hatch, a buried cache (found when digging).</li>
+</ul>
+<h3 id="s02-2">Underground layers</h3>
+<ul>
+<li>Demo: 1 layer ("Basement / Mine").</li>
+<li>Full game: 2–3 layers. Proposed: L-1 Basements and sewers, L-2 Mine and old metro, L-3 Deep bunker (story).</li>
+<li>Layers are separate maps with the same size. Stairs, ladders and lift shafts link them.</li>
+<li>Underground is solid rock by default. Survivors dig tunnels (Mining work).</li>
+<li>Underground rooms are safe from radiation clouds, weather and most raids. They are dark (need lights) and cold/hot by depth.</li>
+<li>Hazards: cave-ins (need supports), flooding, gas pockets, burrowing mutants, sewer nests.</li>
+<li>Player switches the visible layer with a button or key (PageUp/PageDown).</li>
+</ul>
+<h3 id="s02-3">World map</h3>
+<ul>
+<li>Hex or grid map of the region, about 60×40 cells. Generated per game.</li>
+<li>Biomes: ash plains, irradiated forest, ruined city, dry riverbed, glowing crater, mountain pass, coast.</li>
+<li>Sites:</li>
+<li><strong>Ruins to scavenge</strong> (loot, blueprints, danger level).</li>
+<li><strong>Faction towns</strong> (trade, quests, diplomacy).</li>
+<li><strong>Story locations</strong> (one chain per storyline).</li>
+<li><strong>Outposts</strong> (player-built).</li>
+<li><strong>Roaming threats</strong> (raider bands, mutant herds) that move on the map.</li>
+<li>Seasons change the world map (winter closes passes, spring floods rivers).</li>
+</ul>
+<h3 id="s02-4">Expeditions</h3>
+<ul>
+<li>Player chooses survivors, supplies and a vehicle (on foot → cart → truck).</li>
+<li>Travel time depends on distance, terrain, vehicle and load.</li>
+<li>At the site, two modes:</li>
+<li><strong>Auto-resolve</strong> (default): a short text log with 1–3 choices per event.</li>
+<li><strong>Tactical map</strong> (optional, for big sites): a small generated map where the player controls the team directly. Alpha ships auto-resolve; tactical maps come in beta.</li>
+<li>Rewards: scrap, parts, blueprints, recruits, story items. Risk: injury, death, capture.</li>
+<li>The home colony keeps running with fewer hands.</li>
+</ul>
+<h3 id="s02-5">Factions</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Faction</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>The Rust Knights</td>
+<td>Raiders, militaristic</td>
+<td>Worship old cars. Frequent raids</td>
+</tr>
+<tr>
+<td>The Shiny Smile Corp</td>
+<td>Traders</td>
+<td>Still selling insurance to the dead. Neutral</td>
+</tr>
+<tr>
+<td>The Children of the Glow</td>
+<td>Cult</td>
+<td>Love radiation. Can be allies or a nightmare</td>
+</tr>
+<tr>
+<td>The Last Bureaucrats</td>
+<td>Remnant govt.</td>
+<td>Demand paperwork. Have old-world tech</td>
+</tr>
+<tr>
+<td>Mutant Herds</td>
+<td>Not a faction</td>
+<td>Animal behavior, territorial</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>Each faction has goodwill −100 to +100 with the player.</li>
+<li>Goodwill changes by trade, gifts, quests, raids, prisoners.</li>
+<li>Factions can be hostile, neutral or allied. Allies send help when asked.</li>
+</ul>
+<h3 id="s02-6">Trade</h3>
+<ul>
+<li>Caravans visit the home map. Player can also visit faction towns.</li>
+<li>Currency: <strong>"Scrip"</strong> (old-world store coupons). Barter also works. (Bottle caps are avoided because Fallout uses them.)</li>
+<li>Prices depend on faction, goodwill and Social skill of the negotiator.</li>
+</ul>
+<h3 id="s02-7">Outposts</h3>
+<ul>
+<li>Built on world-map sites with a survivor team (1–3).</li>
+<li>Types: mine, farm, scrap yard, water pump, radio relay (story).</li>
+<li>Produce resources every few days. Send caravans home or need a road/vehicle.</li>
+<li>Can be raided. Simplified sim (numbers, not a full map).</li>
+</ul>
+<h3 id="s02-8">Weather and seasons</h3>
+<ul>
+<li>4 seasons. Day length and season length are set at game start. Default: 1 day = 6 real minutes at 1x, 15 days per season.</li>
+<li>Weather: clear, overcast, dust storm, acid rain, heat wave, cold snap, <strong>radiation cloud</strong>.</li>
+<li>Temperature changes by season, weather, day/night and layer depth.</li>
+</ul>
+<aside class="demo"><span class="tag">In the first demo</span>
+<p>Medium home map, surface + 1 underground layer, ruins/wrecks/trees/scrap, clear/rain/radiation cloud weather, 1 season cycle. No world map.</p></aside></section><section id="s03"><p class="chap">Chapter 03</p><h2>Building</h2><h3 id="s03-1">Orders (designations)</h3>
+<p>Player marks work. Survivors do it.</p>
+<ul>
+<li>Build (blueprint placed, materials hauled, then constructed).</li>
+<li>Deconstruct (own buildings: returns most materials).</li>
+<li><strong>Salvage</strong> (ruins and wrecks: returns scrap, parts, random finds).</li>
+<li>Mine (rock, underground).</li>
+<li>Clear rubble.</li>
+<li>Cut plants / harvest.</li>
+<li>Haul, clean, hunt, tame (post-demo).</li>
+<li>Cancel.</li>
+</ul>
+<h3 id="s03-2">Structures</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Examples</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Walls</td>
+<td>Scrap wall, wood wall, brick wall, concrete wall, reinforced wall</td>
+</tr>
+<tr>
+<td>Doors</td>
+<td>Curtain, scrap door, metal door, blast door (powered, late)</td>
+</tr>
+<tr>
+<td>Floors</td>
+<td>Dirt (none), wood planks, scrap tiles, concrete, sterile tiles</td>
+</tr>
+<tr>
+<td>Roofs</td>
+<td>Auto-added over enclosed rooms up to 6 tiles from a wall. Can be removed</td>
+</tr>
+<tr>
+<td>Supports</td>
+<td>Underground: wooden prop, steel beam. Prevents cave-ins</td>
+</tr>
+<tr>
+<td>Stairs</td>
+<td>Ladder, stairs, lift (powered)</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>Materials change HP, build time, beauty and insulation.</li>
+<li>Every structure has HP and can burn or break.</li>
+</ul>
+<h3 id="s03-3">Rooms</h3>
+<ul>
+<li>A room is an area fully enclosed by walls and doors, with a roof.</li>
+<li>Found by flood fill. Recalculated when walls or doors change.</li>
+<li>Room types are auto-detected by contents: bedroom, barracks, kitchen, dining room, workshop, hospital, storage, lab, rec room, prison.</li>
+<li>Room stats: <strong>size, beauty, cleanliness, temperature, air</strong> (see radiation). Stats give room quality: Awful → Impressive. Quality gives mood thoughts.</li>
+</ul>
+<h3 id="s03-4">Temperature</h3>
+<ul>
+<li>Each room has one temperature value. Outdoors uses the weather temperature.</li>
+<li>Heat moves through walls (insulation by material), open doors and between rooms.</li>
+<li>Heat sources: campfire, stove, heater (fuel or power), survivors (tiny), fires.</li>
+<li>Cooling: cooler (powered), ice box (early), vents to outside.</li>
+<li>Survivor comfortable range: 16–26 °C by default. Clothes widen it.</li>
+<li>Food rots faster when warm. Freezer rooms stop rot.</li>
+</ul>
+<h3 id="s03-5">Air and radiation shelter</h3>
+<ul>
+<li>A room is <strong>sealed</strong> if it is enclosed, roofed and has no open door to outside.</li>
+<li>During a radiation cloud: outdoors and unsealed rooms get radiation. Sealed rooms stay clean.</li>
+<li>Late tech: air filters let a room stay clean even with its door used often.</li>
+</ul>
+<h3 id="s03-6">Furniture and production buildings</h3>
+<ul>
+<li>Beds (bedroll → scrap bed → real bed → hospital bed).</li>
+<li>Tables, chairs, shelves, lamps, decorations ("Velvet Elvis painting").</li>
+<li>Workbenches: scrap bench, kitchen stove, smithy, tailor, chem bench, electronics bench, research desk.</li>
+<li>Storage: shelves (more items per tile), fridge (powered).</li>
+</ul>
+<h3 id="s03-7">Zones</h3>
+<ul>
+<li><strong>Stockpile</strong>: holds items. Filters by item type. Priority low → critical.</li>
+<li><strong>Growing zone</strong>: crop type chosen per zone.</li>
+<li><strong>Home area</strong>: survivors clean and firefight only here.</li>
+<li><strong>Allowed area</strong>: limits where survivors may walk.</li>
+<li><strong>Dumping zone</strong>: for corpses and junk.</li>
+</ul>
+<h3 id="s03-8">Salvage and scrap economy</h3>
+<ul>
+<li>Ruins on the map are full of scrap. Salvage is the main early resource.</li>
+<li>Salvage result: scrap metal, wood, cloth, components (rare), and a loot roll (food cans, meds, weapons, blueprints).</li>
+<li>Scavenging skill raises yield and loot roll chance.</li>
+<li>Some ruins collapse when salvaged too fast (small danger).</li>
+</ul>
+<aside class="demo"><span class="tag">In the first demo</span>
+<p>Build, deconstruct, salvage, mine, clear rubble, harvest. Scrap/wood/stone walls, doors, floors, auto-roof. Rooms + types (bedroom, kitchen, storage, workshop). Temperature (simple). Sealed rooms vs radiation. Stockpile + growing zones. Beds, table, chair, lamp, 4 workbenches.</p></aside></section><section id="s04"><p class="chap">Chapter 04</p><h2>Economy, food and water</h2><h3 id="s04-1">Resources (base)</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Resource</th>
+<th>Source</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Scrap metal</td>
+<td>Salvage, wrecks, rubble</td>
+<td>Walls, tools, machines</td>
+</tr>
+<tr>
+<td>Wood</td>
+<td>Dead trees, salvage</td>
+<td>Early building, fuel</td>
+</tr>
+<tr>
+<td>Stone</td>
+<td>Mining</td>
+<td>Walls, stoves</td>
+</tr>
+<tr>
+<td>Cloth</td>
+<td>Salvage, fiber crops</td>
+<td>Beds, clothes, bandages</td>
+</tr>
+<tr>
+<td>Components</td>
+<td>Rare salvage, crafting (tier 2)</td>
+<td>Machines, weapons</td>
+</tr>
+<tr>
+<td>Coal</td>
+<td>Underground</td>
+<td>Fuel, steel</td>
+</tr>
+<tr>
+<td>Steel</td>
+<td>Smelting scrap + coal</td>
+<td>Better machines, walls</td>
+</tr>
+<tr>
+<td>Fuel</td>
+<td>Old tanks, refinery (tier 3)</td>
+<td>Generators, vehicles</td>
+</tr>
+<tr>
+<td>Chemicals</td>
+<td>Salvage, chem bench</td>
+<td>Medicine, explosives, fertilizer</td>
+</tr>
+<tr>
+<td>Electronics</td>
+<td>Electronics bench (tier 2+)</td>
+<td>Automation, robots</td>
+</tr>
+<tr>
+<td>Old-world parts</td>
+<td>Expeditions only</td>
+<td>Key research nodes, story</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="s04-2">Production chains (examples)</h3>
+<ul>
+<li>Scrap → (scrap bench) → scrap tools / scrap walls.</li>
+<li>Scrap + coal → (smelter) → steel.</li>
+<li>Steel + components → (machine shop) → gears, pipes, motors.</li>
+<li>Motors + electronics → (assembler) → conveyors, crafters, robots.</li>
+<li>Crops → (stove) → meals. Meals → better mood.</li>
+</ul>
+<h3 id="s04-3">Food</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Food</th>
+<th>Quality</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Canned food (pre-war)</td>
+<td>Simple</td>
+<td>From salvage. Does not rot. Limited</td>
+</tr>
+<tr>
+<td>Raw crop</td>
+<td>Raw</td>
+<td>Mood penalty</td>
+</tr>
+<tr>
+<td>Raw meat (mutant)</td>
+<td>Raw</td>
+<td>Big mood penalty, disease risk</td>
+</tr>
+<tr>
+<td>Simple meal</td>
+<td>Simple</td>
+<td>Stove</td>
+</tr>
+<tr>
+<td>Fine meal</td>
+<td>Fine</td>
+<td>Good cook + 2 ingredients</td>
+</tr>
+<tr>
+<td>Nutrient paste</td>
+<td>Awful</td>
+<td>Late machine. Very efficient. Survivors hate it</td>
+</tr>
+<tr>
+<td>Booze (moonshine)</td>
+<td>Drug</td>
+<td>Recreation, addiction risk</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>Food rots by time and temperature. Fridges and cold rooms slow it.</li>
+<li>Food poisoning chance from cook skill and room cleanliness.</li>
+</ul>
+<h3 id="s04-4">Farming</h3>
+<ul>
+<li>Crops: glowcorn (fast, low yield), scrub potato (cold-safe), rust-berry (mood food), fiber weed (cloth), med-root (medicine), tox-lily (chemicals).</li>
+<li>Growth depends on soil, light, temperature and water.</li>
+<li>Hydroponics (tier 2): indoor, powered, no soil needed. Safe from radiation.</li>
+</ul>
+<h3 id="s04-5">Water</h3>
+<ul>
+<li>Water types: <strong>dirty</strong>, <strong>clean</strong>, <strong>contaminated</strong> (radioactive).</li>
+<li>Sources: dirty pools, rain collector (clean unless rain is acid or radioactive), well (clean, may become contaminated), water pump (tier 2), purifier (tier 2, makes clean from dirty or contaminated).</li>
+<li>Water is stored as an item (jugs/barrels) in early game, as a fluid network (tanks + pipes) from tier 2.</li>
+<li>Drinking dirty water: disease chance. Contaminated water: rad dose.</li>
+</ul>
+<h3 id="s04-6">Radiation cloud event</h3>
+<ul>
+<li>Storyteller event. Duration: a few hours to days in-game.</li>
+<li>During the cloud: all survivors outside take rad dose per tick.</li>
+<li><strong>Contamination</strong>: when the cloud ends, the following become <em>contaminated</em> for <strong>one season</strong>:</li>
+<li>Crops in outdoor growing zones (and soil of those zones).</li>
+<li>Food and water items stored outside or in unsealed rooms.</li>
+<li>Open water sources (pools, rain collectors, wells without cover).</li>
+<li>Items in <strong>sealed rooms</strong> stay clean. This is the main reason to build sealed storage.</li>
+<li>Contaminated food/water can be eaten in desperation (rad dose) or cleaned (purifier, decon shower for items — tier 2).</li>
+<li>Warning: storyteller gives a short alert (half a day) before most clouds. Hard storytellers sometimes do not.</li>
+</ul>
+<aside class="demo"><span class="tag">In the first demo</span>
+<p>Scrap, wood, stone, cloth, components, steel, coal. Canned food, raw crops, simple meal. Glowcorn, scrub potato, fiber weed. Dirty pool, rain collector, well, jugs. Radiation cloud with contamination for one season. Rot by temperature (simple).</p></aside></section><section id="s05"><p class="chap">Chapter 05</p><h2>Automation and tech</h2><h3 id="s05-1">Principle: progressive automation</h3>
+<p>The colony starts with bare hands. Each tech tier moves a kind of work from survivors to machines. Survivors become operators, defenders and explorers.</p>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Name</th>
+<th>Power</th>
+<th>Logistics</th>
+<th>Production</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>Scrap Age</td>
+<td>None (fire, muscle)</td>
+<td>Survivors haul by hand</td>
+<td>Hand-worked benches</td>
+</tr>
+<tr>
+<td>1</td>
+<td>Salvage Age</td>
+<td>Scrap generator (wood/fuel), wires, batteries</td>
+<td>Hand carts, first conveyor belt</td>
+<td>Smelter, powered benches (faster)</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Machine Age</td>
+<td>Solar panels, wind turbine, fuel generator</td>
+<td>Belts, splitters, loaders (bench in/out), pipes for water</td>
+<td><strong>Auto-crafter</strong> (recipe set, no survivor), pump, purifier, hydroponics</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Old-World Age</td>
+<td>Geothermal, fuel refinery</td>
+<td>Hauler drones, sorters, underground belts</td>
+<td>Assembler lines, refinery, auto-kitchen (nutrient paste), turrets with ammo belts</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Reborn Age</td>
+<td>Restored reactor (story)</td>
+<td>Robot workers (build, mine, farm)</td>
+<td>Robot factory, bionics, story machines</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="s05-2">Power</h3>
+<ul>
+<li>Power network: generators, consumers and batteries linked by wires (or adjacency for conduits).</li>
+<li>Network has supply (W) and demand (W). Shortage → consumers run slower or stop by priority.</li>
+<li>Machines can break down. Repair needs components and Tech skill.</li>
+<li>Underground: wires go through ladders/stairs links.</li>
+</ul>
+<h3 id="s05-3">Logistics</h3>
+<ul>
+<li><strong>Conveyor belt</strong>: moves items 1 tile per X ticks. Directional. Tier 1 basic, tier 2 fast.</li>
+<li><strong>Loader / unloader</strong>: puts items into or takes them out of a bench, crafter or stockpile.</li>
+<li><strong>Splitter / sorter</strong>: splits or filters items (tier 2/3).</li>
+<li><strong>Pipes</strong> (tier 2): water and fuel. Tanks store fluid.</li>
+<li><strong>Hauler drones</strong> (tier 3): fly items between stockpiles and machines. Need charge pads.</li>
+<li>Belts and survivors share the same item system. A survivor can pick items off a belt.</li>
+</ul>
+<h3 id="s05-4">Auto-crafters</h3>
+<ul>
+<li>Placed building with a recipe. Input from loaders or survivors. Output to a belt or the tile.</li>
+<li>Speed and quality: lower quality than a skilled survivor at first; tier upgrades raise it.</li>
+<li>This creates a real choice: skilled hand-crafted gear vs mass machine output.</li>
+</ul>
+<h3 id="s05-5">Robots (tier 4)</h3>
+<ul>
+<li>Robot types: builder, miner, farmer, hauler, guard.</li>
+<li>No mood. Need charge and repairs. Can be hacked by raiders (event) — dark humor: "Your robot joined the Rust Knights."</li>
+</ul>
+<h3 id="s05-6">Research</h3>
+<ul>
+<li>Research desk (tier 0), lab (tier 2), old-world terminal (tier 3).</li>
+<li>Research points from survivors (Technology skill) at a desk.</li>
+<li>Tree: about 60 nodes in the full game, grouped by tier and branch (Power, Logistics, Production, Food &amp; Water, Medicine, Defense, Vehicles).</li>
+<li><strong>Blueprints</strong>: key nodes need a blueprint item before research can start. Blueprints come from salvage (rare), expeditions, trade and quests.</li>
+<li>Example: "Auto-crafter" needs blueprint "Factory Control Manual". "Reactor Restart" needs "Reactor Schematics" (story item).</li>
+</ul>
+<aside class="demo"><span class="tag">In the first demo</span>
+<ul>
+<li>Tier 0 and tier 1 complete, plus one tier 2 machine (auto-crafter, basic).</li>
+<li>Research desk with about 10 nodes. 1 blueprint-gated node (blueprint found in a ruin on the home map).</li>
+<li>Scrap generator, wires, battery, lamp, powered bench, conveyor belt, loader, auto-crafter.</li>
+</ul></aside></section><section id="s06"><p class="chap">Chapter 06</p><h2>Combat and threats</h2><h3 id="s06-1">Combat model</h3>
+<ul>
+<li>Real-time, ticks. Pause allowed at any time.</li>
+<li><strong>Drafting</strong>: player drafts survivors. Drafted survivors take direct move and target orders. Undrafted survivors flee or fight back by trait.</li>
+<li>Ranged hit chance = shooter skill + weapon accuracy at range − target cover − target movement − light/weather.</li>
+<li>Cover: low walls, sandbags, wrecks, rubble, trees. Cover gives a block chance by direction.</li>
+<li>Damage hits a body part. Armor reduces it by type (sharp, blunt, heat, radiation).</li>
+<li>Morale: enemies flee when losses or pain are high.</li>
+</ul>
+<h3 id="s06-2">Weapons (examples)</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>Melee</th>
+<th>Ranged</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>Pipe, plank with nail, knife</td>
+<td>Slingshot, thrown bricks</td>
+</tr>
+<tr>
+<td>1</td>
+<td>Machete, sledgehammer</td>
+<td>Pipe pistol, crossbow, scrap shotgun</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Chainsaw, shock baton</td>
+<td>Hunting rifle, SMG</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Power fist</td>
+<td>Assault rifle, flamethrower</td>
+</tr>
+<tr>
+<td>4</td>
+<td>—</td>
+<td>Old-world laser (rare), rocket launcher</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="s06-3">Defenses</h3>
+<ul>
+<li>Walls, doors, sandbags, spike traps, tripwire bells (early).</li>
+<li>Turrets (tier 1: scrap turret, needs power; tier 2: ammo-fed by belt; tier 3: auto-cannon).</li>
+<li>Mines and IED traps (chemicals).</li>
+<li>Late game: defense is mostly automated. Survivors repair and refill.</li>
+</ul>
+<h3 id="s06-4">Threats</h3>
+<h4>Raiders and factions</h4>
+<ul>
+<li>Raid size from colony wealth and storyteller.</li>
+<li>Raid types: assault, siege (they dig in), sappers (dig through walls), kidnap, theft.</li>
+<li>Captured raiders can be recruited, ransomed or released (goodwill +).</li>
+</ul>
+<h4>Mutants and creatures</h4>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Creature</th>
+<th>Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Rad-rats</td>
+<td>Swarm. Eat food stockpiles</td>
+</tr>
+<tr>
+<td>Glow-hounds</td>
+<td>Pack hunters at night</td>
+</tr>
+<tr>
+<td>Sludge crawlers</td>
+<td>Underground; burrow through rock</td>
+</tr>
+<tr>
+<td>Two-headed cattle</td>
+<td>Tameable. Milk + meat. Sometimes angry</td>
+</tr>
+<tr>
+<td>The Big One</td>
+<td>Rare boss mutant. Drop: rare parts</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>Night hordes: more mutant attacks at night. Lights reduce them.</li>
+</ul>
+<h4>Environment</h4>
+<ul>
+<li>Radiation cloud (see <code>04-economy.md</code>).</li>
+<li>Acid rain: damages outdoor items and crops.</li>
+<li>Dust storm: low vision, solar off.</li>
+<li>Heat wave / cold snap.</li>
+<li>Fire (from lightning, breaks, cooking accidents).</li>
+<li>Cave-in, flood underground.</li>
+</ul>
+<h4>Internal</h4>
+<ul>
+<li>Disease outbreak, food poisoning.</li>
+<li>Mental breaks, fights, theft, sabotage by a sad survivor.</li>
+<li>Addiction.</li>
+</ul>
+<h3 id="s06-5">Storytellers</h3>
+<p>The storyteller is the AI that picks events.</p>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Style</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Grandma Grit</strong></td>
+<td>Calm. Long quiet times. For building</td>
+</tr>
+<tr>
+<td><strong>The Sheriff</strong></td>
+<td>Classic. Rising tension, then relief</td>
+</tr>
+<tr>
+<td><strong>Doctor Chaos</strong></td>
+<td>Random. Anything can happen any day</td>
+</tr>
+</tbody>
+</table></div>
+<h4>Custom sliders (0–200%)</h4>
+<ul>
+<li>Raid frequency, raid size, mutant frequency, environment events, disease, mental break threshold, resource abundance, radiation cloud frequency.</li>
+<li>Permadeath toggle.</li>
+</ul>
+<h4>Event pacing</h4>
+<ul>
+<li>Each event has a cost. Storyteller has a "threat budget" that grows with time and colony wealth.</li>
+<li>Storyteller avoids two big threats in a row (except Doctor Chaos).</li>
+<li>Good events too: wanderer joins, trader, cargo drop, "a dog finds you".</li>
+</ul>
+<aside class="demo"><span class="tag">In the first demo</span>
+<p>Drafting, move/attack orders, cover, 3 melee + 3 ranged weapons, sandbags, scrap turret, rad-rats and glow-hounds, one raider group type, radiation cloud, fire (simple), storyteller The Sheriff + sliders for raid/mutant/environment.</p></aside></section><section id="s07"><p class="chap">Chapter 07</p><h2>Story, scenarios and endings</h2><h3 id="s07-1">Story structure</h3>
+<ul>
+<li>The player picks one storyline at game start. Each storyline is a chain of 5–7 <strong>story beats</strong>.</li>
+<li>A beat unlocks when the colony reaches a condition (tech tier, item, location found). Each beat gives a goal, a story event and often a world-map story location.</li>
+<li>Story text is short. Systems tell most of the story.</li>
+<li>Story locations, items and research nodes are tied to the storyline. Other content is shared.</li>
+</ul>
+<h3 id="s07-2">Storyline 1 — Restart the old reactor</h3>
+<p>Goal: find parts across the wasteland and restart a pre-war power plant. Light up the region.</p>
+<p>Pitches (user decision during spec review; options can be combined):</p>
+<ol>
+<li><strong>"Keep the Lights On"</strong> — The survivors find a reactor operator's badge and a talking maintenance bot named HAL-PH that only speaks in safety slogans. HAL-PH points them to the dead plant. Every part they recover makes HAL-PH more proud and more unhinged.</li>
+<li><strong>"Night City Blues"</strong> — A cult, the Children of the Glow, also wants the reactor. They want it to melt down, not to run. A race for the same five parts. The colony can fight them, join them, or trick them.</li>
+<li><strong>"Power to the People"</strong> — Every faction wants the power. The colony must choose who gets it at the end. The ending changes by who you supplied: traders, bureaucrats, or nobody (keep it all).</li>
+</ol>
+<h3 id="s07-3">Storyline 2 — Reach the safe zone</h3>
+<p>Goal: build vehicles and stock supplies to move the whole colony to a rumored safe place.</p>
+<p>Pitches (user decision during spec review; options can be combined):</p>
+<ol>
+<li><strong>"Greener Pastures"</strong> — A radio loops an ad for "Haven Valley: Clean Air, Low Rent!" Nobody knows if it is real. The colony builds an armored convoy. The final beat is a long journey on the world map with events on the road.</li>
+<li><strong>"The Last Bus"</strong> — The colony restores a pre-war school bus, then upgrades it into a land fortress. Each upgrade needs an expedition. The bus has a personality (its horn plays one song).</li>
+<li><strong>"Tickets, Please"</strong> — The safe zone is real, but it only accepts people with "Citizen Papers" from the Last Bureaucrats. Getting papers is a long satire of bureaucracy. Forgery is an option.</li>
+</ol>
+<h3 id="s07-4">Storyline 3 — Signal the orbit</h3>
+<p>Goal: build a transmitter to contact a space station that survived the war.</p>
+<p>Pitches (user decision during spec review; options can be combined):</p>
+<ol>
+<li><strong>"Is Anyone Up There?"</strong> — A survivor hears voices on an old radio at night. Everyone thinks they are crazy. They are not. The station answers, but it wants something in return.</li>
+<li><strong>"Dish Network"</strong> — The colony must restore a chain of three radio relay outposts on the world map, then build a giant dish at home. Holding all relays at once is the challenge.</li>
+<li><strong>"Final Broadcast"</strong> — The station crew is dying too. Both sides must trade knowledge before time runs out. The ending is bittersweet: rescue for some, a legacy for the rest.</li>
+</ol>
+<h3 id="s07-5">Endings</h3>
+<ul>
+<li><strong>Win</strong>: complete the final beat. Ending slides show what happened to each survivor (generated from their history, with dark humor).</li>
+<li><strong>Loss</strong>: all survivors dead or gone. A short "obituary" screen.</li>
+<li><strong>Continue</strong>: after a win, the player can keep playing in sandbox mode.</li>
+</ul>
+<h3 id="s07-6">Scenarios (examples)</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Scenario</th>
+<th>Rules</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Lone Wanderer</strong></td>
+<td>1 survivor. Hard start</td>
+</tr>
+<tr>
+<td><strong>Mall Rats</strong></td>
+<td>Start inside a ruined supermarket. Lots of loot, many rats</td>
+</tr>
+<tr>
+<td><strong>The Bunker</strong></td>
+<td>Start underground. Surface is deadly at first</td>
+</tr>
+<tr>
+<td><strong>Factory Reset</strong></td>
+<td>Start with tier 1 tech and a broken factory. Score = items produced in 60 days</td>
+</tr>
+<tr>
+<td><strong>Rad Season</strong></td>
+<td>Radiation clouds every week. Survive one year</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="s07-7">Title ideas</h3>
+<ol>
+<li><strong>Rustfall</strong></li>
+<li><strong>After the Glow</strong></li>
+<li><strong>Scrapheap Colony</strong></li>
+<li><strong>Fallow Ground</strong></li>
+<li><strong>Wasteland Inc.</strong></li>
+<li><strong>Ash &amp; Gears</strong></li>
+<li><strong>Last Light</strong></li>
+<li><strong>Rad Season</strong></li>
+</ol>
+<aside class="demo"><span class="tag">In the first demo</span>
+<p>No storyline. Sandbox mode only, with one short tutorial goal chain ("Build shelter", "Find clean water", "Survive the first raid", "Turn the lights on").</p></aside></section><section id="s08"><p class="chap">Chapter 08</p><h2>UI and UX</h2><h3 id="s08-1">Principles</h3>
+<ul>
+<li>Desktop-first. Mobile gets an adapted layout, not a copy.</li>
+<li>Pause is always one action away.</li>
+<li>Every tile, survivor and item can be inspected.</li>
+<li>Alerts tell the player what is wrong before it becomes a disaster.</li>
+<li>Dark humor lives in text, not in confusing UI.</li>
+</ul>
+<h3 id="s08-2">Desktop layout</h3>
+<pre><code>+--------------------------------------------------------------+
+| Resources bar (food, water, scrap, power, ...)   Date  Speed |
++--------------------------------------------------------------+
+| Survivor bar (portraits, mood, status icons)                 |
+|                                                     Alerts &gt; |
+|                    GAME VIEW                                 |
+|                                                              |
+| Inspect panel (selected thing)                               |
++--------------------------------------------------------------+
+| Main menu tabs: Build | Orders | Zones | Work | Research |   |
+| Schedule | Health | World | Log | Settings      Layer  Speed |
++--------------------------------------------------------------+
+</code></pre>
+<h3 id="s08-3">Mobile layout</h3>
+<ul>
+<li>Top: compact resource bar + date + pause button.</li>
+<li>Survivor portraits in a side drawer.</li>
+<li>Bottom: 5 big icon buttons (Build, Orders, Zones, Colony, Menu). Each opens a bottom sheet.</li>
+<li>Inspect panel is a bottom sheet over the view.</li>
+<li>Alerts are a badge button that opens a list.</li>
+<li>Minimum touch target: 44 px.</li>
+</ul>
+<h3 id="s08-4">Controls</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Desktop</th>
+<th>Mobile</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pan</td>
+<td>WASD, arrows, middle-drag, edge scroll (option)</td>
+<td>One-finger drag</td>
+</tr>
+<tr>
+<td>Zoom</td>
+<td>Mouse wheel</td>
+<td>Pinch</td>
+</tr>
+<tr>
+<td>Select</td>
+<td>Left click</td>
+<td>Tap</td>
+</tr>
+<tr>
+<td>Box select</td>
+<td>Left drag</td>
+<td>Long press, then drag</td>
+</tr>
+<tr>
+<td>Context order</td>
+<td>Right click</td>
+<td>Long press on target</td>
+</tr>
+<tr>
+<td>Place building / drag area</td>
+<td>Left click / drag</td>
+<td>Tap / drag with "Place" button</td>
+</tr>
+<tr>
+<td>Rotate</td>
+<td>R</td>
+<td>Rotate button</td>
+</tr>
+<tr>
+<td>Cancel</td>
+<td>Esc, right click</td>
+<td>Back button / X</td>
+</tr>
+<tr>
+<td>Pause</td>
+<td>Space</td>
+<td>Pause button</td>
+</tr>
+<tr>
+<td>Speed 1/2/3</td>
+<td>1 / 2 / 3</td>
+<td>Speed button cycles</td>
+</tr>
+<tr>
+<td>Change layer</td>
+<td>PageUp / PageDown</td>
+<td>Layer button</td>
+</tr>
+<tr>
+<td>Draft</td>
+<td>D (selected)</td>
+<td>Draft button</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="s08-5">Screens</h3>
+<ul>
+<li>Main menu: New game, Continue, Load, Scenarios, Mods, Settings, Credits.</li>
+<li>New game flow: mode → storyline → storyteller + sliders → map size + seed → survivor selection (reroll) → start.</li>
+<li>In-game panels: Work grid, Schedule, Research tree, Health, Survivor details (needs, skills, traits, thoughts, relations, gear), World map, Event log, Trade.</li>
+<li>Overlays: temperature, beauty, radiation, power, room, zones.</li>
+</ul>
+<h3 id="s08-6">Feedback</h3>
+<ul>
+<li>Small procedural motion instead of sprite animation: bob while walking, flip by direction, shake on hit, tool icon over a working survivor, damage numbers (option).</li>
+<li>Thought bubbles with icons for needs.</li>
+<li>Sounds for orders, alerts, combat.</li>
+</ul>
+<h3 id="s08-7">Settings</h3>
+<ul>
+<li>Audio volumes (master, music, SFX, ambient).</li>
+<li>UI scale, autopause rules, edge scroll, colorblind palette for overlays.</li>
+<li>Language.</li>
+</ul>
+<h3 id="s08-8">i18n</h3>
+<ul>
+<li>All player-facing text comes from string tables (<code>en.json</code> first).</li>
+<li>Keys, plurals and parameters in ICU-like format.</li>
+<li>Generated names use per-language name lists.</li>
+</ul>
+<h3 id="s08-9">Accessibility</h3>
+<ul>
+<li>Text size option. High-contrast overlay option. No info by color alone (icons too).</li>
+</ul>
+<aside class="demo"><span class="tag">In the first demo</span>
+<p>Desktop layout complete. Mobile layout basic (bottom bar, sheets, pan/zoom/tap). Build, Orders, Zones, Work grid, Research, Health (simple), Log, Settings (audio, UI scale). English only through string table.</p></aside></section><section id="s09"><p class="chap">Chapter 09</p><h2>Art and audio</h2><h3 id="s09-1">Art direction</h3>
+<ul>
+<li>Top-down pixel art, three-quarter view for objects (walls show a front face), flat for floors.</li>
+<li>Sprite size and palette: <strong>chosen by the user from samples</strong> (Phase B). Candidates: 16 px, 32 px, or 16 px world + 32 px UI icons.</li>
+<li>Palette candidates: rust/ochre, toxic green, desaturated grey-blue. One master palette (24–32 colors) for all sprites.</li>
+<li>Survivors: single-frame sprites for 3 facings (down, up, side; side flipped). Portrait built from layered parts.</li>
+<li>Motion is procedural (bob, squash, flip, shake). No frame animation for the demo.</li>
+<li>Lighting: day/night tint + light radius from lamps and fires (shader).</li>
+<li>Weather: particle overlays (rain, dust, glowing radiation cloud).</li>
+</ul>
+<h3 id="s09-2">Asset pipeline (texel-studio)</h3>
+<ol>
+<li><code>assets/manifest.json</code> lists every sprite: id, prompt, size, type (block/item), palette, tileset or not.</li>
+<li><code>tools/art/texel.ts</code> sends jobs to texel-studio (<code>POST /api/jobs</code>) and saves PNG + JSON in <code>assets/raw/</code>.</li>
+<li>Claude views each result. Bad results get a <code>sprite.chat</code> refine or a retry with a new prompt.</li>
+<li><code>tools/art/pack.ts</code> packs sprites into a texture atlas with a JSON frame map.</li>
+<li>Missing sprites fall back to generated placeholders (colored shapes with a letter), so the game always runs.</li>
+</ol>
+<h4>Art providers</h4>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Provider</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Local Ollama / llama-swap (default)</td>
+<td>Works now</td>
+</tr>
+<tr>
+<td>OpenRouter (OpenAI-compatible)</td>
+<td>Config only (<code>OPENAI_BASE_URL</code> + key)</td>
+</tr>
+<tr>
+<td>ComfyUI → texel <code>sprite.from_photo</code></td>
+<td>Build in art tool</td>
+</tr>
+<tr>
+<td>Gemini / OpenAI subscription via CLI bridge</td>
+<td>Optional, later</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="s09-3">Music</h3>
+<ul>
+<li>Adaptive music. The player blends stems by game state.</li>
+<li><strong>Situations</strong>: calm (building), tense (threat coming), combat, night, expedition, victory/defeat stingers.</li>
+<li><strong>Tech tier changes the style</strong>:</li>
+<li>Tier 0–1: dusty western and folk (slide guitar, banjo, harmonica, fiddle).</li>
+<li>Tier 2–3: folk mixed with dark ambient synth.</li>
+<li>Tier 4: dark ambient synth with a hopeful theme.</li>
+<li>Combat at any tier: drums + tension layer in the current style.</li>
+<li>Generation: ComfyUI with an audio model (e.g. ACE-Step or Stable Audio Open). Check what is installed first. Ask the user before large downloads.</li>
+<li>Format: OGG (+ M4A fallback for iOS Safari), loop points in metadata.</li>
+</ul>
+<h3 id="s09-4">Sound effects</h3>
+<ul>
+<li>Footsteps, building, mining, salvage clank, gunfire, hits, UI clicks, alerts, ambient wind, Geiger clicks near radiation.</li>
+<li>Sources: procedural (jsfxr-style) first, then generated or CC0 packs.</li>
+</ul>
+<aside class="demo"><span class="tag">In the first demo</span>
+<p>Chosen art for about 80 sprites (terrain, structures, furniture, items, survivors, 2 creatures, 1 raider). Calm + combat music in tier 0–1 style. About 20 SFX.</p></aside></section><section id="s10"><p class="chap">Chapter 10</p><h2>Technical architecture</h2><h3 id="s10-1">Stack</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Part</th>
+<th>Choice</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Language</td>
+<td>TypeScript (strict)</td>
+</tr>
+<tr>
+<td>Renderer</td>
+<td>PixiJS v8 (WebGL2, WebGPU when stable)</td>
+</tr>
+<tr>
+<td>UI</td>
+<td>HTML/CSS overlay with Preact</td>
+</tr>
+<tr>
+<td>Build</td>
+<td>Vite</td>
+</tr>
+<tr>
+<td>Tests</td>
+<td>Vitest (unit + headless scenarios), Playwright (browser e2e)</td>
+</tr>
+<tr>
+<td>Data validation</td>
+<td>zod</td>
+</tr>
+<tr>
+<td>Lint/format</td>
+<td>ESLint + Prettier</td>
+</tr>
+<tr>
+<td>Mobile</td>
+<td>PWA first, Capacitor later</td>
+</tr>
+<tr>
+<td>Desktop</td>
+<td>Tauri or Electron later (Steam option)</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="s10-2">Repo layout (npm workspaces)</h3>
+<pre><code>packages/
+  sim/        pure TS simulation, no DOM, runs in Worker and Node
+  client/     PixiJS renderer, input, UI, audio, save storage
+  data/       JSON content + zod schemas + i18n strings (mod format)
+tools/
+  art/        texel-studio client, ComfyUI bridge, atlas packer
+  audio/      music generation + processing
+  playtest/   headless scenario runner, balance reports
+site/         demo presentation web page
+docs/spec/    this spec
+assets/       manifest, raw generated art, packed atlases, audio
+</code></pre>
+<h3 id="s10-3">Simulation</h3>
+<ul>
+<li><strong>Deterministic</strong>: seeded RNG (one stream per system), fixed tick (60 ticks per in-game minute at 1x is tuned later; target 20 sim ticks per real second at 1x).</li>
+<li><strong>Data-oriented entities</strong>: typed arrays for tiles; entity store with components (Position, Pawn, Needs, Health, Item, Building, PowerNode, Belt...). Systems run in a fixed order per tick.</li>
+<li><strong>Map</strong>: per layer, flat typed arrays (terrain, structure id, roof, room id, temperature, radiation, zone id). Chunked (32×32) for dirty-flag rendering.</li>
+<li><strong>Pathfinding</strong>: A* on the grid with a region graph (regions of up to 12×12 connected tiles) for fast reachability checks and long paths. Cross-layer links via stairs. Path cache invalidated by region changes.</li>
+<li><strong>Jobs</strong>: work givers scan for work by type; survivors pick by priority, distance and skill. Reservations stop two survivors from taking the same target. Jobs are small state machines (go to → pick up → go to → work → finish).</li>
+<li><strong>Rooms</strong>: flood fill on wall/door change, incremental per affected area.</li>
+<li><strong>Temperature</strong>: per room value, exchange per tick by insulation.</li>
+<li><strong>Power</strong>: networks found by flood fill over wires; balance computed per network per N ticks.</li>
+<li><strong>Belts</strong>: item slots on belt lanes, updated in batches.</li>
+<li><strong>Commands</strong>: all player actions are command objects sent to the sim. This allows replays, tests and later multiplayer.</li>
+</ul>
+<h3 id="s10-4">Threading</h3>
+<ul>
+<li>The sim runs in a Web Worker. The client gets a compact snapshot or a diff each frame (transferable buffers).</li>
+<li>The renderer interpolates pawn positions between ticks.</li>
+<li>Node runs the same sim directly for tests.</li>
+</ul>
+<h3 id="s10-5">Rendering</h3>
+<ul>
+<li>Chunked tilemap (one Pixi container per chunk, cached when not dirty).</li>
+<li>Sprite layers: terrain, floor, structures, items, pawns, effects, overlays, UI markers.</li>
+<li>Culling outside the camera. Zoom levels with integer scaling for crisp pixels.</li>
+<li>Light pass: a darkness layer with light sprites (additive) for lamps and fires.</li>
+<li>Performance budget: 60 FPS desktop, 30+ FPS on a mid-range phone with a 128×128 map and 20 survivors.</li>
+</ul>
+<h3 id="s10-6">Saves</h3>
+<ul>
+<li>Save = versioned JSON of the whole sim state, compressed (CompressionStream gzip), stored in IndexedDB.</li>
+<li>Export/import save file (download/upload).</li>
+<li>Migrations: one function per version step. Old saves always load.</li>
+<li>Autosave every in-game day (option). Permadeath: one slot, saved on quit.</li>
+<li>Cloud saves later: Steam Cloud (if on Steam) or a small paid save server.</li>
+</ul>
+<h3 id="s10-7">Mod support</h3>
+<ul>
+<li>Content (items, buildings, recipes, research, events, traits, creatures, factions, strings) is JSON validated by zod.</li>
+<li>Mods are folders with a <code>mod.json</code> (id, version, load order, dependencies) + JSON + sprites.</li>
+<li>Mods can add and override entries by id. No scripting in v1.</li>
+<li>The base game is itself loaded as a "core" mod.</li>
+</ul>
+<h3 id="s10-8">Dev servers and network access</h3>
+<ul>
+<li><strong>Dev and preview servers bind to <code>0.0.0.0</code></strong> so PCs and phones on the LAN can reach them (<code>vite --host 0.0.0.0</code>, also set in <code>vite.config.ts</code> <code>server.host</code> and <code>preview.host</code>).</li>
+<li>Fixed ports: dev 5173, preview 4173, presentation site served with the preview build.</li>
+<li>No secrets are served. The game is static files only.</li>
+</ul>
+<h3 id="s10-9">Debug and test hooks</h3>
+<ul>
+<li><code>window.__game</code> in dev builds: set seed, spawn things, set speed, run N ticks, get state, take snapshot.</li>
+<li>Headless scenario runner: <code>npm run playtest -- --seed 42 --days 30</code> prints a report (deaths, mood, resources, tick time).</li>
+<li>Playwright e2e: desktop (1920×1080) and phone (390×844) viewports. Screenshots and short videos saved in <code>artifacts/</code>.</li>
+<li>CI-like local script <code>npm run check</code> = lint + typecheck + unit + scenarios + e2e.</li>
+</ul>
+<h3 id="s10-10">Performance targets</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Target</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Sim tick (20 survivors, medium map)</td>
+<td>&lt; 3 ms on desktop</td>
+</tr>
+<tr>
+<td>Headless 30 in-game days</td>
+<td>&lt; 60 s</td>
+</tr>
+<tr>
+<td>First load (web)</td>
+<td>&lt; 5 MB before first frame</td>
+</tr>
+</tbody>
+</table></div></section><section id="s11"><p class="chap">Chapter 11</p><h2>Roadmap</h2><h3 id="s11-1">Gates (user decisions)</h3>
+<ol>
+<li><strong>Spec approval</strong> — no game code before this.</li>
+<li><strong>Art choice</strong> — user picks sprite size and palette from samples.</li>
+<li><strong>Demo review</strong> — user plays the demo and gives feedback.</li>
+</ol>
+<h3 id="s11-2">Demo milestones</h3>
+<p>Each milestone ends with: tests green, a headless scenario run, Playwright screenshots checked, a git commit, and a CHANGELOG entry. No check-ins with the user until the demo.</p>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Milestone</th>
+<th>Done when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>M0</td>
+<td>Scaffold</td>
+<td>Workspaces, Vite (host 0.0.0.0), TS strict, lint, Vitest, Playwright, project CLAUDE.md, CHANGELOG, Gitea remote</td>
+</tr>
+<tr>
+<td>M1</td>
+<td>Map</td>
+<td>Seeded home map with ruins/terrain/resources, 1 underground layer, chunk render, pan/zoom, layer switch</td>
+</tr>
+<tr>
+<td>M2</td>
+<td>Survivors</td>
+<td>3 survivors walk with A*, job system, hunger/thirst/rest, mood + thoughts, skills, traits</td>
+</tr>
+<tr>
+<td>M3</td>
+<td>Build</td>
+<td>Build/deconstruct/salvage/mine orders, walls/doors/floors/roofs, rooms, temperature, stockpiles, hauling</td>
+</tr>
+<tr>
+<td>M4</td>
+<td>Food + water</td>
+<td>Farming, stove + meals, water sources + jugs, rot, radiation cloud + contamination</td>
+</tr>
+<tr>
+<td>M5</td>
+<td>Threats</td>
+<td>Rad-rats, glow-hounds, raiders, drafting, cover combat, injuries, scrap turret, storyteller + sliders</td>
+</tr>
+<tr>
+<td>M6</td>
+<td>Early automation</td>
+<td>Research desk + ~10 nodes, blueprint item, generator, wires, battery, conveyor, loader, auto-crafter</td>
+</tr>
+<tr>
+<td>M7</td>
+<td>Polish</td>
+<td>Save/load, tutorial goals, full desktop UI, mobile layout, texel art atlas, music + SFX</td>
+</tr>
+<tr>
+<td>M8</td>
+<td>Demo delivery</td>
+<td>LAN server on 0.0.0.0, Gitea push, presentation site with animations and gameplay clips</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="s11-3">After the demo</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Alpha</td>
+<td>Full survivor systems, relationships, raiders + factions, world map, expeditions, trade, outposts, 2nd underground layer, tech tier 2–3</td>
+</tr>
+<tr>
+<td>Beta</td>
+<td>Three storylines, scenarios, tier 4 robots, full music, mod loader UI, Capacitor mobile app</td>
+</tr>
+<tr>
+<td>1.0</td>
+<td>Balance, polish, more languages, optional Steam build, optional cloud saves</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="s11-4">Risks</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>Plan</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Local AI art quality is uneven</td>
+<td>Many retries, refine with <code>sprite.chat</code>, ComfyUI path, placeholder fallback</td>
+</tr>
+<tr>
+<td>Mobile performance</td>
+<td>Small map default, chunk caching, sim in Worker, profile early on phone viewport</td>
+</tr>
+<tr>
+<td>Scope creep (full game)</td>
+<td>Strict demo subset per spec file. Later phases only after demo review</td>
+</tr>
+<tr>
+<td>Audio model missing in ComfyUI</td>
+<td>Ask before install. Procedural SFX and simple music as fallback</td>
+</tr>
+</tbody>
+</table></div></section></main>
+  <footer>Source: <code>docs/spec/</code> in the project folder. Chapters 01–09 end with a yellow box. It lists what the first playable demo contains.</footer>
+</div>

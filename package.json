@@ -1,0 +1,14 @@
+{
+  "name": "wasteland-colony",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "art": "tsx tools/art/texel.ts",
+    "spec:page": "python3 tools/docs/build_spec_page.py docs/spec docs/spec.html"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}

@@ -1,0 +1,181 @@
+<title>Wasteland Colony Art Samples</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil+Display:wght@700;800&family=Barlow:wght@400;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one column. Controls, then a big mock game scene, then the three palettes side by side, then the sprite sheet. */
+:root {
+  --bg: #eceef0; --surface: #f8f9fa; --fg: #1d2125; --muted: #58616a; --line: #cdd3d8; --rust: #a8481a;
+  --display: "Big Shoulders Stencil Display", Impact, "Arial Narrow", sans-serif;
+  --body: "Barlow", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #14171a; --surface: #1c2024; --fg: #e2e5e8; --muted: #9aa3ab; --line: #2e343a; --rust: #e27b44; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #14171a; --surface: #1c2024; --fg: #e2e5e8; --muted: #9aa3ab; --line: #2e343a; --rust: #e27b44; color-scheme: dark; }
+body { background: var(--bg); color: var(--fg); font: 16px/1.55 var(--body); }
+.wrap { max-width: 1100px; margin: 0 auto; padding-inline: 16px; padding-block: 32px 64px; display: grid; gap: 28px; }
+.eyebrow { font: 600 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font: 800 clamp(40px, 7vw, 72px)/.95 var(--display); margin: 10px 0 10px; text-wrap: balance; }
+h2 { font: 700 28px/1.1 var(--display); margin: 0 0 12px; }
+p { max-width: 66ch; margin: 0; }
+.muted { color: var(--muted); }
+.controls { display: flex; flex-wrap: wrap; gap: 20px 32px; align-items: flex-end; position: sticky; top: env(safe-area-inset-top, 0px);
+  background: var(--bg); padding-block: 12px; border-bottom: 1px solid var(--line); z-index: 2; }
+fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 6px; }
+legend { font: 600 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.seg { display: flex; flex-wrap: wrap; border: 1px solid var(--line); }
+.seg label { cursor: pointer; }
+.seg input { position: absolute; opacity: 0; }
+.seg span { display: block; padding: 9px 14px; font: 600 14px/1 var(--mono); border-right: 1px solid var(--line); background: var(--surface); }
+.seg label:last-child span { border-right: 0; }
+.seg input:checked + span { background: var(--fg); color: var(--bg); }
+.seg input:focus-visible + span { outline: 2px solid var(--rust); outline-offset: -2px; }
+.scene { display: grid; gap: 8px; }
+canvas { image-rendering: pixelated; image-rendering: crisp-edges; display: block; max-width: 100%; height: auto; border: 1px solid var(--line); }
+.cmp { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.cmp figure { margin: 0; display: grid; gap: 6px; min-width: 0; }
+.cmp figure.sel figcaption { color: var(--rust); }
+figcaption { font: 600 13px/1.3 var(--mono); }
+.swatches { display: flex; flex-wrap: wrap; gap: 0; }
+.swatches i { width: 18px; height: 14px; display: block; }
+.sheet { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--line); padding: 12px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.card .img { height: 128px; display: grid; place-items: center;
+  background-color: var(--bg); background-image: linear-gradient(45deg, var(--line) 25%, transparent 25%, transparent 75%, var(--line) 75%),
+  linear-gradient(45deg, var(--line) 25%, transparent 25%, transparent 75%, var(--line) 75%); background-size: 16px 16px; background-position: 0 0, 8px 8px; }
+.card img { image-rendering: pixelated; width: 128px; height: 128px; }
+.card b { font: 600 13px/1.2 var(--mono); }
+.card small { color: var(--muted); font-size: 13px; line-height: 1.35; }
+.missing { font: 400 12px/1.3 var(--mono); color: var(--muted); }
+.pick { border: 1px solid var(--rust); padding: 14px 16px; background: var(--surface); }
+.pick code { font: 600 14px var(--mono); }
+</style>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Gate 2 · Art style choice</div>
+    <h1>Pick the look of the wasteland</h1>
+    <p class="muted">The local texel-studio agent painted every sprite once, in the Rust palette. The other palettes use the same pixels with swapped colors. Pick one palette and one size option.</p>
+  </header>
+
+  <div class="controls">
+    <fieldset><legend>Palette</legend><div class="seg" id="pal"></div></fieldset>
+    <fieldset><legend>Sprite size</legend><div class="seg" id="size">
+      <label><input type="radio" name="size" id="size-16" value="16"><span>16 px</span></label>
+      <label><input type="radio" name="size" id="size-32" value="32" checked><span>32 px</span></label>
+      <label><input type="radio" name="size" id="size-mixed" value="mixed"><span>16 world + 32 icons</span></label>
+    </div></fieldset>
+  </div>
+
+  <section class="scene">
+    <h2>In a game scene</h2>
+    <p class="muted">Every option is drawn at the same tile size on screen (64 px). 16 px sprites are scaled 4×. 32 px sprites are scaled 2×. The bar below the map is the item hotbar.</p>
+    <canvas id="main" width="768" height="600"></canvas>
+  </section>
+
+  <section>
+    <h2>All palettes at this size</h2>
+    <div class="cmp" id="cmp"></div>
+  </section>
+
+  <section>
+    <h2>Sprite sheet</h2>
+    <p class="muted" id="sheetnote"></p>
+    <div class="sheet" id="sheet" style="margin-top:12px"></div>
+  </section>
+
+  <div class="pick">Reply in chat with your pick, for example <code>rust + 32</code> or <code>ash + mixed</code>. You can also ask for changes: other colors, other prompts, or a retry of single sprites.</div>
+</div>
+<script>
+const D = /*__DATA__*/null;
+const T = 64, COLS = 12, ROWS = 8, BAR = 88;
+const ICONS = ["canned_food", "water_jug", "glowcorn"];
+// Mock base: room of scrap wall with a door gap, generator and belt outside, crops, threats on the right.
+const scene = [];
+for (let x = 2; x <= 6; x++) { scene.push(["scrap_wall", x, 1]); if (x !== 4) scene.push(["scrap_wall", x, 5]); }
+for (let y = 2; y <= 4; y++) { scene.push(["scrap_wall", 2, y]); scene.push(["scrap_wall", 6, y]); }
+for (let x = 6; x <= 11; x++) scene.push(["conveyor", x, 6]);
+scene.push(["survivor", 4, 3], ["water_jug", 3, 2], ["canned_food", 5, 2], ["generator", 8, 2],
+  ["rubble", 10, 0], ["rubble", 0, 7], ["rubble", 1, 2],
+  ["glowcorn", 8, 4], ["glowcorn", 9, 4], ["glowcorn", 8, 5], ["glowcorn", 9, 5],
+  ["glow_hound", 10, 4], ["raider", 11, 2], ["survivor", 5, 7]);
+
+const imgCache = {};
+function img(uri) {
+  if (!uri) return null;
+  if (!imgCache[uri]) { const i = new Image(); i.src = uri; imgCache[uri] = i; i.onload = drawAll; }
+  return imgCache[uri].complete ? imgCache[uri] : null;
+}
+function sprite(pal, size, id) { return img(D.images[pal]?.[size]?.[id]); }
+function placeholder(ctx, id, x, y, w) {
+  ctx.fillStyle = "rgba(128,128,128,.35)"; ctx.fillRect(x + 6, y + 6, w - 12, w - 12);
+  ctx.fillStyle = "#888"; ctx.font = "600 12px monospace"; ctx.textAlign = "center";
+  ctx.fillText(id.slice(0, 7), x + w / 2, y + w / 2 + 4);
+}
+function drawScene(canvas, pal, mode) {
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+  const world = mode === "mixed" ? 16 : Number(mode), icon = mode === "mixed" ? 32 : Number(mode);
+  ctx.fillStyle = D.palettes[pal][1]; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const dirt = sprite(pal, world, "dirt");
+  for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
+    if (dirt) ctx.drawImage(dirt, x * T, y * T, T, T);
+  }
+  for (const [id, x, y] of scene) {
+    const s = sprite(pal, world, id);
+    if (s) ctx.drawImage(s, x * T, y * T, T, T); else placeholder(ctx, id, x * T, y * T, T);
+  }
+  // Hotbar
+  const by = ROWS * T;
+  ctx.fillStyle = D.palettes[pal][0]; ctx.fillRect(0, by, canvas.width, BAR);
+  ICONS.forEach((id, i) => {
+    const x = 16 + i * (T + 12), y = by + 12;
+    ctx.fillStyle = D.palettes[pal][2]; ctx.fillRect(x, y, T, T);
+    const s = sprite(pal, icon, id);
+    if (s) ctx.drawImage(s, x, y, T, T); else placeholder(ctx, id, x, y, T);
+  });
+  ctx.fillStyle = D.palettes[pal][6]; ctx.font = "600 15px monospace"; ctx.textAlign = "right";
+  ctx.fillText(mode === "mixed" ? "world 16 px · icons 32 px" : `${mode} px`, canvas.width - 16, by + 50);
+}
+const state = { pal: Object.keys(D.palettes)[0], size: "32" };
+try { const s = JSON.parse(localStorage.getItem("artpick") || "{}"); if (D.palettes[s.pal]) state.pal = s.pal; if (s.size) state.size = s.size; } catch (e) {}
+
+const palBox = document.getElementById("pal");
+Object.keys(D.palettes).forEach((p) => {
+  palBox.insertAdjacentHTML("beforeend", `<label><input type="radio" name="pal" id="pal-${p}" value="${p}"><span>${p}</span></label>`);
+});
+document.getElementById("pal-" + state.pal).checked = true;
+document.getElementById("size-" + state.size).checked = true;
+document.querySelectorAll('input[name=pal],input[name=size]').forEach((el) => el.addEventListener("change", () => {
+  state.pal = document.querySelector("input[name=pal]:checked").value;
+  state.size = document.querySelector("input[name=size]:checked").value;
+  try { localStorage.setItem("artpick", JSON.stringify(state)); } catch (e) {}
+  drawAll();
+}));
+
+const cmp = document.getElementById("cmp");
+Object.keys(D.palettes).forEach((p) => {
+  cmp.insertAdjacentHTML("beforeend", `<figure data-p="${p}"><canvas width="768" height="600"></canvas>
+    <figcaption>${p}</figcaption><div class="swatches">${D.palettes[p].map((c) => `<i style="background:${c}" title="${c}"></i>`).join("")}</div></figure>`);
+});
+
+function drawAll() {
+  drawScene(document.getElementById("main"), state.pal, state.size);
+  cmp.querySelectorAll("figure").forEach((f) => {
+    f.classList.toggle("sel", f.dataset.p === state.pal);
+    drawScene(f.querySelector("canvas"), f.dataset.p, state.size);
+  });
+  const sizes = state.size === "mixed" ? ["16", "32"] : [state.size];
+  document.getElementById("sheetnote").textContent =
+    `Palette ${state.pal}, ${sizes.join(" and ")} px. Shown at 128 px on a checkerboard so transparent pixels are visible.`;
+  const sheet = document.getElementById("sheet");
+  sheet.innerHTML = "";
+  for (const size of sizes) for (const s of D.sprites) {
+    const uri = D.images[state.pal]?.[size]?.[s.id];
+    sheet.insertAdjacentHTML("beforeend", `<div class="card"><div class="img">${uri ? `<img src="${uri}" alt="${s.id}">` : `<span class="missing">not painted yet</span>`}</div>
+      <b>${s.id} · ${size} px</b><small>${s.prompt}</small></div>`);
+  }
+}
+drawAll();
+</script>
