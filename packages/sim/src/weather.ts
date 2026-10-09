@@ -15,9 +15,6 @@ const DURATION: Record<WeatherKind, [number, number]> = { clear: [12, 40], overc
 const TEMP_OFFSET: Record<WeatherKind, number> = { clear: 0, overcast: -1, rain: -3, rad_cloud: -2 };
 /** Dose per in-game hour under the open sky during a cloud. */
 export const CLOUD_DOSE_PER_HOUR = 0.07;
-/** Chance per day of a new cloud, after the quiet period. M5's storyteller takes this over. */
-const CLOUD_CHANCE_PER_DAY = 0.12;
-const CLOUD_QUIET_DAYS = 6;
 
 export function contamDuration(game: Game): number {
   return game.opts.seasonDays * game.ticksPerDay;
@@ -59,12 +56,6 @@ export function tickWeather(game: Game): void {
     setWeather(game, k);
   } else if (game.tick >= w.until) {
     setWeather(game, pickWeather(game));
-  }
-
-  // Once per day: maybe announce a radiation cloud.
-  if (game.tick % game.ticksPerDay === 0 && game.tick > 0 && !w.next && w.kind !== "rad_cloud") {
-    const quiet = game.tick - w.lastRadCloud > CLOUD_QUIET_DAYS * game.ticksPerDay;
-    if (quiet && game.aiRng.chance(CLOUD_CHANCE_PER_DAY * game.opts.radCloudScale)) scheduleRadCloud(game);
   }
 
   if (game.tick % tph !== 0) return;

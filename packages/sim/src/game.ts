@@ -15,6 +15,9 @@ import { ensureRooms, tickTemperature, type Room } from "./rooms.ts";
 import { tickWeather, type WeatherKind } from "./weather.ts";
 import { tickFarming } from "./farming.ts";
 import { tickRot } from "./rot.ts";
+import { tickTurrets } from "./combat.ts";
+import { tickStoryteller, type StoryState } from "./storyteller.ts";
+import { tickFire } from "./fire.ts";
 
 /** Sim ticks per real second at 1x speed. */
 export const TICKS_PER_SECOND = 20;
@@ -29,8 +32,12 @@ export interface GameOptions {
   dayLengthSec: number;
   /** In-game days per season. Spec default: 15. */
   seasonDays: number;
-  /** Radiation cloud frequency multiplier (storyteller slider, M5). */
+  /** Radiation cloud frequency multiplier (storyteller slider). */
   radCloudScale: number;
+  /** Storyteller sliders (0..2). */
+  raidScale: number;
+  mutantScale: number;
+  storyteller: "sheriff" | "grandma" | "chaos" | "none";
 }
 
 export const DEFAULT_OPTIONS: GameOptions = {
@@ -40,6 +47,9 @@ export const DEFAULT_OPTIONS: GameOptions = {
   dayLengthSec: 360,
   seasonDays: 15,
   radCloudScale: 1,
+  raidScale: 1,
+  mutantScale: 1,
+  storyteller: "sheriff",
 };
 
 export const SEASONS = ["spring", "summer", "autumn", "winter"] as const;
@@ -69,6 +79,17 @@ export class Game {
   /** Open water and outdoor soil stay radioactive until these ticks (spec 04). */
   openWaterContamUntil = 0;
   soilContamUntil = 0;
+  /** Pawns that died: for messages, stats and tests. */
+  readonly deaths: { id: number; name: string; faction: string; tick: number; cause: string }[] = [];
+  /** Visual effects for the renderer (shots, hits). Old entries are dropped. */
+  readonly fx: { kind: "shot" | "melee" | "turret"; layer: number; from: { x: number; y: number }; to: { x: number; y: number }; hit: boolean; tick: number }[] = [];
+  /** Raids and packs: id -> state. */
+  readonly groups = new Map<number, { id: number; kind: string; size: number; fleeing: boolean; arrived: number }>();
+  /** Burning tiles: node id -> intensity 0..1. */
+  readonly fires = new Map<number, number>();
+  readonly story: StoryState = { points: 0, lastThreat: 0, lastGood: 0, log: [] };
+  /** Turret cooldowns by thing id. */
+  readonly turretCooldown = new Map<number, number>();
   /** Research state (M6 fills in projects). */
   readonly research = { done: new Set<string>(), current: null as string | null, progress: new Map<string, number>() };
   /** Player bill targets: "thingId:recipeId" -> keep this many in stock. */
@@ -221,6 +242,9 @@ export class Game {
     tickTemperature(this);
     tickFarming(this);
     tickRot(this);
+    tickStoryteller(this);
+    tickFire(this);
     tickPawns(this);
+    tickTurrets(this);
   }
 }

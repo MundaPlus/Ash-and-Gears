@@ -4,7 +4,7 @@
  */
 import { Container, Graphics, Sprite, Text } from "pixi.js";
 import { t } from "@wc/data";
-import type { Game, Pawn } from "@wc/sim";
+import { pain, type Game, type Pawn } from "@wc/sim";
 import { TILE, type TextureSet } from "./textures.ts";
 
 /** A stable color per survivor, from a small warm palette that reads on dirt and asphalt. */
@@ -15,6 +15,8 @@ interface View {
   body: Sprite;
   label: Text;
   zzz: Text;
+  flag: Graphics;
+  hp: Graphics;
 }
 
 export class PawnRenderer {
@@ -52,10 +54,15 @@ export class PawnRenderer {
     const root = new Container();
     const shadow = new Sprite(this.tex.shadow);
     shadow.anchor.set(0.5);
-    const body = new Sprite(this.tex.pawn);
+    const creature = this.game.reg.content.creatures[p.creature];
+    const human = creature.behavior === "human";
+    const body = new Sprite(human ? this.tex.pawn : this.tex.creature);
     body.anchor.set(0.5, 0.5);
-    body.tint = PawnRenderer.colorOf(p);
-    const label = new Text({ text: p.nick, style: { fontFamily: "monospace", fontSize: 11, fill: 0xefd8a4, stroke: { color: 0x1b1714, width: 3 } } });
+    body.tint = p.faction === "colony" ? PawnRenderer.colorOf(p) : p.faction === "raiders" ? 0xc2453a : parseInt(creature.color.slice(1), 16);
+    body.scale.set(creature.size);
+    shadow.scale.set(creature.size);
+    const labelColor = p.faction === "colony" ? 0xefd8a4 : 0xff8a70;
+    const label = new Text({ text: p.nick, style: { fontFamily: "monospace", fontSize: 11, fill: labelColor, stroke: { color: 0x1b1714, width: 3 } } });
     label.anchor.set(0.5, 0);
     label.position.set(0, 14);
     label.resolution = 2;
@@ -63,9 +70,14 @@ export class PawnRenderer {
     zzz.anchor.set(0, 1);
     zzz.position.set(6, -10);
     zzz.visible = false;
-    root.addChild(shadow, body, label, zzz);
+    // Drafted marker: a small rust flag above the head.
+    const flag = new Graphics().rect(-1, -26, 2, 10).fill(0xefd8a4).poly([1, -26, 9, -23, 1, -20]).fill(0xd9742e);
+    flag.visible = false;
+    // Health bar for hostiles and hurt survivors.
+    const hp = new Graphics();
+    root.addChild(shadow, body, label, zzz, flag, hp);
     this.root.addChild(root);
-    return { root, body, label, zzz };
+    return { root, body, label, zzz, flag, hp };
   }
 
   update(timeSec: number, zoom: number) {
@@ -82,7 +94,12 @@ export class PawnRenderer {
       const pos = PawnRenderer.worldPos(p);
       v.root.position.set(pos.x, pos.y);
       const moving = !!p.path?.length;
-      if (p.asleep) {
+      const sz = this.game.reg.content.creatures[p.creature].size;
+      if (p.health.downed) {
+        v.body.rotation = Math.PI / 2;
+        v.body.y = 5;
+        v.zzz.visible = false;
+      } else if (p.asleep) {
         v.body.rotation = -Math.PI / 2;
         v.body.y = 4;
         v.zzz.visible = true;
@@ -93,10 +110,19 @@ export class PawnRenderer {
         // Walk bob: two hops per tile-ish; idle breathing is a smaller wave.
         v.body.y = moving ? -Math.abs(Math.sin(timeSec * 10 + p.id)) * 3 : Math.sin(timeSec * 2 + p.id) * 0.6;
       }
-      v.body.scale.x = p.facing;
+      v.body.scale.x = p.facing * sz;
+      v.flag.visible = p.drafted;
+      // Health bar: shows when hurt.
+      const hurt = Math.min(1, p.health.bloodLoss + pain(this.game, p));
+      v.hp.clear();
+      if (hurt > 0.05 || p.faction !== "colony") {
+        v.hp.rect(-10, -20, 20, 3).fill({ color: 0x1b1714, alpha: 0.8 });
+        v.hp.rect(-10, -20, 20 * (1 - hurt), 3).fill(p.faction === "colony" ? 0x9fb84a : 0xc2453a);
+      }
       v.body.alpha = p.mentalBreak ? 0.75 : 1;
       v.label.visible = zoom > 0.55;
-      v.label.text = p.mentalBreak ? t("pawn.sulking", { name: p.nick }) : p.nick;
+      const name = p.faction === "wild" ? t(`creature.${p.nick}`) : p.nick;
+      v.label.text = p.mentalBreak ? t("pawn.sulking", { name }) : p.health.downed ? t("pawn.downed_label", { name }) : name;
       if (p.id === this.selected) {
         this.ring.visible = true;
         this.ring.position.set(pos.x, pos.y + 4);

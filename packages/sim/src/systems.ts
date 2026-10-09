@@ -5,3 +5,5 @@ import "./designations.ts";
 import "./hauling.ts";
 import "./farming.ts";
 import "./bills.ts";
+import "./medical.ts";
+import "./fire.ts";

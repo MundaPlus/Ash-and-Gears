@@ -18,7 +18,7 @@ test("game boots, renders, runs and switches layers", async ({ page }, info) => 
   await page.screenshot({ path: `artifacts/screens/${info.project.name}-surface.png` });
 
   // Survivors: three in the bar; clicking one opens the detail panel.
-  await expect(page.getByTestId("colonists").locator("button")).toHaveCount(3);
+  await expect(page.getByTestId("colonists").locator("button:not(.draftall)")).toHaveCount(3);
   await page.getByTestId("colonists").locator("button").first().click();
   await expect(page.getByTestId("pawn-panel")).toBeVisible();
   await page.evaluate(() => (window as any).__game.runTicks(1200));

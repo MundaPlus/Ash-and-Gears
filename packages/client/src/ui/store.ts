@@ -26,6 +26,14 @@ export interface PawnDetail {
   job: string;
   needs: { id: string; value: number }[];
   rad: number;
+  faction: string;
+  drafted: boolean;
+  downed: boolean;
+  weapon: string | null;
+  bloodLoss: number;
+  pain: number;
+  injuries: { part: string; kind: string; dmg: number; tended: boolean }[];
+  missing: string[];
   skills: { id: string; level: number; passion: number }[];
   traits: string[];
   thoughts: { id: string; mood: number }[];
@@ -133,6 +141,8 @@ export const actions = {
   setTool: (_spec: import("../input/tools.ts").ToolSpec | null) => {},
   setWork: (_pawn: number, _work: string, _value: number) => {},
   setBillTarget: (_bench: number, _recipe: string, _n: number) => {},
+  toggleDraft: (_id: number) => {},
+  draftAll: () => {},
   openMenu: (m: UiState["menu"]) => store.set({ menu: store.state.menu === m ? null : m }),
   closeInspect: () => {
     store.set({ inspect: null });

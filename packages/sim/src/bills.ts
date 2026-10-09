@@ -5,7 +5,8 @@
  * The auto-crafter in M6 uses the same recipes without a survivor.
  */
 import type { RecipeDef } from "@wc/data";
-import { atGoal, findItem, goTo, registerCleanup, registerJob, registerWorkGiver, reserve } from "./ai.ts";
+import { atGoal, findItem, goTo, reserve } from "./ai.ts";
+import { registerCleanup, registerJob, registerWorkGiver } from "./jobs.ts";
 import type { Game } from "./game.ts";
 import { countItems, dropItems } from "./items.ts";
 import type { Thing } from "./map.ts";

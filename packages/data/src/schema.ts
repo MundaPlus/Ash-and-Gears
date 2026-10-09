@@ -97,6 +97,14 @@ export const ThingDef = z.object({
   rainCollect: z.number().int().min(0).default(0),
   /** Recipes are done at this thing (benches, stoves, wells). */
   bench: z.boolean().default(false),
+  /** 0..1 chance to block a shot at a pawn standing next to it (sandbags, wrecks). */
+  cover: z.number().min(0).max(1).default(0),
+  /** Blocks line of sight (walls). Defaults to blocks && wall. */
+  blocksSight: z.boolean().optional(),
+  /** Catches fire. */
+  flammable: z.boolean().default(false),
+  /** Turret: shoots hostiles on its own. */
+  turret: z.object({ dmg: z.number(), range: z.number(), cooldown: z.number().int(), accuracy: z.number(), kind: z.string() }).optional(),
 });
 export type ThingDef = z.infer<typeof ThingDef>;
 
@@ -114,6 +122,21 @@ export const ItemDef = z.object({
   rotDays: z.number().positive().optional(),
   /** Thought when eaten. */
   eatThought: id.optional(),
+  /** Weapons: one melee or ranged attack. */
+  weapon: z
+    .object({
+      dmg: z.number().positive(),
+      /** Ticks between attacks. */
+      cooldown: z.number().int().positive(),
+      /** Tiles. 1.5 = melee. */
+      range: z.number().positive(),
+      /** Added to hit chance (ranged) */
+      accuracy: z.number().default(0),
+      kind: z.enum(["cut", "blunt", "gunshot", "arrow", "bite", "burn"]),
+    })
+    .optional(),
+  /** Medicine: wound tending quality. */
+  medicine: z.number().min(0).max(1).optional(),
   /** Hydration per unit (water). */
   hydration: z.number().min(0).default(0),
 });
@@ -144,6 +167,23 @@ export const RecipeDef = z.object({
   research: id.optional(),
 });
 export type RecipeDef = z.infer<typeof RecipeDef>;
+
+export const CreatureDef = z.object({
+  id,
+  color,
+  glyph: z.string().max(2).default("?"),
+  /** Sprite scale relative to a survivor. */
+  size: z.number().positive().default(1),
+  /** Body hit points multiplier. */
+  hp: z.number().positive().default(1),
+  speed: z.number().positive().default(1),
+  /** Natural attack (bite, claws). Humans use weapons or fists. */
+  attack: z.object({ dmg: z.number(), cooldown: z.number().int(), range: z.number(), accuracy: z.number().default(0), kind: z.string() }),
+  behavior: z.enum(["human", "food_swarm", "hunter"]),
+  /** Meat dropped when killed. */
+  meat: z.number().int().min(0).default(0),
+});
+export type CreatureDef = z.infer<typeof CreatureDef>;
 
 export const SkillDef = z.object({ id });
 export type SkillDef = z.infer<typeof SkillDef>;
@@ -186,6 +226,7 @@ export const Content = z.object({
   items: z.array(ItemDef),
   floors: z.array(FloorDef),
   recipes: z.array(RecipeDef),
+  creatures: z.array(CreatureDef),
   skills: z.array(SkillDef),
   traits: z.array(TraitDef),
   thoughts: z.array(ThoughtDef),

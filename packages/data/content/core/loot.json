@@ -1,1 +1,34 @@
-{ "canned_food": [2, 6], "clean_water": [2, 5], "cloth": [3, 8], "components": [1, 3], "scrap": [5, 12] }
+{
+ "canned_food": [
+  2,
+  6
+ ],
+ "clean_water": [
+  2,
+  5
+ ],
+ "cloth": [
+  3,
+  8
+ ],
+ "components": [
+  1,
+  3
+ ],
+ "scrap": [
+  5,
+  12
+ ],
+ "bandage": [
+  1,
+  4
+ ],
+ "pipe": [
+  1,
+  1
+ ],
+ "pipe_pistol": [
+  1,
+  1
+ ]
+}

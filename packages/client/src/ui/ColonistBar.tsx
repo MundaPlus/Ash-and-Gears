@@ -17,9 +17,12 @@ export function ColonistBar() {
           <span class="mood" aria-label={t("pawn.mood")}>
             <b style={{ width: `${c.mood}%`, background: c.mood < 35 ? "var(--bad)" : c.mood < 50 ? "var(--warn)" : "var(--good)" }} />
           </span>
-          {c.warn && <em class="warn">{t(`thought.${c.warn}`)}</em>}
+          {c.warn && <em class="warn">{t(c.warn === "downed" || c.warn === "drafted" ? `pawn.${c.warn}` : `thought.${c.warn}`)}</em>}
         </button>
       ))}
+      <button class="colonist draftall" data-testid="draft-all" onClick={actions.draftAll} title={t("pawn.draft_all_hint")}>
+        {t("pawn.draft_all")}
+      </button>
     </nav>
   );
 }

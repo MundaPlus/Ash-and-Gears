@@ -3,7 +3,8 @@
  * The player places a blueprint. Survivors bring the materials (several blueprints per trip when
  * they are close together), then one survivor builds it.
  */
-import { atGoal, findItem, goTo, isReserved, registerJob, registerWorkGiver, reserve } from "./ai.ts";
+import { atGoal, findItem, goTo, isReserved, reserve } from "./ai.ts";
+import { registerJob, registerWorkGiver } from "./jobs.ts";
 import type { Game } from "./game.ts";
 import { dropItems, takeFromStack } from "./items.ts";
 import { NO_THING, type Blueprint } from "./map.ts";

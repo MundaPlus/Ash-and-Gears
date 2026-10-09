@@ -2,7 +2,8 @@
  * Player orders on tiles (spec 03, "Orders"): salvage / deconstruct, mine, clear rubble, cut plants.
  * The player marks tiles. Work givers find the nearest marked tile and make a work job.
  */
-import { isReserved, registerWorkGiver } from "./ai.ts";
+import { isReserved } from "./ai.ts";
+import { registerWorkGiver } from "./jobs.ts";
 import type { Game } from "./game.ts";
 import { dropItems } from "./items.ts";
 import { Desig, NO_THING, type DesigKind } from "./map.ts";

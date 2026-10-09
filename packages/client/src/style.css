@@ -72,6 +72,11 @@ button.on { background: var(--rust); color: var(--ink); border-color: var(--rust
 .thoughts li { display: flex; justify-content: space-between; font-size: 13px; padding: 1px 0; }
 .thoughts .pos { color: var(--good); font-family: var(--mono); }
 .thoughts .neg { color: var(--bad); font-family: var(--mono); }
+.draft { width: 100%; margin: 6px 0; font-weight: 700; }
+.pawnpanel .hint { color: var(--dim); font-size: 12px; margin: 0 0 4px; }
+.injuries li { display: flex; justify-content: space-between; font-size: 13px; padding: 1px 0; }
+.injuries .pos { color: var(--good); } .injuries .neg { color: var(--bad); }
+.draftall { min-width: 0; font-size: 12px; place-content: center; }
 .passion { font-style: normal; color: var(--rust); font-weight: 700; }
 
 .toasts { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 64px); right: 8px; display: grid; gap: 4px; width: min(360px, calc(100vw - 16px)); pointer-events: none; }

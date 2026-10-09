@@ -40,6 +40,8 @@ export interface TextureSet {
   /** Order markers by Desig code (index 0 unused). */
   desig: Texture[];
   pawn: Texture;
+  /** Four-legged creature placeholder (white, tinted per creature). */
+  creature: Texture;
   shadow: Texture;
 }
 
@@ -149,6 +151,17 @@ export function makePlaceholderTextures(reg: Registry): TextureSet {
   pg.fillRect(17, 7, 2, 2); // eye, shows facing
   const pawn = toTexture(pc);
 
+  const [cc, cg] = canvas();
+  cg.fillStyle = "#ffffff";
+  cg.fillRect(6, 12, 18, 9); // body
+  cg.fillRect(22, 8, 7, 7); // head
+  cg.fillRect(7, 21, 3, 7); // legs
+  cg.fillRect(19, 21, 3, 7);
+  cg.fillRect(2, 11, 5, 2); // tail
+  cg.fillStyle = "rgba(0,0,0,.6)";
+  cg.fillRect(26, 10, 2, 2);
+  const creature = toTexture(cc);
+
   const [sc, sg] = canvas();
   sg.fillStyle = "rgba(0,0,0,.35)";
   sg.beginPath();
@@ -156,5 +169,5 @@ export function makePlaceholderTextures(reg: Registry): TextureSet {
   sg.fill();
   const shadow = toTexture(sc);
 
-  return { terrain, things, items, floors, desig, pawn, shadow };
+  return { terrain, things, items, floors, desig, pawn, creature, shadow };
 }

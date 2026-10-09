@@ -2,7 +2,7 @@ import { t } from "@wc/data";
 import { actions, useStore, type BuildOption } from "./store.ts";
 import { WorkGrid } from "./WorkGrid.tsx";
 
-const BUILD_MENUS = ["structure", "furniture", "production", "floor"];
+const BUILD_MENUS = ["structure", "furniture", "production", "defense", "floor"];
 const ORDERS = ["salvage", "mine", "clear", "cut"] as const;
 
 function costText(o: BuildOption) {

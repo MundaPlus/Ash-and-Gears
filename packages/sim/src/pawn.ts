@@ -5,6 +5,12 @@
 import type { Game } from "./game.ts";
 import type { ItemStack } from "./map.ts";
 import type { Pos } from "./path.ts";
+import { manipulation, newHealth, type Health } from "./health.ts";
+
+export type Faction = "colony" | "raiders" | "wild";
+
+/** Player orders for drafted survivors. */
+export type Order = { kind: "move"; pos: Pos } | { kind: "attack"; target: number };
 
 export const NEEDS = ["hunger", "thirst", "rest"] as const;
 export type NeedId = (typeof NEEDS)[number];
@@ -78,8 +84,22 @@ export interface Pawn {
   work: Record<string, number>;
   /** Bed this survivor owns, if any. */
   bedId: number | null;
-  /** Radiation dose. 0.3 = sick, 0.6 = serious, 1 = lethal (health effects in M5). */
+  /** Radiation dose. 0.3 = sick, 0.6 = nausea, 1 = organ damage, 1.5 = lethal. */
   rad: number;
+  /** Index into content.creatures ("human" for survivors and raiders). */
+  creature: number;
+  faction: Faction;
+  health: Health;
+  drafted: boolean;
+  order: Order | null;
+  /** Equipped weapon (item index), or null for fists / natural attack. */
+  weapon: number | null;
+  /** Ticks until the next attack. */
+  cooldown: number;
+  /** Raid or pack this hostile belongs to. */
+  group: number | null;
+  /** Last pawn that hit this one. */
+  lastAttacker?: number;
 }
 
 export const XP_PER_LEVEL = (level: number) => 1000 + level * 250;
@@ -126,7 +146,8 @@ export function workSpeed(game: Game, p: Pawn): number {
   let m = 1;
   for (const t of p.traits) m *= game.reg.traits.list[t].workSpeed;
   if (p.needs.rest < 0.1) m *= 0.7;
-  return m;
+  if (p.rad >= 0.6) m *= 0.8;
+  return m * manipulation(game, p);
 }
 
 /** Add a memory thought, respecting its stack limit (the oldest copy is replaced). */
@@ -145,7 +166,7 @@ export function addMemory(game: Game, p: Pawn, thoughtId: string): void {
 
 /** Make a new random survivor. */
 export function makeSurvivor(game: Game, layer: number, x: number, y: number, usedNames: Set<string>): Pawn {
-  const rng = game.rng.fork(`pawn${game.pawns.size}`);
+  const rng = game.rng.fork(`pawn${game.pawns.size}:${game.tick}:${game.deaths.length}`);
   const names = game.reg.content.names;
   let first = rng.pick(names.first), nick = rng.pick(names.nick);
   for (let i = 0; i < 20 && (usedNames.has(first) || usedNames.has(nick)); i++) {
@@ -200,5 +221,32 @@ export function makeSurvivor(game: Game, layer: number, x: number, y: number, us
     work: {},
     bedId: null,
     rad: 0,
+    creature: game.reg.content.creatures.findIndex((c) => c.id === "human"),
+    faction: "colony",
+    health: newHealth(),
+    drafted: false,
+    order: null,
+    weapon: null,
+    cooldown: 0,
+    group: null,
   };
+}
+
+/** A hostile: a raider (human with a weapon) or a creature (rat, hound). */
+export function makeHostile(game: Game, creatureId: string, faction: Faction, layer: number, x: number, y: number, group: number, weapon: string | null): Pawn {
+  const used = new Set<string>();
+  const p = makeSurvivor(game, layer, x, y, used);
+  p.creature = game.reg.content.creatures.findIndex((c) => c.id === creatureId);
+  p.faction = faction;
+  p.group = group;
+  p.weapon = weapon ? game.reg.items.idx(weapon) : null;
+  p.traits = [];
+  p.memories = [];
+  p.needs = { hunger: 1, thirst: 1, rest: 1 };
+  if (creatureId !== "human") {
+    p.first = "";
+    p.last = "";
+    p.nick = creatureId;
+  }
+  return p;
 }

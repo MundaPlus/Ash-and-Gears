@@ -29,7 +29,8 @@
    "scrap": 18,
    "components": 1
   },
-  "lootChance": 0.25
+  "lootChance": 0.25,
+  "cover": 0.55
  },
  {
   "id": "scrap_pile",
@@ -42,7 +43,8 @@
   "yield": {
    "scrap": 12
   },
-  "lootChance": 0.15
+  "lootChance": 0.15,
+  "cover": 0.3
  },
  {
   "id": "loot_crate",
@@ -66,7 +68,8 @@
   "work": 120,
   "yield": {
    "wood": 12
-  }
+  },
+  "flammable": true
  },
  {
   "id": "mutant_shrub",
@@ -77,7 +80,8 @@
   "work": 40,
   "yield": {
    "wood": 3
-  }
+  },
+  "flammable": true
  },
  {
   "id": "stairs_down",
@@ -128,7 +132,8 @@
    },
    "work": 100,
    "menu": "structure"
-  }
+  },
+  "flammable": true
  },
  {
   "id": "stone_wall",
@@ -181,7 +186,8 @@
    },
    "work": 60,
    "menu": "furniture"
-  }
+  },
+  "flammable": true
  },
  {
   "id": "scrap_bed",
@@ -201,7 +207,8 @@
    },
    "work": 160,
    "menu": "furniture"
-  }
+  },
+  "flammable": true
  },
  {
   "id": "table",
@@ -218,7 +225,8 @@
    },
    "work": 120,
    "menu": "furniture"
-  }
+  },
+  "flammable": true
  },
  {
   "id": "chair",
@@ -233,7 +241,8 @@
    },
    "work": 60,
    "menu": "furniture"
-  }
+  },
+  "flammable": true
  },
  {
   "id": "campfire",
@@ -300,7 +309,8 @@
     "glowcorn": 10
    },
    "minTemp": 6
-  }
+  },
+  "flammable": true
  },
  {
   "id": "scrub_potato_plant",
@@ -315,7 +325,8 @@
     "scrub_potato": 12
    },
    "minTemp": -2
-  }
+  },
+  "flammable": true
  },
  {
   "id": "fiber_weed_plant",
@@ -330,7 +341,8 @@
     "cloth": 6
    },
    "minTemp": 4
-  }
+  },
+  "flammable": true
  },
  {
   "id": "well",
@@ -364,6 +376,47 @@
    },
    "work": 150,
    "menu": "production"
+  }
+ },
+ {
+  "id": "sandbags",
+  "kind": "structure",
+  "color": "#b0834e",
+  "glyph": "=",
+  "hp": 250,
+  "cover": 0.65,
+  "beauty": -1,
+  "build": {
+   "cost": {
+    "cloth": 4,
+    "stone": 4
+   },
+   "work": 80,
+   "menu": "defense"
+  }
+ },
+ {
+  "id": "scrap_turret",
+  "kind": "structure",
+  "color": "#6b2b1a",
+  "glyph": "T",
+  "hp": 180,
+  "blocks": true,
+  "blocksSight": false,
+  "turret": {
+   "dmg": 7,
+   "range": 13,
+   "cooldown": 55,
+   "accuracy": 0.05,
+   "kind": "gunshot"
+  },
+  "build": {
+   "cost": {
+    "scrap": 40,
+    "components": 2
+   },
+   "work": 350,
+   "menu": "defense"
   }
  }
 ]

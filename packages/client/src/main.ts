@@ -23,6 +23,7 @@ import { ToolController } from "./input/tools.ts";
 import * as sim from "@wc/sim";
 import { Camera } from "./input/camera.ts";
 import { PawnRenderer } from "./render/pawns.ts";
+import { FxRenderer } from "./render/fx.ts";
 import { makePlaceholderTextures, TILE } from "./render/textures.ts";
 import { WorldRenderer } from "./render/world.ts";
 import { Hud } from "./ui/Hud.tsx";
@@ -31,6 +32,8 @@ import { actions, store, type BuildOption, type ColonistSummary, type PawnDetail
 /** Most sim ticks per frame, so a slow frame cannot snowball. */
 const MAX_TICKS_PER_FRAME = 12;
 const TOAST_SEC = 7;
+/** Big events pause the game so the player can react (spec 06). */
+const AUTO_PAUSE = new Set(["msg.raid", "msg.glow_hounds", "msg.rad_rats", "msg.rad_warning", "msg.downed", "msg.died"]);
 
 const hex = (n: number) => `#${n.toString(16).padStart(6, "0")}`;
 
@@ -61,6 +64,8 @@ async function boot() {
   const tools = new ToolController(game, world);
   const pawnsR = new PawnRenderer(game, tex);
   world.addChild(pawnsR.root);
+  const fx = new FxRenderer(game);
+  world.addChild(fx.gfx);
   const night = new Graphics();
   app.stage.addChild(night);
   const weatherFx = new Graphics();
@@ -71,7 +76,26 @@ async function boot() {
   const camera = new Camera(app.canvas, world, { w: game.map.w * TILE, h: game.map.h * TILE });
   camera.centerOn((game.home.x + 0.5) * TILE, (game.home.y + 0.5) * TILE);
   camera.zoom = 1.5;
-  camera.onRightClick = () => actions.setTool(null);
+  camera.onRightClick = (wx, wy) => {
+    if (tools.spec) return actions.setTool(null);
+    orderAt(wx, wy);
+  };
+
+  /** Drafted survivor selected: tap an enemy to attack it, tap ground to move. Returns true if an order was given. */
+  function orderAt(wx: number, wy: number): boolean {
+    const sel = selected !== null ? game.pawns.get(selected) : undefined;
+    if (!sel || sel.faction !== "colony" || !sel.drafted) return false;
+    const target = pawnsR.pick(wx, wy);
+    if (target && target.faction !== "colony") {
+      sim.orderAttack(game, sel, target);
+      return true;
+    }
+    if (target) return false;
+    const x = Math.floor(wx / TILE), y = Math.floor(wy / TILE);
+    if (!game.walkable(renderer.layer, x, y)) return false;
+    sim.orderMove(game, sel, { layer: renderer.layer, x, y });
+    return true;
+  }
 
   actions.setTool = (spec) => {
     tools.set(spec);
@@ -83,6 +107,15 @@ async function boot() {
     else if (spec?.kind === "zone" && spec.zone === "grow") label = t("tool.zone", { name: t("zone.grow", { crop: t(`thing.${spec.crop}`) }) });
     else if (spec?.kind === "zone") label = t("tool.zone", { name: t(`zone.${spec.zone}`) });
     store.set({ toolLabel: label ? `${label} · ${t("tool.hint")}` : null, menu: null });
+  };
+  actions.toggleDraft = (id) => {
+    const p = game.pawns.get(id);
+    if (p) sim.setDrafted(game, p, !p.drafted);
+  };
+  actions.draftAll = () => {
+    const cols = [...game.pawns.values()].filter((p) => p.faction === "colony" && !p.health.downed);
+    const on = cols.some((p) => !p.drafted);
+    for (const p of cols) sim.setDrafted(game, p, on);
   };
   actions.setWork = (id, work, value) => {
     const p = game.pawns.get(id);
@@ -104,6 +137,7 @@ async function boot() {
     const n = Math.max(0, Math.min(game.map.layers.length - 1, l));
     renderer.setLayer(n);
     pawnsR.layer = n;
+    fx.layer = n;
     tools.layer = n;
     tools.cancel();
     store.set({ layer: n, inspect: null });
@@ -121,6 +155,7 @@ async function boot() {
   };
 
   camera.onTap = (wx, wy) => {
+    if (orderAt(wx, wy)) return;
     const p = pawnsR.pick(wx, wy);
     if (p) return actions.selectPawn(p.id);
     actions.selectPawn(null);
@@ -208,6 +243,14 @@ async function boot() {
       job: jobKey(p),
       needs: NEEDS.map((n) => ({ id: n, value: p.needs[n] })),
       rad: p.rad,
+      faction: p.faction,
+      drafted: p.drafted,
+      downed: p.health.downed,
+      weapon: p.weapon !== null ? game.reg.items.list[p.weapon].id : null,
+      bloodLoss: p.health.bloodLoss,
+      pain: sim.pain(game, p),
+      injuries: p.health.injuries.map((i) => ({ part: i.part, kind: i.kind, dmg: Math.round(i.dmg), tended: i.tended > 0 })),
+      missing: [...p.health.missing],
       skills: game.reg.skills.list.map((s, i) => ({ id: s.id, level: p.skills[i].level, passion: p.skills[i].passion })),
       traits: p.traits.map((ti) => game.reg.traits.list[ti].id),
       thoughts: thoughts.filter((th) => !th.id.startsWith("trait_")),
@@ -215,9 +258,10 @@ async function boot() {
   }
 
   function colonists(): ColonistSummary[] {
-    return [...game.pawns.values()].map((p) => {
+    return [...game.pawns.values()].filter((p) => p.faction === "colony").map((p) => {
       const worst = p.situational.map((ti) => game.reg.thoughts.list[ti]).sort((a, b) => a.mood - b.mood)[0];
-      return { id: p.id, nick: p.nick, mood: Math.round(p.mood), color: hex(PawnRenderer.colorOf(p)), job: jobKey(p), warn: worst?.id ?? null };
+      const warn = p.health.downed ? "downed" : p.drafted ? "drafted" : (worst?.id ?? null);
+      return { id: p.id, nick: p.nick, mood: Math.round(p.mood), color: hex(PawnRenderer.colorOf(p)), job: jobKey(p), warn };
     });
   }
 
@@ -228,8 +272,13 @@ async function boot() {
     if (game.messages.length) msgSeen = game.messages[game.messages.length - 1].tick;
     let toasts = store.state.toasts.filter((x) => x.until > now);
     for (const m of fresh) {
+      if (AUTO_PAUSE.has(m.key)) paused = true;
       const params = { ...m.params };
       if (m.key === "msg.skill_up") params.skill = t(`skill.${params.skill}`);
+      if (typeof params.item === "string") params.item = t(`item.${params.item}`);
+      if (typeof params.thing === "string") params.thing = t(`thing.${params.thing}`);
+      if (typeof params.part === "string") params.part = t(`part.${params.part}`);
+      if (typeof params.cause === "string") params.cause = t(`cause.${params.cause}`);
       toasts.push({ id: toastId++, text: t(m.key, params), level: m.level, until: now + TOAST_SEC });
     }
     toasts = toasts.slice(-4);
@@ -242,7 +291,9 @@ async function boot() {
       e.preventDefault();
       actions.togglePause();
     } else if (e.key === "1" || e.key === "2" || e.key === "3") actions.setSpeed(Number(e.key));
-    else if (e.key === "PageUp") actions.setLayer(renderer.layer - 1);
+    else if (e.key === "r" || e.key === "R") {
+      if (selected !== null) actions.toggleDraft(selected);
+    } else if (e.key === "PageUp") actions.setLayer(renderer.layer - 1);
     else if (e.key === "PageDown") actions.setLayer(renderer.layer + 1);
     else if (e.key === "Escape") {
       if (tools.spec) actions.setTool(null);
@@ -264,6 +315,7 @@ async function boot() {
     camera.update(dt);
     renderer.update(camera.view, camera.zoom);
     pawnsR.update(clock, camera.zoom);
+    fx.update(clock, camera.view);
 
     // Night: underground is always dim, the surface follows the clock.
     const dark = renderer.layer > 0 ? 0.35 : darkness(game.hourOfDay) * 0.55;

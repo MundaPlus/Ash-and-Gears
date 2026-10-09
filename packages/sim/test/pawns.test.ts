@@ -6,7 +6,7 @@ const content = loadCoreContent();
 
 /** Small, fast test game: short days so needs move quickly. */
 function smallGame(seed: string) {
-  return Game.create(content, { seed, mapSize: 96, dayLengthSec: 120 });
+  return Game.create(content, { seed, mapSize: 96, dayLengthSec: 120, storyteller: "none" });
 }
 
 function run(g: Game, days: number) {

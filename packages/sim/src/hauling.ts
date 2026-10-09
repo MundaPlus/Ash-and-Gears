@@ -2,7 +2,8 @@
  * Carrying and stockpiles (spec 03, "Zones"). A pawn carries one stack at a time.
  * The haul work giver moves loose items into stockpile zones that accept them.
  */
-import { atGoal, findItem, goTo, isReserved, registerJob, registerWorkGiver, reserve } from "./ai.ts";
+import { atGoal, findItem, goTo, isReserved, reserve } from "./ai.ts";
+import { registerJob, registerWorkGiver } from "./jobs.ts";
 import type { Game } from "./game.ts";
 import { canHoldItem, dropItems, stackLimit, takeFromStack } from "./items.ts";
 import { NO_THING, type Zone } from "./map.ts";

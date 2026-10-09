@@ -29,6 +29,7 @@ export class Camera {
   private toolPointer: number | null = null;
   /** Pointer id that pans with the right or middle mouse button. */
   private panPointer: number | null = null;
+  private panStart: { x: number; y: number } | null = null;
   onTap: (worldX: number, worldY: number) => void = () => {};
   /** Active tool (build, orders, zones). With a tool, left drag / one finger works the tool. */
   tool: ToolHandler | null = null;
@@ -106,6 +107,7 @@ export class Camera {
     this.pointers.set(e.pointerId, { x: e.offsetX, y: e.offsetY });
     if (e.pointerType === "mouse" && e.button !== 0) {
       this.panPointer = e.pointerId;
+      this.panStart = { x: e.offsetX, y: e.offsetY };
       return;
     }
     if (this.pointers.size === 1) {
@@ -165,8 +167,12 @@ export class Camera {
     if (e.pointerId === this.panPointer) {
       this.panPointer = null;
       this.pointers.delete(e.pointerId);
-      // A right click without a drag cancels the tool.
-      if (e.type === "pointerup" && e.button === 2 && this.tool) this.onRightClick();
+      // A right click without a drag: cancel the tool, or give an order.
+      const still = this.panStart && Math.hypot(e.offsetX - this.panStart.x, e.offsetY - this.panStart.y) < DRAG_THRESHOLD;
+      if (e.type === "pointerup" && e.button === 2 && still) {
+        const w = this.screenToWorld(e.offsetX, e.offsetY);
+        this.onRightClick(w.x, w.y);
+      }
       return;
     }
     if (e.pointerId === this.toolPointer) {
@@ -190,7 +196,7 @@ export class Camera {
     }
   }
 
-  onRightClick: () => void = () => {};
+  onRightClick: (wx: number, wy: number) => void = () => {};
 
   private pinchDistance() {
     const [a, b] = [...this.pointers.values()];

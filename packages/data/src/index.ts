@@ -9,11 +9,12 @@ import names from "../content/core/names.json";
 import floors from "../content/core/floors.json";
 import loot from "../content/core/loot.json";
 import recipes from "../content/core/recipes.json";
+import creatures from "../content/core/creatures.json";
 
 export * from "./schema.ts";
 
 /** Load and validate the core content. Throws with a readable message on bad data. */
 export function loadCoreContent(): Content {
-  return Content.parse({ terrain, things, items, floors, recipes, skills, traits, thoughts, names, loot });
+  return Content.parse({ terrain, things, items, floors, recipes, creatures, skills, traits, thoughts, names, loot });
 }
 export * from "./i18n.ts";

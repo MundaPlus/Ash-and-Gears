@@ -106,5 +106,102 @@
   "raw": true,
   "rotDays": 3,
   "eatThought": "ate_raw_meat"
+ },
+ {
+  "id": "pipe",
+  "color": "#7b8794",
+  "glyph": "/",
+  "category": "weapon",
+  "stack": 1,
+  "weapon": {
+   "dmg": 7,
+   "cooldown": 40,
+   "range": 1.5,
+   "kind": "blunt"
+  }
+ },
+ {
+  "id": "machete",
+  "color": "#a6b0ba",
+  "glyph": "\\\\",
+  "category": "weapon",
+  "stack": 1,
+  "weapon": {
+   "dmg": 10,
+   "cooldown": 42,
+   "range": 1.5,
+   "kind": "cut"
+  }
+ },
+ {
+  "id": "sledgehammer",
+  "color": "#56616d",
+  "glyph": "T",
+  "category": "weapon",
+  "stack": 1,
+  "weapon": {
+   "dmg": 16,
+   "cooldown": 70,
+   "range": 1.5,
+   "kind": "blunt"
+  }
+ },
+ {
+  "id": "pipe_pistol",
+  "color": "#6f8088",
+  "glyph": "r",
+  "category": "weapon",
+  "stack": 1,
+  "weapon": {
+   "dmg": 8,
+   "cooldown": 45,
+   "range": 14,
+   "accuracy": 0,
+   "kind": "gunshot"
+  }
+ },
+ {
+  "id": "crossbow",
+  "color": "#84603f",
+  "glyph": "x",
+  "category": "weapon",
+  "stack": 1,
+  "weapon": {
+   "dmg": 11,
+   "cooldown": 80,
+   "range": 18,
+   "accuracy": 0.08,
+   "kind": "arrow"
+  }
+ },
+ {
+  "id": "scrap_shotgun",
+  "color": "#8a3b2e",
+  "glyph": "G",
+  "category": "weapon",
+  "stack": 1,
+  "weapon": {
+   "dmg": 15,
+   "cooldown": 75,
+   "range": 7,
+   "accuracy": 0.15,
+   "kind": "gunshot"
+  }
+ },
+ {
+  "id": "bandage",
+  "color": "#f0f2f4",
+  "glyph": "+",
+  "category": "medicine",
+  "stack": 25,
+  "medicine": 0.6
+ },
+ {
+  "id": "corpse",
+  "color": "#5c4636",
+  "glyph": "x",
+  "category": "misc",
+  "stack": 1,
+  "rotDays": 3
  }
 ]

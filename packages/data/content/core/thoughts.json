@@ -120,5 +120,31 @@
  {
   "id": "in_rad_cloud",
   "mood": -5
+ },
+ {
+  "id": "colonist_died",
+  "mood": -15,
+  "hours": 96,
+  "stack": 3
+ },
+ {
+  "id": "in_pain",
+  "mood": -8
+ },
+ {
+  "id": "saw_corpse",
+  "mood": -4,
+  "hours": 24,
+  "stack": 2
+ },
+ {
+  "id": "survived_raid",
+  "mood": 4,
+  "hours": 48
+ },
+ {
+  "id": "wanderer_joined",
+  "mood": 3,
+  "hours": 48
  }
 ]

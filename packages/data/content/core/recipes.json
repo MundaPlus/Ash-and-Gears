@@ -49,5 +49,85 @@
   "work": 400,
   "skill": "crafting",
   "target": 5
+ },
+ {
+  "id": "make_bandages",
+  "benches": [
+   "scrap_bench"
+  ],
+  "inputs": [
+   {
+    "item": "cloth",
+    "count": 3
+   }
+  ],
+  "output": {
+   "bandage": 2
+  },
+  "work": 150,
+  "skill": "crafting",
+  "target": 6
+ },
+ {
+  "id": "make_machete",
+  "benches": [
+   "scrap_bench"
+  ],
+  "inputs": [
+   {
+    "item": "scrap",
+    "count": 15
+   }
+  ],
+  "output": {
+   "machete": 1
+  },
+  "work": 500,
+  "skill": "crafting",
+  "target": 0
+ },
+ {
+  "id": "make_pipe_pistol",
+  "benches": [
+   "scrap_bench"
+  ],
+  "inputs": [
+   {
+    "item": "scrap",
+    "count": 25
+   },
+   {
+    "item": "components",
+    "count": 1
+   }
+  ],
+  "output": {
+   "pipe_pistol": 1
+  },
+  "work": 700,
+  "skill": "crafting",
+  "target": 0
+ },
+ {
+  "id": "make_crossbow",
+  "benches": [
+   "scrap_bench"
+  ],
+  "inputs": [
+   {
+    "item": "wood",
+    "count": 20
+   },
+   {
+    "item": "cloth",
+    "count": 2
+   }
+  ],
+  "output": {
+   "crossbow": 1
+  },
+  "work": 600,
+  "skill": "crafting",
+  "target": 0
  }
 ]

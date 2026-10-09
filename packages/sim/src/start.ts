@@ -16,9 +16,12 @@ export function setupStart(game: Game, survivors = 3): void {
   game.home = { layer: 0, x: cx, y: cy };
   const used = new Set<string>();
   const spots = [[0, 0], [1, 0], [0, 1], [1, 1], [-1, 0], [0, -1]];
+  // Start gear: one gun, one blade, one pipe.
+  const gear = ["pipe_pistol", "machete", "pipe"];
   for (let i = 0; i < survivors; i++) {
     const [dx, dy] = spots[i % spots.length];
     const p = makeSurvivor(game, 0, cx + dx, cy + dy, used);
+    p.weapon = game.reg.items.idx(gear[i % gear.length]);
     addMemory(game, p, "survived_the_end");
     game.pawns.set(p.id, p);
   }

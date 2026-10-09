@@ -12,39 +12,16 @@ import type { Pos } from "./path.ts";
 import { addMemory, addRad, hasTraitFlag, type Job, type Pawn } from "./pawn.ts";
 import { isContaminatedThing } from "./weather.ts";
 import { workOrder } from "./worktypes.ts";
+import { moving, tickHealthHourly } from "./health.ts";
+import { draftedTick, fleeFrom, hostileTick, selfDefense, updateGroups } from "./hostile.ts";
+import { equipJob, inBed } from "./medical.ts";
 
 /** Tiles per tick at walk cost 1 (3 tiles per real second at 1x). */
 export const WALK_SPEED = 0.15;
 const STAIRS_STEP_COST = 4;
 
-export type JobResult = "run" | "done" | "fail";
-export type JobDriver = (game: Game, p: Pawn, job: Job) => JobResult;
-
-const drivers = new Map<string, JobDriver>();
-export function registerJob(kind: string, driver: JobDriver): void {
-  drivers.set(kind, driver);
-}
-
-/** Called when a job of this kind ends for any reason (done, failed or interrupted). */
-const cleanups = new Map<string, (game: Game, p: Pawn, job: Job) => void>();
-export function registerCleanup(kind: string, fn: (game: Game, p: Pawn, job: Job) => void): void {
-  cleanups.set(kind, fn);
-}
-
-/** A work giver looks for work of one type and gives the pawn a job, or returns null. */
-export interface WorkGiver {
-  workType: string;
-  give(game: Game, p: Pawn): Job | null;
-}
-const workGivers: WorkGiver[] = [];
-export function registerWorkGiver(g: WorkGiver): void {
-  workGivers.push(g);
-}
-
-/** Work types that have at least one giver (the ones that matter right now). */
-export function activeWorkTypes(): string[] {
-  return [...new Set(workGivers.map((g) => g.workType))];
-}
+export * from "./jobs.ts";
+import { cleanups, drivers, registerJob, workGivers, type JobResult } from "./jobs.ts";
 
 // ---------------------------------------------------------------- reservations
 
@@ -86,8 +63,8 @@ function stepCost(game: Game, p: Pawn, next: Pos): number {
   return next.x !== p.x && next.y !== p.y ? c * Math.SQRT2 : c;
 }
 
-export function moveSpeed(p: Pawn): number {
-  let s = WALK_SPEED;
+export function moveSpeed(game: Game, p: Pawn): number {
+  let s = WALK_SPEED * game.reg.content.creatures[p.creature].speed * moving(game, p);
   if (p.needs.rest < 0.05) s *= 0.7;
   if (p.carrying) s *= 0.9;
   return s;
@@ -103,7 +80,7 @@ function tickMove(game: Game, p: Pawn): void {
     if (!goal || !goTo(game, p, goal.pos, goal.adjacent)) p.goal = null;
     return;
   }
-  p.moveT += moveSpeed(p) / stepCost(game, p, next);
+  p.moveT += moveSpeed(game, p) / stepCost(game, p, next);
   if (next.x !== p.x) p.facing = next.x > p.x ? 1 : -1;
   if (p.moveT >= 1) {
     p.moveT -= 1;
@@ -118,8 +95,37 @@ function tickMove(game: Game, p: Pawn): void {
 // ---------------------------------------------------------------- main loop
 
 export function tickPawns(game: Game): void {
-  for (const p of game.pawns.values()) {
-    tickNeeds(game, p);
+  const hourly = game.tick % Math.round(game.ticksPerHour) === 0;
+  if (game.tick % 30 === 0) updateGroups(game);
+  for (const p of [...game.pawns.values()]) {
+    if (!game.pawns.has(p.id)) continue;
+    if (p.cooldown > 0) p.cooldown--;
+    if (p.faction === "colony") tickNeeds(game, p);
+    if (hourly) {
+      tickHealthHourly(game, p, inBed(game, p));
+      if (!game.pawns.has(p.id)) continue;
+    }
+    if (p.health.downed) {
+      if (p.job) endJob(game, p, false);
+      p.path = null;
+      p.drafted = false;
+      continue;
+    }
+    if (p.faction !== "colony") {
+      hostileTick(game, p);
+      tickMove(game, p);
+      continue;
+    }
+    if (p.drafted) {
+      draftedTick(game, p);
+      tickMove(game, p);
+      continue;
+    }
+    if (selfDefense(game, p)) continue;
+    if ((game.tick + p.id) % 20 === 0 && !p.mentalBreak && fleeFrom(game, p)) {
+      tickMove(game, p);
+      continue;
+    }
     if (p.mentalBreak && p.job && !p.job.data?.sulk) endJob(game, p, false);
     // A radiation cloud is coming: drop idle or outdoor work and think again (that finds shelter).
     if ((game.tick + p.id) % 30 === 0 && p.job && p.job.kind !== "shelter" && radDanger(game) && !sheltered(game, p) && !p.mentalBreak)
@@ -136,6 +142,8 @@ export function tickPawns(game: Game): void {
     tickMove(game, p);
   }
 }
+
+registerJob("flee", (game, p, job) => (atGoal(p) && game.tick >= job.until! ? "done" : "run"));
 
 export function endJob(game: Game, p: Pawn, failed: boolean): void {
   if (p.job) cleanups.get(p.job.kind)?.(game, p, p.job);
@@ -181,6 +189,7 @@ export function think(game: Game, p: Pawn): void {
   }
   if (n.thirst < 0.45 && startJob(game, p, drinkJob(game, p, false))) return;
   if (n.hunger < 0.4 && startJob(game, p, eatJob(game, p, false))) return;
+  if (p.weapon === null && startJob(game, p, equipJob(game, p))) return;
   for (const w of workOrder(p))
     for (const g of workGivers) if (g.workType === w && startJob(game, p, g.give(game, p))) return;
   startJob(game, p, wanderJob(game, p, false));

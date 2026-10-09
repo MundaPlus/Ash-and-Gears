@@ -101,6 +101,15 @@ async function paint(m: Manifest, s: SpriteDef, palette: string, size: number, o
   if (existsSync(png)) return;
   mkdirSync(dir, { recursive: true });
   const prompt = m.styleHint ? `${s.prompt}. ${m.styleHint}` : s.prompt;
+  for (let attempt = 1; attempt <= RETRIES; attempt++) {
+    if (await paintOnce(m, s, palette, size, dir, png, prompt, log, attempt)) return;
+  }
+}
+
+/** The local model is shared with other programs, so a job can time out in texel's queue. Retry a few times. */
+const RETRIES = 3;
+
+async function paintOnce(m: Manifest, s: SpriteDef, palette: string, size: number, dir: string, png: string, prompt: string, log: string, attempt: number): Promise<boolean> {
   const t0 = Date.now();
   try {
     const r = await runJob("sprite.generate", {
@@ -118,13 +127,15 @@ async function paint(m: Manifest, s: SpriteDef, palette: string, size: number, o
       JSON.stringify({ id: s.id, prompt, size, type: s.type, palette, colors: m.palettes[palette], pixel_data: r.pixel_data }),
     );
     const sec = ((Date.now() - t0) / 1000).toFixed(0);
-    const line = `ok   ${palette}/${size}/${s.id} ${sec}s ${r.iterations ?? "?"} steps`;
+    const line = `ok   ${palette}/${size}/${s.id} ${sec}s ${r.iterations ?? "?"} steps (try ${attempt})`;
     console.log(line);
     appendFileSync(log, line + "\n");
+    return true;
   } catch (e) {
-    const line = `FAIL ${palette}/${size}/${s.id}: ${(e as Error).message}`;
+    const line = `FAIL ${palette}/${size}/${s.id} (try ${attempt}): ${(e as Error).message}`;
     console.error(line);
     appendFileSync(log, line + "\n");
+    return false;
   }
 }
 

@@ -3,7 +3,8 @@
  * spends work ticks on it. Tasks (mine, salvage, build...) plug in through registerTask.
  * Progress is kept on the game per target, so an interrupted task resumes where it stopped.
  */
-import { atGoal, goTo, registerJob, reserve } from "./ai.ts";
+import { atGoal, goTo, reserve } from "./ai.ts";
+import { registerJob } from "./jobs.ts";
 import type { Game } from "./game.ts";
 import type { Pos } from "./path.ts";
 import { learn, skillLevel, workSpeed, type Job, type Pawn } from "./pawn.ts";

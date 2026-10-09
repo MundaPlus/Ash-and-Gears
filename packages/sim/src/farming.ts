@@ -3,7 +3,8 @@
  * harvest ripe plants. Growth needs fertile ground and warmth. Crops sown in contaminated outdoor
  * soil, or standing outside during a radiation cloud, give contaminated food.
  */
-import { isReserved, registerWorkGiver } from "./ai.ts";
+import { isReserved } from "./ai.ts";
+import { registerWorkGiver } from "./jobs.ts";
 import type { Game } from "./game.ts";
 import { dropItems } from "./items.ts";
 import { NO_THING } from "./map.ts";

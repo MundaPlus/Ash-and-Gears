@@ -3,7 +3,7 @@ import { loadCoreContent } from "@wc/data";
 import { countItems, createZone, dropItems, Game, NO_THING, roomAt, scheduleRadCloud, tickWeather, type Pawn } from "../src/index.ts";
 
 const content = loadCoreContent();
-const newGame = (seed: string) => Game.create(content, { seed, mapSize: 96 });
+const newGame = (seed: string) => Game.create(content, { seed, mapSize: 96, storyteller: "none" });
 const run = (g: Game, hours: number) => {
   for (let i = 0, n = Math.round(hours * g.ticksPerHour); i < n; i++) g.step();
 };

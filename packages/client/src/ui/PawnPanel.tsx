@@ -27,8 +27,41 @@ export function PawnPanel() {
         <i class="swatch" style={{ background: p.color }} /> {p.name}
       </h2>
       <p class="sub">
-        {t("pawn.age", { age: p.age })} · {t("pawn.doing", { job: t(p.job) })}
+        {p.faction === "colony" ? (
+          <>
+            {t("pawn.age", { age: p.age })} · {p.downed ? t("pawn.downed") : t("pawn.doing", { job: t(p.job) })}
+          </>
+        ) : (
+          t(`faction.${p.faction}`)
+        )}
       </p>
+      <p class="sub">{t("pawn.weapon", { weapon: p.weapon ? t(`item.${p.weapon}`) : t("pawn.fists") })}</p>
+      {p.faction === "colony" && !p.downed && (
+        <button class={`draft ${p.drafted ? "on" : ""}`} data-testid="draft" onClick={() => actions.toggleDraft(p.id)}>
+          {p.drafted ? t("pawn.undraft") : t("pawn.draft")}
+        </button>
+      )}
+      {p.drafted && <p class="hint">{t("pawn.draft_hint")}</p>}
+      <h3>{t("pawn.health")}</h3>
+      <Bar value={1 - p.bloodLoss} label={t("pawn.blood")} />
+      <Bar value={1 - p.pain} label={t("pawn.pain")} />
+      <ul class="injuries">
+        {p.missing.map((m) => (
+          <li key={`m-${m}`} class="neg">
+            {t("pawn.missing", { part: t(`part.${m}`) })}
+          </li>
+        ))}
+        {p.injuries.map((i, k) => (
+          <li key={k}>
+            <span>
+              {t(`part.${i.part}`)}: {t(`injury.${i.kind}`)}
+            </span>
+            <span class={i.tended ? "pos" : "neg"}>{i.tended ? t("pawn.tended") : t("pawn.untended")}</span>
+          </li>
+        ))}
+      </ul>
+      {p.faction !== "colony" ? null : (
+        <>
       <Bar value={p.mood / 100} label={t("pawn.mood")} />
       <h3>{t("pawn.needs")}</h3>
       {p.needs.map((n) => (
@@ -66,6 +99,8 @@ export function PawnPanel() {
           </li>
         ))}
       </ul>
+        </>
+      )}
     </aside>
   );
 }
