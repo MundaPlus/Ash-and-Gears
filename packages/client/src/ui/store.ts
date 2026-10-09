@@ -6,6 +6,36 @@ export interface Inspect {
   lines: string[];
 }
 
+export interface ColonistSummary {
+  id: number;
+  nick: string;
+  mood: number;
+  color: string;
+  job: string;
+  warn: string | null;
+}
+
+export interface PawnDetail {
+  id: number;
+  name: string;
+  age: number;
+  color: string;
+  mood: number;
+  moodTarget: number;
+  job: string;
+  needs: { id: string; value: number }[];
+  skills: { id: string; level: number; passion: number }[];
+  traits: string[];
+  thoughts: { id: string; mood: number }[];
+}
+
+export interface Toast {
+  id: number;
+  text: string;
+  level: "info" | "warn" | "bad";
+  until: number;
+}
+
 export interface UiState {
   speed: number;
   paused: boolean;
@@ -16,6 +46,10 @@ export interface UiState {
   seed: string;
   fps: number;
   inspect: Inspect | null;
+  colonists: ColonistSummary[];
+  pawn: PawnDetail | null;
+  toasts: Toast[];
+  resources: { id: string; count: number }[];
 }
 
 type Listener = () => void;
@@ -31,6 +65,10 @@ class Store {
     seed: "",
     fps: 0,
     inspect: null,
+    colonists: [],
+    pawn: null,
+    toasts: [],
+    resources: [],
   };
   private listeners = new Set<Listener>();
 
@@ -57,7 +95,11 @@ export const actions = {
   setSpeed: (_s: number) => {},
   togglePause: () => {},
   setLayer: (_l: number) => {},
-  closeInspect: () => store.set({ inspect: null }),
+  selectPawn: (_id: number | null, _center = false) => {},
+  closeInspect: () => {
+    store.set({ inspect: null });
+    actions.selectPawn(null);
+  },
 };
 
 export function useStore(): UiState {

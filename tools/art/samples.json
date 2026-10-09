@@ -1,5 +1,5 @@
 {
-  "model": "qwen3.6:35b",
+  "model": "qwen3.6:35b-nothink",
   "sizes": [
     16,
     32
@@ -64,17 +64,17 @@
   "sprites": [
     {
       "id": "survivor",
-      "type": "item",
+      "type": "character",
       "prompt": "A scruffy human survivor seen from the front, ragged jacket, gas mask hanging at the neck, backpack"
     },
     {
       "id": "glow_hound",
-      "type": "item",
+      "type": "character",
       "prompt": "A mutant dog with patchy fur and glowing green sores, side view, hunched and hungry"
     },
     {
       "id": "raider",
-      "type": "item",
+      "type": "character",
       "prompt": "A wasteland raider seen from the front, spiked shoulder pad made of a car tire, pipe weapon"
     },
     {
@@ -89,12 +89,12 @@
     },
     {
       "id": "rubble",
-      "type": "item",
+      "type": "icon",
       "prompt": "A pile of broken concrete rubble with bent rebar sticking out"
     },
     {
       "id": "generator",
-      "type": "item",
+      "type": "icon",
       "prompt": "A small scrap diesel generator machine with a fuel can, pipes and a red warning light"
     },
     {
@@ -104,17 +104,17 @@
     },
     {
       "id": "glowcorn",
-      "type": "item",
+      "type": "icon",
       "prompt": "A mutant corn plant with faintly glowing yellow-green cobs"
     },
     {
       "id": "canned_food",
-      "type": "item",
+      "type": "icon",
       "prompt": "A dented tin can of food with a faded torn label"
     },
     {
       "id": "water_jug",
-      "type": "item",
+      "type": "icon",
       "prompt": "A plastic water jug, half full of slightly murky water"
     }
   ],

@@ -10,17 +10,19 @@
  *     "styleHint": "text added to every prompt",
  *     "sprites": [{ "id": "survivor", "type": "item", "prompt": "..." }] }
  *
+ * Types: block (tileable, no transparency), icon, character, freeform.
  * Output: <out-dir>/<palette>/<size>/<id>.png and <id>.json.
  * Existing PNGs are skipped, so a stopped run resumes where it stopped.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync } from "node:fs";
+import http from "node:http";
 import { join } from "node:path";
 
 const TEXEL_URL = (process.env.TEXEL_URL ?? "http://127.0.0.1:8500").replace(/\/$/, "");
 
 interface SpriteDef {
   id: string;
-  type: "block" | "item";
+  type: "block" | "icon" | "character" | "freeform";
   prompt: string;
   /** Limit this sprite to some sizes only. */
   sizes?: number[];
@@ -42,31 +44,55 @@ interface JobResult {
   iterations?: number;
 }
 
-/** Post one job and read the SSE stream until a result or error event. */
-async function runJob(kind: string, params: Record<string, unknown>): Promise<JobResult> {
-  const res = await fetch(`${TEXEL_URL}/api/jobs`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ kind, params }),
+/**
+ * Post one job and read the SSE stream until a result or error event.
+ * Uses node:http, not fetch: fetch aborts a stream after 5 minutes of silence,
+ * and one model step on the local GPU can take longer than that.
+ */
+function runJob(kind: string, params: Record<string, unknown>): Promise<JobResult> {
+  const url = new URL(`${TEXEL_URL}/api/jobs`);
+  const body = JSON.stringify({ kind, params });
+  return new Promise((resolve, reject) => {
+    const req = http.request(
+      { hostname: url.hostname, port: url.port, path: url.pathname, method: "POST", headers: { "content-type": "application/json", "content-length": Buffer.byteLength(body) } },
+      (res) => {
+        if (res.statusCode !== 200) {
+          let err = "";
+          res.on("data", (c) => (err += c));
+          res.on("end", () => reject(new Error(`texel HTTP ${res.statusCode}: ${err}`)));
+          return;
+        }
+        res.setEncoding("utf8");
+        let buf = "";
+        let event = "";
+        let done = false;
+        res.on("data", (chunk: string) => {
+          buf += chunk;
+          let nl: number;
+          while (!done && (nl = buf.indexOf("\n")) >= 0) {
+            const line = buf.slice(0, nl).replace(/\r$/, "");
+            buf = buf.slice(nl + 1);
+            if (line.startsWith("event:")) event = line.slice(6).trim();
+            else if (line.startsWith("data:")) {
+              if (event === "result") {
+                done = true;
+                resolve(JSON.parse(line.slice(5)) as JobResult);
+                res.destroy();
+              } else if (event === "error") {
+                done = true;
+                reject(new Error(`texel error: ${line.slice(5).trim()}`));
+                res.destroy();
+              }
+            }
+          }
+        });
+        res.on("end", () => !done && reject(new Error("texel stream ended without a result")));
+        res.on("error", (e) => !done && reject(e));
+      },
+    );
+    req.on("error", reject);
+    req.end(body);
   });
-  if (!res.ok || !res.body) throw new Error(`texel HTTP ${res.status}: ${await res.text()}`);
-  const decoder = new TextDecoder();
-  let buf = "";
-  let event = "";
-  for await (const chunk of res.body as unknown as AsyncIterable<Uint8Array>) {
-    buf += decoder.decode(chunk, { stream: true });
-    let nl: number;
-    while ((nl = buf.indexOf("\n")) >= 0) {
-      const line = buf.slice(0, nl).replace(/\r$/, "");
-      buf = buf.slice(nl + 1);
-      if (line.startsWith("event:")) event = line.slice(6).trim();
-      else if (line.startsWith("data:")) {
-        if (event === "result") return JSON.parse(line.slice(5)) as JobResult;
-        if (event === "error") throw new Error(`texel error: ${line.slice(5).trim()}`);
-      }
-    }
-  }
-  throw new Error("texel stream ended without a result");
 }
 
 async function paint(m: Manifest, s: SpriteDef, palette: string, size: number, outDir: string, log: string) {

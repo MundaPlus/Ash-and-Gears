@@ -1,0 +1,12 @@
+[
+  { "id": "iron_stomach", "flags": ["eats_raw_ok"] },
+  { "id": "rad_hardened", "radMult": 0.5 },
+  { "id": "optimist", "mood": 6, "conflicts": ["pessimist"] },
+  { "id": "pessimist", "mood": -6, "conflicts": ["optimist"] },
+  { "id": "lazy", "workSpeed": 0.8, "conflicts": ["hard_worker"] },
+  { "id": "hard_worker", "workSpeed": 1.2, "conflicts": ["lazy"] },
+  { "id": "night_owl", "flags": ["night_owl"] },
+  { "id": "tinkerer", "skillBonus": { "technology": 3, "crafting": 2 } },
+  { "id": "lucky_idiot", "skillBonus": { "shooting": -3, "construction": -2, "technology": -3 }, "flags": ["lucky"] },
+  { "id": "old_worlder", "mood": -3, "skillBonus": { "technology": 4 } }
+]

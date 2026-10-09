@@ -64,9 +64,48 @@ export const ItemDef = z.object({
 });
 export type ItemDef = z.infer<typeof ItemDef>;
 
+export const SkillDef = z.object({ id });
+export type SkillDef = z.infer<typeof SkillDef>;
+
+export const TraitDef = z.object({
+  id,
+  /** Flat mood offset. */
+  mood: z.number().default(0),
+  /** Work speed multiplier. */
+  workSpeed: z.number().positive().default(1),
+  /** Radiation dose multiplier. */
+  radMult: z.number().min(0).default(1),
+  skillBonus: z.record(id, z.number().int()).default({}),
+  /** Free-form behavior flags that systems check, e.g. "night_owl". */
+  flags: z.array(z.string()).default([]),
+  conflicts: z.array(id).default([]),
+});
+export type TraitDef = z.infer<typeof TraitDef>;
+
+export const ThoughtDef = z.object({
+  id,
+  mood: z.number(),
+  /** In-game hours a memory lasts. Absent = situational (exists while the condition holds). */
+  hours: z.number().positive().optional(),
+  /** How many copies of a memory can stack. */
+  stack: z.number().int().positive().default(1),
+});
+export type ThoughtDef = z.infer<typeof ThoughtDef>;
+
+export const NameLists = z.object({
+  first: z.array(z.string()).min(1),
+  last: z.array(z.string()).min(1),
+  nick: z.array(z.string()).min(1),
+});
+export type NameLists = z.infer<typeof NameLists>;
+
 export const Content = z.object({
   terrain: z.array(TerrainDef),
   things: z.array(ThingDef),
   items: z.array(ItemDef),
+  skills: z.array(SkillDef),
+  traits: z.array(TraitDef),
+  thoughts: z.array(ThoughtDef),
+  names: NameLists,
 });
 export type Content = z.infer<typeof Content>;

@@ -5,6 +5,8 @@
  */
 
 export const NO_THING = -1;
+/** Chunk size for change tracking. The renderer uses the same size. */
+export const CHUNK = 32;
 
 export interface Thing {
   /** Entity id, unique for the whole game. */
@@ -17,10 +19,29 @@ export interface Thing {
   hp: number;
 }
 
+/** A stack of one item type lying on a tile or carried by a pawn. */
+export interface ItemStack {
+  id: number;
+  /** Index into Registry.items. */
+  def: number;
+  count: number;
+  /** Position when on the ground. layer = -1 while carried. */
+  layer: number;
+  x: number;
+  y: number;
+  /** Radioactive contamination (spec 04). */
+  contaminated?: boolean;
+}
+
 export class Layer {
   readonly terrain: Uint8Array;
   /** Entity id of the structure, plant or stairs on this tile, or NO_THING. */
   readonly thing: Int32Array;
+  /** Entity id of the item stack lying on this tile, or NO_THING. One stack per tile. */
+  readonly item: Int32Array;
+  /** Change counter per chunk. Bumped by touch(); renderers redraw a chunk when it changes. */
+  readonly chunkVersion: Uint32Array;
+  readonly chunksX: number;
 
   constructor(
     readonly index: number,
@@ -29,6 +50,14 @@ export class Layer {
   ) {
     this.terrain = new Uint8Array(w * h);
     this.thing = new Int32Array(w * h).fill(NO_THING);
+    this.item = new Int32Array(w * h).fill(NO_THING);
+    this.chunksX = Math.ceil(w / CHUNK);
+    this.chunkVersion = new Uint32Array(this.chunksX * Math.ceil(h / CHUNK));
+  }
+
+  /** Mark the chunk of (x, y) as changed. */
+  touch(x: number, y: number): void {
+    this.chunkVersion[Math.floor(y / CHUNK) * this.chunksX + Math.floor(x / CHUNK)]++;
   }
 
   inBounds(x: number, y: number): boolean {

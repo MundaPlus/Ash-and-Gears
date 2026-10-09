@@ -35,6 +35,9 @@ function toTexture(c: HTMLCanvasElement): Texture {
 export interface TextureSet {
   terrain: Texture[];
   things: Texture[];
+  items: Texture[];
+  pawn: Texture;
+  shadow: Texture;
 }
 
 export function makePlaceholderTextures(reg: Registry): TextureSet {
@@ -88,5 +91,38 @@ export function makePlaceholderTextures(reg: Registry): TextureSet {
     return toTexture(c);
   });
 
-  return { terrain, things };
+  const items = reg.items.list.map((def) => {
+    const [c, g] = canvas();
+    g.fillStyle = shade(def.color, 0.4);
+    g.fillRect(9, 11, 16, 14);
+    g.fillStyle = def.color;
+    g.fillRect(8, 9, 16, 14);
+    g.fillStyle = shade(def.color, 1.3);
+    g.fillRect(8, 9, 16, 3);
+    g.fillStyle = "rgba(0,0,0,.7)";
+    g.font = "bold 11px monospace";
+    g.textAlign = "center";
+    g.fillText(def.glyph, 16, 21);
+    return toTexture(c);
+  });
+
+  // Survivor placeholder: white so each pawn can be tinted. Head, body, legs.
+  const [pc, pg] = canvas();
+  pg.fillStyle = "#ffffff";
+  pg.fillRect(12, 4, 8, 8); // head
+  pg.fillRect(10, 12, 12, 10); // body
+  pg.fillRect(11, 22, 4, 7); // legs
+  pg.fillRect(17, 22, 4, 7);
+  pg.fillStyle = "rgba(0,0,0,.55)";
+  pg.fillRect(17, 7, 2, 2); // eye, shows facing
+  const pawn = toTexture(pc);
+
+  const [sc, sg] = canvas();
+  sg.fillStyle = "rgba(0,0,0,.35)";
+  sg.beginPath();
+  sg.ellipse(16, 29, 9, 3, 0, 0, Math.PI * 2);
+  sg.fill();
+  const shadow = toTexture(sc);
+
+  return { terrain, things, items, pawn, shadow };
 }

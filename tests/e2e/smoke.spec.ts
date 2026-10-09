@@ -17,6 +17,23 @@ test("game boots, renders, runs and switches layers", async ({ page }, info) => 
 
   await page.screenshot({ path: `artifacts/screens/${info.project.name}-surface.png` });
 
+  // Survivors: three in the bar; clicking one opens the detail panel.
+  await expect(page.getByTestId("colonists").locator("button")).toHaveCount(3);
+  await page.getByTestId("colonists").locator("button").first().click();
+  await expect(page.getByTestId("pawn-panel")).toBeVisible();
+  await page.evaluate(() => (window as any).__game.runTicks(1200));
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: `artifacts/screens/${info.project.name}-pawn.png` });
+  // Night view.
+  await page.evaluate(() => {
+    const g = (window as any).__game;
+    const t = g.game.ticksPerDay;
+    g.runTicks(Math.round(t * (23 / 24)) - (g.game.tick % t));
+  });
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: `artifacts/screens/${info.project.name}-night.png` });
+  await page.keyboard.press("Escape");
+
   // Zoomed-out overview.
   await page.evaluate(() => ((window as any).__game.camera.zoom = 0.2));
   await page.waitForTimeout(200);

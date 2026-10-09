@@ -24,6 +24,7 @@ export function generateHomeMap(game: Game): void {
 
 function setT(game: Game, layer: Layer, x: number, y: number, terrain: string) {
   layer.terrain[layer.i(x, y)] = game.reg.terrain.idx(terrain);
+  game.pathVersion++;
 }
 
 function terrainId(game: Game, layer: Layer, x: number, y: number): string {

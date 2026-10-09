@@ -1,11 +1,26 @@
 import { t } from "@wc/data";
+import { ColonistBar } from "./ColonistBar.tsx";
+import { PawnPanel } from "./PawnPanel.tsx";
 import { actions, useStore } from "./store.ts";
+import { Toasts } from "./Toasts.tsx";
 
 export function Hud() {
   const s = useStore();
   const layerName = s.layer <= 1 ? t(`layer.${s.layer}`) : t("layer.n", { n: s.layer });
   return (
     <>
+      <div class="topleft">
+        <div class="resources" data-testid="resources">
+          {s.resources.map((r) => (
+            <span key={r.id} class="res">
+              {t(`res.${r.id}`)} <b>{r.count}</b>
+            </span>
+          ))}
+        </div>
+        <ColonistBar />
+      </div>
+      <Toasts />
+      <PawnPanel />
       <header class="topbar">
         <div class="clock" data-testid="clock">
           <b>{s.clock}</b>
@@ -45,7 +60,7 @@ export function Hud() {
         </button>
       </div>
 
-      {s.inspect && (
+      {s.inspect && !s.pawn && (
         <aside class="inspect" data-testid="inspect">
           <button class="close" onClick={actions.closeInspect} aria-label={t("ui.close")}>
             ×

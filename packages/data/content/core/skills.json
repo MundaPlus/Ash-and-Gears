@@ -1,0 +1,5 @@
+[
+  { "id": "shooting" }, { "id": "melee" }, { "id": "construction" }, { "id": "mining" },
+  { "id": "cooking" }, { "id": "farming" }, { "id": "crafting" }, { "id": "medicine" },
+  { "id": "scavenging" }, { "id": "technology" }, { "id": "social" }
+]

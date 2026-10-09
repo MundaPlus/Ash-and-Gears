@@ -3,3 +3,8 @@ export * from "./map.ts";
 export * from "./registry.ts";
 export * from "./rng.ts";
 export * from "./noise.ts";
+export * from "./items.ts";
+export * from "./path.ts";
+export * from "./pawn.ts";
+export * from "./needs.ts";
+export * from "./ai.ts";

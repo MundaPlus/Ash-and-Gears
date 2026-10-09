@@ -4,10 +4,9 @@
  * Far out: one small overview texture per layer (1 pixel per tile), so phones stay fast.
  */
 import { Container, Sprite, Texture } from "pixi.js";
-import { NO_THING, type Game } from "@wc/sim";
+import { CHUNK, NO_THING, type Game } from "@wc/sim";
 import { TILE, type TextureSet } from "./textures.ts";
 
-const CHUNK = 32;
 /** Below this zoom the overview texture replaces the chunks. */
 const OVERVIEW_ZOOM = 0.3;
 
@@ -75,20 +74,33 @@ export class WorldRenderer {
       const x0 = c.cx * span, y0 = c.cy * span;
       const vis = x0 < view.x + view.w && x0 + span > view.x && y0 < view.y + view.h && y0 + span > view.y;
       c.root.visible = vis;
-      if (vis && c.version !== this.game.mapVersion) this.buildChunk(this.layer, c);
+      if (vis) {
+        const L = this.game.map.layers[this.layer];
+        const v = L.chunkVersion[c.cy * L.chunksX + c.cx];
+        if (c.version !== v) this.buildChunk(this.layer, c, v);
+      }
     }
   }
 
-  private buildChunk(l: number, c: Chunk) {
+  private buildChunk(l: number, c: Chunk, version: number) {
     const g = this.game, L = g.map.layers[l];
     c.root.removeChildren().forEach((ch) => ch.destroy());
     const things: Sprite[] = [];
+    const items: Sprite[] = [];
     for (let y = c.cy * CHUNK; y < Math.min(L.h, (c.cy + 1) * CHUNK); y++)
       for (let x = c.cx * CHUNK; x < Math.min(L.w, (c.cx + 1) * CHUNK); x++) {
         const i = L.i(x, y);
         const s = new Sprite(this.tex.terrain[L.terrain[i]]);
         s.position.set((x - c.cx * CHUNK) * TILE, (y - c.cy * CHUNK) * TILE);
         c.root.addChild(s);
+        const it = L.item[i];
+        if (it !== NO_THING) {
+          const st = g.items.get(it)!;
+          const t = new Sprite(this.tex.items[st.def]);
+          t.position.copyFrom(s.position);
+          if (st.contaminated) t.tint = 0xb8ff6a;
+          items.push(t);
+        }
         const th = L.thing[i];
         if (th !== NO_THING) {
           const t = new Sprite(this.tex.things[g.things.get(th)!.def]);
@@ -96,9 +108,10 @@ export class WorldRenderer {
           things.push(t);
         }
       }
-    // Things after all terrain, so tall sprites are never covered by the next row of ground.
+    // Items and things after all terrain, so tall sprites are never covered by the next row of ground.
+    for (const t of items) c.root.addChild(t);
     for (const t of things) c.root.addChild(t);
-    c.version = g.mapVersion;
+    c.version = version;
   }
 
   private buildOverview(l: number) {
