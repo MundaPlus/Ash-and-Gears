@@ -12,6 +12,9 @@ import { tickPawns } from "./ai.ts";
 import { setupStart } from "./start.ts";
 import "./systems.ts";
 import { ensureRooms, tickTemperature, type Room } from "./rooms.ts";
+import { tickWeather, type WeatherKind } from "./weather.ts";
+import { tickFarming } from "./farming.ts";
+import { tickRot } from "./rot.ts";
 
 /** Sim ticks per real second at 1x speed. */
 export const TICKS_PER_SECOND = 20;
@@ -26,6 +29,8 @@ export interface GameOptions {
   dayLengthSec: number;
   /** In-game days per season. Spec default: 15. */
   seasonDays: number;
+  /** Radiation cloud frequency multiplier (storyteller slider, M5). */
+  radCloudScale: number;
 }
 
 export const DEFAULT_OPTIONS: GameOptions = {
@@ -34,6 +39,7 @@ export const DEFAULT_OPTIONS: GameOptions = {
   layers: 2,
   dayLengthSec: 360,
   seasonDays: 15,
+  radCloudScale: 1,
 };
 
 export const SEASONS = ["spring", "summer", "autumn", "winter"] as const;
@@ -52,8 +58,21 @@ export class Game {
   readonly desigTiles = new Set<number>();
   rooms = new Map<number, Room>();
   roomsVersion = -1;
-  /** Extra degrees from weather (M4 sets it). */
+  /** Extra degrees from weather. */
   weatherTempOffset = 0;
+  weather: { kind: WeatherKind; until: number; next: { kind: WeatherKind; at: number } | null; lastRadCloud: number } = {
+    kind: "clear",
+    until: 0,
+    next: null,
+    lastRadCloud: 0,
+  };
+  /** Open water and outdoor soil stay radioactive until these ticks (spec 04). */
+  openWaterContamUntil = 0;
+  soilContamUntil = 0;
+  /** Research state (M6 fills in projects). */
+  readonly research = { done: new Set<string>(), current: null as string | null, progress: new Map<string, number>() };
+  /** Player bill targets: "thingId:recipeId" -> keep this many in stock. */
+  readonly billTargets = new Map<string, number>();
   /** Work left per task target, so interrupted work resumes. Key: "task:layer,x,y". */
   readonly progress = new Map<string, number>();
   /** Bumped when walls, doors or solid terrain change. Rooms are rebuilt when it changes. */
@@ -98,6 +117,7 @@ export class Game {
     generateHomeMap(g);
     setupStart(g);
     ensureRooms(g);
+    g.weather.until = g.ticksPerDay / 2;
     return g;
   }
 
@@ -197,7 +217,10 @@ export class Game {
   step(): void {
     this.tick++;
     ensureRooms(this);
+    tickWeather(this);
     tickTemperature(this);
+    tickFarming(this);
+    tickRot(this);
     tickPawns(this);
   }
 }

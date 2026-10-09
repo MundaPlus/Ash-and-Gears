@@ -23,7 +23,16 @@ export function canHoldItem(game: Game, layer: number, x: number, y: number, def
  * Place `count` items near (x, y). Spills outward in rings. Returns how many could not be placed
  * (0 in normal play; only a full map leaves items over).
  */
-export function dropItems(game: Game, defId: string | number, count: number, layer: number, x: number, y: number, contaminated = false): number {
+export function dropItems(
+  game: Game,
+  defId: string | number,
+  count: number,
+  layer: number,
+  x: number,
+  y: number,
+  contaminated = false,
+  contamUntil?: number,
+): number {
   const def = typeof defId === "string" ? game.reg.items.idx(defId) : defId;
   const L = game.map.layers[layer];
   const limit = stackLimit(game, def);
@@ -43,7 +52,10 @@ export function dropItems(game: Game, defId: string | number, count: number, lay
         } else {
           const add = Math.min(count, limit);
           const s: ItemStack = { id: game.newId(), def, count: add, layer, x: tx, y: ty };
-          if (contaminated) s.contaminated = true;
+          if (contaminated) {
+            s.contaminated = true;
+            s.contamUntil = contamUntil ?? game.tick + game.opts.seasonDays * game.ticksPerDay;
+          }
           game.items.set(s.id, s);
           L.item[i] = s.id;
           count -= add;

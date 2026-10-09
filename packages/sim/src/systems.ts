@@ -3,3 +3,5 @@ import "./work.ts";
 import "./construction.ts";
 import "./designations.ts";
 import "./hauling.ts";
+import "./farming.ts";
+import "./bills.ts";

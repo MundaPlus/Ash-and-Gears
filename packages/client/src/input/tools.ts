@@ -25,7 +25,8 @@ export type ToolSpec =
   | { kind: "build"; defKind: "thing" | "floor"; def: string }
   | { kind: "order"; desig: DesigKind }
   | { kind: "cancel" }
-  | { kind: "zone"; zone: "stockpile" | "remove" };
+  | { kind: "zone"; zone: "stockpile" | "remove" }
+  | { kind: "zone"; zone: "grow"; crop: string };
 
 interface Tile {
   x: number;
@@ -117,6 +118,7 @@ export class ToolController implements ToolHandler {
         return L.blueprint[i] !== NO_THING || L.desig[i] !== 0;
       case "zone":
         if (s.zone === "remove") return L.zone[i] !== NO_THING;
+        if (s.zone === "grow") return L.zone[i] === NO_THING && L.floor[i] === 0 && g.reg.terrain.list[L.terrain[i]].fertility > 0;
         return L.zone[i] === NO_THING && !g.reg.terrain.list[L.terrain[i]].solid;
     }
   }
@@ -156,13 +158,17 @@ export class ToolController implements ToolHandler {
           removeZoneTiles(g, l, tiles);
           break;
         }
-        // Extend the stockpile next to the drag, or make a new one.
+        // Extend a matching zone next to the drag, or make a new one.
+        const crop = s.zone === "grow" ? s.crop : undefined;
         const near = tiles
           .flatMap((t) => [[t.x + 1, t.y], [t.x - 1, t.y], [t.x, t.y + 1], [t.x, t.y - 1]])
           .map(([x, y]) => (L.inBounds(x, y) ? L.zone[L.i(x, y)] : NO_THING))
-          .find((z) => z !== NO_THING && g.zones.get(z)?.kind === "stockpile");
+          .find((z) => {
+            const zz = z !== NO_THING ? g.zones.get(z) : undefined;
+            return !!zz && zz.kind === s.zone && zz.crop === crop;
+          });
         if (near !== undefined) addToZone(g, near, tiles);
-        else createZone(g, "stockpile", l, tiles);
+        else createZone(g, s.zone, l, tiles, undefined, crop);
         break;
       }
     }

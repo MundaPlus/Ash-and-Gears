@@ -34,6 +34,7 @@ export function PawnPanel() {
       {p.needs.map((n) => (
         <Bar key={n.id} value={n.value} label={t(`need.${n.id}`)} />
       ))}
+      {p.rad > 0.01 && <Bar value={Math.max(0, 1 - p.rad)} label={t("pawn.rad")} />}
       <h3>{t("pawn.traits")}</h3>
       <ul class="traits">
         {p.traits.map((tr) => (

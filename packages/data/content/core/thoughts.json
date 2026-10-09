@@ -97,5 +97,28 @@
   "id": "slept_outside",
   "mood": -3,
   "hours": 12
+ },
+ {
+  "id": "ate_meal",
+  "mood": 3,
+  "hours": 8
+ },
+ {
+  "id": "ate_raw_meat",
+  "mood": -9,
+  "hours": 8
+ },
+ {
+  "id": "ate_glowing_food",
+  "mood": -4,
+  "hours": 12
+ },
+ {
+  "id": "rad_sick",
+  "mood": -8
+ },
+ {
+  "id": "in_rad_cloud",
+  "mood": -5
  }
 ]

@@ -82,6 +82,21 @@ export const ThingDef = z.object({
   /** Seats and tables raise comfort while eating (M4). */
   seat: z.boolean().default(false),
   table: z.boolean().default(false),
+  /** Growing plant (crops). */
+  crop: z
+    .object({
+      growDays: z.number().positive(),
+      yield: z.record(id, z.number().int().positive()),
+      /** No growth below this temperature. */
+      minTemp: z.number().default(4),
+    })
+    .optional(),
+  /** Water source a survivor can drink from or fill jugs at. */
+  water: z.enum(["dirty", "clean", "toxic"]).optional(),
+  /** Collects rain into clean water items (per in-game hour of rain). */
+  rainCollect: z.number().int().min(0).default(0),
+  /** Recipes are done at this thing (benches, stoves, wells). */
+  bench: z.boolean().default(false),
 });
 export type ThingDef = z.infer<typeof ThingDef>;
 
@@ -93,6 +108,12 @@ export const ItemDef = z.object({
   category: z.enum(["resource", "food", "water", "medicine", "weapon", "apparel", "blueprint", "misc"]),
   /** Nutrition per unit (food). */
   nutrition: z.number().min(0).default(0),
+  /** Raw food: cooking input, mood penalty when eaten raw. */
+  raw: z.boolean().default(false),
+  /** Days until it rots at full rate (warm). Absent = never rots. */
+  rotDays: z.number().positive().optional(),
+  /** Thought when eaten. */
+  eatThought: id.optional(),
   /** Hydration per unit (water). */
   hydration: z.number().min(0).default(0),
 });
@@ -107,6 +128,22 @@ export const FloorDef = z.object({
   walkCost: z.number().positive().default(0.9),
 });
 export type FloorDef = z.infer<typeof FloorDef>;
+
+export const RecipeDef = z.object({
+  id,
+  /** Things where this recipe can be done. */
+  benches: z.array(id).min(1),
+  /** Inputs by item id, or by tag "raw_food". */
+  inputs: z.array(z.object({ item: id.optional(), tag: z.enum(["raw_food"]).optional(), count: z.number().int().positive() })),
+  output: z.record(id, z.number().int().positive()),
+  work: z.number().int().positive(),
+  skill: id.optional(),
+  /** Default "keep this many in stock" target. "per_colonist" multiplies by colony size. */
+  target: z.number().int().min(0),
+  perColonist: z.boolean().default(false),
+  research: id.optional(),
+});
+export type RecipeDef = z.infer<typeof RecipeDef>;
 
 export const SkillDef = z.object({ id });
 export type SkillDef = z.infer<typeof SkillDef>;
@@ -148,6 +185,7 @@ export const Content = z.object({
   things: z.array(ThingDef),
   items: z.array(ItemDef),
   floors: z.array(FloorDef),
+  recipes: z.array(RecipeDef),
   skills: z.array(SkillDef),
   traits: z.array(TraitDef),
   thoughts: z.array(ThoughtDef),

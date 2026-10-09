@@ -54,6 +54,12 @@ export function Toolbar() {
             <b>{t("zone.stockpile")}</b>
             <small>{t("zone.stockpile.desc")}</small>
           </button>
+          {["glowcorn_plant", "scrub_potato_plant", "fiber_weed_plant"].map((c) => (
+            <button key={c} data-testid={`zone-grow-${c}`} onClick={() => pick({ kind: "zone", zone: "grow", crop: c })}>
+              <b>{t("zone.grow", { crop: t(`thing.${c}`) })}</b>
+              <small>{t(`thing.${c}.desc`)}</small>
+            </button>
+          ))}
           <button data-testid="zone-remove" onClick={() => pick({ kind: "zone", zone: "remove" })}>
             <b>{t("zone.remove")}</b>
             <small>{t("zone.remove.desc")}</small>

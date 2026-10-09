@@ -1,0 +1,53 @@
+[
+ {
+  "id": "cook_simple_meal",
+  "benches": [
+   "stove",
+   "campfire"
+  ],
+  "inputs": [
+   {
+    "tag": "raw_food",
+    "count": 10
+   }
+  ],
+  "output": {
+   "simple_meal": 1
+  },
+  "work": 180,
+  "skill": "cooking",
+  "target": 2,
+  "perColonist": true
+ },
+ {
+  "id": "fill_water_jugs",
+  "benches": [
+   "well"
+  ],
+  "inputs": [],
+  "output": {
+   "clean_water": 5
+  },
+  "work": 120,
+  "target": 4,
+  "perColonist": true
+ },
+ {
+  "id": "make_components",
+  "benches": [
+   "scrap_bench"
+  ],
+  "inputs": [
+   {
+    "item": "scrap",
+    "count": 12
+   }
+  ],
+  "output": {
+   "components": 1
+  },
+  "work": 400,
+  "skill": "crafting",
+  "target": 5
+ }
+]

@@ -130,8 +130,16 @@ export class WorldRenderer {
         }
         const th = L.thing[i];
         if (th !== NO_THING) {
-          const t = new Sprite(this.tex.things[g.things.get(th)!.def]);
-          t.position.copyFrom(s.position);
+          const thing = g.things.get(th)!;
+          const t = new Sprite(this.tex.things[thing.def]);
+          if (g.reg.things.list[thing.def].crop) {
+            // Crops grow in size; contaminated ones glow green.
+            const sc = 0.35 + 0.65 * Math.min(1, thing.growth ?? 0);
+            t.anchor.set(0.5, 1);
+            t.scale.set(sc);
+            t.position.set(s.x + TILE / 2, s.y + TILE - 2);
+            if ((thing.contamUntil ?? 0) > g.tick) t.tint = 0xb8ff6a;
+          } else t.position.copyFrom(s.position);
           things.push(t);
         }
       }

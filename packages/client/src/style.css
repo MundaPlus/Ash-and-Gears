@@ -102,6 +102,16 @@ button.on { background: var(--rust); color: var(--ink); border-color: var(--rust
 .prio small { font-size: 10px; font-weight: 400; color: var(--dim); }
 .prio.p1 { color: #ffd27a; } .prio.p2 { color: var(--text); } .prio.p3 { color: var(--dim); } .prio.p4 { color: #8a7a68; } .prio.p0 { color: #5c4636; }
 
+.wx { font-style: normal; }
+.wx.rad_cloud { color: #c6ff3a; }
+.wx.rain { color: #a8c0d0; }
+.radbanner { position: absolute; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top, 0px) + 52px);
+  background: rgba(40, 52, 18, .92); border: 1px solid #9fd14a; color: #e9ffb0; padding: 6px 14px; font-weight: 600; font-size: 14px; max-width: calc(100vw - 16px); text-align: center; }
+.bills h3 { font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--dim); margin: 10px 0 4px; }
+.bill { display: grid; grid-template-columns: 1fr auto 36px 36px; gap: 4px; align-items: center; font-size: 13px; margin: 2px 0; }
+.bill button { min-width: 36px; min-height: 32px; }
+.bills .hint { color: var(--dim); font-size: 12px; }
+
 @media (max-width: 640px) {
   .toolbar { left: 8px; right: 8px; transform: none; }
   .layerbox { bottom: calc(env(safe-area-inset-bottom, 0px) + 60px); }
@@ -109,6 +119,7 @@ button.on { background: var(--rust); color: var(--ink); border-color: var(--rust
   .menu { bottom: calc(env(safe-area-inset-bottom, 0px) + 60px); }
   .menu > button, .menu section button { min-width: calc(50% - 3px); }
   .toolhint { top: calc(env(safe-area-inset-top, 0px) + 116px); }
+  .radbanner { top: calc(env(safe-area-inset-top, 0px) + 160px); }
   .debug { display: none; }
   .topleft { top: calc(env(safe-area-inset-top, 0px) + 60px); max-width: calc(100vw - 16px); }
   .colonist { min-width: 0; padding: 4px 6px; }

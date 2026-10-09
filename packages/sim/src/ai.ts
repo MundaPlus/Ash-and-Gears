@@ -9,7 +9,8 @@ import { NO_THING, type ItemStack } from "./map.ts";
 import { isSleepTime, tickNeeds } from "./needs.ts";
 import { isRoofed } from "./rooms.ts";
 import type { Pos } from "./path.ts";
-import { addMemory, hasTraitFlag, type Job, type Pawn } from "./pawn.ts";
+import { addMemory, addRad, hasTraitFlag, type Job, type Pawn } from "./pawn.ts";
+import { isContaminatedThing } from "./weather.ts";
 import { workOrder } from "./worktypes.ts";
 
 /** Tiles per tick at walk cost 1 (3 tiles per real second at 1x). */
@@ -22,6 +23,12 @@ export type JobDriver = (game: Game, p: Pawn, job: Job) => JobResult;
 const drivers = new Map<string, JobDriver>();
 export function registerJob(kind: string, driver: JobDriver): void {
   drivers.set(kind, driver);
+}
+
+/** Called when a job of this kind ends for any reason (done, failed or interrupted). */
+const cleanups = new Map<string, (game: Game, p: Pawn, job: Job) => void>();
+export function registerCleanup(kind: string, fn: (game: Game, p: Pawn, job: Job) => void): void {
+  cleanups.set(kind, fn);
 }
 
 /** A work giver looks for work of one type and gives the pawn a job, or returns null. */
@@ -114,6 +121,9 @@ export function tickPawns(game: Game): void {
   for (const p of game.pawns.values()) {
     tickNeeds(game, p);
     if (p.mentalBreak && p.job && !p.job.data?.sulk) endJob(game, p, false);
+    // A radiation cloud is coming: drop idle or outdoor work and think again (that finds shelter).
+    if ((game.tick + p.id) % 30 === 0 && p.job && p.job.kind !== "shelter" && radDanger(game) && !sheltered(game, p) && !p.mentalBreak)
+      endJob(game, p, false);
     if (p.job) {
       const driver = drivers.get(p.job.kind);
       const r: JobResult = driver ? driver(game, p, p.job) : "fail";
@@ -128,6 +138,7 @@ export function tickPawns(game: Game): void {
 }
 
 export function endJob(game: Game, p: Pawn, failed: boolean): void {
+  if (p.job) cleanups.get(p.job.kind)?.(game, p, p.job);
   releaseAll(game, p);
   if (p.carrying) {
     dropItems(game, p.carrying.def, p.carrying.count, p.layer, p.x, p.y, !!p.carrying.contaminated);
@@ -161,6 +172,7 @@ export function think(game: Game, p: Pawn): void {
   if (n.thirst < 0.2 && startJob(game, p, drinkJob(game, p, true))) return;
   if (n.hunger < 0.2 && startJob(game, p, eatJob(game, p, true))) return;
   if (n.rest < 0.12 && startJob(game, p, sleepJob(game, p))) return;
+  if (radDanger(game) && !sheltered(game, p) && startJob(game, p, shelterJob(game, p))) return;
   if (isSleepTime(game, p) && n.rest < 0.9) {
     // Eat and drink before bed, so nobody wakes up starving.
     if (n.thirst < 0.65 && startJob(game, p, drinkJob(game, p, false))) return;
@@ -214,10 +226,20 @@ function findWaterTile(game: Game, p: Pawn, kinds: string[], maxR = 60): Pos | n
 
 // ---------------------------------------------------------------- jobs: eat
 
+/** Food preference: meals first, then cans, then raw food. Contaminated food only when desperate. */
 function eatJob(game: Game, p: Pawn, desperate: boolean): Job | null {
-  const food = findItem(game, p, (d, cont) => game.reg.items.list[d].category === "food" && (desperate || !cont));
-  if (food === null || !reserve(game, `item:${food}`, p)) return null;
-  return { kind: "eat", stage: 0, targetId: food };
+  const tiers: ((d: number) => boolean)[] = [
+    (d) => game.reg.items.list[d].category === "food" && !game.reg.items.list[d].raw && game.reg.items.list[d].id !== "canned_food",
+    (d) => game.reg.items.list[d].id === "canned_food",
+    (d) => game.reg.items.list[d].category === "food" && game.reg.items.list[d].raw,
+  ];
+  for (const allowCont of desperate ? [false, true] : [false]) {
+    for (const tier of tiers) {
+      const food = findItem(game, p, (d, cont) => tier(d) && (allowCont || !cont));
+      if (food !== null && reserve(game, `item:${food}`, p)) return { kind: "eat", stage: 0, targetId: food };
+    }
+  }
+  return null;
 }
 
 registerJob("eat", (game, p, job) => {
@@ -234,22 +256,40 @@ registerJob("eat", (game, p, job) => {
     const def = game.reg.items.list[s.def];
     // Eat enough units to fill up, at least one.
     const units = Math.max(1, Math.min(s.count, Math.floor((1 - p.needs.hunger) / def.nutrition)));
+    const glowing = !!s.contaminated;
     const taken = takeFromStack(game, s.id, units);
-    job.data = { nutrition: taken * def.nutrition, food: def.id };
+    job.data = { nutrition: taken * def.nutrition, food: def.id, glowing };
     job.until = game.tick + Math.round(game.ticksPerHour * 0.3);
     job.stage = 2;
   }
   if (game.tick < job.until!) return "run";
   p.needs.hunger = Math.min(1, p.needs.hunger + (job.data!.nutrition as number));
-  addMemory(game, p, job.data!.food === "canned_food" ? "ate_canned" : hasTraitFlag(game, p, "eats_raw_ok") ? "ate_canned" : "ate_raw");
+  const def = game.reg.items.get(job.data!.food as string);
+  const raw = def.raw && hasTraitFlag(game, p, "eats_raw_ok");
+  addMemory(game, p, raw ? "ate_canned" : (def.eatThought ?? "ate_canned"));
+  if (job.data!.glowing) {
+    addRad(game, p, 0.08);
+    addMemory(game, p, "ate_glowing_food");
+  }
   return "done";
 });
 
 // ---------------------------------------------------------------- jobs: drink
 
+/** Water things (wells) that a pawn can drink from. */
+function findWaterThing(game: Game, p: Pawn): Pos | null {
+  const wells = [...game.things.values()]
+    .filter((t) => game.reg.things.list[t.def].water && !isReserved(game, `tile:${t.layer},${t.x},${t.y}`, p))
+    .sort((a, b) => dist2(p, a) - dist2(p, b));
+  for (const w of wells.slice(0, 6)) if (game.path.canReachAdjacent(p, w)) return { layer: w.layer, x: w.x, y: w.y };
+  return null;
+}
+
 function drinkJob(game: Game, p: Pawn, desperate: boolean): Job | null {
   const clean = findItem(game, p, (d, cont) => game.reg.items.list[d].id === "clean_water" && !cont);
   if (clean !== null && reserve(game, `item:${clean}`, p)) return { kind: "drink", stage: 0, targetId: clean };
+  const well = findWaterThing(game, p);
+  if (well && reserve(game, `tile:${well.layer},${well.x},${well.y}`, p)) return { kind: "drink", stage: 0, target: well };
   const jug = findItem(game, p, (d, cont) => game.reg.items.list[d].category === "water" && (desperate || !cont));
   if (jug !== null && reserve(game, `item:${jug}`, p)) return { kind: "drink", stage: 0, targetId: jug };
   const tile = findWaterTile(game, p, desperate ? ["clean", "dirty", "toxic"] : ["clean", "dirty"]);
@@ -269,26 +309,39 @@ registerJob("drink", (game, p, job) => {
     if (!atGoal(p)) return "run";
     let source: string;
     let hydration: number;
+    let glowing: boolean;
     if (job.targetId !== undefined) {
       const s = game.items.get(job.targetId);
       if (!s || s.x !== p.x || s.y !== p.y || s.layer !== p.layer) return "fail";
       const def = game.reg.items.list[s.def];
       const units = Math.max(1, Math.min(s.count, Math.floor((1 - p.needs.thirst) / def.hydration)));
+      glowing = !!s.contaminated;
       hydration = takeFromStack(game, s.id, units) * def.hydration;
-      source = s.contaminated ? "toxic" : def.id === "clean_water" ? "clean" : "dirty";
+      source = def.id === "clean_water" ? "clean" : "dirty";
     } else {
-      const L = game.map.layers[job.target!.layer];
-      source = game.reg.terrain.list[L.terrain[L.i(job.target!.x, job.target!.y)]].water ?? "dirty";
+      const t = job.target!;
+      const L = game.map.layers[t.layer];
+      const th = L.thing[L.i(t.x, t.y)];
+      if (th !== NO_THING && game.reg.things.list[game.things.get(th)!.def].water) {
+        const well = game.things.get(th)!;
+        source = game.reg.things.list[well.def].water!;
+        glowing = isContaminatedThing(game, well);
+      } else {
+        source = game.reg.terrain.list[L.terrain[L.i(t.x, t.y)]].water ?? "dirty";
+        glowing = t.layer === 0 && game.openWaterContamUntil > game.tick;
+      }
+      if (source === "toxic") glowing = true;
       hydration = 1 - p.needs.thirst;
     }
-    job.data = { hydration, source };
+    job.data = { hydration, source, glowing };
     job.until = game.tick + Math.round(game.ticksPerHour * 0.2);
     job.stage = 2;
   }
   if (game.tick < job.until!) return "run";
   p.needs.thirst = Math.min(1, p.needs.thirst + (job.data!.hydration as number));
-  addMemory(game, p, job.data!.source === "clean" ? "drank_clean" : "drank_dirty");
-  // Disease from dirty water and radiation from toxic water arrive with the health system (M4/M5).
+  addMemory(game, p, job.data!.source === "clean" && !job.data!.glowing ? "drank_clean" : "drank_dirty");
+  if (job.data!.glowing) addRad(game, p, 0.06);
+  // Disease from dirty water arrives with the health system (M5).
   return "done";
 });
 
@@ -352,6 +405,57 @@ registerJob("sleep", (game, p, job) => {
   addMemory(game, p, (job.data?.thought as string) ?? "slept_on_ground");
   if (!isRoofed(game, p.layer, p.x, p.y)) addMemory(game, p, "slept_outside");
   return "done";
+});
+
+// ---------------------------------------------------------------- jobs: shelter
+
+/** True while a radiation cloud is here or less than 2 hours away. */
+export function radDanger(game: Game): boolean {
+  const w = game.weather;
+  return w.kind === "rad_cloud" || (w.next?.kind === "rad_cloud" && w.next.at - game.tick < 2 * game.ticksPerHour);
+}
+
+export function sheltered(game: Game, p: Pawn): boolean {
+  return p.layer > 0 || isRoofed(game, p.layer, p.x, p.y);
+}
+
+/** Nearest roofed tile by walking distance (breadth-first), else the cave under the stairs. */
+function shelterJob(game: Game, p: Pawn): Job | null {
+  const L = game.map.layers[p.layer];
+  const seen = new Set<number>([L.i(p.x, p.y)]);
+  let frontier: [number, number][] = [[p.x, p.y]];
+  for (let steps = 0; steps < 80 && frontier.length; steps++) {
+    const next: [number, number][] = [];
+    for (const [x, y] of frontier) {
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx, ny = y + dy;
+        if (!game.walkable(p.layer, nx, ny)) continue;
+        const i = L.i(nx, ny);
+        if (seen.has(i)) continue;
+        seen.add(i);
+        if (isRoofed(game, p.layer, nx, ny) && !isReserved(game, `tile:${p.layer},${nx},${ny}`, p)) {
+          reserve(game, `tile:${p.layer},${nx},${ny}`, p);
+          return { kind: "shelter", stage: 0, target: { layer: p.layer, x: nx, y: ny } };
+        }
+        next.push([nx, ny]);
+      }
+    }
+    frontier = next;
+  }
+  const stairs = [...game.things.values()].find((t) => game.reg.things.list[t.def].id === "stairs_up");
+  if (stairs && game.path.canReach(p, stairs)) return { kind: "shelter", stage: 0, target: { layer: stairs.layer, x: stairs.x, y: stairs.y } };
+  return null;
+}
+
+registerJob("shelter", (game, p, job) => {
+  if (job.stage === 0) {
+    if (!goTo(game, p, job.target!)) return "fail";
+    job.stage = 1;
+  }
+  if (!atGoal(p)) return "run";
+  // Wait out the cloud; leave early only for urgent needs.
+  if (p.needs.thirst < 0.15 || p.needs.hunger < 0.15) return "done";
+  return radDanger(game) ? "run" : "done";
 });
 
 // ---------------------------------------------------------------- jobs: wander

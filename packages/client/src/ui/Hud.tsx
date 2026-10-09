@@ -26,7 +26,9 @@ export function Hud() {
       <header class="topbar">
         <div class="clock" data-testid="clock">
           <b>{s.clock}</b>
-          <span>{s.season}</span>
+          <span>
+            {s.season} · <em class={`wx ${s.weather}`}>{t(`weather.${s.weather}`)}</em>
+          </span>
         </div>
         <div class="speed" role="group">
           <button class={s.paused ? "on" : ""} onClick={actions.togglePause} title={t("speed.pause")} aria-label={t("speed.pause")}>
@@ -62,6 +64,11 @@ export function Hud() {
         </button>
       </div>
 
+      {(s.weather === "rad_cloud" || s.radWarning !== null) && (
+        <div class="radbanner" data-testid="rad-banner">
+          {s.weather === "rad_cloud" ? t("weather.rad_banner") : t("weather.rad_warning", { hours: s.radWarning ?? 0 })}
+        </div>
+      )}
       {s.inspect && !s.pawn && (
         <aside class="inspect" data-testid="inspect">
           <button class="close" onClick={actions.closeInspect} aria-label={t("ui.close")}>
@@ -71,6 +78,26 @@ export function Hud() {
           {s.inspect.lines.map((l) => (
             <p key={l}>{l}</p>
           ))}
+          {s.inspect.bills && s.inspect.bills.length > 0 && (
+            <div class="bills" data-testid="bills">
+              <h3>{t("bills.title")}</h3>
+              {s.inspect.bills.map((b) => (
+                <div class="bill" key={b.recipe}>
+                  <span>{t(`recipe.${b.recipe}`)}</span>
+                  <span class="num">
+                    {b.stock}/{b.target}
+                  </span>
+                  <button onClick={() => actions.setBillTarget(b.benchId, b.recipe, b.target - 1)} aria-label="-">
+                    −
+                  </button>
+                  <button onClick={() => actions.setBillTarget(b.benchId, b.recipe, b.target + 1)} aria-label="+">
+                    +
+                  </button>
+                </div>
+              ))}
+              <p class="hint">{t("bills.hint")}</p>
+            </div>
+          )}
         </aside>
       )}
 

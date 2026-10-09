@@ -78,6 +78,8 @@ export interface Pawn {
   work: Record<string, number>;
   /** Bed this survivor owns, if any. */
   bedId: number | null;
+  /** Radiation dose. 0.3 = sick, 0.6 = serious, 1 = lethal (health effects in M5). */
+  rad: number;
 }
 
 export const XP_PER_LEVEL = (level: number) => 1000 + level * 250;
@@ -108,6 +110,16 @@ export function learn(game: Game, p: Pawn, skillId: string, xp: number): void {
 
 export function hasTraitFlag(game: Game, p: Pawn, flag: string): boolean {
   return p.traits.some((t) => game.reg.traits.list[t].flags.includes(flag));
+}
+
+export function radMult(game: Game, p: Pawn): number {
+  let m = 1;
+  for (const t of p.traits) m *= game.reg.traits.list[t].radMult;
+  return m;
+}
+
+export function addRad(game: Game, p: Pawn, dose: number): void {
+  p.rad = Math.min(1.5, p.rad + dose * radMult(game, p));
 }
 
 export function workSpeed(game: Game, p: Pawn): number {
@@ -187,5 +199,6 @@ export function makeSurvivor(game: Game, layer: number, x: number, y: number, us
     carrying: null,
     work: {},
     bedId: null,
+    rad: 0,
   };
 }

@@ -3,6 +3,10 @@ import { h, render } from "preact";
 import { loadCoreContent, t } from "@wc/data";
 import {
   activeWorkTypes,
+  billTarget,
+  recipesFor,
+  setBillTarget,
+  stockOf,
   countItems,
   DESIG_KINDS,
   Game,
@@ -16,6 +20,7 @@ import {
   type Pawn,
 } from "@wc/sim";
 import { ToolController } from "./input/tools.ts";
+import * as sim from "@wc/sim";
 import { Camera } from "./input/camera.ts";
 import { PawnRenderer } from "./render/pawns.ts";
 import { makePlaceholderTextures, TILE } from "./render/textures.ts";
@@ -58,6 +63,10 @@ async function boot() {
   world.addChild(pawnsR.root);
   const night = new Graphics();
   app.stage.addChild(night);
+  const weatherFx = new Graphics();
+  app.stage.addChild(weatherFx);
+  /** Rain drops in screen space: x, y, speed. */
+  const drops = Array.from({ length: 140 }, () => [Math.random(), Math.random(), 0.6 + Math.random() * 0.6]);
 
   const camera = new Camera(app.canvas, world, { w: game.map.w * TILE, h: game.map.h * TILE });
   camera.centerOn((game.home.x + 0.5) * TILE, (game.home.y + 0.5) * TILE);
@@ -71,6 +80,7 @@ async function boot() {
     if (spec?.kind === "build") label = t("tool.build", { name: t(spec.defKind === "floor" ? `floor.${spec.def}` : `thing.${spec.def}`) });
     else if (spec?.kind === "order") label = t("tool.order", { name: t(`order.${spec.desig}`) });
     else if (spec?.kind === "cancel") label = t("tool.cancel");
+    else if (spec?.kind === "zone" && spec.zone === "grow") label = t("tool.zone", { name: t("zone.grow", { crop: t(`thing.${spec.crop}`) }) });
     else if (spec?.kind === "zone") label = t("tool.zone", { name: t(`zone.${spec.zone}`) });
     store.set({ toolLabel: label ? `${label} · ${t("tool.hint")}` : null, menu: null });
   };
@@ -135,20 +145,31 @@ async function boot() {
     if (L.desig[i]) lines.push(t("inspect.order", { name: t(`order.${DESIG_KINDS[L.desig[i] - 1]}`) }));
     let title = t(`terrain.${td.id}`);
     const th = L.thing[i];
+    let bills: { benchId: number; recipe: string; target: number; stock: number }[] | undefined;
     if (th !== NO_THING) {
       const thing = game.things.get(th)!;
       const def = game.reg.things.list[thing.def];
       title = `${t(`thing.${def.id}`)} · ${title}`;
       lines.push(t("inspect.hp", { hp: thing.hp, max: def.hp }));
+      if (def.crop) lines.push(t("inspect.growth", { v: Math.round((thing.growth ?? 0) * 100) }));
+      if ((thing.contamUntil ?? 0) > game.tick) lines.push(t("inspect.contaminated"));
+      if (def.bench)
+        bills = recipesFor(game, def.id).map((r) => ({ benchId: thing.id, recipe: r.id, target: billTarget(game, thing, r), stock: stockOf(game, r) }));
     }
+    inspected = { x, y };
     const it = L.item[i];
     if (it !== NO_THING) {
       const st = game.items.get(it)!;
       const name = t(`item.${game.reg.items.list[st.def].id}`);
       lines.push(t("inspect.items", { count: st.count, item: st.contaminated ? `${name} (${t("item.contaminated")})` : name }));
     }
-    store.set({ inspect: { title, lines } });
+    store.set({ inspect: { title, lines, bills } });
   }
+  let inspected: { x: number; y: number } | null = null;
+  actions.setBillTarget = (benchId, recipe, n) => {
+    setBillTarget(game, benchId, recipe, n);
+    if (inspected) inspectTile(inspected.x, inspected.y);
+  };
 
   const jobKey = (p: Pawn) =>
     p.mentalBreak ? "job.sulk" : p.job?.kind === "work" ? `task.${p.job.data!.task}` : `job.${p.job?.kind ?? "none"}`;
@@ -186,6 +207,7 @@ async function boot() {
       moodTarget: Math.round(moodTarget(game, p)),
       job: jobKey(p),
       needs: NEEDS.map((n) => ({ id: n, value: p.needs[n] })),
+      rad: p.rad,
       skills: game.reg.skills.list.map((s, i) => ({ id: s.id, level: p.skills[i].level, passion: p.skills[i].passion })),
       traits: p.traits.map((ti) => game.reg.traits.list[ti].id),
       thoughts: thoughts.filter((th) => !th.id.startsWith("trait_")),
@@ -247,6 +269,20 @@ async function boot() {
     const dark = renderer.layer > 0 ? 0.35 : darkness(game.hourOfDay) * 0.55;
     night.clear();
     if (dark > 0.01) night.rect(0, 0, app.screen.width, app.screen.height).fill({ color: 0x0b1020, alpha: dark });
+    // Weather on the surface: a pulsing green haze for the radiation cloud, falling streaks for rain.
+    weatherFx.clear();
+    const wk = game.weather.kind;
+    if (renderer.layer === 0 && wk === "rad_cloud")
+      weatherFx.rect(0, 0, app.screen.width, app.screen.height).fill({ color: 0x9fd14a, alpha: 0.13 + 0.05 * Math.sin(clock * 1.5) });
+    if (renderer.layer === 0 && (wk === "rain" || wk === "rad_cloud")) {
+      const W = app.screen.width, H = app.screen.height;
+      for (const d of drops) {
+        d[1] = (d[1] + dt * d[2] * (paused ? 0 : 1.6)) % 1;
+        const x = d[0] * W, y = d[1] * H;
+        weatherFx.moveTo(x, y).lineTo(x - 4, y + 14);
+      }
+      weatherFx.stroke({ width: 1, color: wk === "rain" ? 0xa8c0d0 : 0xc6ff3a, alpha: 0.45 });
+    }
 
     fpsFrames++;
     fpsTime += dt;
@@ -260,15 +296,20 @@ async function boot() {
         paused,
         clock: t("clock", { day: tm.day, hh: pad(tm.hour), mm: pad(tm.minute) }),
         season: t(`season.${tm.season}`, { year: tm.year }),
+        weather: game.weather.kind,
+        radWarning: game.weather.next?.kind === "rad_cloud" ? Math.max(0, Math.ceil((game.weather.next.at - game.tick) / game.ticksPerHour)) : null,
         fps: fpsTime > 1 ? Math.round(fpsFrames / fpsTime) : store.state.fps,
         colonists: colonists(),
         ...(store.state.menu === "work" ? { workRows: workRows() } : {}),
         pawn: sel ? pawnDetail(sel) : null,
         resources: [
+          { id: "meals", count: countItems(game, "simple_meal") },
           { id: "food", count: countItems(game, "canned_food") },
+          { id: "raw", count: game.reg.items.list.filter((d) => d.raw).reduce((n, d) => n + countItems(game, d.id), 0) },
           { id: "water", count: countItems(game, "clean_water") + countItems(game, "dirty_water") },
           { id: "scrap", count: countItems(game, "scrap") },
           { id: "wood", count: countItems(game, "wood") },
+          { id: "stone", count: countItems(game, "stone") },
         ],
       });
       drainMessages(clock);
@@ -295,6 +336,7 @@ async function boot() {
       setLayer: actions.setLayer,
       selectPawn: actions.selectPawn,
       setTool: actions.setTool,
+      sim,
       pause: () => (paused = true),
       ready: true,
     },

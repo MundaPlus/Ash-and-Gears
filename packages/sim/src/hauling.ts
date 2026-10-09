@@ -35,8 +35,15 @@ export function dropCarried(game: Game, p: Pawn): void {
 
 // ---------------------------------------------------------------- zones
 
-export function createZone(game: Game, kind: Zone["kind"], layer: number, tiles: { x: number; y: number }[], allow = ALL_CATEGORIES): Zone {
-  const z: Zone = { id: game.newId(), kind, layer, allow: [...allow] };
+export function createZone(
+  game: Game,
+  kind: Zone["kind"],
+  layer: number,
+  tiles: { x: number; y: number }[],
+  allow = ALL_CATEGORIES,
+  crop?: string,
+): Zone {
+  const z: Zone = { id: game.newId(), kind, layer, allow: kind === "stockpile" ? [...allow] : [], ...(crop ? { crop } : {}) };
   game.zones.set(z.id, z);
   addToZone(game, z.id, tiles);
   return z;
@@ -84,8 +91,7 @@ function zoneAt(game: Game, layer: number, x: number, y: number): Zone | null {
 
 function accepts(game: Game, z: Zone | null, def: number, contaminated: boolean): boolean {
   if (!z || z.kind !== "stockpile") return false;
-  // Contaminated goods never go into normal stockpiles (spec 04); M4 adds a dump for them.
-  if (contaminated) return false;
+  void contaminated;
   return z.allow.includes(game.reg.items.list[def].category);
 }
 

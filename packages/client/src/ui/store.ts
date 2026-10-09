@@ -4,6 +4,7 @@ import { useEffect, useState } from "preact/hooks";
 export interface Inspect {
   title: string;
   lines: string[];
+  bills?: { benchId: number; recipe: string; target: number; stock: number }[];
 }
 
 export interface ColonistSummary {
@@ -24,6 +25,7 @@ export interface PawnDetail {
   moodTarget: number;
   job: string;
   needs: { id: string; value: number }[];
+  rad: number;
   skills: { id: string; level: number; passion: number }[];
   traits: string[];
   thoughts: { id: string; mood: number }[];
@@ -72,6 +74,9 @@ export interface UiState {
   buildOptions: BuildOption[];
   workTypes: string[];
   workRows: WorkRow[];
+  weather: string;
+  /** Hours until a radiation cloud, or null. */
+  radWarning: number | null;
 }
 
 type Listener = () => void;
@@ -96,6 +101,8 @@ class Store {
     buildOptions: [],
     workTypes: [],
     workRows: [],
+    weather: "clear",
+    radWarning: null,
   };
   private listeners = new Set<Listener>();
 
@@ -125,6 +132,7 @@ export const actions = {
   selectPawn: (_id: number | null, _center = false) => {},
   setTool: (_spec: import("../input/tools.ts").ToolSpec | null) => {},
   setWork: (_pawn: number, _work: string, _value: number) => {},
+  setBillTarget: (_bench: number, _recipe: string, _n: number) => {},
   openMenu: (m: UiState["menu"]) => store.set({ menu: store.state.menu === m ? null : m }),
   closeInspect: () => {
     store.set({ inspect: null });

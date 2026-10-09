@@ -13,3 +13,7 @@ export * from "./designations.ts";
 export * from "./construction.ts";
 export * from "./hauling.ts";
 export * from "./rooms.ts";
+export * from "./weather.ts";
+export * from "./farming.ts";
+export * from "./bills.ts";
+export * from "./rot.ts";

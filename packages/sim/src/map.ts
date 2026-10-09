@@ -17,6 +17,10 @@ export interface Thing {
   x: number;
   y: number;
   hp: number;
+  /** Crops: growth 0..1. */
+  growth?: number;
+  /** Radioactive until this tick (crops, wells, rain collectors). */
+  contamUntil?: number;
 }
 
 /** A stack of one item type lying on a tile or carried by a pawn. */
@@ -29,8 +33,11 @@ export interface ItemStack {
   layer: number;
   x: number;
   y: number;
-  /** Radioactive contamination (spec 04). */
+  /** Radioactive contamination (spec 04). Lasts until contamUntil. */
   contaminated?: boolean;
+  contamUntil?: number;
+  /** Rot progress 0..1 for food that rots. */
+  rot?: number;
 }
 
 /** Player orders on tiles. */
