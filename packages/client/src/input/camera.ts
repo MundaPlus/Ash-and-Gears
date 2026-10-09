@@ -6,6 +6,8 @@
 import type { Container } from "pixi.js";
 
 export interface ToolHandler {
+  /** Mouse moves with no button pressed: show what would be placed here. */
+  hover(wx: number, wy: number): void;
   down(wx: number, wy: number): void;
   move(wx: number, wy: number): void;
   up(wx: number, wy: number): void;
@@ -131,7 +133,13 @@ export class Camera {
 
   private onMove(e: PointerEvent) {
     const p = this.pointers.get(e.pointerId);
-    if (!p) return;
+    if (!p) {
+      if (this.tool && e.pointerType === "mouse") {
+        const w = this.screenToWorld(e.offsetX, e.offsetY);
+        this.tool.hover(w.x, w.y);
+      }
+      return;
+    }
     const dx = e.offsetX - p.x, dy = e.offsetY - p.y;
     p.x = e.offsetX;
     p.y = e.offsetY;

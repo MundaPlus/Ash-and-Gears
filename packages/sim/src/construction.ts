@@ -25,7 +25,11 @@ export function canPlace(game: Game, kind: Blueprint["kind"], defId: string, lay
   if (!L.inBounds(x, y)) return false;
   const i = L.i(x, y);
   const td = game.reg.terrain.list[L.terrain[i]];
-  if (td.solid || !td.buildable || L.blueprint[i] !== NO_THING) return false;
+  if (td.solid || !td.buildable) return false;
+  // A new blueprint may replace a different one on the same tile (a door over a wall plan).
+  const old = L.blueprint[i] !== NO_THING ? game.blueprints.get(L.blueprint[i]) : undefined;
+  if (old && old.kind === kind && (kind === "floor" ? game.reg.floors.list[old.def].id : game.reg.things.list[old.def].id) === defId) return false;
+  if (old && old.kind !== kind) return false;
   if (kind === "floor") return L.floor[i] === 0;
   const build = game.reg.things.get(defId).build;
   if (!build || (build.research && !game.research.done.has(build.research))) return false;
@@ -34,6 +38,9 @@ export function canPlace(game: Game, kind: Blueprint["kind"], defId: string, lay
 
 export function placeBlueprint(game: Game, kind: Blueprint["kind"], defId: string, layer: number, x: number, y: number, rot?: number): Blueprint | null {
   if (!canPlace(game, kind, defId, layer, x, y)) return null;
+  const Lr = game.map.layers[layer];
+  const replaced = Lr.blueprint[Lr.i(x, y)];
+  if (replaced !== NO_THING) cancelBlueprint(game, replaced);
   const def = kind === "thing" ? game.reg.things.idx(defId) : game.reg.floors.idx(defId);
   const info = buildInfo(game, kind, def)!;
   const need: Record<number, number> = {};

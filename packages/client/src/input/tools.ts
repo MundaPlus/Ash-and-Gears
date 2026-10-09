@@ -52,11 +52,21 @@ export class ToolController implements ToolHandler {
 
   set(spec: ToolSpec | null) {
     this.spec = spec;
+    this.hovered = null;
     this.cancel();
   }
 
   private tileAt(wx: number, wy: number): Tile {
     return { x: Math.floor(wx / TILE), y: Math.floor(wy / TILE) };
+  }
+
+  private hovered: Tile | null = null;
+
+  hover(wx: number, wy: number) {
+    const t = this.tileAt(wx, wy);
+    if (this.start || (this.hovered && this.hovered.x === t.x && this.hovered.y === t.y)) return;
+    this.hovered = t;
+    this.draw();
   }
 
   down(wx: number, wy: number) {
@@ -83,6 +93,7 @@ export class ToolController implements ToolHandler {
   cancel() {
     this.start = this.end = null;
     this.preview.clear();
+    if (this.hovered) this.draw();
   }
 
   /** Tiles covered by the current drag, by tool shape. */
@@ -132,7 +143,14 @@ export class ToolController implements ToolHandler {
 
   private draw() {
     this.preview.clear();
-    if (!this.start || !this.spec) return;
+    if (!this.spec) return;
+    if (!this.start) {
+      // Not dragging: outline the tile under the mouse, green if the tool works there.
+      if (!this.hovered) return;
+      const t = this.hovered, ok = this.valid(t);
+      this.preview.rect(t.x * TILE, t.y * TILE, TILE, TILE).stroke({ width: 2, color: ok ? 0x9fd14a : 0xc2453a, alpha: 0.95 });
+      return;
+    }
     const DIRS: [number, number][] = [[1, 0], [0, 1], [-1, 0], [0, -1]];
     for (const t of this.tiles()) {
       const ok = this.valid(t);

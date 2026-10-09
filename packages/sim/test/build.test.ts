@@ -98,6 +98,23 @@ describe("construction", () => {
   });
 });
 
+describe("blueprint replacing", () => {
+  it("a door blueprint replaces a wall blueprint and refunds what was delivered", () => {
+    const g = smallGame("replace");
+    const { x, y } = g.home;
+    clearArea(g, x - 6, y - 6, 2);
+    const wall = placeBlueprint(g, "thing", "scrap_wall", 0, x - 6, y - 6)!;
+    wall.need[g.reg.items.idx("scrap")] = 2; // 3 of 5 already delivered
+    const scrap0 = countItems(g, "scrap");
+    const door = placeBlueprint(g, "thing", "scrap_door", 0, x - 6, y - 6);
+    expect(door).not.toBeNull();
+    expect(g.blueprints.has(wall.id)).toBe(false);
+    expect(countItems(g, "scrap")).toBe(scrap0 + 3);
+    // The same blueprint again is not a change.
+    expect(placeBlueprint(g, "thing", "scrap_door", 0, x - 6, y - 6)).toBeNull();
+  });
+});
+
 describe("orders", () => {
   it("salvaging a car wreck removes it and drops scrap", () => {
     const g = smallGame("salvage");
