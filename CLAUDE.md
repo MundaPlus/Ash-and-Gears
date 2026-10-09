@@ -1,7 +1,7 @@
-# Wasteland Colony — project notes for Claude
+# Ash & Gears (ex Wasteland Colony) — project notes for Claude
 
 - Spec: `docs/spec/` (approved v1.0). Each chapter has a "Demo subset". Build only the demo subset until the demo review.
-- Plan and milestones: `docs/spec/11-roadmap.md`. Work on branch `develop`. Remote: Gitea `admin/wasteland-colony`.
+- Plan and milestones: `docs/spec/11-roadmap.md`. Work on branch `develop`. Remote: Gitea `admin/Ash-and-Gears` (origin). The old repo `admin/wasteland-colony` is remote `old-origin`.
 - Monorepo: `packages/sim` (pure TS, no DOM, deterministic), `packages/client` (PixiJS + Preact), `packages/data` (JSON content + zod + i18n).
 - All player text goes through `t()` from `@wc/data` with keys in `packages/data/i18n/en.json`.
 - Dev/preview servers bind 0.0.0.0 (ports 5173/4173). Keep it that way.
