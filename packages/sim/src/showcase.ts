@@ -7,6 +7,7 @@ import { createZone } from "./hauling.ts";
 import { dropItems } from "./items.ts";
 import { NO_THING } from "./map.ts";
 import { makeSurvivor } from "./pawn.ts";
+import { completeRoofs } from "./rooms.ts";
 
 export function buildShowcase(game: Game): void {
   const { x: hx, y: hy } = game.home;
@@ -109,6 +110,7 @@ export function buildShowcase(game: Game): void {
     p.weapon = game.reg.items.idx(i ? "crossbow" : "pipe_pistol");
     game.pawns.set(p.id, p);
   }
+  completeRoofs(game);
   game.goals = { shelter: true, water: true, lights: true };
   game.message("msg.showcase", {}, "info");
 }

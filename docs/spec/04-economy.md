@@ -56,10 +56,19 @@
 
 - Storyteller event. Duration: a few hours to days in-game.
 - During the cloud: all survivors outside take rad dose per tick.
-- **Contamination**: when the cloud ends, the following become *contaminated* for **one season**:
-  - Crops in outdoor growing zones (and soil of those zones).
-  - Food and water items stored outside or in unsealed rooms.
-  - Open water sources (pools, rain collectors, wells without cover).
+- **Contamination**: when the cloud ends, each of the following has a **chance** to become *contaminated* for **one season**:
+  - Crops (and seeds sown later in open soil that season).
+  - Food and water stacks.
+  - Water sources (pools as one roll, rain collectors, wells).
+- The chance depends on shelter:
+
+  | Shelter | Radiation cloud | Toxic rain |
+  |---|---|---|
+  | Open sky (no roof) | 60% | 30% |
+  | Roofed, a door opens straight outside | 20% | 8% |
+  | Sealed (roof + airlock of two doors, or a door into a closed hall) | 0% | 0% |
+
+- **Toxic rain** (weather, after day 3): small rad dose outside, rain collectors give contaminated water, and the same chance rolls when it stops, for **half a season**.
 - Items in **sealed rooms** stay clean. This is the main reason to build sealed storage.
 - Contaminated food/water can be eaten in desperation (rad dose) or cleaned (purifier, decon shower for items — tier 2).
 - Warning: storyteller gives a short alert (half a day) before most clouds. Hard storytellers sometimes do not.

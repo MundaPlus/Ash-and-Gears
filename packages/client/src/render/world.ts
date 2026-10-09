@@ -122,6 +122,15 @@ export class WorldRenderer {
           bs.alpha = Object.values(bp.need).some((n) => n > 0) ? 0.55 : 0.8;
           overlays.push(bs);
         }
+        // A room that waits for its roof: a faint hatch, until a survivor builds it.
+        if (L.index === 0 && L.roofWant[i] && !L.roof[i]) {
+          const rs = new Sprite(Texture.WHITE);
+          rs.position.copyFrom(s.position);
+          rs.width = rs.height = TILE;
+          rs.tint = 0x7fb0e0;
+          rs.alpha = 0.22;
+          marks.push(rs);
+        }
         const d = L.desig[i];
         if (d) {
           const ds = new Sprite(this.tex.desig[d]);

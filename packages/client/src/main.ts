@@ -14,6 +14,7 @@ import {
   NEEDS,
   NO_THING,
   pawnName,
+  exposureAt,
   roomAt,
   tempAt,
   TICKS_PER_SECOND,
@@ -333,7 +334,12 @@ async function boot() {
     if (td.fertility > 0) lines.push(t("inspect.fertility", { v: Math.round(td.fertility * 100) }));
     if (td.water) lines.push(t("inspect.water", { v: td.water }));
     const room = roomAt(game, renderer.layer, x, y);
-    lines.push(room && !room.outdoor ? t("inspect.room", { size: room.size }) : t("inspect.outdoors"));
+    if (room && !room.outdoor) {
+      lines.push(t("inspect.room", { size: room.size }));
+      // Shelter: roof progress, then how well it keeps radiation out.
+      const exp = exposureAt(game, renderer.layer, x, y);
+      lines.push(t(`inspect.shelter_${exp}`));
+    } else lines.push(t("inspect.outdoors"));
     lines.push(t("inspect.temp", { v: Math.round(tempAt(game, renderer.layer, x, y)) }));
     const bp = L.blueprint[i] !== NO_THING ? game.blueprints.get(L.blueprint[i]) : undefined;
     if (bp) lines.push(t("inspect.blueprint", { name: t(bp.kind === "floor" ? `floor.${game.reg.floors.list[bp.def].id}` : `thing.${game.reg.things.list[bp.def].id}`) }));
@@ -511,9 +517,9 @@ async function boot() {
     // Weather on the surface: a pulsing green haze for the radiation cloud, falling streaks for rain.
     weatherFx.clear();
     const wk = game.weather.kind;
-    if (renderer.layer === 0 && wk === "rad_cloud")
-      weatherFx.rect(0, 0, app.screen.width, app.screen.height).fill({ color: 0x9fd14a, alpha: 0.13 + 0.05 * Math.sin(clock * 1.5) });
-    if (renderer.layer === 0 && (wk === "rain" || wk === "rad_cloud")) {
+    if (renderer.layer === 0 && (wk === "rad_cloud" || wk === "toxic_rain"))
+      weatherFx.rect(0, 0, app.screen.width, app.screen.height).fill({ color: 0x9fd14a, alpha: (wk === "rad_cloud" ? 0.13 : 0.06) + 0.05 * Math.sin(clock * 1.5) });
+    if (renderer.layer === 0 && (wk === "rain" || wk === "rad_cloud" || wk === "toxic_rain")) {
       const W = app.screen.width, H = app.screen.height;
       for (const d of drops) {
         d[1] = (d[1] + dt * d[2] * (paused ? 0 : 1.6)) % 1;

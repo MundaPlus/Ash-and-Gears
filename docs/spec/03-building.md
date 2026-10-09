@@ -20,7 +20,7 @@ Player marks work. Survivors do it.
 | Walls | Scrap wall, wood wall, brick wall, concrete wall, reinforced wall |
 | Doors | Curtain, scrap door, metal door, blast door (powered, late) |
 | Floors | Dirt (none), wood planks, scrap tiles, concrete, sterile tiles |
-| Roofs | Auto-added over enclosed rooms up to 6 tiles from a wall. Can be removed |
+| Roofs | An enclosed room needs a roof. Survivors build it tile by tile (construction work, no materials). It falls in if the room opens |
 | Supports | Underground: wooden prop, steel beam. Prevents cave-ins |
 | Stairs | Ladder, stairs, lift (powered) |
 
@@ -45,8 +45,8 @@ Player marks work. Survivors do it.
 
 ## Air and radiation shelter
 
-- A room is **sealed** if it is enclosed, roofed and has no open door to outside.
-- During a radiation cloud: outdoors and unsealed rooms get radiation. Sealed rooms stay clean.
+- A room is **sealed** if it is enclosed, fully roofed and no door opens straight to outside. Two doors in a row (an airlock) or a door into a closed hall count as sealed.
+- After a radiation cloud or toxic rain: things outdoors have a high chance to be contaminated, things in unsealed rooms a low chance. Sealed rooms stay clean (see 04).
 - Late tech: air filters let a room stay clean even with its door used often.
 
 ## Furniture and production buildings
@@ -73,4 +73,4 @@ Player marks work. Survivors do it.
 
 ## Demo subset
 
-Build, deconstruct, salvage, mine, clear rubble, harvest. Scrap/wood/stone walls, doors, floors, auto-roof. Rooms + types (bedroom, kitchen, storage, workshop). Temperature (simple). Sealed rooms vs radiation. Stockpile + growing zones. Beds, table, chair, lamp, 4 workbenches.
+Build, deconstruct, salvage, mine, clear rubble, harvest. Scrap/wood/stone walls, doors, floors, roofs built by survivors, airlocks. Rooms + types (bedroom, kitchen, storage, workshop). Temperature (simple). Sealed rooms vs radiation. Stockpile + growing zones. Beds, table, chair, lamp, 4 workbenches.

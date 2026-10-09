@@ -11,7 +11,7 @@ import { Rng } from "./rng.ts";
 import { tickPawns } from "./ai.ts";
 import { setupStart } from "./start.ts";
 import "./systems.ts";
-import { ensureRooms, tickTemperature, type Room } from "./rooms.ts";
+import { completeRoofs, ensureRooms, tickTemperature, type Room } from "./rooms.ts";
 import { tickWeather, type WeatherKind } from "./weather.ts";
 import { tickFarming } from "./farming.ts";
 import { tickRot } from "./rot.ts";
@@ -69,6 +69,8 @@ export class Game {
   readonly zones = new Map<number, Zone>();
   /** Node ids (layer * w * h + tile) that carry a player order. */
   readonly desigTiles = new Set<number>();
+  /** Surface tile indices that need a roof and have none yet. */
+  readonly roofTodo = new Set<number>();
   rooms = new Map<number, Room>();
   roomsVersion = -1;
   /** Extra degrees from weather. */
@@ -148,7 +150,7 @@ export class Game {
     this.nextId = n;
   }
 
-  /** Rebuild caches that saves do not store (rooms, roofs, power nets). */
+  /** Rebuild caches that saves do not store (rooms, roofs wanted, power nets). */
   rebuildDerived(): void {
     ensureRooms(this);
     ensureNets(this);
@@ -164,7 +166,8 @@ export class Game {
     const g = new Game(content, opts);
     generateHomeMap(g);
     setupStart(g);
-    ensureRooms(g);
+    // Ruins that still stand closed keep their old roofs.
+    completeRoofs(g);
     // Start at 07:00, so the first look at the world is in daylight.
     g.tick = Math.round((g.ticksPerDay * 7) / 24);
     g.story.lastThreat = g.tick;

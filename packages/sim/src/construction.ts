@@ -10,6 +10,7 @@ import { dropItems, takeFromStack } from "./items.ts";
 import { NO_THING, type Blueprint } from "./map.ts";
 import { dropCarried, pickUp } from "./hauling.ts";
 import type { Pawn } from "./pawn.ts";
+import { setRoof } from "./rooms.ts";
 import { registerTask, workJob } from "./work.ts";
 
 /** Blueprints within this many tiles share one delivery trip. */
@@ -208,4 +209,42 @@ registerJob("deliver", (game, p, job) => {
   job.data!.bp = bp.id;
   job.stage = 2;
   return "run";
+});
+
+// ---------------------------------------------------------------- roofs
+
+/** Work ticks to put a roof on one tile. Roofs cost no materials (scrap sheets from the ruins). */
+const ROOF_WORK = 30;
+
+registerTask("roof", {
+  skill: "construction",
+  xp: 0.2,
+  total: () => ROOF_WORK,
+  valid: (game, job) => {
+    const t = job.target!;
+    return game.roofTodo.has(game.map.layers[0].i(t.x, t.y));
+  },
+  complete: (game, _p, job) => setRoof(game, job.target!.x, job.target!.y, true),
+});
+
+registerWorkGiver({
+  workType: "construct",
+  give: (game, p) => {
+    if (!game.roofTodo.size) return null;
+    const L = game.map.layers[0];
+    const cands: { x: number; y: number; d: number }[] = [];
+    for (const i of game.roofTodo) {
+      const x = i % L.w, y = (i - x) / L.w;
+      if (isReserved(game, `tile:0,${x},${y}`, p)) continue;
+      cands.push({ x, y, d: (x - p.x) ** 2 + (y - p.y) ** 2 + (p.layer !== 0 ? 900 : 0) });
+    }
+    cands.sort((a, b) => a.d - b.d);
+    for (const c of cands.slice(0, 12)) {
+      const pos = { layer: 0, x: c.x, y: c.y };
+      if (!game.path.canReachAdjacent(p, pos)) continue;
+      const job = workJob(game, p, "roof", pos);
+      if (job) return job;
+    }
+    return null;
+  },
 });

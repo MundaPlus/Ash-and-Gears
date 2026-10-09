@@ -92,8 +92,10 @@ export class Layer {
   readonly item: Int32Array;
   /** Floor index + 1, or 0 for no floor. */
   readonly floor: Uint8Array;
-  /** 1 if the tile has a roof. Underground tiles always count as roofed. */
+  /** 1 if the tile has a built roof. Underground tiles always count as roofed. */
   readonly roof: Uint8Array;
+  /** 1 if the tile needs a roof (enclosed surface room or its walls). Survivors build it. */
+  readonly roofWant: Uint8Array;
   /** Room id (see rooms.ts), or -1 for walls and solid rock. */
   readonly room: Int32Array;
   /** Zone id, or NO_THING. */
@@ -116,6 +118,7 @@ export class Layer {
     this.item = new Int32Array(w * h).fill(NO_THING);
     this.floor = new Uint8Array(w * h);
     this.roof = new Uint8Array(w * h);
+    this.roofWant = new Uint8Array(w * h);
     this.room = new Int32Array(w * h).fill(-1);
     this.zone = new Int32Array(w * h).fill(NO_THING);
     this.blueprint = new Int32Array(w * h).fill(NO_THING);

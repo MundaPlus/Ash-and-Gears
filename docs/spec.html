@@ -86,7 +86,7 @@ footer { grid-column: 2; color: var(--muted); font-size: 14px; padding-top: 24px
     </ol>
   </header>
   <nav class="toc" aria-label="Chapters"><p>Chapters</p><ol><li><a href="#s00"><span class="n">00</span>Overview</a></li><li><a href="#s01"><span class="n">01</span>Survivors (colonists)</a></li><li><a href="#s02"><span class="n">02</span>World</a></li><li><a href="#s03"><span class="n">03</span>Building</a></li><li><a href="#s04"><span class="n">04</span>Economy, food and water</a></li><li><a href="#s05"><span class="n">05</span>Automation and tech</a></li><li><a href="#s06"><span class="n">06</span>Combat and threats</a></li><li><a href="#s07"><span class="n">07</span>Story, scenarios and endings</a></li><li><a href="#s08"><span class="n">08</span>UI and UX</a></li><li><a href="#s09"><span class="n">09</span>Art and audio</a></li><li><a href="#s10"><span class="n">10</span>Technical architecture</a></li><li><a href="#s11"><span class="n">11</span>Roadmap</a></li></ol></nav>
-  <main><section id="s00"><p class="chap">Chapter 00</p><h2>Overview</h2><p>Status: DRAFT v0.1 (2026-10-09). Code name: <code>wasteland-colony</code>. Title: picked later.</p>
+  <main><section id="s00"><p class="chap">Chapter 00</p><h2>Overview</h2><p>Status: APPROVED v1.0 (2026-10-09). Code name: <code>wasteland-colony</code>. Title: picked later.</p>
 <h3 id="s00-1">Elevator pitch</h3>
 <p>The bombs fell. The survivors joked about it. Lead a small group of survivors in a ruined world. Build a home in the rubble. Keep them fed, sane and alive. Salvage the old world's machines. Slowly let the machines do the work. Then reach for a bigger goal: light, rescue or the stars.</p>
 <h3 id="s00-2">Inspirations</h3>
@@ -567,7 +567,7 @@ footer { grid-column: 2; color: var(--muted); font-size: 14px; padding-top: 24px
 </tr>
 <tr>
 <td>Roofs</td>
-<td>Auto-added over enclosed rooms up to 6 tiles from a wall. Can be removed</td>
+<td>An enclosed room needs a roof. Survivors build it tile by tile (construction work, no materials). It falls in if the room opens</td>
 </tr>
 <tr>
 <td>Supports</td>
@@ -601,8 +601,8 @@ footer { grid-column: 2; color: var(--muted); font-size: 14px; padding-top: 24px
 </ul>
 <h3 id="s03-5">Air and radiation shelter</h3>
 <ul>
-<li>A room is <strong>sealed</strong> if it is enclosed, roofed and has no open door to outside.</li>
-<li>During a radiation cloud: outdoors and unsealed rooms get radiation. Sealed rooms stay clean.</li>
+<li>A room is <strong>sealed</strong> if it is enclosed, fully roofed and no door opens straight to outside. Two doors in a row (an airlock) or a door into a closed hall count as sealed.</li>
+<li>After a radiation cloud or toxic rain: things outdoors have a high chance to be contaminated, things in unsealed rooms a low chance. Sealed rooms stay clean (see 04).</li>
 <li>Late tech: air filters let a room stay clean even with its door used often.</li>
 </ul>
 <h3 id="s03-6">Furniture and production buildings</h3>
@@ -628,7 +628,7 @@ footer { grid-column: 2; color: var(--muted); font-size: 14px; padding-top: 24px
 <li>Some ruins collapse when salvaged too fast (small danger).</li>
 </ul>
 <aside class="demo"><span class="tag">In the first demo</span>
-<p>Build, deconstruct, salvage, mine, clear rubble, harvest. Scrap/wood/stone walls, doors, floors, auto-roof. Rooms + types (bedroom, kitchen, storage, workshop). Temperature (simple). Sealed rooms vs radiation. Stockpile + growing zones. Beds, table, chair, lamp, 4 workbenches.</p></aside></section><section id="s04"><p class="chap">Chapter 04</p><h2>Economy, food and water</h2><h3 id="s04-1">Resources (base)</h3>
+<p>Build, deconstruct, salvage, mine, clear rubble, harvest. Scrap/wood/stone walls, doors, floors, roofs built by survivors, airlocks. Rooms + types (bedroom, kitchen, storage, workshop). Temperature (simple). Sealed rooms vs radiation. Stockpile + growing zones. Beds, table, chair, lamp, 4 workbenches.</p></aside></section><section id="s04"><p class="chap">Chapter 04</p><h2>Economy, food and water</h2><h3 id="s04-1">Resources (base)</h3>
 <div class="tbl"><table>
 <thead>
 <tr>
@@ -771,10 +771,40 @@ footer { grid-column: 2; color: var(--muted); font-size: 14px; padding-top: 24px
 <ul>
 <li>Storyteller event. Duration: a few hours to days in-game.</li>
 <li>During the cloud: all survivors outside take rad dose per tick.</li>
-<li><strong>Contamination</strong>: when the cloud ends, the following become <em>contaminated</em> for <strong>one season</strong>:</li>
-<li>Crops in outdoor growing zones (and soil of those zones).</li>
-<li>Food and water items stored outside or in unsealed rooms.</li>
-<li>Open water sources (pools, rain collectors, wells without cover).</li>
+<li><strong>Contamination</strong>: when the cloud ends, each of the following has a <strong>chance</strong> to become <em>contaminated</em> for <strong>one season</strong>:</li>
+<li>Crops (and seeds sown later in open soil that season).</li>
+<li>Food and water stacks.</li>
+<li>Water sources (pools as one roll, rain collectors, wells).</li>
+<li>The chance depends on shelter:</li>
+</ul>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Shelter</th>
+<th>Radiation cloud</th>
+<th>Toxic rain</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Open sky (no roof)</td>
+<td>60%</td>
+<td>30%</td>
+</tr>
+<tr>
+<td>Roofed, a door opens straight outside</td>
+<td>20%</td>
+<td>8%</td>
+</tr>
+<tr>
+<td>Sealed (roof + airlock of two doors, or a door into a closed hall)</td>
+<td>0%</td>
+<td>0%</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><strong>Toxic rain</strong> (weather, after day 3): small rad dose outside, rain collectors give contaminated water, and the same chance rolls when it stops, for <strong>half a season</strong>.</li>
 <li>Items in <strong>sealed rooms</strong> stay clean. This is the main reason to build sealed storage.</li>
 <li>Contaminated food/water can be eaten in desperation (rad dose) or cleaned (purifier, decon shower for items — tier 2).</li>
 <li>Warning: storyteller gives a short alert (half a day) before most clouds. Hard storytellers sometimes do not.</li>

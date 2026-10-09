@@ -7,8 +7,9 @@ import type { Content } from "@wc/data";
 import { Game, type GameOptions } from "./game.ts";
 import type { Blueprint, ItemStack, Thing, Zone } from "./map.ts";
 import type { Pawn } from "./pawn.ts";
+import { completeRoofs } from "./rooms.ts";
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 type Arr = string; // base64 of a typed array
 
@@ -23,7 +24,7 @@ export interface SaveFile {
   /** Content id tables used by the index arrays below. */
   terrainIds: string[];
   floorIds: string[];
-  layers: { terrain: Arr; floor: Arr; zone: Arr; desig: Arr }[];
+  layers: { terrain: Arr; floor: Arr; zone: Arr; desig: Arr; roof?: Arr }[];
   things: (Omit<Thing, "def"> & { def: string })[];
   items: (Omit<ItemStack, "def"> & { def: string })[];
   pawns: SavedPawn[];
@@ -90,7 +91,7 @@ export function saveGame(game: Game): SaveFile {
     aiRng: [...game.aiRng.s],
     terrainIds: reg.terrain.list.map((t) => t.id),
     floorIds: reg.floors.list.map((f) => f.id),
-    layers: game.map.layers.map((L) => ({ terrain: toB64(L.terrain), floor: toB64(L.floor), zone: toB64(L.zone), desig: toB64(L.desig) })),
+    layers: game.map.layers.map((L) => ({ terrain: toB64(L.terrain), floor: toB64(L.floor), zone: toB64(L.zone), desig: toB64(L.desig), roof: toB64(L.roof) })),
     things: [...game.things.values()].map((t) => ({ ...t, def: reg.things.list[t.def].id, ...(t.buffer ? { buffer: Object.fromEntries(Object.entries(t.buffer).map(([k, v]) => [reg.items.list[Number(k)].id, v])) } : {}), ...(t.cargo ? { cargo: { ...t.cargo, def: reg.items.list[t.cargo.def].id as unknown as number } } : {}) })),
     items: [...game.items.values()].map((s) => ({ ...s, def: reg.items.list[s.def].id })),
     pawns: [...game.pawns.values()].map((p) => ({
@@ -140,7 +141,8 @@ export function saveGame(game: Game): SaveFile {
 /** Upgrade old saves step by step. */
 export function migrate(data: SaveFile): SaveFile {
   if (data.version > SAVE_VERSION) throw new Error(`save is from a newer version (${data.version})`);
-  // Future: if (data.version === 1) { ...; data.version = 2; }
+  // Version 1 had automatic roofs and did not store them. loadGame builds them all.
+  if (data.version === 1) data.version = 2;
   return data;
 }
 
@@ -168,6 +170,7 @@ export function loadGame(content: Content, raw: SaveFile): Game {
     for (let k = 0; k < L.floor.length; k++) if (L.floor[k]) L.floor[k] = floorMap[L.floor[k] - 1];
     intoTyped(L.zone, l.zone);
     intoTyped(L.desig, l.desig);
+    if (l.roof) intoTyped(L.roof, l.roof);
   });
 
   for (const t of data.things) {
@@ -251,6 +254,7 @@ export function loadGame(content: Content, raw: SaveFile): Game {
   game.powerVersion++;
   game.mapVersion++;
   game.rebuildDerived();
+  if (!data.layers[0].roof) completeRoofs(game);
   for (const r of data.rooms) {
     const [layer, i] = r.cells;
     if (i < 0) continue;
