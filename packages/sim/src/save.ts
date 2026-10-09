@@ -179,7 +179,7 @@ export function loadGame(content: Content, raw: SaveFile): Game {
     if (t.cargo) thing.cargo = { ...t.cargo, def: reg.items.idx(t.cargo.def as unknown as string) };
     game.things.set(thing.id, thing);
     const L = game.map.layers[thing.layer];
-    L.thing[L.i(thing.x, thing.y)] = thing.id;
+    for (const f of game.footprint(thing.def, thing.x, thing.y, thing.rot)) L.thing[L.i(f.x, f.y)] = thing.id;
   }
   for (const s of data.items) {
     const st: ItemStack = { ...s, def: idOr(reg.items, s.def, "item") };

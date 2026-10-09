@@ -124,6 +124,8 @@ export const ThingDef = z.object({
   benchSpeed: z.number().positive().default(1),
   /** Can be rotated when placed (belts, loaders, crafters). */
   rotatable: z.boolean().default(false),
+  /** Tiles covered [width, height] with no rotation. The thing's x,y is the top-left tile. Rotation 1 or 3 swaps them. */
+  footprint: z.tuple([z.number().int().min(1).max(4), z.number().int().min(1).max(4)]).default([1, 1]),
   /** Research desk: survivors research here. */
   research: z.number().positive().optional(),
   /** Turret: shoots hostiles on its own. */

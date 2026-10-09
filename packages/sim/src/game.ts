@@ -205,15 +205,32 @@ export class Game {
     };
   }
 
+  /** Tiles a thing of this def covers with its top-left at x,y. Rotation 1 or 3 swaps width and height. */
+  footprint(def: number, x: number, y: number, rot = 0): { x: number; y: number }[] {
+    const [fw, fh] = this.reg.things.list[def].footprint;
+    const [w, h] = rot % 2 ? [fh, fw] : [fw, fh];
+    const out = [];
+    for (let dy = 0; dy < h; dy++) for (let dx = 0; dx < w; dx++) out.push({ x: x + dx, y: y + dy });
+    return out;
+  }
+
+  /** True if every tile of the footprint is on the map and has no thing. */
+  fits(def: number, layer: number, x: number, y: number, rot = 0): boolean {
+    const L = this.map.layers[layer];
+    return this.footprint(def, x, y, rot).every((t) => L.inBounds(t.x, t.y) && L.thing[L.i(t.x, t.y)] === NO_THING);
+  }
+
   spawnThing(defId: string, layer: number, x: number, y: number, rot?: number): Thing {
     const L = this.map.layers[layer];
-    const i = L.i(x, y);
-    if (L.thing[i] !== NO_THING) throw new Error(`tile ${layer}:${x},${y} is taken`);
     const def = this.reg.things.idx(defId);
+    if (!this.fits(def, layer, x, y, rot)) throw new Error(`tile ${layer}:${x},${y} is taken`);
     const t: Thing = { id: this.nextId++, def, layer, x, y, hp: this.reg.things.list[def].hp, ...(rot !== undefined ? { rot } : {}) };
     this.things.set(t.id, t);
-    L.thing[i] = t.id;
-    L.touch(x, y);
+    for (const f of this.footprint(def, x, y, rot)) {
+      L.thing[L.i(f.x, f.y)] = t.id;
+      L.touch(f.x, f.y);
+      this.touchAround(layer, f.x, f.y);
+    }
     this.mapVersion++;
     const d = this.reg.things.list[def];
     if (d.blocks || d.stairs) this.pathVersion++;
@@ -221,7 +238,6 @@ export class Game {
       this.wallVersion++;
       this.wallDirty.add(layer);
     }
-    this.touchAround(layer, x, y);
     if (d.power || d.conduit) this.powerVersion++;
     return t;
   }
@@ -236,13 +252,15 @@ export class Game {
     const t = this.things.get(id);
     if (!t) return;
     const L = this.map.layers[t.layer];
-    L.thing[L.i(t.x, t.y)] = NO_THING;
-    L.touch(t.x, t.y);
+    for (const f of this.footprint(t.def, t.x, t.y, t.rot)) {
+      if (L.thing[L.i(f.x, f.y)] === id) L.thing[L.i(f.x, f.y)] = NO_THING;
+      L.touch(f.x, f.y);
+      this.touchAround(t.layer, f.x, f.y);
+    }
     this.things.delete(id);
     this.mapVersion++;
     const d = this.reg.things.list[t.def];
     if (d.blocks || d.stairs) this.pathVersion++;
-    this.touchAround(t.layer, t.x, t.y);
     if (d.wall) {
       this.wallVersion++;
       this.wallDirty.add(t.layer);

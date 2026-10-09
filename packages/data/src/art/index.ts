@@ -50,6 +50,90 @@ export function wallVariant(grid: number[][], mask: number): number[][] {
   return g;
 }
 
+/**
+ * Art for things bigger than one tile. Each is its 16x16 grid with a middle band repeated
+ * (columns for wide things, rows for tall ones), so the pixel size stays the same.
+ * `turn` turns the grid upright first. Bands are [start, end) and chosen to repeat cleanly.
+ */
+const BIG_ART: Record<string, { turn?: boolean; cols?: [number, number]; rows?: [number, number]; grid?: string[] }> = {
+  // Drawn upright by hand: the lying 16x16 bedroll does not turn well.
+  bedroll: {
+    grid: [
+      "................",
+      "................",
+      "...0000000000...",
+      "...0666666660...",
+      "...0677777760...",
+      "...0666666660...",
+      "...0000000000...",
+      "...0555555550...",
+      "...0aaaaaaaa0...",
+      "...09a9a9a9a0...",
+      "...0aaaaaaaa0...",
+      "...09a9a9a9a0...",
+      "...0aaaaaaaa0...",
+      "...09a9a9a9a0...",
+      "...0aaaaaaaa0...",
+      "...09a9a9a9a0...",
+      "...0aaaaaaaa0...",
+      "...09a9a9a9a0...",
+      "...0aaaaaaaa0...",
+      "...09a9a9a9a0...",
+      "...0aaaaaaaa0...",
+      "...09a9a9a9a0...",
+      "...0aaaaaaaa0...",
+      "...09a9a9a9a0...",
+      "...0aaaaaaaa0...",
+      "...09a9a9a9a0...",
+      "...0999999990...",
+      "...0555555550...",
+      "...0444444440...",
+      "...0000000000...",
+      "................",
+      "................",
+    ],
+  },
+  scrap_bed: { rows: [7, 11] },
+  table: { cols: [4, 12] },
+  scrap_bench: { cols: [6, 10] },
+  stove: { cols: [4, 12] },
+  research_desk: { cols: [11, 13] },
+  powered_bench: { cols: [3, 11] },
+  smelter: { cols: [5, 9] },
+  scrap_generator: { cols: [4, 8] },
+};
+
+/** Repeat columns [a, b) until the grid is `w` wide. */
+function stretchCols(g: number[][], w: number, [a, b]: [number, number]): number[][] {
+  return g.map((r) => {
+    const out = r.slice(0, b);
+    while (out.length < w - (r.length - b)) out.push(r[a + ((out.length - b) % (b - a))]);
+    return out.concat(r.slice(b));
+  });
+}
+
+/** Repeat rows [a, b) until the grid is `h` high. */
+function stretchRows(g: number[][], h: number, [a, b]: [number, number]): number[][] {
+  const out = g.slice(0, b);
+  while (out.length < h - (g.length - b)) out.push(g[a + ((out.length - b) % (b - a))]);
+  return out.concat(g.slice(b)).map((r) => [...r]);
+}
+
+/** The grid for a thing covering `fw` x `fh` tiles (16 px per tile). */
+export function thingGrid(id: string, fw = 1, fh = 1): number[][] | null {
+  const rows = THINGS[id];
+  if (!rows) return null;
+  let g = parseGrid(rows);
+  if (fw === 1 && fh === 1) return g;
+  const spec = BIG_ART[id] ?? {};
+  if (spec.grid) return parseGrid(spec.grid);
+  if (spec.turn) g = rotateGrid(g);
+  const n = g.length;
+  if (fw > 1) g = stretchCols(g, n * fw, spec.cols ?? [n / 2 - 2, n / 2 + 2]);
+  if (fh > 1) g = stretchRows(g, n * fh, spec.rows ?? [n / 2 - 2, n / 2 + 2]);
+  return g;
+}
+
 /** Things that turn 90 degrees when they run in a vertical line (art drawn for a horizontal line). */
 export const TURN_IN_LINE = new Set(["sandbags"]);
 

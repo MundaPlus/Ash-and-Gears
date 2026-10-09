@@ -28,7 +28,7 @@ export function buildShowcase(game: Game): void {
     game.research.done.add(r);
 
   const put = (id: string, x: number, y: number, rot?: number) => {
-    if (L.inBounds(x, y) && L.thing[L.i(x, y)] === NO_THING) return game.spawnThing(id, 0, x, y, rot);
+    if (game.fits(game.reg.things.idx(id), 0, x, y, rot)) return game.spawnThing(id, 0, x, y, rot);
     return null;
   };
 
@@ -47,7 +47,7 @@ export function buildShowcase(game: Game): void {
   for (let i = 0; i < 4; i++) put("scrap_bed", rx + 1 + i * 2, ry + 1);
   put("table", rx + 4, ry + 4);
   put("chair", rx + 3, ry + 4);
-  put("chair", rx + 5, ry + 4);
+  put("chair", rx + 6, ry + 4);
   put("campfire", rx + 8, ry + 5);
   put("well", rx + 9, ry + 1);
   put("research_desk", rx + 1, ry + 5);

@@ -169,7 +169,7 @@ async function boot() {
     else if (spec?.kind === "cancel") label = t("tool.cancel");
     else if (spec?.kind === "zone" && spec.zone === "grow") label = t("tool.zone", { name: t("zone.grow", { crop: t(`thing.${spec.crop}`) }) });
     else if (spec?.kind === "zone") label = t("tool.zone", { name: t(`zone.${spec.zone}`) });
-    const rot = spec?.kind === "build" && spec.defKind === "thing" && game.reg.things.get(spec.def).rotatable;
+    const rot = tools.rotatable();
     store.set({ toolLabel: label ? `${label} · ${t("tool.hint")}${rot ? ` ${t("tool.rotate_hint")} ⟳` : ""}` : null, menu: null });
   };
   actions.rotateTool = (d) => {

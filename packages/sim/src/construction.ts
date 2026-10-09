@@ -29,14 +29,28 @@ function clearOrder(game: Game, layer: number, x: number, y: number): "cut" | "s
   return canDesignate(game, "salvage", layer, x, y) ? "salvage" : null;
 }
 
-/** True while something still stands on the plan's tile. */
-function blocked(game: Game, bp: Blueprint): boolean {
-  const L = game.map.layers[bp.layer];
-  return bp.kind === "thing" && L.thing[L.i(bp.x, bp.y)] !== NO_THING;
+/** Tiles a plan covers (one for floors). */
+function planTiles(game: Game, kind: Blueprint["kind"], def: number, x: number, y: number, rot?: number) {
+  return kind === "thing" ? game.footprint(def, x, y, rot) : [{ x, y }];
 }
 
-/** Can a blueprint of this def go on this tile? */
-export function canPlace(game: Game, kind: Blueprint["kind"], defId: string, layer: number, x: number, y: number): boolean {
+/** True while something still stands on one of the plan's tiles. */
+function blocked(game: Game, bp: Blueprint): boolean {
+  const L = game.map.layers[bp.layer];
+  return bp.kind === "thing" && planTiles(game, bp.kind, bp.def, bp.x, bp.y, bp.rot).some((t) => L.thing[L.i(t.x, t.y)] !== NO_THING);
+}
+
+/** Can a blueprint of this def go here? Big things check every tile they cover. */
+export function canPlace(game: Game, kind: Blueprint["kind"], defId: string, layer: number, x: number, y: number, rot?: number): boolean {
+  if (kind === "floor") return canPlaceTile(game, kind, defId, layer, x, y);
+  const tiles = game.footprint(game.reg.things.idx(defId), x, y, rot);
+  if (tiles.length === 1) return canPlaceTile(game, kind, defId, layer, x, y);
+  // A big thing may not cut into another plan.
+  const L = game.map.layers[layer];
+  return tiles.every((t) => L.inBounds(t.x, t.y) && L.blueprint[L.i(t.x, t.y)] === NO_THING && canPlaceTile(game, kind, defId, layer, t.x, t.y));
+}
+
+function canPlaceTile(game: Game, kind: Blueprint["kind"], defId: string, layer: number, x: number, y: number): boolean {
   const L = game.map.layers[layer];
   if (!L.inBounds(x, y)) return false;
   const i = L.i(x, y);
@@ -53,22 +67,27 @@ export function canPlace(game: Game, kind: Blueprint["kind"], defId: string, lay
 }
 
 export function placeBlueprint(game: Game, kind: Blueprint["kind"], defId: string, layer: number, x: number, y: number, rot?: number): Blueprint | null {
-  if (!canPlace(game, kind, defId, layer, x, y)) return null;
+  if (!canPlace(game, kind, defId, layer, x, y, rot)) return null;
   const Lr = game.map.layers[layer];
   const replaced = Lr.blueprint[Lr.i(x, y)];
   if (replaced !== NO_THING) cancelBlueprint(game, replaced);
   const def = kind === "thing" ? game.reg.things.idx(defId) : game.reg.floors.idx(defId);
+  const tiles = planTiles(game, kind, def, x, y, rot);
   const info = buildInfo(game, kind, def)!;
   const need: Record<number, number> = {};
   for (const [item, n] of Object.entries(info.cost)) need[game.reg.items.idx(item)] = n;
   const bp: Blueprint = { id: game.newId(), kind, def, layer, x, y, need, work: info.work, ...(rot !== undefined ? { rot } : {}) };
-  // Something in the way: order it cut or salvaged. Building waits until the tile is clear.
-  const clear = kind === "thing" ? clearOrder(game, layer, x, y) : null;
-  if (clear) designate(game, clear, layer, x, y);
+  // Something in the way: order it cut or salvaged. Building waits until the tiles are clear.
+  for (const t of kind === "thing" ? tiles : []) {
+    const clear = clearOrder(game, layer, t.x, t.y);
+    if (clear) designate(game, clear, layer, t.x, t.y);
+  }
   game.blueprints.set(bp.id, bp);
   const L = game.map.layers[layer];
-  L.blueprint[L.i(x, y)] = bp.id;
-  L.touch(x, y);
+  for (const t of tiles) {
+    L.blueprint[L.i(t.x, t.y)] = bp.id;
+    L.touch(t.x, t.y);
+  }
   game.mapVersion++;
   return bp;
 }
@@ -89,8 +108,11 @@ function removeBlueprint(game: Game, bp: Blueprint) {
   game.blueprints.delete(bp.id);
   game.progress.delete(`build:${bp.layer},${bp.x},${bp.y}`);
   const L = game.map.layers[bp.layer];
-  L.blueprint[L.i(bp.x, bp.y)] = NO_THING;
-  L.touch(bp.x, bp.y);
+  for (const t of planTiles(game, bp.kind, bp.def, bp.x, bp.y, bp.rot)) {
+    if (L.blueprint[L.i(t.x, t.y)] !== bp.id) continue;
+    L.blueprint[L.i(t.x, t.y)] = NO_THING;
+    L.touch(t.x, t.y);
+  }
   game.mapVersion++;
 }
 
@@ -109,19 +131,22 @@ function completeBlueprint(game: Game, bp: Blueprint) {
     return;
   }
   const def = game.reg.things.list[bp.def];
-  let moved: { def: number; count: number; contaminated: boolean } | null = null;
-  if (def.blocks && L.item[i] !== NO_THING) {
-    const s = game.items.get(L.item[i])!;
-    moved = { def: s.def, count: s.count, contaminated: !!s.contaminated };
+  const tiles = game.footprint(bp.def, bp.x, bp.y, bp.rot);
+  const moved: { def: number; count: number; contaminated: boolean; x: number; y: number }[] = [];
+  for (const t of def.blocks ? tiles : []) {
+    const it = L.item[L.i(t.x, t.y)];
+    if (it === NO_THING) continue;
+    const s = game.items.get(it)!;
+    moved.push({ def: s.def, count: s.count, contaminated: !!s.contaminated, x: t.x, y: t.y });
     takeFromStack(game, s.id, s.count);
   }
   game.spawnThing(def.id, bp.layer, bp.x, bp.y, bp.rot);
-  if (moved) dropItems(game, moved.def, moved.count, bp.layer, bp.x, bp.y, moved.contaminated);
+  for (const m of moved) dropItems(game, m.def, m.count, bp.layer, m.x, m.y, m.contaminated);
   if (def.blocks) {
     for (const p of game.pawns.values()) {
-      if (p.layer !== bp.layer || p.x !== bp.x || p.y !== bp.y) continue;
+      if (p.layer !== bp.layer || !tiles.some((t) => t.x === p.x && t.y === p.y)) continue;
       for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]]) {
-        if (game.walkable(bp.layer, bp.x + dx, bp.y + dy)) {
+        if (game.walkable(bp.layer, p.x + dx, p.y + dy)) {
           p.x += dx;
           p.y += dy;
           p.path = null;

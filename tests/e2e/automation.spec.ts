@@ -60,8 +60,8 @@ test("research, power, belts and lamp light", async ({ page }, info) => {
       const th = L.thing[L.i(tx, ty)];
       if (th !== -1) game.removeThing(th);
     };
-    for (let i = 0; i < 3; i++) clear(x + 3 + i, y - 3);
-    const gen = game.spawnThing("scrap_generator", 0, x + 3, y - 3);
+    for (let i = 0; i < 4; i++) clear(x + 2 + i, y - 3);
+    const gen = game.spawnThing("scrap_generator", 0, x + 2, y - 3);
     gen.fuel = 30;
     game.spawnThing("wire", 0, x + 4, y - 3);
     game.spawnThing("lamp", 0, x + 5, y - 3);

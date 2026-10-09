@@ -5,7 +5,7 @@
  * 16 px world (ground, floors, structures) with smooth 32 px items and characters.
  */
 import { Texture } from "pixi.js";
-import { CREATURES, FLOORS, ITEMS, PALETTES, parseGrid, scale2x, SHIRTS, terrainGrid, TERRAIN_VARIANTS, THINGS, lineVariant, rotateGrid, TURN_IN_LINE, wallVariant } from "@wc/data";
+import { CREATURES, FLOORS, ITEMS, PALETTES, parseGrid, scale2x, SHIRTS, terrainGrid, TERRAIN_VARIANTS, THINGS, lineVariant, rotateGrid, thingGrid, TURN_IN_LINE, wallVariant } from "@wc/data";
 import type { Registry } from "@wc/sim";
 
 /** World units per tile. Sprites are drawn to this size whatever their pixel size. */
@@ -31,6 +31,8 @@ export interface TextureSet {
   stubs: Texture[];
   /** The 90-degree turned look for things in TURN_IN_LINE, or null. */
   turned: (Texture | null)[];
+  /** Big non-square things placed turned (rotation 1 or 3), or null. */
+  thingsTurned: (Texture | null)[];
   items: Texture[];
   floors: Texture[];
   /** Order markers by Desig code (index 0 unused). */
@@ -96,7 +98,10 @@ export function makeTextures(reg: Registry, art: ArtSettings): TextureSet {
   const prepDetail = (rows: string[]) => (art.size === "16" ? parseGrid(rows) : scale2x(parseGrid(rows)));
 
   const terrain = reg.terrain.list.map((d) => Array.from({ length: TERRAIN_VARIANTS }, (_, v) => gridTexture(prepGrid(terrainGrid(d.id, v)), colors)));
-  const things = reg.things.list.map((d) => (THINGS[d.id] ? gridTexture(prep(THINGS[d.id]), colors) : fallback(d.color, d.glyph)));
+  const things = reg.things.list.map((d) => {
+    const grid = thingGrid(d.id, ...d.footprint);
+    return grid ? gridTexture(prepGrid(grid), colors) : fallback(d.color, d.glyph);
+  });
   const walls = reg.things.list.map((d) =>
     d.wall && !d.door && THINGS[d.id] ? Array.from({ length: 16 }, (_, m) => gridTexture(prepGrid(wallVariant(parseGrid(THINGS[d.id]), m)), colors)) : null,
   );
@@ -106,6 +111,9 @@ export function makeTextures(reg: Registry, art: ArtSettings): TextureSet {
   const wireId = reg.things.list.find((d) => d.conduit && THINGS[d.id])?.id;
   const stubs = wireId ? Array.from({ length: 16 }, (_, m) => gridTexture(prepGrid(lineVariant(parseGrid(THINGS[wireId]), m, true)), colors)) : [];
   const turned = reg.things.list.map((d) => (TURN_IN_LINE.has(d.id) && THINGS[d.id] ? gridTexture(prepGrid(rotateGrid(parseGrid(THINGS[d.id]))), colors) : null));
+  const thingsTurned = reg.things.list.map((d) =>
+    d.footprint[0] !== d.footprint[1] && THINGS[d.id] ? gridTexture(prepGrid(rotateGrid(thingGrid(d.id, ...d.footprint)!)), colors) : null,
+  );
   const items = reg.items.list.map((d) => (ITEMS[d.id] ? gridTexture(prepDetail(ITEMS[d.id]), colors) : fallback(d.color, d.glyph)));
   const floors = reg.floors.list.map((d) => (FLOORS[d.id] ? gridTexture(prep(FLOORS[d.id]), colors) : fallback(d.color, "=")));
   const survivorGrid = prepDetail(CREATURES.survivor);
@@ -135,7 +143,7 @@ export function makeTextures(reg: Registry, art: ArtSettings): TextureSet {
     g.ellipse(16, 29, 9, 3, 0, 0, Math.PI * 2);
     g.fill();
   });
-  return { terrain, things, walls, lines, stubs, turned, items, floors, desig, survivors, raider, creatures, shadow };
+  return { terrain, things, walls, lines, stubs, turned, thingsTurned, items, floors, desig, survivors, raider, creatures, shadow };
 }
 
 /** Stable variant per tile so the ground does not repeat. */

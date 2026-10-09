@@ -85,7 +85,9 @@ function billJob(game: Game, p: Pawn, workType: WorkType): Job | null {
   return null;
 }
 
-for (const wt of ["cook", "craft", "haul"] as WorkType[]) registerWorkGiver({ workType: wt, give: (game, p) => billJob(game, p, wt) });
+// Haul-type bills (water from the well) come before plain hauling, or a big salvage pile keeps
+// everyone carrying junk while the colony goes thirsty.
+for (const wt of ["cook", "craft", "haul"] as WorkType[]) registerWorkGiver({ workType: wt, give: (game, p) => billJob(game, p, wt) }, wt === "haul");
 
 /** Inputs still missing for the current input slot. */
 function missingNow(r: RecipeDef, job: Job): number {

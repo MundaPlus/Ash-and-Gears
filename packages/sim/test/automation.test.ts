@@ -65,7 +65,7 @@ describe("power", () => {
     const g = newGame("power");
     const { x, y } = g.home;
     clearArea(g, x - 6, y - 6, 4);
-    const gen = g.spawnThing("scrap_generator", 0, x - 8, y - 6);
+    const gen = g.spawnThing("scrap_generator", 0, x - 9, y - 6);
     g.spawnThing("wire", 0, x - 7, y - 6);
     const lamp = g.spawnThing("lamp", 0, x - 6, y - 6);
     const bat = g.spawnThing("battery", 0, x - 7, y - 5);
@@ -101,7 +101,7 @@ describe("logistics", () => {
     const { x, y } = g.home;
     clearArea(g, x - 6, y - 8, 5);
     // Power: a fueled generator next to the loader, wire under nothing else.
-    const gen = g.spawnThing("scrap_generator", 0, x - 10, y - 9);
+    const gen = g.spawnThing("scrap_generator", 0, x - 11, y - 9);
     gen.fuel = 30;
     g.spawnThing("wire", 0, x - 9, y - 9);
     g.spawnThing("wire", 0, x - 8, y - 9);
@@ -122,7 +122,7 @@ describe("logistics", () => {
     const { x, y } = g.home;
     clearArea(g, x - 6, y - 6, 4);
     g.research.done.add("auto_crafting");
-    const gen = g.spawnThing("scrap_generator", 0, x - 8, y - 6);
+    const gen = g.spawnThing("scrap_generator", 0, x - 9, y - 6);
     gen.fuel = 30;
     const crafter = g.spawnThing("auto_crafter", 0, x - 7, y - 6, 0);
     crafter.recipe = "make_components";

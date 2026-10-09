@@ -41,8 +41,8 @@ export function ensureNets(game: Game): void {
       const c = stack.pop()!;
       net.things.push(c.id);
       const L = game.map.layers[c.layer];
-      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-        const x = c.x + dx, y = c.y + dy;
+      const nbs = game.footprint(c.def, c.x, c.y, c.rot).flatMap((f) => [[f.x + 1, f.y], [f.x - 1, f.y], [f.x, f.y + 1], [f.x, f.y - 1]]);
+      for (const [x, y] of nbs) {
         if (!L.inBounds(x, y)) continue;
         const nid = L.thing[L.i(x, y)];
         if (nid === NO_THING || seen.has(nid)) continue;

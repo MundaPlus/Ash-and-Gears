@@ -172,6 +172,7 @@
  },
  {
   "id": "bedroll",
+  "footprint": [1, 2],
   "kind": "furniture",
   "color": "#b0834e",
   "glyph": "b",
@@ -191,6 +192,7 @@
  },
  {
   "id": "scrap_bed",
+  "footprint": [1, 2],
   "kind": "furniture",
   "color": "#d6ab6b",
   "glyph": "B",
@@ -212,6 +214,7 @@
  },
  {
   "id": "table",
+  "footprint": [2, 1],
   "kind": "furniture",
   "color": "#84603f",
   "glyph": "=",
@@ -263,6 +266,7 @@
  },
  {
   "id": "scrap_bench",
+  "footprint": [2, 1],
   "kind": "furniture",
   "color": "#6f8088",
   "glyph": "S",
@@ -280,6 +284,7 @@
  },
  {
   "id": "stove",
+  "footprint": [2, 1],
   "kind": "furniture",
   "color": "#4a3b33",
   "glyph": "O",
@@ -439,6 +444,7 @@
  },
  {
   "id": "research_desk",
+  "footprint": [2, 1],
   "kind": "furniture",
   "color": "#4d6670",
   "glyph": "R",
@@ -456,6 +462,7 @@
  },
  {
   "id": "scrap_generator",
+  "footprint": [2, 1],
   "kind": "furniture",
   "color": "#8a3b2e",
   "glyph": "G",
@@ -537,6 +544,7 @@
  },
  {
   "id": "powered_bench",
+  "footprint": [2, 1],
   "kind": "furniture",
   "color": "#6d86a0",
   "glyph": "P",
@@ -559,6 +567,7 @@
  },
  {
   "id": "smelter",
+  "footprint": [2, 1],
   "kind": "furniture",
   "color": "#a8481a",
   "glyph": "F",

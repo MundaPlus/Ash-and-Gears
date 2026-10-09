@@ -1,6 +1,8 @@
 # Changelog
 
 ## 2026-10-10
+- Things can cover more than one tile ("footprint" in the content). Beds and bedrolls are 1x2. Table, scrap workbench, stove, research desk, powered workbench, smelter and generator are 2x1. Q/E turns them before placing. Every covered tile points to the thing: placing, plans, clearing plants, finishing, removing, saves and power networks use all tiles. Their art is the 16x16 art with a middle band repeated, so the pixel size stays the same; the upright bedroll is drawn by hand (`packages/data/src/schema.ts`, `content/core/things.json`, `src/art/index.ts` `thingGrid`; `packages/sim/src/game.ts` `footprint`/`fits`, `construction.ts`, `power.ts`, `save.ts`, `showcase.ts`; `packages/client/src/render/world.ts`, `textures.ts`, `input/tools.ts`, `main.ts`; tests and `tools/playtest/autoplay.ts` moved generators) — the user asked for furniture, benches and machines bigger than one tile.
+- Water from the well (a haul-type bill) now comes before plain hauling. Before, a big salvage pile kept everyone hauling junk and the colony died of thirst (`packages/sim/src/jobs.ts`, `bills.ts`) — found by the headless playtest.
 - Wires reach into every machine next to them (not only at wire ends), but never into belts. The showcase turret line now starts under the lamp, so lamp, turret and powered bench share the generator (`packages/client/src/render/world.ts`, `packages/sim/src/showcase.ts`) — the user saw a gap at the turret and between turret and lamp.
 
 ## 2026-10-09

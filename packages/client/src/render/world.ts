@@ -6,6 +6,12 @@
 import { Container, Sprite, Texture } from "pixi.js";
 import { CHUNK, NO_THING, type Game } from "@wc/sim";
 import { WALL_E, WALL_N, WALL_S, WALL_W } from "@wc/data";
+
+/** Tiles wide and high of a thing def with a rotation (1 and 3 swap them). */
+function sizeOf(g: Game, def: number, rot = 0): [number, number] {
+  const [w, h] = g.reg.things.list[def].footprint;
+  return rot % 2 ? [h, w] : [w, h];
+}
 import { TILE, variantAt, type TextureSet } from "./textures.ts";
 
 /** Below this zoom the overview texture replaces the chunks. */
@@ -114,11 +120,16 @@ export class WorldRenderer {
           overlays.push(zs);
         }
         const bpId = L.blueprint[i];
-        if (bpId !== NO_THING) {
-          const bp = g.blueprints.get(bpId)!;
-          const bs = new Sprite(bp.kind === "floor" ? this.tex.floors[bp.def] : this.tex.things[bp.def]);
+        const bpHere = bpId !== NO_THING ? g.blueprints.get(bpId)! : null;
+        // A big plan draws once, from its top-left tile.
+        if (bpHere && bpHere.x === x && bpHere.y === y) {
+          const bp = bpHere;
+          const [bw, bh] = bp.kind === "thing" ? sizeOf(g, bp.def, bp.rot) : [1, 1];
+          const turnedBp = bp.kind === "thing" && bp.rot && bp.rot % 2 ? this.tex.thingsTurned[bp.def] : null;
+          const bs = new Sprite(bp.kind === "floor" ? this.tex.floors[bp.def] : (turnedBp ?? this.tex.things[bp.def]));
           bs.position.copyFrom(s.position);
-          bs.width = bs.height = TILE;
+          bs.width = bw * TILE;
+          bs.height = bh * TILE;
           bs.tint = 0xa8d0ff;
           bs.alpha = Object.values(bp.need).some((n) => n > 0) ? 0.55 : 0.8;
           overlays.push(bs);
@@ -150,10 +161,13 @@ export class WorldRenderer {
           items.push(t);
         }
         const th = L.thing[i];
-        if (th !== NO_THING) {
+        // A big thing draws once, from its top-left tile.
+        if (th !== NO_THING && g.things.get(th)!.x === x && g.things.get(th)!.y === y) {
           const thing = g.things.get(th)!;
-          const t = new Sprite(this.tex.things[thing.def]);
+          const turnedBig = thing.rot && thing.rot % 2 ? this.tex.thingsTurned[thing.def] : null;
+          const t = new Sprite(turnedBig ?? this.tex.things[thing.def]);
           const def = g.reg.things.list[thing.def];
+          const [fw, fh] = sizeOf(g, thing.def, thing.rot);
           if (def.crop) {
             // Crops grow in size; contaminated ones glow green.
             const sc = 0.35 + 0.65 * Math.min(1, thing.growth ?? 0);
@@ -199,7 +213,8 @@ export class WorldRenderer {
               const m = near((d) => d.id === def.id);
               if (m & (WALL_N | WALL_S) && !(m & (WALL_E | WALL_W))) t.texture = turned;
             }
-            t.width = t.height = TILE;
+            t.width = fw * TILE;
+            t.height = fh * TILE;
             t.position.copyFrom(s.position);
           }
           things.push(t);

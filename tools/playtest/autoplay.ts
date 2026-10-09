@@ -138,7 +138,7 @@ export function makeAutoplayer(game: Game) {
       if (plan.stage === 3 && game.research.done.has("electric_lights") && plan.room) {
         const r = plan.room;
         // Generator, wire and lamp in a row outside the west wall (wires cannot pass through walls).
-        placeBlueprint(game, "thing", "scrap_generator", 0, r.x - 4, r.y + 3);
+        placeBlueprint(game, "thing", "scrap_generator", 0, r.x - 5, r.y + 3);
         placeBlueprint(game, "thing", "wire", 0, r.x - 3, r.y + 3);
         placeBlueprint(game, "thing", "lamp", 0, r.x - 2, r.y + 3);
         plan.stage = 4;
