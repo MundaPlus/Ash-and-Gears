@@ -343,8 +343,12 @@ async function boot() {
     lines.push(t("inspect.temp", { v: Math.round(tempAt(game, renderer.layer, x, y)) }));
     const bp = L.blueprint[i] !== NO_THING ? game.blueprints.get(L.blueprint[i]) : undefined;
     if (bp) lines.push(t("inspect.blueprint", { name: t(bp.kind === "floor" ? `floor.${game.reg.floors.list[bp.def].id}` : `thing.${game.reg.things.list[bp.def].id}`) }));
+    if (bp) {
+      const need = Object.entries(bp.need).filter(([, n]) => n > 0).map(([k, n]) => `${n} × ${t(`item.${game.reg.items.list[Number(k)].id}`)}`);
+      if (need.length) lines.push(t("inspect.needs", { list: need.join(", ") }));
+    }
     if (L.desig[i]) lines.push(t("inspect.order", { name: t(`order.${DESIG_KINDS[L.desig[i] - 1]}`) }));
-    let title = t(`terrain.${td.id}`);
+    let title = L.floor[i] ? t(`floor.${game.reg.floors.list[L.floor[i] - 1].id}`) : t(`terrain.${td.id}`);
     const th = L.thing[i];
     let bills: { benchId: number; recipe: string; target: number; stock: number }[] | undefined;
     let crafter: { thingId: number; current: string | null; options: string[] } | undefined;

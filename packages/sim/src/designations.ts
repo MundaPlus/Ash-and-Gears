@@ -24,8 +24,11 @@ export function canDesignate(game: Game, kind: DesigKind, layer: number, x: numb
     case "cut":
       return thing?.kind === "plant";
     case "salvage":
-      // Ruins and wrecks are salvaged; player-built things are deconstructed. Stairs stay.
-      return !!thing && thing.kind !== "plant" && thing.kind !== "stairs" && (!!thing.build || !!thing.yield);
+      // Only ruins, wrecks and junk. A drag over the base never takes it apart. Stairs stay.
+      return !!thing && thing.kind !== "plant" && thing.kind !== "stairs" && !thing.build && !!thing.yield;
+    case "deconstruct":
+      // Player-built things, with a separate order.
+      return !!thing && thing.kind !== "stairs" && !!thing.build;
   }
 }
 
@@ -158,6 +161,25 @@ registerTask("salvage", {
   },
 });
 
+registerTask("deconstruct", {
+  skill: "construction",
+  xp: 0.3,
+  total: (game, job) => Math.ceil((game.thingDefAt(job.target!.layer, job.target!.x, job.target!.y)?.build?.work ?? 2) / 2),
+  valid: (game, job) => desigAt(game, job) === Desig.deconstruct && !!game.thingDefAt(job.target!.layer, job.target!.x, job.target!.y)?.build,
+  complete: (game, _p, job) => {
+    const t = job.target!;
+    const L = game.map.layers[t.layer];
+    const def = game.thingDefAt(t.layer, t.x, t.y)!;
+    undesignate(game, t.layer, t.x, t.y);
+    game.removeThing(L.thing[L.i(t.x, t.y)]);
+    // Get 75% of the materials back.
+    for (const [item, n] of Object.entries(def.build!.cost)) {
+      const back = Math.floor(n * 0.75);
+      if (back > 0) dropItems(game, item, back, t.layer, t.x, t.y);
+    }
+  },
+});
+
 // ---------------------------------------------------------------- work givers
 
 const GIVERS: [WorkType, DesigKind][] = [
@@ -165,6 +187,7 @@ const GIVERS: [WorkType, DesigKind][] = [
   ["salvage", "salvage"],
   ["construct", "clear"],
   ["grow", "cut"],
+  ["construct", "deconstruct"],
 ];
 
 function nearestDesignated(game: Game, p: Pawn, kind: DesigKind): Job | null {

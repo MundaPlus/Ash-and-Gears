@@ -4,7 +4,7 @@ import { WorkGrid } from "./WorkGrid.tsx";
 import { ResearchPanel } from "./ResearchPanel.tsx";
 
 const BUILD_MENUS = ["structure", "furniture", "production", "power", "defense", "floor"];
-const ORDERS = ["salvage", "mine", "clear", "cut"] as const;
+const ORDERS = ["salvage", "deconstruct", "mine", "clear", "cut"] as const;
 
 function costText(o: BuildOption) {
   return o.cost.map((c) => `${c.n} ${t(`item.${c.item}`)}`).join(", ");

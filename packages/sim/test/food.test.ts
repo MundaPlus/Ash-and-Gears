@@ -79,6 +79,8 @@ describe("radiation cloud", () => {
     spawnRoom(g, hx - 11, hy - 11, 6);
     // A second door outside the first makes an airlock, so the room is sealed.
     g.spawnThing("scrap_door", 0, hx - 9, hy - 5);
+    g.spawnThing("scrap_wall", 0, hx - 10, hy - 5);
+    g.spawnThing("scrap_wall", 0, hx - 8, hy - 5);
     completeRoofs(g);
     const room = roomAt(g, 0, hx - 9, hy - 9)!;
     expect(room.outdoor).toBe(false);
@@ -123,6 +125,11 @@ describe("radiation cloud", () => {
     spawnRoom(g, hx + 2, hy - 10, 8);
     g.spawnThing("scrap_door", 0, hx + 4, hy - 2);
     completeRoofs(g);
+    // The outer door needs walls at its sides before the airlock counts.
+    expect(exposureAt(g, 0, hx + 5, hy - 7)).toBe("leaky");
+    g.spawnThing("scrap_wall", 0, hx + 3, hy - 2);
+    g.spawnThing("scrap_wall", 0, hx + 5, hy - 2);
+    g.step();
     expect(exposureAt(g, 0, hx - 7, hy - 7)).toBe("leaky");
     expect(exposureAt(g, 0, hx + 5, hy - 7)).toBe("sealed");
     const fill = (x0: number, y0: number, w: number, h: number) => {

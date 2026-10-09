@@ -40,6 +40,10 @@ export function buildShowcase(game: Game): void {
       if (edge) put(x === rx + 5 && y === ry + rh - 1 ? "scrap_door" : "stone_wall", x, y);
       else L.floor[L.i(x, y)] = game.reg.floors.idx("wood_floor") + 1;
     }
+  // Airlock: a second door set between two walls outside the first one.
+  put("stone_wall", rx + 4, ry + rh);
+  put("scrap_door", rx + 5, ry + rh);
+  put("stone_wall", rx + 6, ry + rh);
   for (let i = 0; i < 4; i++) put("scrap_bed", rx + 1 + i * 2, ry + 1);
   put("table", rx + 4, ry + 4);
   put("chair", rx + 3, ry + 4);

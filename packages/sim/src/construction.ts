@@ -211,6 +211,28 @@ registerJob("deliver", (game, p, job) => {
   return "run";
 });
 
+// ---------------------------------------------------------------- material warnings
+
+/** Last warning tick per game and item, so each shortage is told once a day. */
+const warned = new WeakMap<Game, Map<number, number>>();
+
+/** Every two hours: tell the player when plans wait for a material the colony does not have. */
+export function tickConstruction(game: Game): void {
+  if (!game.blueprints.size || game.tick % Math.round(game.ticksPerHour * 2) !== 0) return;
+  const short = new Set<number>();
+  for (const bp of game.blueprints.values()) for (const [k, n] of Object.entries(bp.need)) if (n > 0) short.add(Number(k));
+  let last = warned.get(game);
+  if (!last) warned.set(game, (last = new Map()));
+  for (const def of short) {
+    let have = 0;
+    for (const s of game.items.values()) if (s.def === def && s.layer >= 0) have += s.count;
+    for (const p of game.pawns.values()) if (p.carrying?.def === def) have += p.carrying.count;
+    if (have > 0 || game.tick - (last.get(def) ?? -Infinity) < game.ticksPerDay) continue;
+    last.set(def, game.tick);
+    game.message("msg.need_material", { item: game.reg.items.list[def].id }, "warn");
+  }
+}
+
 // ---------------------------------------------------------------- roofs
 
 /** Work ticks to put a roof on one tile. Roofs cost no materials (scrap sheets from the ruins). */

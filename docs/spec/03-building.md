@@ -20,6 +20,7 @@ Player marks work. Survivors do it.
 | Walls | Scrap wall, wood wall, brick wall, concrete wall, reinforced wall |
 | Doors | Curtain, scrap door, metal door, blast door (powered, late) |
 | Floors | Dirt (none), wood planks, scrap tiles, concrete, sterile tiles |
+| Orders | Salvage takes only ruins, wrecks and junk. Deconstruct is a separate order for your own buildings (75% of materials back) |
 | Roofs | An enclosed room needs a roof. Survivors build it tile by tile (construction work, no materials). It falls in if the room opens |
 | Supports | Underground: wooden prop, steel beam. Prevents cave-ins |
 | Stairs | Ladder, stairs, lift (powered) |
@@ -45,7 +46,7 @@ Player marks work. Survivors do it.
 
 ## Air and radiation shelter
 
-- A room is **sealed** if it is enclosed, fully roofed and no door opens straight to outside. Two doors in a row (an airlock) or a door into a closed hall count as sealed.
+- A room is **sealed** if it is enclosed, fully roofed and no door opens straight to outside. Two doors in a row (an airlock) count as sealed when the outer door sits between two walls. A door into a closed hall also counts.
 - After a radiation cloud or toxic rain: things outdoors have a high chance to be contaminated, things in unsealed rooms a low chance. Sealed rooms stay clean (see 04).
 - Late tech: air filters let a room stay clean even with its door used often.
 

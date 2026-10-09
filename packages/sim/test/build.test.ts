@@ -90,7 +90,9 @@ describe("construction", () => {
     clearArea(g, hx - 10, hy - 10, 3);
     g.spawnThing("scrap_bed", 0, hx - 10, hy - 10);
     const scrap0 = countItems(g, "scrap"), cloth0 = countItems(g, "cloth");
-    expect(designate(g, "salvage", 0, hx - 10, hy - 10)).toBe(true);
+    // Salvage never takes your own buildings; deconstruct does.
+    expect(designate(g, "salvage", 0, hx - 10, hy - 10)).toBe(false);
+    expect(designate(g, "deconstruct", 0, hx - 10, hy - 10)).toBe(true);
     run(g, 10);
     expect(thingId(g, 0, hx - 10, hy - 10)).toBeNull();
     expect(countItems(g, "scrap") - scrap0).toBe(11);

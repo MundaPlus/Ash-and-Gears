@@ -109,15 +109,32 @@ export function ensureRooms(game: Game): void {
         sealed: !outdoor,
       });
     }
-    // A door with an enclosed room on one side and outdoors on the other unseals that room.
-    for (let i = 0; i < n; i++) {
-      const th = L.thing[i];
-      if (th === NO_THING || !game.reg.things.list[game.things.get(th)!.def].door) continue;
+    // A door unseals the enclosed rooms it touches when it opens straight to outdoors, or when
+    // it leads into a second door that is not set between walls (a real airlock has walls at its sides).
+    const isDoor = (i: number) => L.thing[i] !== NO_THING && game.reg.things.list[game.things.get(L.thing[i])!.def].door;
+    const isSolidWall = (i: number) => i >= 0 && isBoundary(game, L.index, i) && !isDoor(i);
+    const step = (i: number, k: number) => {
       const x = i % w;
-      const nbs = [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, i >= w ? i - w : -1, i + w < n ? i + w : -1];
-      const rooms = nbs.filter((nb) => nb >= 0 && L.room[nb] !== -1).map((nb) => fresh.get(L.room[nb])!);
-      if (!rooms.some((r) => r.outdoor)) continue;
-      for (const r of rooms) if (!r.outdoor) r.sealed = false;
+      return k === 0 ? (x > 0 ? i - 1 : -1) : k === 1 ? (x < w - 1 ? i + 1 : -1) : k === 2 ? (i >= w ? i - w : -1) : i + w < n ? i + w : -1;
+    };
+    for (let i = 0; i < n; i++) {
+      if (!isDoor(i)) continue;
+      const rooms: Room[] = [];
+      let leak = false;
+      for (let k = 0; k < 4; k++) {
+        const nb = step(i, k);
+        if (nb < 0) continue;
+        if (L.room[nb] !== -1) {
+          const r = fresh.get(L.room[nb])!;
+          if (r.outdoor) leak = true;
+          else rooms.push(r);
+        } else if (isDoor(nb)) {
+          // Second door: its two sides across the passage must be walls.
+          const sides = k < 2 ? [step(nb, 2), step(nb, 3)] : [step(nb, 0), step(nb, 1)];
+          if (!sides.every(isSolidWall)) leak = true;
+        }
+      }
+      if (leak) for (const r of rooms) r.sealed = false;
     }
     // Roofs: enclosed surface rooms and the walls around them need one. Underground is always roofed.
     const enclosed = (r: number) => r !== -1 && !fresh.get(r)!.outdoor;

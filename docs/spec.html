@@ -566,6 +566,10 @@ footer { grid-column: 2; color: var(--muted); font-size: 14px; padding-top: 24px
 <td>Dirt (none), wood planks, scrap tiles, concrete, sterile tiles</td>
 </tr>
 <tr>
+<td>Orders</td>
+<td>Salvage takes only ruins, wrecks and junk. Deconstruct is a separate order for your own buildings (75% of materials back)</td>
+</tr>
+<tr>
 <td>Roofs</td>
 <td>An enclosed room needs a roof. Survivors build it tile by tile (construction work, no materials). It falls in if the room opens</td>
 </tr>
@@ -601,7 +605,7 @@ footer { grid-column: 2; color: var(--muted); font-size: 14px; padding-top: 24px
 </ul>
 <h3 id="s03-5">Air and radiation shelter</h3>
 <ul>
-<li>A room is <strong>sealed</strong> if it is enclosed, fully roofed and no door opens straight to outside. Two doors in a row (an airlock) or a door into a closed hall count as sealed.</li>
+<li>A room is <strong>sealed</strong> if it is enclosed, fully roofed and no door opens straight to outside. Two doors in a row (an airlock) count as sealed when the outer door sits between two walls. A door into a closed hall also counts.</li>
 <li>After a radiation cloud or toxic rain: things outdoors have a high chance to be contaminated, things in unsealed rooms a low chance. Sealed rooms stay clean (see 04).</li>
 <li>Late tech: air filters let a room stay clean even with its door used often.</li>
 </ul>
@@ -797,7 +801,7 @@ footer { grid-column: 2; color: var(--muted); font-size: 14px; padding-top: 24px
 <td>8%</td>
 </tr>
 <tr>
-<td>Sealed (roof + airlock of two doors, or a door into a closed hall)</td>
+<td>Sealed (roof + airlock: two doors in a row, the outer one between walls; or a door into a closed hall)</td>
 <td>0%</td>
 <td>0%</td>
 </tr>

@@ -66,7 +66,7 @@
   |---|---|---|
   | Open sky (no roof) | 60% | 30% |
   | Roofed, a door opens straight outside | 20% | 8% |
-  | Sealed (roof + airlock of two doors, or a door into a closed hall) | 0% | 0% |
+  | Sealed (roof + airlock: two doors in a row, the outer one between walls; or a door into a closed hall) | 0% | 0% |
 
 - **Toxic rain** (weather, after day 3): small rad dose outside, rain collectors give contaminated water, and the same chance rolls when it stops, for **half a season**.
 - Items in **sealed rooms** stay clean. This is the main reason to build sealed storage.

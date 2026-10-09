@@ -17,6 +17,7 @@ import { tickFarming } from "./farming.ts";
 import { tickRot } from "./rot.ts";
 import { tickTurrets } from "./combat.ts";
 import { tickStoryteller, type StoryState } from "./storyteller.ts";
+import { tickConstruction } from "./construction.ts";
 import { tickFire } from "./fire.ts";
 import { ensureNets, tickPower, type PowerNet } from "./power.ts";
 import { tickLogistics } from "./logistics.ts";
@@ -219,9 +220,16 @@ export class Game {
     if (d.wall) {
       this.wallVersion++;
       this.wallDirty.add(layer);
+      this.touchAround(layer, x, y);
     }
     if (d.power || d.conduit) this.powerVersion++;
     return t;
+  }
+
+  /** Redraw the four neighbors too (walls join with them, maybe across a chunk edge). */
+  private touchAround(layer: number, x: number, y: number): void {
+    const L = this.map.layers[layer];
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (L.inBounds(x + dx, y + dy)) L.touch(x + dx, y + dy);
   }
 
   removeThing(id: number): void {
@@ -237,6 +245,7 @@ export class Game {
     if (d.wall) {
       this.wallVersion++;
       this.wallDirty.add(t.layer);
+      this.touchAround(t.layer, t.x, t.y);
     }
     if (d.power || d.conduit) this.powerVersion++;
   }
@@ -287,6 +296,7 @@ export class Game {
     tickRot(this);
     tickStoryteller(this);
     tickFire(this);
+    tickConstruction(this);
     tickPower(this);
     tickLogistics(this);
     tickPawns(this);

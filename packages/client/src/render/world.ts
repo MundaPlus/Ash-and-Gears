@@ -5,6 +5,7 @@
  */
 import { Container, Sprite, Texture } from "pixi.js";
 import { CHUNK, NO_THING, type Game } from "@wc/sim";
+import { WALL_E, WALL_N, WALL_S, WALL_W } from "@wc/data";
 import { TILE, variantAt, type TextureSet } from "./textures.ts";
 
 /** Below this zoom the overview texture replaces the chunks. */
@@ -167,6 +168,17 @@ export class WorldRenderer {
             t.rotation = ((thing.rot ?? 0) * Math.PI) / 2;
             t.position.set(s.x + TILE / 2, s.y + TILE / 2);
           } else {
+            const joined = this.tex.walls[thing.def];
+            if (joined) {
+              // Walls join with walls and doors next to them.
+              const isWall = (nx: number, ny: number) => {
+                if (!L.inBounds(nx, ny)) return false;
+                const o = L.thing[L.i(nx, ny)];
+                return o !== NO_THING && g.reg.things.list[g.things.get(o)!.def].wall;
+              };
+              const mask = (isWall(x, y - 1) ? WALL_N : 0) | (isWall(x + 1, y) ? WALL_E : 0) | (isWall(x, y + 1) ? WALL_S : 0) | (isWall(x - 1, y) ? WALL_W : 0);
+              t.texture = joined[mask];
+            }
             t.width = t.height = TILE;
             t.position.copyFrom(s.position);
           }

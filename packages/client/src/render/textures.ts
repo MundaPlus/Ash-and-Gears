@@ -4,7 +4,7 @@
  * 32 px tile; "32" = the same grids doubled with Scale2x (smoother edges).
  */
 import { Texture } from "pixi.js";
-import { CREATURES, FLOORS, ITEMS, PALETTES, parseGrid, scale2x, SHIRTS, terrainGrid, TERRAIN_VARIANTS, THINGS } from "@wc/data";
+import { CREATURES, FLOORS, ITEMS, PALETTES, parseGrid, scale2x, SHIRTS, terrainGrid, TERRAIN_VARIANTS, THINGS, wallVariant } from "@wc/data";
 import type { Registry } from "@wc/sim";
 
 /** World units per tile. Sprites are drawn to this size whatever their pixel size. */
@@ -19,6 +19,8 @@ export interface TextureSet {
   /** [terrain index][variant] */
   terrain: Texture[][];
   things: Texture[];
+  /** Joined wall looks by neighbor mask (see wallVariant), or null for things that are not walls. */
+  walls: (Texture[] | null)[];
   items: Texture[];
   floors: Texture[];
   /** Order markers by Desig code (index 0 unused). */
@@ -83,6 +85,9 @@ export function makeTextures(reg: Registry, art: ArtSettings): TextureSet {
 
   const terrain = reg.terrain.list.map((d) => Array.from({ length: TERRAIN_VARIANTS }, (_, v) => gridTexture(prepGrid(terrainGrid(d.id, v)), colors)));
   const things = reg.things.list.map((d) => (THINGS[d.id] ? gridTexture(prep(THINGS[d.id]), colors) : fallback(d.color, d.glyph)));
+  const walls = reg.things.list.map((d) =>
+    d.wall && !d.door && THINGS[d.id] ? Array.from({ length: 16 }, (_, m) => gridTexture(prepGrid(wallVariant(parseGrid(THINGS[d.id]), m)), colors)) : null,
+  );
   const items = reg.items.list.map((d) => (ITEMS[d.id] ? gridTexture(prep(ITEMS[d.id]), colors) : fallback(d.color, d.glyph)));
   const floors = reg.floors.list.map((d) => (FLOORS[d.id] ? gridTexture(prep(FLOORS[d.id]), colors) : fallback(d.color, "=")));
   const survivorGrid = prep(CREATURES.survivor);
@@ -91,7 +96,7 @@ export function makeTextures(reg: Registry, art: ArtSettings): TextureSet {
   const creatures: Record<string, Texture> = {};
   for (const id of ["rad_rat", "glow_hound"]) creatures[id] = gridTexture(prep(CREATURES[id]), colors);
 
-  const desig = ["", "S", "M", "C", "X"].map((glyph, i) =>
+  const desig = ["", "S", "M", "C", "X", "D"].map((glyph, i) =>
     drawn(TILE, (g) => {
       if (i === 0) return;
       g.strokeStyle = "rgba(239,216,164,.9)";
@@ -112,7 +117,7 @@ export function makeTextures(reg: Registry, art: ArtSettings): TextureSet {
     g.ellipse(16, 29, 9, 3, 0, 0, Math.PI * 2);
     g.fill();
   });
-  return { terrain, things, items, floors, desig, survivors, raider, creatures, shadow };
+  return { terrain, things, walls, items, floors, desig, survivors, raider, creatures, shadow };
 }
 
 /** Stable variant per tile so the ground does not repeat. */

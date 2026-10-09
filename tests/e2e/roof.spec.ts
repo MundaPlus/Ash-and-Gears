@@ -42,7 +42,8 @@ test("a closed room gets a roof from the survivors, and an airlock seals it", as
     return { x0: x - 8, y0: y - 8, x1: x - 3, y1: y - 3 };
   });
 
-  // Walls by drag, then a door over the south wall plan, then a second door below it (airlock).
+  // Walls by drag, then a door over the south wall plan, then a second door below it set between
+  // two more walls (airlock).
   await page.getByTestId("tb-build").click();
   await page.getByTestId("build-scrap_wall").click();
   await drag(page, await toScreen(page, area.x0, area.y0), await toScreen(page, area.x1, area.y1));
@@ -50,6 +51,13 @@ test("a closed room gets a roof from the survivors, and an airlock seals it", as
   await page.getByTestId("tb-build").click();
   await page.getByTestId("build-scrap_door").click();
   for (const [tx, ty] of [[area.x0 + 2, area.y1], [area.x0 + 2, area.y1 + 1]]) {
+    const p = await toScreen(page, tx, ty);
+    await page.mouse.click(p.x, p.y);
+  }
+  await page.keyboard.press("Escape");
+  await page.getByTestId("tb-build").click();
+  await page.getByTestId("build-scrap_wall").click();
+  for (const [tx, ty] of [[area.x0 + 1, area.y1 + 1], [area.x0 + 3, area.y1 + 1]]) {
     const p = await toScreen(page, tx, ty);
     await page.mouse.click(p.x, p.y);
   }

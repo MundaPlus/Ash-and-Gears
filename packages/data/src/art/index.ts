@@ -30,6 +30,26 @@ export function parseGrid(rows: string[]): number[][] {
   return rows.map((r) => [...r].map((c) => (c === "." || c === " " ? -1 : parseInt(c, 16))));
 }
 
+/** Neighbor bits for wall joins. */
+export const WALL_N = 1, WALL_E = 2, WALL_S = 4, WALL_W = 8;
+
+/**
+ * A 16x16 wall grid joined to its neighbors (mask of WALL_* bits).
+ * A wall below hides this tile's front face (rows 12-15), so a vertical run reads as one wall.
+ * A wall to a side or above removes the outline on that side.
+ */
+export function wallVariant(grid: number[][], mask: number): number[][] {
+  const g = grid.map((r) => [...r]);
+  const n = g.length;
+  if (mask & WALL_S) for (let y = 12; y < n; y++) g[y] = [...grid[y - 11]];
+  if (mask & WALL_N) g[0] = [...g[1]];
+  for (const row of g) {
+    if (mask & WALL_E) row[n - 1] = row[n - 2];
+    if (mask & WALL_W) row[0] = row[1];
+  }
+  return g;
+}
+
 /** Scale2x / EPX: doubles a sprite and smooths diagonal edges without new colors. */
 export function scale2x(src: number[][]): number[][] {
   const h = src.length, w = src[0].length;
