@@ -98,6 +98,16 @@ export function Hud() {
               <p class="hint">{t("bills.hint")}</p>
             </div>
           )}
+          {s.inspect.crafter && (
+            <div class="bills" data-testid="crafter">
+              <h3>{t("crafter.title")}</h3>
+              {s.inspect.crafter.options.map((r) => (
+                <button key={r} class={s.inspect!.crafter!.current === r ? "on" : ""} onClick={() => actions.setCrafterRecipe(s.inspect!.crafter!.thingId, r)}>
+                  {t(`recipe.${r}`)}
+                </button>
+              ))}
+            </div>
+          )}
         </aside>
       )}
 

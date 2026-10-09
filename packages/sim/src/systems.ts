@@ -7,3 +7,6 @@ import "./farming.ts";
 import "./bills.ts";
 import "./medical.ts";
 import "./fire.ts";
+import "./research.ts";
+import "./power.ts";
+import "./logistics.ts";

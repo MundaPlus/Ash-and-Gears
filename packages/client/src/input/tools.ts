@@ -37,6 +37,8 @@ export class ToolController implements ToolHandler {
   readonly preview = new Graphics();
   spec: ToolSpec | null = null;
   layer = 0;
+  /** Facing for rotatable buildings: 0 = east, 1 = south, 2 = west, 3 = north. */
+  rot = 0;
   private start: Tile | null = null;
   private end: Tile | null = null;
   onApplied: () => void = () => {};
@@ -104,6 +106,11 @@ export class ToolController implements ToolHandler {
     return out;
   }
 
+  rotatable(): boolean {
+    const s = this.spec;
+    return s?.kind === "build" && s.defKind === "thing" && this.game.reg.things.get(s.def).rotatable;
+  }
+
   private valid(t: Tile): boolean {
     const g = this.game, s = this.spec!, l = this.layer;
     const L = g.map.layers[l];
@@ -126,12 +133,18 @@ export class ToolController implements ToolHandler {
   private draw() {
     this.preview.clear();
     if (!this.start || !this.spec) return;
+    const DIRS: [number, number][] = [[1, 0], [0, 1], [-1, 0], [0, -1]];
     for (const t of this.tiles()) {
       const ok = this.valid(t);
       this.preview
         .rect(t.x * TILE + 1, t.y * TILE + 1, TILE - 2, TILE - 2)
         .fill({ color: ok ? 0x9fd14a : 0xc2453a, alpha: 0.25 })
         .stroke({ width: 1, color: ok ? 0x9fd14a : 0xc2453a, alpha: 0.8 });
+      if (this.rotatable()) {
+        const [dx, dy] = DIRS[this.rot];
+        const cx = t.x * TILE + TILE / 2, cy = t.y * TILE + TILE / 2;
+        this.preview.moveTo(cx - dx * 8, cy - dy * 8).lineTo(cx + dx * 10, cy + dy * 10).stroke({ width: 3, color: 0xe3c25a });
+      }
     }
   }
 
@@ -140,7 +153,7 @@ export class ToolController implements ToolHandler {
     const L = g.map.layers[l];
     switch (s.kind) {
       case "build":
-        for (const t of tiles) placeBlueprint(g, s.defKind, s.def, l, t.x, t.y);
+        for (const t of tiles) placeBlueprint(g, s.defKind, s.def, l, t.x, t.y, this.rotatable() ? this.rot : undefined);
         break;
       case "order":
         for (const t of tiles) designate(g, s.desig, l, t.x, t.y);

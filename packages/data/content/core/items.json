@@ -203,5 +203,12 @@
   "category": "misc",
   "stack": 1,
   "rotDays": 3
+ },
+ {
+  "id": "factory_manual",
+  "color": "#efd8a4",
+  "glyph": "?",
+  "category": "blueprint",
+  "stack": 1
  }
 ]

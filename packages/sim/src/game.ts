@@ -18,6 +18,8 @@ import { tickRot } from "./rot.ts";
 import { tickTurrets } from "./combat.ts";
 import { tickStoryteller, type StoryState } from "./storyteller.ts";
 import { tickFire } from "./fire.ts";
+import { tickPower, type PowerNet } from "./power.ts";
+import { tickLogistics } from "./logistics.ts";
 
 /** Sim ticks per real second at 1x speed. */
 export const TICKS_PER_SECOND = 20;
@@ -98,6 +100,11 @@ export class Game {
   readonly progress = new Map<string, number>();
   /** Bumped when walls, doors or solid terrain change. Rooms are rebuilt when it changes. */
   wallVersion = 0;
+  /** Bumped when power things or wires change. Power nets are rebuilt when it changes. */
+  powerVersion = 0;
+  nets: PowerNet[] = [];
+  readonly netOf = new Map<number, number>();
+  netsVersion = -1;
   /** Job target reservations: key -> pawn id. Keys look like "item:12" or "tile:0,4,5". */
   readonly reservations = new Map<string, number>();
   /** Colony center. Survivors sleep and idle near it until they have beds and rooms. */
@@ -170,12 +177,12 @@ export class Game {
     };
   }
 
-  spawnThing(defId: string, layer: number, x: number, y: number): Thing {
+  spawnThing(defId: string, layer: number, x: number, y: number, rot?: number): Thing {
     const L = this.map.layers[layer];
     const i = L.i(x, y);
     if (L.thing[i] !== NO_THING) throw new Error(`tile ${layer}:${x},${y} is taken`);
     const def = this.reg.things.idx(defId);
-    const t: Thing = { id: this.nextId++, def, layer, x, y, hp: this.reg.things.list[def].hp };
+    const t: Thing = { id: this.nextId++, def, layer, x, y, hp: this.reg.things.list[def].hp, ...(rot !== undefined ? { rot } : {}) };
     this.things.set(t.id, t);
     L.thing[i] = t.id;
     L.touch(x, y);
@@ -183,6 +190,7 @@ export class Game {
     const d = this.reg.things.list[def];
     if (d.blocks || d.stairs) this.pathVersion++;
     if (d.wall) this.wallVersion++;
+    if (d.power || d.conduit) this.powerVersion++;
     return t;
   }
 
@@ -197,6 +205,7 @@ export class Game {
     const d = this.reg.things.list[t.def];
     if (d.blocks || d.stairs) this.pathVersion++;
     if (d.wall) this.wallVersion++;
+    if (d.power || d.conduit) this.powerVersion++;
   }
 
   /** True if a pawn can stand on this tile. */
@@ -244,6 +253,8 @@ export class Game {
     tickRot(this);
     tickStoryteller(this);
     tickFire(this);
+    tickPower(this);
+    tickLogistics(this);
     tickPawns(this);
     tickTurrets(this);
   }

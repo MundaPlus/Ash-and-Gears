@@ -35,7 +35,9 @@
  {
   "id": "make_components",
   "benches": [
-   "scrap_bench"
+   "scrap_bench",
+   "powered_bench",
+   "auto_crafter"
   ],
   "inputs": [
    {
@@ -53,7 +55,9 @@
  {
   "id": "make_bandages",
   "benches": [
-   "scrap_bench"
+   "scrap_bench",
+   "powered_bench",
+   "auto_crafter"
   ],
   "inputs": [
    {
@@ -66,12 +70,14 @@
   },
   "work": 150,
   "skill": "crafting",
-  "target": 6
+  "target": 6,
+  "research": "field_medicine"
  },
  {
   "id": "make_machete",
   "benches": [
-   "scrap_bench"
+   "scrap_bench",
+   "powered_bench"
   ],
   "inputs": [
    {
@@ -89,7 +95,8 @@
  {
   "id": "make_pipe_pistol",
   "benches": [
-   "scrap_bench"
+   "scrap_bench",
+   "powered_bench"
   ],
   "inputs": [
    {
@@ -106,12 +113,14 @@
   },
   "work": 700,
   "skill": "crafting",
-  "target": 0
+  "target": 0,
+  "research": "gunsmithing"
  },
  {
   "id": "make_crossbow",
   "benches": [
-   "scrap_bench"
+   "scrap_bench",
+   "powered_bench"
   ],
   "inputs": [
    {
@@ -128,6 +137,30 @@
   },
   "work": 600,
   "skill": "crafting",
-  "target": 0
+  "target": 0,
+  "research": "gunsmithing"
+ },
+ {
+  "id": "smelt_steel",
+  "benches": [
+   "smelter",
+   "auto_crafter"
+  ],
+  "inputs": [
+   {
+    "item": "scrap",
+    "count": 10
+   },
+   {
+    "item": "coal",
+    "count": 2
+   }
+  ],
+  "output": {
+   "steel": 5
+  },
+  "work": 300,
+  "skill": "crafting",
+  "target": 40
  }
 ]

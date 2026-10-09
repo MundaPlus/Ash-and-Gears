@@ -103,6 +103,29 @@ export const ThingDef = z.object({
   blocksSight: z.boolean().optional(),
   /** Catches fire. */
   flammable: z.boolean().default(false),
+  /** Power: produce (W), use (W), store (Wh), fuel (item burned per in-game hour at full output). */
+  power: z
+    .object({
+      produce: z.number().min(0).default(0),
+      use: z.number().min(0).default(0),
+      store: z.number().min(0).default(0),
+      fuel: z.object({ item: id, perHour: z.number().positive(), capacity: z.number().int().positive() }).optional(),
+    })
+    .optional(),
+  /** Wires: carry power, nothing else. */
+  conduit: z.boolean().default(false),
+  /** Conveyor belt: moves items one tile toward its facing. Value = tiles per in-game hour. */
+  belt: z.number().positive().optional(),
+  /** Loader: moves items from the tile behind it to the tile in front of it. */
+  loader: z.boolean().default(false),
+  /** Auto-crafter: runs a recipe without a survivor while powered. */
+  autoCrafter: z.boolean().default(false),
+  /** Work speed multiplier for bills done here (when powered, if it uses power). */
+  benchSpeed: z.number().positive().default(1),
+  /** Can be rotated when placed (belts, loaders, crafters). */
+  rotatable: z.boolean().default(false),
+  /** Research desk: survivors research here. */
+  research: z.number().positive().optional(),
   /** Turret: shoots hostiles on its own. */
   turret: z.object({ dmg: z.number(), range: z.number(), cooldown: z.number().int(), accuracy: z.number(), kind: z.string() }).optional(),
 });
@@ -185,6 +208,17 @@ export const CreatureDef = z.object({
 });
 export type CreatureDef = z.infer<typeof CreatureDef>;
 
+export const ResearchDef = z.object({
+  id,
+  /** Research points (one survivor at skill 10 makes about 1 point per tick). */
+  cost: z.number().int().positive(),
+  prereqs: z.array(id).default([]),
+  /** Item that must be in stock to start (a salvaged blueprint). */
+  blueprint: id.optional(),
+  tier: z.number().int().min(0).max(4),
+});
+export type ResearchDef = z.infer<typeof ResearchDef>;
+
 export const SkillDef = z.object({ id });
 export type SkillDef = z.infer<typeof SkillDef>;
 
@@ -227,6 +261,7 @@ export const Content = z.object({
   floors: z.array(FloorDef),
   recipes: z.array(RecipeDef),
   creatures: z.array(CreatureDef),
+  research: z.array(ResearchDef),
   skills: z.array(SkillDef),
   traits: z.array(TraitDef),
   thoughts: z.array(ThoughtDef),

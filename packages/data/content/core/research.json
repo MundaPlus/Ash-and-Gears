@@ -1,0 +1,80 @@
+[
+ {
+  "id": "scrap_power",
+  "cost": 2400,
+  "tier": 1
+ },
+ {
+  "id": "batteries",
+  "cost": 1800,
+  "tier": 1,
+  "prereqs": [
+   "scrap_power"
+  ]
+ },
+ {
+  "id": "electric_lights",
+  "cost": 1200,
+  "tier": 1,
+  "prereqs": [
+   "scrap_power"
+  ]
+ },
+ {
+  "id": "powered_tools",
+  "cost": 2600,
+  "tier": 1,
+  "prereqs": [
+   "scrap_power"
+  ]
+ },
+ {
+  "id": "smelting",
+  "cost": 2600,
+  "tier": 1,
+  "prereqs": [
+   "scrap_power"
+  ]
+ },
+ {
+  "id": "turret_wiring",
+  "cost": 2000,
+  "tier": 1,
+  "prereqs": [
+   "scrap_power"
+  ]
+ },
+ {
+  "id": "gunsmithing",
+  "cost": 2000,
+  "tier": 1
+ },
+ {
+  "id": "rain_catchers",
+  "cost": 900,
+  "tier": 0
+ },
+ {
+  "id": "conveyors",
+  "cost": 3200,
+  "tier": 1,
+  "prereqs": [
+   "powered_tools"
+  ]
+ },
+ {
+  "id": "auto_crafting",
+  "cost": 4800,
+  "tier": 2,
+  "prereqs": [
+   "conveyors",
+   "smelting"
+  ],
+  "blueprint": "factory_manual"
+ },
+ {
+  "id": "field_medicine",
+  "cost": 1200,
+  "tier": 0
+ }
+]

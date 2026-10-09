@@ -1,8 +1,9 @@
 import { t } from "@wc/data";
 import { actions, useStore, type BuildOption } from "./store.ts";
 import { WorkGrid } from "./WorkGrid.tsx";
+import { ResearchPanel } from "./ResearchPanel.tsx";
 
-const BUILD_MENUS = ["structure", "furniture", "production", "defense", "floor"];
+const BUILD_MENUS = ["structure", "furniture", "production", "power", "defense", "floor"];
 const ORDERS = ["salvage", "mine", "clear", "cut"] as const;
 
 function costText(o: BuildOption) {
@@ -25,9 +26,15 @@ export function Toolbar() {
               {s.buildOptions
                 .filter((o) => o.menu === m)
                 .map((o) => (
-                  <button key={o.def} data-testid={`build-${o.def}`} onClick={() => pick({ kind: "build", defKind: o.defKind, def: o.def })} title={costText(o)}>
+                  <button
+                    key={o.def}
+                    data-testid={`build-${o.def}`}
+                    disabled={!!o.locked}
+                    onClick={() => pick({ kind: "build", defKind: o.defKind, def: o.def })}
+                    title={costText(o)}
+                  >
                     <b>{t(o.defKind === "floor" ? `floor.${o.def}` : `thing.${o.def}`)}</b>
-                    <small>{costText(o)}</small>
+                    <small>{o.locked ? t("build.locked", { project: t(`research.${o.locked}`) }) : costText(o)}</small>
                   </button>
                 ))}
             </section>
@@ -67,16 +74,22 @@ export function Toolbar() {
         </div>
       )}
       {s.menu === "work" && <WorkGrid />}
+      {s.menu === "research" && <ResearchPanel />}
 
       {s.toolLabel && (
         <div class="toolhint" data-testid="tool-hint">
           <span>{s.toolLabel}</span>
+          {s.toolLabel.includes("⟳") && (
+            <button onClick={() => actions.rotateTool(1)} aria-label={t("tool.rotate")} title={t("tool.rotate")}>
+              ⟳
+            </button>
+          )}
           <button onClick={() => actions.setTool(null)}>{t("tool.done")}</button>
         </div>
       )}
 
       <nav class="toolbar" data-testid="toolbar">
-        {(["build", "orders", "zones", "work"] as const).map((m) => (
+        {(["build", "orders", "zones", "work", "research"] as const).map((m) => (
           <button key={m} class={s.menu === m ? "on" : ""} data-testid={`tb-${m}`} onClick={() => actions.openMenu(m)}>
             {t(`tb.${m}`)}
           </button>

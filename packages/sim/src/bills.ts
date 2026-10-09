@@ -49,14 +49,21 @@ export function matchesInput(game: Game, input: RecipeDef["inputs"][number], def
   return false;
 }
 
-function benchWorkSpeed(game: Game, p: Pawn, r: RecipeDef): number {
-  return r.skill ? workSpeed(game, p) * (0.4 + 0.06 * skillLevel(game, p, r.skill)) : workSpeed(game, p);
+function benchWorkSpeed(game: Game, p: Pawn, r: RecipeDef, bench: Thing): number {
+  const base = r.skill ? workSpeed(game, p) * (0.4 + 0.06 * skillLevel(game, p, r.skill)) : workSpeed(game, p);
+  return base * game.reg.things.list[bench.def].benchSpeed;
+}
+
+/** Benches that need power only work while powered. */
+function benchReady(game: Game, bench: Thing): boolean {
+  const p = game.reg.things.list[bench.def].power;
+  return !p?.use || !!bench.powered;
 }
 
 /** Give a bill job of this work type, if any bench needs one done. */
 function billJob(game: Game, p: Pawn, workType: WorkType): Job | null {
   const benches = [...game.things.values()]
-    .filter((t) => game.reg.things.list[t.def].bench)
+    .filter((t) => game.reg.things.list[t.def].bench && benchReady(game, t))
     .sort((a, b) => (a.x - p.x) ** 2 + (a.y - p.y) ** 2 - ((b.x - p.x) ** 2 + (b.y - p.y) ** 2));
   for (const bench of benches) {
     const def = game.reg.things.list[bench.def];
@@ -146,7 +153,8 @@ registerJob("bill", (game, p, job) => {
 
   if (!atGoal(p)) return "run";
   if (bench.x !== p.x) p.facing = bench.x > p.x ? 1 : -1;
-  job.data!.work = (job.data!.work as number) - benchWorkSpeed(game, p, r);
+  if (!benchReady(game, bench)) return "fail";
+  job.data!.work = (job.data!.work as number) - benchWorkSpeed(game, p, r, bench);
   if (r.skill) learn(game, p, r.skill, 0.4);
   if ((job.data!.work as number) > 0) return "run";
   // Water from a contaminated well is contaminated too.

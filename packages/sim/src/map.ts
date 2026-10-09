@@ -21,6 +21,19 @@ export interface Thing {
   growth?: number;
   /** Radioactive until this tick (crops, wells, rain collectors). */
   contamUntil?: number;
+  /** Facing for rotatable things: 0 = east, 1 = south, 2 = west, 3 = north. */
+  rot?: number;
+  /** Power: true if this consumer has power right now. */
+  powered?: boolean;
+  /** Generators: fuel units inside. Batteries: stored Wh. */
+  fuel?: number;
+  charge?: number;
+  /** Belt cargo moving across this tile. */
+  cargo?: { def: number; count: number; progress: number; contaminated?: boolean } | null;
+  /** Auto-crafter: chosen recipe, input buffer (item index -> count), work progress. */
+  recipe?: string;
+  buffer?: Record<number, number>;
+  work?: number;
 }
 
 /** A stack of one item type lying on a tile or carried by a pawn. */
@@ -57,6 +70,8 @@ export interface Blueprint {
   need: Record<number, number>;
   /** Work ticks left once all materials are in. */
   work: number;
+  /** Facing for rotatable things. */
+  rot?: number;
 }
 
 export interface Zone {

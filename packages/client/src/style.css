@@ -77,6 +77,14 @@ button.on { background: var(--rust); color: var(--ink); border-color: var(--rust
 .injuries li { display: flex; justify-content: space-between; font-size: 13px; padding: 1px 0; }
 .injuries .pos { color: var(--good); } .injuries .neg { color: var(--bad); }
 .draftall { min-width: 0; font-size: 12px; place-content: center; }
+.researchmenu section { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; }
+.researchmenu h4 { width: 100%; margin: 6px 0 0; font: 600 11px var(--mono); color: var(--dim); }
+.proj { display: grid; gap: 3px; text-align: left; padding: 6px 10px; min-width: 170px; }
+.proj.done { border-color: var(--good); }
+.proj.on { border-color: var(--rust); }
+.proj .track b { background: var(--rust); }
+.proj:disabled small { color: #8a7a68; }
+.menu button:disabled { opacity: .55; }
 .passion { font-style: normal; color: var(--rust); font-weight: 700; }
 
 .toasts { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 64px); right: 8px; display: grid; gap: 4px; width: min(360px, calc(100vw - 16px)); pointer-events: none; }

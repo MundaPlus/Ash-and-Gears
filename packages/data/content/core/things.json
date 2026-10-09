@@ -375,7 +375,8 @@
     "cloth": 4
    },
    "work": 150,
-   "menu": "production"
+   "menu": "production",
+   "research": "rain_catchers"
   }
  },
  {
@@ -416,7 +417,229 @@
     "components": 2
    },
    "work": 350,
-   "menu": "defense"
+   "menu": "defense",
+   "research": "turret_wiring"
+  },
+  "power": {
+   "use": 60
+  }
+ },
+ {
+  "id": "old_safe",
+  "kind": "structure",
+  "color": "#56616d",
+  "glyph": "S",
+  "hp": 400,
+  "blocks": true,
+  "work": 500,
+  "yield": {
+   "factory_manual": 1,
+   "components": 2
+  }
+ },
+ {
+  "id": "research_desk",
+  "kind": "furniture",
+  "color": "#4d6670",
+  "glyph": "R",
+  "hp": 150,
+  "blocks": true,
+  "research": 1,
+  "build": {
+   "cost": {
+    "wood": 25,
+    "scrap": 15
+   },
+   "work": 300,
+   "menu": "production"
+  }
+ },
+ {
+  "id": "scrap_generator",
+  "kind": "furniture",
+  "color": "#8a3b2e",
+  "glyph": "G",
+  "hp": 200,
+  "blocks": true,
+  "heat": 2,
+  "power": {
+   "produce": 600,
+   "fuel": {
+    "item": "wood",
+    "perHour": 1,
+    "capacity": 30
+   }
+  },
+  "build": {
+   "cost": {
+    "scrap": 45,
+    "components": 2
+   },
+   "work": 500,
+   "menu": "power",
+   "research": "scrap_power"
+  }
+ },
+ {
+  "id": "wire",
+  "kind": "structure",
+  "color": "#c2603f",
+  "glyph": "-",
+  "hp": 30,
+  "conduit": true,
+  "build": {
+   "cost": {
+    "scrap": 1
+   },
+   "work": 15,
+   "menu": "power",
+   "research": "scrap_power"
+  }
+ },
+ {
+  "id": "battery",
+  "kind": "furniture",
+  "color": "#3b4f63",
+  "glyph": "B",
+  "hp": 120,
+  "blocks": true,
+  "power": {
+   "store": 2400
+  },
+  "build": {
+   "cost": {
+    "scrap": 30,
+    "components": 2
+   },
+   "work": 350,
+   "menu": "power",
+   "research": "batteries"
+  }
+ },
+ {
+  "id": "lamp",
+  "kind": "furniture",
+  "color": "#ffd27a",
+  "glyph": "*",
+  "hp": 60,
+  "light": 7,
+  "power": {
+   "use": 30
+  },
+  "build": {
+   "cost": {
+    "scrap": 8
+   },
+   "work": 80,
+   "menu": "power",
+   "research": "electric_lights"
+  }
+ },
+ {
+  "id": "powered_bench",
+  "kind": "furniture",
+  "color": "#6d86a0",
+  "glyph": "P",
+  "hp": 220,
+  "blocks": true,
+  "bench": true,
+  "benchSpeed": 1.6,
+  "power": {
+   "use": 200
+  },
+  "build": {
+   "cost": {
+    "scrap": 50,
+    "components": 3
+   },
+   "work": 500,
+   "menu": "production",
+   "research": "powered_tools"
+  }
+ },
+ {
+  "id": "smelter",
+  "kind": "furniture",
+  "color": "#a8481a",
+  "glyph": "F",
+  "hp": 250,
+  "blocks": true,
+  "bench": true,
+  "heat": 8,
+  "power": {
+   "use": 350
+  },
+  "build": {
+   "cost": {
+    "stone": 30,
+    "scrap": 30
+   },
+   "work": 500,
+   "menu": "production",
+   "research": "smelting"
+  }
+ },
+ {
+  "id": "conveyor",
+  "kind": "structure",
+  "color": "#39424c",
+  "glyph": ">",
+  "hp": 60,
+  "belt": 30,
+  "rotatable": true,
+  "power": {
+   "use": 10
+  },
+  "build": {
+   "cost": {
+    "scrap": 3
+   },
+   "work": 40,
+   "menu": "production",
+   "research": "conveyors"
+  }
+ },
+ {
+  "id": "loader",
+  "kind": "furniture",
+  "color": "#e3c25a",
+  "glyph": "L",
+  "hp": 100,
+  "loader": true,
+  "rotatable": true,
+  "power": {
+   "use": 25
+  },
+  "build": {
+   "cost": {
+    "scrap": 15,
+    "components": 1
+   },
+   "work": 150,
+   "menu": "production",
+   "research": "conveyors"
+  }
+ },
+ {
+  "id": "auto_crafter",
+  "kind": "furniture",
+  "color": "#9fd14a",
+  "glyph": "A",
+  "hp": 250,
+  "blocks": true,
+  "autoCrafter": true,
+  "rotatable": true,
+  "power": {
+   "use": 250
+  },
+  "build": {
+   "cost": {
+    "steel": 20,
+    "components": 6
+   },
+   "work": 900,
+   "menu": "production",
+   "research": "auto_crafting"
   }
  }
 ]

@@ -27,16 +27,18 @@ export function canPlace(game: Game, kind: Blueprint["kind"], defId: string, lay
   const td = game.reg.terrain.list[L.terrain[i]];
   if (td.solid || !td.buildable || L.blueprint[i] !== NO_THING) return false;
   if (kind === "floor") return L.floor[i] === 0;
-  return L.thing[i] === NO_THING && !!game.reg.things.get(defId).build;
+  const build = game.reg.things.get(defId).build;
+  if (!build || (build.research && !game.research.done.has(build.research))) return false;
+  return L.thing[i] === NO_THING;
 }
 
-export function placeBlueprint(game: Game, kind: Blueprint["kind"], defId: string, layer: number, x: number, y: number): Blueprint | null {
+export function placeBlueprint(game: Game, kind: Blueprint["kind"], defId: string, layer: number, x: number, y: number, rot?: number): Blueprint | null {
   if (!canPlace(game, kind, defId, layer, x, y)) return null;
   const def = kind === "thing" ? game.reg.things.idx(defId) : game.reg.floors.idx(defId);
   const info = buildInfo(game, kind, def)!;
   const need: Record<number, number> = {};
   for (const [item, n] of Object.entries(info.cost)) need[game.reg.items.idx(item)] = n;
-  const bp: Blueprint = { id: game.newId(), kind, def, layer, x, y, need, work: info.work };
+  const bp: Blueprint = { id: game.newId(), kind, def, layer, x, y, need, work: info.work, ...(rot !== undefined ? { rot } : {}) };
   game.blueprints.set(bp.id, bp);
   const L = game.map.layers[layer];
   L.blueprint[L.i(x, y)] = bp.id;
@@ -87,7 +89,7 @@ function completeBlueprint(game: Game, bp: Blueprint) {
     moved = { def: s.def, count: s.count, contaminated: !!s.contaminated };
     takeFromStack(game, s.id, s.count);
   }
-  game.spawnThing(def.id, bp.layer, bp.x, bp.y);
+  game.spawnThing(def.id, bp.layer, bp.x, bp.y, bp.rot);
   if (moved) dropItems(game, moved.def, moved.count, bp.layer, bp.x, bp.y, moved.contaminated);
   if (def.blocks) {
     for (const p of game.pawns.values()) {

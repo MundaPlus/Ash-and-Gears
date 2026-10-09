@@ -5,6 +5,8 @@ export interface Inspect {
   title: string;
   lines: string[];
   bills?: { benchId: number; recipe: string; target: number; stock: number }[];
+  /** Auto-crafter: recipe choice. */
+  crafter?: { thingId: number; current: string | null; options: string[] };
 }
 
 export interface ColonistSummary {
@@ -51,6 +53,20 @@ export interface BuildOption {
   def: string;
   menu: string;
   cost: { item: string; n: number }[];
+  /** Research needed first, or null. */
+  locked: string | null;
+  rotatable: boolean;
+}
+
+export interface ResearchRow {
+  id: string;
+  tier: number;
+  state: string;
+  progress: number;
+  cost: number;
+  prereqs: string[];
+  blueprint?: string;
+  current: boolean;
 }
 
 export interface WorkRow {
@@ -76,13 +92,16 @@ export interface UiState {
   toasts: Toast[];
   resources: { id: string; count: number }[];
   /** Open toolbar menu. */
-  menu: "build" | "orders" | "zones" | "work" | null;
+  menu: "build" | "orders" | "zones" | "work" | "research" | null;
   /** i18n key + params describing the active tool, or null. */
   toolLabel: string | null;
   buildOptions: BuildOption[];
   workTypes: string[];
   workRows: WorkRow[];
   weather: string;
+  research: ResearchRow[];
+  /** Rotation of the build tool (0 = east). */
+  toolRot: number;
   /** Hours until a radiation cloud, or null. */
   radWarning: number | null;
 }
@@ -110,6 +129,8 @@ class Store {
     workTypes: [],
     workRows: [],
     weather: "clear",
+    research: [],
+    toolRot: 0,
     radWarning: null,
   };
   private listeners = new Set<Listener>();
@@ -142,6 +163,9 @@ export const actions = {
   setWork: (_pawn: number, _work: string, _value: number) => {},
   setBillTarget: (_bench: number, _recipe: string, _n: number) => {},
   toggleDraft: (_id: number) => {},
+  setResearch: (_id: string | null) => {},
+  rotateTool: (_d: number) => {},
+  setCrafterRecipe: (_thing: number, _recipe: string) => {},
   draftAll: () => {},
   openMenu: (m: UiState["menu"]) => store.set({ menu: store.state.menu === m ? null : m }),
   closeInspect: () => {

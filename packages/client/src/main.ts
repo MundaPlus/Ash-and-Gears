@@ -24,6 +24,7 @@ import * as sim from "@wc/sim";
 import { Camera } from "./input/camera.ts";
 import { PawnRenderer } from "./render/pawns.ts";
 import { FxRenderer } from "./render/fx.ts";
+import { DynamicRenderer } from "./render/dynamic.ts";
 import { makePlaceholderTextures, TILE } from "./render/textures.ts";
 import { WorldRenderer } from "./render/world.ts";
 import { Hud } from "./ui/Hud.tsx";
@@ -61,6 +62,8 @@ async function boot() {
   app.stage.addChild(world);
   const renderer = new WorldRenderer(game, tex);
   world.addChild(renderer.root);
+  const dyn = new DynamicRenderer(game);
+  world.addChild(dyn.gfx);
   const tools = new ToolController(game, world);
   const pawnsR = new PawnRenderer(game, tex);
   world.addChild(pawnsR.root);
@@ -68,6 +71,7 @@ async function boot() {
   world.addChild(fx.gfx);
   const night = new Graphics();
   app.stage.addChild(night);
+  app.stage.addChild(dyn.lights);
   const weatherFx = new Graphics();
   app.stage.addChild(weatherFx);
   /** Rain drops in screen space: x, y, speed. */
@@ -106,8 +110,35 @@ async function boot() {
     else if (spec?.kind === "cancel") label = t("tool.cancel");
     else if (spec?.kind === "zone" && spec.zone === "grow") label = t("tool.zone", { name: t("zone.grow", { crop: t(`thing.${spec.crop}`) }) });
     else if (spec?.kind === "zone") label = t("tool.zone", { name: t(`zone.${spec.zone}`) });
-    store.set({ toolLabel: label ? `${label} · ${t("tool.hint")}` : null, menu: null });
+    const rot = spec?.kind === "build" && spec.defKind === "thing" && game.reg.things.get(spec.def).rotatable;
+    store.set({ toolLabel: label ? `${label} · ${t("tool.hint")}${rot ? ` ${t("tool.rotate_hint")} ⟳` : ""}` : null, menu: null });
   };
+  actions.rotateTool = (d) => {
+    tools.rot = (tools.rot + d + 4) % 4;
+    store.set({ toolRot: tools.rot });
+  };
+  actions.setResearch = (id) => {
+    sim.setResearch(game, id);
+    store.set({ research: researchRows() });
+  };
+  actions.setCrafterRecipe = (thingId, recipe) => {
+    const th = game.things.get(thingId);
+    if (th) sim.setCrafterRecipe(game, th, recipe);
+    if (inspected) inspectTile(inspected.x, inspected.y);
+  };
+
+  function researchRows() {
+    return game.reg.content.research.map((r) => ({
+      id: r.id,
+      tier: r.tier,
+      state: sim.researchState(game, r.id),
+      progress: game.research.done.has(r.id) ? 1 : (game.research.progress.get(r.id) ?? 0) / r.cost,
+      cost: r.cost,
+      prereqs: r.prereqs,
+      blueprint: r.blueprint,
+      current: game.research.current === r.id,
+    }));
+  }
   actions.toggleDraft = (id) => {
     const p = game.pawns.get(id);
     if (p) sim.setDrafted(game, p, !p.drafted);
@@ -138,6 +169,7 @@ async function boot() {
     renderer.setLayer(n);
     pawnsR.layer = n;
     fx.layer = n;
+    dyn.layer = n;
     tools.layer = n;
     tools.cancel();
     store.set({ layer: n, inspect: null });
@@ -181,6 +213,7 @@ async function boot() {
     let title = t(`terrain.${td.id}`);
     const th = L.thing[i];
     let bills: { benchId: number; recipe: string; target: number; stock: number }[] | undefined;
+    let crafter: { thingId: number; current: string | null; options: string[] } | undefined;
     if (th !== NO_THING) {
       const thing = game.things.get(th)!;
       const def = game.reg.things.list[thing.def];
@@ -190,6 +223,19 @@ async function boot() {
       if ((thing.contamUntil ?? 0) > game.tick) lines.push(t("inspect.contaminated"));
       if (def.bench)
         bills = recipesFor(game, def.id).map((r) => ({ benchId: thing.id, recipe: r.id, target: billTarget(game, thing, r), stock: stockOf(game, r) }));
+      if (def.power) {
+        const p = def.power;
+        if (p.fuel) lines.push(t("inspect.fuel", { v: Math.round(thing.fuel ?? 0), max: p.fuel.capacity, item: t(`item.${p.fuel.item}`) }));
+        if (p.store) lines.push(t("inspect.charge", { v: Math.round(thing.charge ?? 0), max: p.store }));
+        if (p.use) lines.push(sim.isPowered(game, thing) ? t("inspect.powered", { w: p.use }) : t("inspect.unpowered", { w: p.use }));
+        const net = game.nets[game.netOf.get(thing.id) ?? -1];
+        if (net) lines.push(t("inspect.net", { produce: Math.round(net.produce), use: Math.round(net.use), stored: Math.round(net.stored) }));
+      }
+      if (def.autoCrafter) {
+        const r = sim.crafterRecipe(game, thing);
+        crafter = { thingId: thing.id, current: r?.id ?? null, options: recipesFor(game, def.id).filter((x) => x.inputs.every((i) => i.item)).map((x) => x.id) };
+        if (r) lines.push(t("inspect.crafter", { have: r.inputs.map((i) => `${thing.buffer?.[game.reg.items.idx(i.item!)] ?? 0}/${i.count} ${t(`item.${i.item}`)}`).join(", "), pct: Math.round(((thing.work ?? 0) / r.work) * 100) }));
+      }
     }
     inspected = { x, y };
     const it = L.item[i];
@@ -198,7 +244,7 @@ async function boot() {
       const name = t(`item.${game.reg.items.list[st.def].id}`);
       lines.push(t("inspect.items", { count: st.count, item: st.contaminated ? `${name} (${t("item.contaminated")})` : name }));
     }
-    store.set({ inspect: { title, lines, bills } });
+    store.set({ inspect: { title, lines, bills, crafter } });
   }
   let inspected: { x: number; y: number } | null = null;
   actions.setBillTarget = (benchId, recipe, n) => {
@@ -220,9 +266,10 @@ async function boot() {
   }
 
   const buildOptions: BuildOption[] = [
-    ...game.reg.things.list.filter((d) => d.build).map((d) => ({ defKind: "thing" as const, def: d.id, menu: d.build!.menu, cost: Object.entries(d.build!.cost).map(([item, n]) => ({ item, n })) })),
-    ...game.reg.floors.list.map((d) => ({ defKind: "floor" as const, def: d.id, menu: "floor", cost: Object.entries(d.build.cost).map(([item, n]) => ({ item, n })) })),
+    ...game.reg.things.list.filter((d) => d.build).map((d) => ({ defKind: "thing" as const, def: d.id, menu: d.build!.menu, cost: Object.entries(d.build!.cost).map(([item, n]) => ({ item, n })), locked: d.build!.research ?? null, rotatable: d.rotatable })),
+    ...game.reg.floors.list.map((d) => ({ defKind: "floor" as const, def: d.id, menu: "floor", cost: Object.entries(d.build.cost).map(([item, n]) => ({ item, n })), locked: null, rotatable: false })),
   ];
+  const buildRows = () => buildOptions.map((o) => ({ ...o, locked: o.locked && !game.research.done.has(o.locked) ? o.locked : null }));
 
   function pawnDetail(p: Pawn): PawnDetail {
     const thoughts = [
@@ -291,6 +338,7 @@ async function boot() {
       e.preventDefault();
       actions.togglePause();
     } else if (e.key === "1" || e.key === "2" || e.key === "3") actions.setSpeed(Number(e.key));
+    else if ((e.key === "q" || e.key === "e") && tools.spec) actions.rotateTool(e.key === "e" ? 1 : -1);
     else if (e.key === "r" || e.key === "R") {
       if (selected !== null) actions.toggleDraft(selected);
     } else if (e.key === "PageUp") actions.setLayer(renderer.layer - 1);
@@ -316,6 +364,7 @@ async function boot() {
     renderer.update(camera.view, camera.zoom);
     pawnsR.update(clock, camera.zoom);
     fx.update(clock, camera.view);
+    dyn.update(clock, camera.view, renderer.layer > 0 ? 0.6 : darkness(game.hourOfDay), (x, y) => ({ x: x * camera.zoom + world.position.x, y: y * camera.zoom + world.position.y }), camera.zoom);
 
     // Night: underground is always dim, the surface follows the clock.
     const dark = renderer.layer > 0 ? 0.35 : darkness(game.hourOfDay) * 0.55;
@@ -353,6 +402,8 @@ async function boot() {
         fps: fpsTime > 1 ? Math.round(fpsFrames / fpsTime) : store.state.fps,
         colonists: colonists(),
         ...(store.state.menu === "work" ? { workRows: workRows() } : {}),
+        ...(store.state.menu === "research" ? { research: researchRows() } : {}),
+        ...(store.state.menu === "build" ? { buildOptions: buildRows() } : {}),
         pawn: sel ? pawnDetail(sel) : null,
         resources: [
           { id: "meals", count: countItems(game, "simple_meal") },
@@ -370,7 +421,7 @@ async function boot() {
     }
   });
 
-  store.set({ seed, layerCount: game.map.layers.length, buildOptions, workTypes: activeWorkTypes(), workRows: workRows() });
+  store.set({ seed, layerCount: game.map.layers.length, buildOptions: buildRows(), workTypes: activeWorkTypes(), workRows: workRows(), research: researchRows() });
   render(h(Hud, {}), document.getElementById("ui")!);
 
   // Debug and test hook (spec 10, "Debug and test hooks").

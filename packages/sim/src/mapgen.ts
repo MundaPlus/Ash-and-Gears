@@ -87,12 +87,14 @@ function generateSurface(game: Game, rng: Rng) {
   const vStarts = [...vLines, w].sort((a, b) => a - b);
   const ys = [0, ...hLines.map((v) => v + roadW), h].sort((a, b) => a - b);
   const hStarts = [...hLines, h].sort((a, b) => a - b);
+  const ruins: Rect[] = [];
   for (let bi = 0; bi < xs.length - 1; bi++) {
     for (let bj = 0; bj < ys.length - 1; bj++) {
       const block: Rect = { x: xs[bi], y: ys[bj], w: vStarts[bi] - xs[bi], h: hStarts[bj] - ys[bj] };
-      placeRuinsInBlock(game, layer, rng, block, cx, cy);
+      placeRuinsInBlock(game, layer, rng, block, cx, cy, ruins);
     }
   }
+  placeSafe(game, layer, rng, ruins, cx, cy);
 
   // 5. Plants and scrap piles on open ground.
   for (let y = 0; y < h; y++) {
@@ -116,6 +118,23 @@ function generateSurface(game: Game, rng: Rng) {
     }
 }
 
+/** One old safe with the factory manual (blueprint for auto-crafting), in a ruin a fair walk from home. */
+function placeSafe(game: Game, layer: Layer, rng: Rng, ruins: Rect[], cx: number, cy: number) {
+  const far = ruins
+    .map((r) => ({ r, d: Math.hypot(r.x + r.w / 2 - cx, r.y + r.h / 2 - cy) }))
+    .filter((o) => o.d > 20)
+    .sort((a, b) => a.d - b.d);
+  const pick = far.length ? far[Math.min(far.length - 1, rng.int(0, 2))].r : ruins[0];
+  if (!pick) return;
+  for (let tries = 0; tries < 40; tries++) {
+    const x = pick.x + rng.int(1, pick.w - 2), y = pick.y + rng.int(1, pick.h - 2);
+    if (layer.thing[layer.i(x, y)] === NO_THING && game.walkable(0, x, y)) {
+      game.spawnThing("old_safe", 0, x, y);
+      return;
+    }
+  }
+}
+
 /** Pick `n` road positions spread across `size`, away from the edges and from each other. */
 function pickLines(rng: Rng, size: number, n: number): number[] {
   const out: number[] = [];
@@ -124,7 +143,7 @@ function pickLines(rng: Rng, size: number, n: number): number[] {
   return out;
 }
 
-function placeRuinsInBlock(game: Game, layer: Layer, rng: Rng, block: Rect, cx: number, cy: number) {
+function placeRuinsInBlock(game: Game, layer: Layer, rng: Rng, block: Rect, cx: number, cy: number, ruins: Rect[]) {
   const margin = 2;
   let tries = Math.floor((block.w * block.h) / 180);
   while (tries-- > 0) {
@@ -141,6 +160,7 @@ function placeRuinsInBlock(game: Game, layer: Layer, rng: Rng, block: Rect, cx: 
     if (!areaIs(game, layer, r, ["dirt", "rich_soil", "sand", "ash"])) continue;
     if (!areaFree(layer, { x: r.x - 1, y: r.y - 1, w: r.w + 2, h: r.h + 2 })) continue;
     buildRuin(game, layer, rng, r);
+    ruins.push(r);
   }
 }
 
