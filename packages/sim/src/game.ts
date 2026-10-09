@@ -165,7 +165,10 @@ export class Game {
     generateHomeMap(g);
     setupStart(g);
     ensureRooms(g);
-    g.weather.until = g.ticksPerDay / 2;
+    // Start at 07:00, so the first look at the world is in daylight.
+    g.tick = Math.round((g.ticksPerDay * 7) / 24);
+    g.story.lastThreat = g.tick;
+    g.weather.until = g.tick + g.ticksPerDay / 2;
     g.message("msg.intro", {}, "info");
     return g;
   }

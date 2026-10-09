@@ -183,3 +183,6 @@ button.primary { background: var(--rust); color: var(--ink); border-color: var(-
   .layerbox span { min-width: 80px; }
   .inspect, .pawnpanel { bottom: calc(env(safe-area-inset-bottom, 0px) + 112px); max-height: 46vh; }
 }
+
+/* Clean view for trailers: ?cinematic=1 */
+body.cinematic #ui { display: none; }

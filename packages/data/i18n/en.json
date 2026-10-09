@@ -449,5 +449,6 @@
   "goal.raid.done": "Goal done: you survived a raid. They will be back.",
   "goal.lights.done": "Goal done: the lights are on. For the first time in years.",
   "goal.all_done": "All goals done. The wasteland is yours to lose. Keep playing!",
-  "msg.intro": "Three survivors climb out of the rubble. There are cans, a little water, and nobody else. Build a shelter before night."
+  "msg.intro": "Three survivors climb out of the rubble. There are cans, a little water, and nobody else. Build a shelter before night.",
+  "msg.showcase": "Showcase colony: a few weeks of work, done for you. Look around, then start a real game from the menu."
 }

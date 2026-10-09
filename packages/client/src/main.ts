@@ -94,8 +94,12 @@ async function boot() {
       return;
     }
     game = sim.loadGame(content, await sim.unpackSave(bytes));
-  } else if ([...params.keys()].some((k) => ["seed", "story", "new"].includes(k))) {
+  } else if ([...params.keys()].some((k) => ["seed", "story", "new", "showcase"].includes(k))) {
     game = Game.create(content, optionsFromParams(params));
+    if (params.has("showcase")) {
+      sim.buildShowcase(game);
+      game.rebuildDerived();
+    }
   } else {
     // Title screen first.
     const slots = await listSlots();
@@ -437,13 +441,15 @@ async function boot() {
   }
 
   let msgSeen = 0;
+  /** Frame capture for trailers: no auto-pause. */
+  let capturing = false;
   let toastId = 0;
   function drainMessages(now: number) {
     const fresh = game.messages.filter((m) => m.tick > msgSeen);
     if (game.messages.length) msgSeen = game.messages[game.messages.length - 1].tick;
     let toasts = store.state.toasts.filter((x) => x.until > now);
     for (const m of fresh) {
-      if (AUTO_PAUSE.has(m.key)) paused = true;
+      if (AUTO_PAUSE.has(m.key) && !capturing) paused = true;
       if (m.key === "msg.research_done" || m.key.startsWith("goal.")) audio.play("done");
       else if (m.level === "bad") audio.play("bad");
       else if (m.level === "warn") audio.play("alert", 0.7);
@@ -479,8 +485,9 @@ async function boot() {
   });
 
   let fpsFrames = 0, fpsTime = 0, uiTime = 0, clock = 0, lastFxTick = game.tick;
-  app.ticker.add((tk) => {
-    const dt = Math.min(tk.deltaMS, 250) / 1000;
+  /** One frame: sim ticks for the elapsed time, camera, renderers, audio, UI. */
+  function frame(deltaMS: number) {
+    const dt = Math.min(deltaMS, 250) / 1000;
     clock += dt;
     if (!paused) {
       acc += dt * TICKS_PER_SECOND * speed;
@@ -582,7 +589,9 @@ async function boot() {
       if (fpsTime > 1) fpsFrames = fpsTime = 0;
       uiTime = 0;
     }
-  });
+  }
+  app.ticker.add((tk) => frame(tk.deltaMS));
+  if (params.has("cinematic")) document.body.classList.add("cinematic");
 
   store.set({ art: { ...art } });
   store.set({ seed, layerCount: game.map.layers.length, buildOptions: buildRows(), workTypes: activeWorkTypes(), workRows: workRows(), research: researchRows() });
@@ -607,6 +616,15 @@ async function boot() {
       pause: () => (paused = true),
       audio,
       autosave,
+      /** Frame capture: stop the live loop, then step and render one frame at a time. */
+      capture: () => {
+        capturing = true;
+        app.ticker.stop();
+      },
+      frame: (ms: number) => {
+        frame(ms);
+        app.render();
+      },
       ready: true,
     },
   });
