@@ -6,7 +6,7 @@ import { addMemory, makeSurvivor } from "./pawn.ts";
 export const START_SUPPLIES: Record<string, number> = {
   canned_food: 36,
   clean_water: 30,
-  scrap: 40,
+  scrap: 70,
   wood: 40,
   cloth: 10,
 };

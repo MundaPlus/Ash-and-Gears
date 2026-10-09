@@ -57,7 +57,7 @@ export function buildShowcase(game: Game): void {
   if (gen) gen.fuel = 30;
   const bat = put("battery", rx - 3, ry + 8);
   if (bat) bat.charge = 1600;
-  for (let x = rx - 2; x <= rx + 3; x++) put("wire", x, ry + 9);
+  for (let x = rx - 3; x <= rx + 3; x++) put("wire", x, ry + 9);
   put("lamp", rx + 4, ry + 9);
   for (let x = rx + 5; x <= rx + 12; x++) put("wire", x, ry + 10);
   put("scrap_turret", rx + 13, ry + 10);

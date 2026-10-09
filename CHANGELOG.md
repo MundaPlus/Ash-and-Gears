@@ -1,6 +1,11 @@
 # Changelog
 
 ## 2026-10-09
+- New art size "Hybrid": a crisp 16 px world with smooth 32 px items and characters. The 16/32 selector stays (`packages/client/src/render/textures.ts`, `ui/Screens.tsx`, `ui/store.ts`, `main.ts`, `?px=hybrid`) — the user asked to keep the selector and add the hybrid.
+- Wires join by neighbors (straight, corner, T, cross) instead of always lying horizontal. A wire end reaches into the machine next to it, and a short stub runs under the machine to its middle, so lamps and benches look plugged in. Sandbags turn 90° in a vertical line. Placing or removing any thing redraws its neighbors (`packages/data/src/art/index.ts` `lineVariant`, `rotateGrid`, `TURN_IN_LINE`; `packages/client/src/render/world.ts`, `textures.ts`; `packages/sim/src/game.ts`) — the user said vertical wires did not work.
+- Name labels of survivors standing close together stack instead of overlapping (`packages/client/src/render/pawns.ts`).
+- Plans can go over plants and junk: the plant is ordered cut or the junk salvaged, and building waits until the tile is clear. The start kit has 70 scrap instead of 40, enough for a first room with a door (`packages/sim/src/construction.ts`, `start.ts`) — found in a play session.
+- Showcase: the battery wire now touches the battery (`packages/sim/src/showcase.ts`).
 - Walls join with the walls and doors next to them. A wall with a wall below hides its front face, so vertical walls read as one solid wall (`packages/data/src/art/index.ts` `wallVariant`, `packages/client/src/render/textures.ts`, `world.ts`; neighbors redraw in `packages/sim/src/game.ts`) — the user said vertical walls looked strange.
 - An airlock counts only when the outer door sits between two walls (`packages/sim/src/rooms.ts`, tests in `food.test.ts` and `tests/e2e/roof.spec.ts`). The showcase house has such an airlock now (`packages/sim/src/showcase.ts`) — the user asked for walls beside the second door.
 - Salvage is split in two orders. Salvage takes only ruins, wrecks and junk, so a big drag no longer tears down your own walls. Deconstruct takes down your own buildings (`packages/sim/src/designations.ts`, `map.ts`, `packages/client/src/ui/Toolbar.tsx`, `render/textures.ts`) — found in a Chrome play session.

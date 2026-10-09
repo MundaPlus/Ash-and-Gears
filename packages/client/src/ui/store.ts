@@ -1,3 +1,4 @@
+import type { ArtSize } from "../render/textures.ts";
 /** Tiny observable store. The game loop writes, Preact components read. */
 import { useEffect, useState } from "preact/hooks";
 
@@ -102,7 +103,7 @@ export interface UiState {
   research: ResearchRow[];
   /** Rotation of the build tool (0 = east). */
   toolRot: number;
-  art: { palette: string; size: "16" | "32" };
+  art: { palette: string; size: ArtSize };
   menuOpen: boolean;
   volume: { music: number; sfx: number };
   uiScale: number;
@@ -174,7 +175,7 @@ export const actions = {
   setBillTarget: (_bench: number, _recipe: string, _n: number) => {},
   toggleDraft: (_id: number) => {},
   setResearch: (_id: string | null) => {},
-  setArt: (_patch: Partial<{ palette: string; size: "16" | "32" }>) => {},
+  setArt: (_patch: Partial<{ palette: string; size: ArtSize }>) => {},
   toggleMenu: () => store.set({ menuOpen: !store.state.menuOpen }),
   saveGame: async (_name: string | null): Promise<string> => "",
   setVolume: (_k: "music" | "sfx", _v: number) => {},

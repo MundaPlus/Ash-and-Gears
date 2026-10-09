@@ -29,7 +29,7 @@ import { Camera } from "./input/camera.ts";
 import { PawnRenderer } from "./render/pawns.ts";
 import { FxRenderer } from "./render/fx.ts";
 import { DynamicRenderer } from "./render/dynamic.ts";
-import { makeTextures, TILE, type ArtSettings } from "./render/textures.ts";
+import { ART_SIZES, makeTextures, TILE, type ArtSettings } from "./render/textures.ts";
 import { WorldRenderer } from "./render/world.ts";
 import { Hud } from "./ui/Hud.tsx";
 import { actions, store, type BuildOption, type ColonistSummary, type PawnDetail, type WorkRow } from "./ui/store.ts";
@@ -59,7 +59,8 @@ function loadArt(params: URLSearchParams): ArtSettings {
     saved = {};
   }
   const palette = params.get("palette") ?? saved.palette ?? "rust";
-  const size = (params.get("px") ?? saved.size ?? "16") === "32" ? "32" : "16";
+  const want = params.get("px") ?? saved.size ?? "16";
+  const size = ART_SIZES.find((z) => z === want) ?? "16";
   return { palette, size };
 }
 

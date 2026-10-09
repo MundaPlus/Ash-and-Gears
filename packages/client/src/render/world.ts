@@ -168,16 +168,38 @@ export class WorldRenderer {
             t.rotation = ((thing.rot ?? 0) * Math.PI) / 2;
             t.position.set(s.x + TILE / 2, s.y + TILE / 2);
           } else {
-            const joined = this.tex.walls[thing.def];
-            if (joined) {
-              // Walls join with walls and doors next to them.
-              const isWall = (nx: number, ny: number) => {
+            // Walls join with walls and doors; wires with wires and powered things; sandbags turn in a column.
+            const near = (test: (d: (typeof g.reg.things.list)[number]) => boolean) => {
+              const at = (nx: number, ny: number) => {
                 if (!L.inBounds(nx, ny)) return false;
                 const o = L.thing[L.i(nx, ny)];
-                return o !== NO_THING && g.reg.things.list[g.things.get(o)!.def].wall;
+                return o !== NO_THING && test(g.reg.things.list[g.things.get(o)!.def]);
               };
-              const mask = (isWall(x, y - 1) ? WALL_N : 0) | (isWall(x + 1, y) ? WALL_E : 0) | (isWall(x, y + 1) ? WALL_S : 0) | (isWall(x - 1, y) ? WALL_W : 0);
-              t.texture = joined[mask];
+              return (at(x, y - 1) ? WALL_N : 0) | (at(x + 1, y) ? WALL_E : 0) | (at(x, y + 1) ? WALL_S : 0) | (at(x - 1, y) ? WALL_W : 0);
+            };
+            const joined = this.tex.walls[thing.def];
+            const line = this.tex.lines[thing.def];
+            const turned = this.tex.turned[thing.def];
+            const d0 = def;
+            if (joined) t.texture = joined[near((d) => d.wall)];
+            else if (line) {
+              // Wires join wires. A wire end (one wire neighbor or none) also reaches into machines.
+              const wires = near((d) => !!d.conduit);
+              const bits = (wires & 1) + ((wires >> 1) & 1) + ((wires >> 2) & 1) + ((wires >> 3) & 1);
+              t.texture = line[bits <= 1 ? wires | near((d) => !!d.power) : wires];
+            }
+            else if (d0.power && this.tex.stubs.length) {
+              // A machine next to wires: the wire runs in under it, to its middle.
+              const m = near((d) => !!d.conduit);
+              if (m) {
+                const st = new Sprite(this.tex.stubs[m]);
+                st.width = st.height = TILE;
+                st.position.copyFrom(s.position);
+                things.push(st);
+              }
+            } else if (turned) {
+              const m = near((d) => d.id === def.id);
+              if (m & (WALL_N | WALL_S) && !(m & (WALL_E | WALL_W))) t.texture = turned;
             }
             t.width = t.height = TILE;
             t.position.copyFrom(s.position);

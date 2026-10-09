@@ -50,6 +50,50 @@ export function wallVariant(grid: number[][], mask: number): number[][] {
   return g;
 }
 
+/** Things that turn 90 degrees when they run in a vertical line (art drawn for a horizontal line). */
+export const TURN_IN_LINE = new Set(["sandbags"]);
+
+/** A grid turned 90 degrees clockwise. */
+export function rotateGrid(grid: number[][]): number[][] {
+  const h = grid.length, w = grid[0].length;
+  return Array.from({ length: w }, (_, y) => Array.from({ length: h }, (_, x) => grid[h - 1 - x][y]));
+}
+
+/**
+ * A wire (or pipe) grid joined to its neighbors (WALL_* bits). The art is a horizontal line through
+ * the middle; arms are cut from it and turned for north and south. One neighbor still draws a straight line,
+ * unless `exact` is set (stubs under machines: only the arms in the mask).
+ */
+export function lineVariant(grid: number[][], mask: number, exact = false): number[][] {
+  const n = grid.length;
+  // Rows of the line band (any row with a painted pixel).
+  const band = grid.map((r, y) => (r.some((v) => v >= 0) ? y : -1)).filter((y) => y >= 0);
+  if (!exact && !(mask & (WALL_E | WALL_W)) && mask & (WALL_N | WALL_S)) mask |= WALL_N | WALL_S;
+  if (!exact && !(mask & (WALL_N | WALL_S))) mask |= WALL_E | WALL_W;
+  const out = Array.from({ length: n }, () => new Array<number>(n).fill(-1));
+  const lo = band[0], hi = band[band.length - 1];
+  for (const y of band)
+    for (let x = 0; x < n; x++) {
+      const east = x >= lo, west = x <= hi;
+      if ((mask & WALL_E && east) || (mask & WALL_W && west) || (x >= lo && x <= hi)) out[y][x] = grid[y][x];
+      // North and south arms: the same band, turned (transposed).
+      if ((mask & WALL_N && x <= hi) || (mask & WALL_S && x >= lo)) out[x][y] = grid[y][x];
+    }
+  // Junction: line color inside, outline at the corners and on sides without an arm.
+  const mid = band[Math.floor(band.length / 2)];
+  const fill = grid[mid][mid];
+  for (let y = lo; y <= hi; y++)
+    for (let x = lo; x <= hi; x++) {
+      const edgeY = y === lo ? WALL_N : y === hi ? WALL_S : 0;
+      const edgeX = x === lo ? WALL_W : x === hi ? WALL_E : 0;
+      if (edgeX && edgeY) out[y][x] = grid[lo][x];
+      else if (edgeY) out[y][x] = mask & edgeY ? fill : grid[y][x];
+      else if (edgeX) out[y][x] = mask & edgeX ? fill : grid[x][y];
+      else out[y][x] = fill;
+    }
+  return out;
+}
+
 /** Scale2x / EPX: doubles a sprite and smooths diagonal edges without new colors. */
 export function scale2x(src: number[][]): number[][] {
   const h = src.length, w = src[0].length;

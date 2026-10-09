@@ -143,6 +143,19 @@ export class PawnRenderer {
         this.ring.position.set(pos.x, pos.y + 4);
       }
     }
+    // Name labels of survivors close together: push the later ones down so none overlap.
+    const placed: { x: number; y: number; w: number; h: number }[] = [];
+    const shown = [...this.views.values()].filter((v) => v.root.visible && v.label.visible).sort((a, b) => a.root.y - b.root.y || a.root.x - b.root.x);
+    for (const v of shown) {
+      v.label.y = 14;
+      const w = v.label.width, h = v.label.height;
+      const box = { x: v.root.x - w / 2, y: v.root.y + 14, w, h };
+      for (let tries = 0; tries < 4 && placed.some((o) => box.x < o.x + o.w && o.x < box.x + box.w && box.y < o.y + o.h && o.y < box.y + box.h); tries++) {
+        box.y += h - 2;
+        v.label.y += h - 2;
+      }
+      placed.push(box);
+    }
     if (this.selected === null || !this.game.pawns.get(this.selected) || this.game.pawns.get(this.selected)!.layer !== this.layer)
       this.ring.visible = false;
     for (const [id, v] of this.views)

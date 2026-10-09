@@ -220,13 +220,13 @@ export class Game {
     if (d.wall) {
       this.wallVersion++;
       this.wallDirty.add(layer);
-      this.touchAround(layer, x, y);
     }
+    this.touchAround(layer, x, y);
     if (d.power || d.conduit) this.powerVersion++;
     return t;
   }
 
-  /** Redraw the four neighbors too (walls join with them, maybe across a chunk edge). */
+  /** Redraw the four neighbors too (walls, wires and sandbags join with them, maybe across a chunk edge). */
   private touchAround(layer: number, x: number, y: number): void {
     const L = this.map.layers[layer];
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (L.inBounds(x + dx, y + dy)) L.touch(x + dx, y + dy);
@@ -242,10 +242,10 @@ export class Game {
     this.mapVersion++;
     const d = this.reg.things.list[t.def];
     if (d.blocks || d.stairs) this.pathVersion++;
+    this.touchAround(t.layer, t.x, t.y);
     if (d.wall) {
       this.wallVersion++;
       this.wallDirty.add(t.layer);
-      this.touchAround(t.layer, t.x, t.y);
     }
     if (d.power || d.conduit) this.powerVersion++;
   }

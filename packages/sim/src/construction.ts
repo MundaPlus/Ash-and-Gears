@@ -10,6 +10,7 @@ import { dropItems, takeFromStack } from "./items.ts";
 import { NO_THING, type Blueprint } from "./map.ts";
 import { dropCarried, pickUp } from "./hauling.ts";
 import type { Pawn } from "./pawn.ts";
+import { canDesignate, designate } from "./designations.ts";
 import { setRoof } from "./rooms.ts";
 import { registerTask, workJob } from "./work.ts";
 
@@ -18,6 +19,20 @@ const BATCH_RADIUS = 10;
 
 function buildInfo(game: Game, kind: Blueprint["kind"], def: number) {
   return kind === "thing" ? game.reg.things.list[def].build : game.reg.floors.list[def].build;
+}
+
+/** A plant or a ruin/junk on a tile that a plan may go over. It is cut or salvaged first. */
+function clearOrder(game: Game, layer: number, x: number, y: number): "cut" | "salvage" | null {
+  const def = game.thingDefAt(layer, x, y);
+  if (!def) return null;
+  if (def.kind === "plant") return "cut";
+  return canDesignate(game, "salvage", layer, x, y) ? "salvage" : null;
+}
+
+/** True while something still stands on the plan's tile. */
+function blocked(game: Game, bp: Blueprint): boolean {
+  const L = game.map.layers[bp.layer];
+  return bp.kind === "thing" && L.thing[L.i(bp.x, bp.y)] !== NO_THING;
 }
 
 /** Can a blueprint of this def go on this tile? */
@@ -34,7 +49,7 @@ export function canPlace(game: Game, kind: Blueprint["kind"], defId: string, lay
   if (kind === "floor") return L.floor[i] === 0;
   const build = game.reg.things.get(defId).build;
   if (!build || (build.research && !game.research.done.has(build.research))) return false;
-  return L.thing[i] === NO_THING;
+  return L.thing[i] === NO_THING || clearOrder(game, layer, x, y) !== null;
 }
 
 export function placeBlueprint(game: Game, kind: Blueprint["kind"], defId: string, layer: number, x: number, y: number, rot?: number): Blueprint | null {
@@ -47,6 +62,9 @@ export function placeBlueprint(game: Game, kind: Blueprint["kind"], defId: strin
   const need: Record<number, number> = {};
   for (const [item, n] of Object.entries(info.cost)) need[game.reg.items.idx(item)] = n;
   const bp: Blueprint = { id: game.newId(), kind, def, layer, x, y, need, work: info.work, ...(rot !== undefined ? { rot } : {}) };
+  // Something in the way: order it cut or salvaged. Building waits until the tile is clear.
+  const clear = kind === "thing" ? clearOrder(game, layer, x, y) : null;
+  if (clear) designate(game, clear, layer, x, y);
   game.blueprints.set(bp.id, bp);
   const L = game.map.layers[layer];
   L.blueprint[L.i(x, y)] = bp.id;
@@ -120,7 +138,7 @@ registerTask("build", {
   total: (game, job) => game.blueprints.get(job.targetId!)?.work ?? 1,
   valid: (game, job) => {
     const bp = game.blueprints.get(job.targetId!);
-    return !!bp && !needsMaterials(bp);
+    return !!bp && !needsMaterials(bp) && !blocked(game, bp);
   },
   complete: (game, _p, job) => completeBlueprint(game, game.blueprints.get(job.targetId!)!),
 });
@@ -138,7 +156,7 @@ registerWorkGiver({
   give(game, p) {
     if (!game.blueprints.size) return null;
     // 1. Build anything that has all its materials.
-    for (const bp of nearestBlueprints(game, p, (b) => !needsMaterials(b)).slice(0, 10)) {
+    for (const bp of nearestBlueprints(game, p, (b) => !needsMaterials(b) && !blocked(game, b)).slice(0, 10)) {
       if (!game.path.canReachAdjacent(p, bp)) continue;
       const job = workJob(game, p, "build", bp, bp.id);
       if (job) return job;

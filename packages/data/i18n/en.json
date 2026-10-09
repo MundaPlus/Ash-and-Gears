@@ -444,6 +444,7 @@
   "settings.art": "Art style",
   "settings.px_16": "16 px (crisp)",
   "settings.px_32": "32 px (smooth)",
+  "settings.px_hybrid": "Hybrid (crisp world, smooth items and people)",
   "settings.audio": "Sound",
   "settings.music": "Music",
   "settings.sfx": "Effects",
