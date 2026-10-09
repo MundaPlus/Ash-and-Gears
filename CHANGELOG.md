@@ -1,6 +1,7 @@
 # Changelog
 
 ## 2026-10-09
+- Calmer terrain texture (half the speckle) and a phone top bar that no longer overlaps the survivor bar (`packages/data/src/art/terrain.ts`, `packages/client/src/style.css`) — found on phone screenshots.
 - Headless playtest runner with a scripted player and a fight-odds tool (`tools/playtest/run.ts`, `autoplay.ts`, `duel.ts`; `npm run playtest -- --seed x --days 25`) — spec 10 asks for headless scenario runs; it found the bugs below.
 - Fixed AI bugs found by playtests: the move goal kept a live reference to a moving pawn, so doctors never reached patients (`ai.ts`); urgent hunger/thirst now interrupts any job, and jobs time out after 6 in-game hours; sulking survivors still eat and drink; the radiation-shelter rule no longer interrupts eating and drinking (it looped forever); doctors can draw water at a well for downed patients (`medical.ts`); hostiles whose group ended now leave (`hostile.ts`); map generation no longer crashes when two roads place a wreck on the same tile (`mapgen.ts`).
 - Balance: rats eat 12x slower and flee sooner; first threat on day 4, first raid on day 10 with 2 raiders; raid and hound sizes capped by colony size; early raiders carry mostly melee weapons; slower bleeding with clotting; pawns go down later; animals flee when hurt; radiation clears faster, contaminated water gives less dose; clouds at most every 8 days; the well needs no research; faster crops; more start supplies; thirst a bit slower.

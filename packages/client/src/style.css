@@ -173,7 +173,8 @@ button.primary { background: var(--rust); color: var(--ink); border-color: var(-
   .toolhint { top: calc(env(safe-area-inset-top, 0px) + 116px); }
   .radbanner { top: calc(env(safe-area-inset-top, 0px) + 160px); }
   .debug { display: none; }
-  .topleft { top: calc(env(safe-area-inset-top, 0px) + 60px); max-width: calc(100vw - 16px); }
+  .topleft { top: calc(env(safe-area-inset-top, 0px) + 78px); max-width: calc(100vw - 16px); }
+  .clock { font-size: 12px; padding: 4px 8px; }
   .colonist { min-width: 0; padding: 4px 6px; }
   .colonist .warn { display: none; }
   .resources { display: none; }

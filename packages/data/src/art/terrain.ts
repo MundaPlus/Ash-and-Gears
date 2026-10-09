@@ -11,20 +11,20 @@ type Recipe = {
 };
 
 const R: Record<string, Recipe> = {
-  dirt: { base: 3, speckle: [[4, 0.12], [2, 0.1], [5, 0.02]] },
-  rich_soil: { base: 2, speckle: [[1, 0.15], [3, 0.1], [11, 0.03]] },
-  sand: { base: 5, speckle: [[4, 0.12], [6, 0.1]] },
-  ash: { base: 2, speckle: [[13, 0.2], [1, 0.1], [4, 0.04]] },
-  asphalt: { base: 1, speckle: [[2, 0.12], [13, 0.06]], pattern: "cracks", patternIdx: [0] },
-  rubble: { base: 3, speckle: [[2, 0.1]], pattern: "stones", patternIdx: [5, 6, 0] },
-  ruin_floor: { base: 5, speckle: [[4, 0.1], [6, 0.05]], pattern: "tiles", patternIdx: [4, 3] },
-  sludge: { base: 11, speckle: [[12, 0.1], [1, 0.08]], pattern: "ripples", patternIdx: [12] },
-  toxic_pool: { base: 12, speckle: [[15, 0.18], [11, 0.1]], pattern: "ripples", patternIdx: [15] },
-  rock: { base: 1, speckle: [[2, 0.15], [0, 0.04]], pattern: "cracks", patternIdx: [0] },
-  coal_seam: { base: 1, speckle: [[0, 0.25], [13, 0.08]], pattern: "veins", patternIdx: [0, 13] },
-  scrap_vein: { base: 1, speckle: [[2, 0.1]], pattern: "veins", patternIdx: [9, 10, 14] },
-  rough_floor: { base: 2, speckle: [[3, 0.12], [1, 0.1]] },
-  cave_floor: { base: 1, speckle: [[2, 0.2], [3, 0.03]] },
+  dirt: { base: 3, speckle: [[4, 0.06], [2, 0.05], [5, 0.01]] },
+  rich_soil: { base: 2, speckle: [[1, 0.075], [3, 0.05], [11, 0.015]] },
+  sand: { base: 5, speckle: [[4, 0.06], [6, 0.05]] },
+  ash: { base: 2, speckle: [[13, 0.1], [1, 0.05], [4, 0.02]] },
+  asphalt: { base: 1, speckle: [[2, 0.06], [13, 0.03]], pattern: "cracks", patternIdx: [0] },
+  rubble: { base: 3, speckle: [[2, 0.05]], pattern: "stones", patternIdx: [5, 6, 0] },
+  ruin_floor: { base: 5, speckle: [[4, 0.05], [6, 0.025]], pattern: "tiles", patternIdx: [4, 3] },
+  sludge: { base: 11, speckle: [[12, 0.05], [1, 0.04]], pattern: "ripples", patternIdx: [12] },
+  toxic_pool: { base: 12, speckle: [[15, 0.09], [11, 0.05]], pattern: "ripples", patternIdx: [15] },
+  rock: { base: 1, speckle: [[2, 0.075], [0, 0.02]], pattern: "cracks", patternIdx: [0] },
+  coal_seam: { base: 1, speckle: [[0, 0.125], [13, 0.04]], pattern: "veins", patternIdx: [0, 13] },
+  scrap_vein: { base: 1, speckle: [[2, 0.05]], pattern: "veins", patternIdx: [9, 10, 14] },
+  rough_floor: { base: 2, speckle: [[3, 0.06], [1, 0.05]] },
+  cave_floor: { base: 1, speckle: [[2, 0.1], [3, 0.015]] },
 };
 
 function rng(seed: number) {
