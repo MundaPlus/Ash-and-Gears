@@ -3,12 +3,13 @@
  * (walk bob, facing flip, sleeping pose). No frame animation (spec 09).
  */
 import { Container, Graphics, Sprite, Text } from "pixi.js";
-import { t } from "@wc/data";
+import { PALETTES, SHIRTS, t } from "@wc/data";
 import { pain, type Game, type Pawn } from "@wc/sim";
 import { TILE, type TextureSet } from "./textures.ts";
 
 /** A stable color per survivor, from a small warm palette that reads on dirt and asphalt. */
-const SHIRTS = [0x6f8088, 0xd9742e, 0x9fd14a, 0xefd8a4, 0xa8481a, 0x7a8a4e, 0xb0834e, 0xc2603f];
+/** UI swatch color per survivor: the middle color of its shirt ramp (rust palette). */
+const SHIRT_SWATCH = SHIRTS.map(([, b]) => parseInt(PALETTES.rust[b].slice(1), 16));
 
 interface View {
   root: Container;
@@ -30,13 +31,30 @@ export class PawnRenderer {
     private game: Game,
     private tex: TextureSet,
   ) {
+    void this.tex;
     this.ring.circle(0, 0, 15).stroke({ width: 2, color: 0xefd8a4, alpha: 0.9 });
     this.ring.visible = false;
     this.root.addChild(this.ring);
   }
 
   static colorOf(p: Pawn): number {
-    return SHIRTS[p.id % SHIRTS.length];
+    return SHIRT_SWATCH[p.id % SHIRT_SWATCH.length];
+  }
+
+  private textureFor(p: Pawn) {
+    if (p.faction === "colony") return this.tex.survivors[p.id % this.tex.survivors.length];
+    const creature = this.game.reg.content.creatures[p.creature];
+    if (creature.behavior === "human") return this.tex.raider;
+    return this.tex.creatures[creature.id] ?? this.tex.raider;
+  }
+
+  /** New textures (palette or size changed). */
+  setTextures(tex: TextureSet) {
+    this.tex = tex;
+    for (const [id, v] of this.views) {
+      const p = this.game.pawns.get(id);
+      if (p) v.body.texture = this.textureFor(p);
+    }
   }
 
   /** World pixel position of a pawn, between its tile and the next path tile. */
@@ -54,13 +72,10 @@ export class PawnRenderer {
     const root = new Container();
     const shadow = new Sprite(this.tex.shadow);
     shadow.anchor.set(0.5);
-    const creature = this.game.reg.content.creatures[p.creature];
-    const human = creature.behavior === "human";
-    const body = new Sprite(human ? this.tex.pawn : this.tex.creature);
+    const body = new Sprite(this.textureFor(p));
     body.anchor.set(0.5, 0.5);
-    body.tint = p.faction === "colony" ? PawnRenderer.colorOf(p) : p.faction === "raiders" ? 0xc2453a : parseInt(creature.color.slice(1), 16);
-    body.scale.set(creature.size);
-    shadow.scale.set(creature.size);
+    body.width = body.height = TILE;
+    shadow.width = shadow.height = TILE;
     const labelColor = p.faction === "colony" ? 0xefd8a4 : 0xff8a70;
     const label = new Text({ text: p.nick, style: { fontFamily: "monospace", fontSize: 11, fill: labelColor, stroke: { color: 0x1b1714, width: 3 } } });
     label.anchor.set(0.5, 0);
@@ -94,7 +109,7 @@ export class PawnRenderer {
       const pos = PawnRenderer.worldPos(p);
       v.root.position.set(pos.x, pos.y);
       const moving = !!p.path?.length;
-      const sz = this.game.reg.content.creatures[p.creature].size;
+      const sz = 1;
       if (p.health.downed) {
         v.body.rotation = Math.PI / 2;
         v.body.y = 5;
@@ -110,7 +125,7 @@ export class PawnRenderer {
         // Walk bob: two hops per tile-ish; idle breathing is a smaller wave.
         v.body.y = moving ? -Math.abs(Math.sin(timeSec * 10 + p.id)) * 3 : Math.sin(timeSec * 2 + p.id) * 0.6;
       }
-      v.body.scale.x = p.facing * sz;
+      v.body.scale.x = Math.abs(v.body.scale.x) * p.facing * sz;
       v.flag.visible = p.drafted;
       // Health bar: shows when hurt.
       const hurt = Math.min(1, p.health.bloodLoss + pain(this.game, p));

@@ -19,3 +19,4 @@ export function loadCoreContent(): Content {
   return Content.parse({ terrain, things, items, floors, recipes, creatures, research, skills, traits, thoughts, names, loot });
 }
 export * from "./i18n.ts";
+export * from "./art/index.ts";

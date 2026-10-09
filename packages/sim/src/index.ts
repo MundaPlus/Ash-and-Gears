@@ -27,3 +27,5 @@ export * from "./jobs.ts";
 export * from "./research.ts";
 export * from "./power.ts";
 export * from "./logistics.ts";
+export * from "./save.ts";
+export * from "./goals.ts";

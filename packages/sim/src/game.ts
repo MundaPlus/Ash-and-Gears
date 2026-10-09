@@ -18,8 +18,9 @@ import { tickRot } from "./rot.ts";
 import { tickTurrets } from "./combat.ts";
 import { tickStoryteller, type StoryState } from "./storyteller.ts";
 import { tickFire } from "./fire.ts";
-import { tickPower, type PowerNet } from "./power.ts";
+import { ensureNets, tickPower, type PowerNet } from "./power.ts";
 import { tickLogistics } from "./logistics.ts";
+import { tickGoals } from "./goals.ts";
 
 /** Sim ticks per real second at 1x speed. */
 export const TICKS_PER_SECOND = 20;
@@ -89,7 +90,9 @@ export class Game {
   readonly groups = new Map<number, { id: number; kind: string; size: number; fleeing: boolean; arrived: number }>();
   /** Burning tiles: node id -> intensity 0..1. */
   readonly fires = new Map<number, number>();
-  readonly story: StoryState = { points: 0, lastThreat: 0, lastGood: 0, log: [] };
+  readonly story: StoryState = { points: 0, lastThreat: 0, lastGood: 0, log: [], raidsSurvived: 0 };
+  /** Demo goals reached (see goals.ts). */
+  goals: Record<string, boolean> = {};
   /** Turret cooldowns by thing id. */
   readonly turretCooldown = new Map<number, number>();
   /** Research state (M6 fills in projects). */
@@ -134,6 +137,21 @@ export class Game {
     return this.nextId++;
   }
 
+  /** For saves: the next id without using it. */
+  peekNextId(): number {
+    return this.nextId;
+  }
+
+  setNextId(n: number): void {
+    this.nextId = n;
+  }
+
+  /** Rebuild caches that saves do not store (rooms, roofs, power nets). */
+  rebuildDerived(): void {
+    ensureRooms(this);
+    ensureNets(this);
+  }
+
   message(key: string, params: Record<string, string | number> = {}, level: "info" | "warn" | "bad" = "info") {
     this.messages.push({ tick: this.tick, key, params, level });
     if (this.messages.length > 200) this.messages.shift();
@@ -146,6 +164,7 @@ export class Game {
     setupStart(g);
     ensureRooms(g);
     g.weather.until = g.ticksPerDay / 2;
+    g.message("msg.intro", {}, "info");
     return g;
   }
 
@@ -257,5 +276,6 @@ export class Game {
     tickLogistics(this);
     tickPawns(this);
     tickTurrets(this);
+    tickGoals(this);
   }
 }

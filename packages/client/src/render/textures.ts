@@ -1,173 +1,123 @@
 /**
- * Placeholder art. Makes a small texture per terrain and thing from its def color,
- * so the game runs before the texel-studio sprites exist. Real sprites replace these by id.
+ * Textures from the palette-index art in @wc/data. Built at startup, and again when the player
+ * changes palette or sprite size (settings). "16" = hand-pixeled 16 px grids drawn 2x on a
+ * 32 px tile; "32" = the same grids doubled with Scale2x (smoother edges).
  */
 import { Texture } from "pixi.js";
+import { CREATURES, FLOORS, ITEMS, PALETTES, parseGrid, scale2x, SHIRTS, terrainGrid, TERRAIN_VARIANTS, THINGS } from "@wc/data";
 import type { Registry } from "@wc/sim";
 
+/** World units per tile. Sprites are drawn to this size whatever their pixel size. */
 export const TILE = 32;
 
-function shade(hex: string, f: number): string {
-  const n = parseInt(hex.slice(1), 16);
-  const c = (v: number) => Math.max(0, Math.min(255, Math.round(v * f)));
-  return `rgb(${c(n >> 16)},${c((n >> 8) & 255)},${c(n & 255)})`;
-}
-
-/** Tiny deterministic hash for speckle patterns. */
-function hash(x: number, y: number, s: number): number {
-  let h = (x * 374761393 + y * 668265263 + s * 2147483647) | 0;
-  h = Math.imul(h ^ (h >>> 13), 1274126177);
-  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
-}
-
-function canvas(size = TILE): [HTMLCanvasElement, CanvasRenderingContext2D] {
-  const c = document.createElement("canvas");
-  c.width = c.height = size;
-  return [c, c.getContext("2d")!];
-}
-
-function toTexture(c: HTMLCanvasElement): Texture {
-  const t = Texture.from(c);
-  t.source.scaleMode = "nearest";
-  return t;
+export interface ArtSettings {
+  palette: string;
+  size: "16" | "32";
 }
 
 export interface TextureSet {
-  terrain: Texture[];
+  /** [terrain index][variant] */
+  terrain: Texture[][];
   things: Texture[];
   items: Texture[];
   floors: Texture[];
   /** Order markers by Desig code (index 0 unused). */
   desig: Texture[];
-  pawn: Texture;
-  /** Four-legged creature placeholder (white, tinted per creature). */
-  creature: Texture;
+  /** Survivor textures, one per shirt color. */
+  survivors: Texture[];
+  raider: Texture;
+  creatures: Record<string, Texture>;
   shadow: Texture;
 }
 
-export function makePlaceholderTextures(reg: Registry): TextureSet {
-  const P = 4; // "pixel" size: 32 px tile = 8x8 art pixels, so placeholders read as pixel art
-  const terrain = reg.terrain.list.map((def, s) => {
-    const [c, g] = canvas();
-    for (let y = 0; y < TILE; y += P)
-      for (let x = 0; x < TILE; x += P) {
-        const r = hash(x, y, s);
-        g.fillStyle = shade(def.color, def.solid ? 0.8 + r * 0.35 : 0.9 + r * 0.2);
-        g.fillRect(x, y, P, P);
-      }
-    return toTexture(c);
-  });
-
-  const things = reg.things.list.map((def) => {
-    const [c, g] = canvas();
-    const dark = shade(def.color, 0.45);
-    if (def.kind === "structure" && def.wall) {
-      g.fillStyle = shade(def.color, 0.75);
-      g.fillRect(0, 0, TILE, TILE);
-      g.fillStyle = def.color;
-      g.fillRect(0, 0, TILE, TILE - 10);
-      g.fillStyle = dark;
-      for (let x = 0; x < TILE; x += 8) g.fillRect(x, 4, 2, TILE - 14);
-    } else if (def.kind === "plant") {
-      g.fillStyle = dark;
-      g.beginPath();
-      g.arc(16, 18, def.blocks ? 12 : 8, 0, Math.PI * 2);
-      g.fill();
-      g.fillStyle = def.color;
-      g.beginPath();
-      g.arc(16, 16, def.blocks ? 10 : 6, 0, Math.PI * 2);
-      g.fill();
-      if (def.blocks) g.fillRect(14, 16, 4, 14);
-    } else if (def.kind === "stairs") {
-      g.fillStyle = "rgb(20,18,16)";
-      g.fillRect(4, 4, TILE - 8, TILE - 8);
-      g.fillStyle = def.color;
-      for (let i = 0; i < 4; i++) g.fillRect(6, 7 + i * 6, TILE - 12, 3);
-    } else {
-      g.fillStyle = dark;
-      g.fillRect(5, 7, TILE - 10, TILE - 10);
-      g.fillStyle = def.color;
-      g.fillRect(4, 5, TILE - 10, TILE - 10);
+function gridTexture(grid: number[][], colors: string[], remap?: Record<number, number>): Texture {
+  const h = grid.length, w = grid[0].length;
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  const g = c.getContext("2d")!;
+  const img = g.createImageData(w, h);
+  for (let y = 0; y < h; y++)
+    for (let x = 0; x < w; x++) {
+      let v = grid[y][x];
+      if (v < 0) continue;
+      if (remap && remap[v] !== undefined) v = remap[v];
+      const hex = colors[v];
+      const o = (y * w + x) * 4;
+      img.data[o] = parseInt(hex.slice(1, 3), 16);
+      img.data[o + 1] = parseInt(hex.slice(3, 5), 16);
+      img.data[o + 2] = parseInt(hex.slice(5, 7), 16);
+      img.data[o + 3] = 255;
     }
-    g.fillStyle = "rgba(0,0,0,.65)";
+  g.putImageData(img, 0, 0);
+  const t = Texture.from(c);
+  t.source.scaleMode = "nearest";
+  return t;
+}
+
+/** A tiny canvas-drawn texture (markers, shadow, fallbacks). */
+function drawn(size: number, draw: (g: CanvasRenderingContext2D) => void): Texture {
+  const c = document.createElement("canvas");
+  c.width = c.height = size;
+  draw(c.getContext("2d")!);
+  const t = Texture.from(c);
+  t.source.scaleMode = "nearest";
+  return t;
+}
+
+function fallback(color: string, glyph: string): Texture {
+  return drawn(TILE, (g) => {
+    g.fillStyle = color;
+    g.fillRect(6, 6, 20, 20);
+    g.fillStyle = "rgba(0,0,0,.7)";
     g.font = "bold 12px monospace";
     g.textAlign = "center";
-    if (def.kind !== "stairs" && !def.wall) g.fillText(def.glyph, 15, 21);
-    return toTexture(c);
+    g.fillText(glyph, 16, 21);
   });
+}
 
-  const items = reg.items.list.map((def) => {
-    const [c, g] = canvas();
-    g.fillStyle = shade(def.color, 0.4);
-    g.fillRect(9, 11, 16, 14);
-    g.fillStyle = def.color;
-    g.fillRect(8, 9, 16, 14);
-    g.fillStyle = shade(def.color, 1.3);
-    g.fillRect(8, 9, 16, 3);
-    g.fillStyle = "rgba(0,0,0,.7)";
-    g.font = "bold 11px monospace";
-    g.textAlign = "center";
-    g.fillText(def.glyph, 16, 21);
-    return toTexture(c);
+export function makeTextures(reg: Registry, art: ArtSettings): TextureSet {
+  const colors = PALETTES[art.palette] ?? PALETTES.rust;
+  const prep = (rows: string[]) => (art.size === "32" ? scale2x(parseGrid(rows)) : parseGrid(rows));
+  const prepGrid = (g: number[][]) => (art.size === "32" ? scale2x(g) : g);
+
+  const terrain = reg.terrain.list.map((d) => Array.from({ length: TERRAIN_VARIANTS }, (_, v) => gridTexture(prepGrid(terrainGrid(d.id, v)), colors)));
+  const things = reg.things.list.map((d) => (THINGS[d.id] ? gridTexture(prep(THINGS[d.id]), colors) : fallback(d.color, d.glyph)));
+  const items = reg.items.list.map((d) => (ITEMS[d.id] ? gridTexture(prep(ITEMS[d.id]), colors) : fallback(d.color, d.glyph)));
+  const floors = reg.floors.list.map((d) => (FLOORS[d.id] ? gridTexture(prep(FLOORS[d.id]), colors) : fallback(d.color, "=")));
+  const survivorGrid = prep(CREATURES.survivor);
+  const survivors = SHIRTS.map(([a, b, c]) => gridTexture(survivorGrid, colors, { 8: a, 9: b, 10: c }));
+  const raider = gridTexture(prep(CREATURES.raider), colors);
+  const creatures: Record<string, Texture> = {};
+  for (const id of ["rad_rat", "glow_hound"]) creatures[id] = gridTexture(prep(CREATURES[id]), colors);
+
+  const desig = ["", "S", "M", "C", "X"].map((glyph, i) =>
+    drawn(TILE, (g) => {
+      if (i === 0) return;
+      g.strokeStyle = "rgba(239,216,164,.9)";
+      g.lineWidth = 2;
+      g.setLineDash([4, 3]);
+      g.strokeRect(2, 2, TILE - 4, TILE - 4);
+      g.fillStyle = "rgba(27,23,20,.8)";
+      g.fillRect(TILE - 13, 1, 12, 12);
+      g.fillStyle = "#efd8a4";
+      g.font = "bold 10px monospace";
+      g.textAlign = "center";
+      g.fillText(glyph, TILE - 7, 11);
+    }),
+  );
+  const shadow = drawn(TILE, (g) => {
+    g.fillStyle = "rgba(0,0,0,.35)";
+    g.beginPath();
+    g.ellipse(16, 29, 9, 3, 0, 0, Math.PI * 2);
+    g.fill();
   });
+  return { terrain, things, items, floors, desig, survivors, raider, creatures, shadow };
+}
 
-  const floors = reg.floors.list.map((def, s) => {
-    const [c, g] = canvas();
-    for (let y = 0; y < TILE; y += 8)
-      for (let x = 0; x < TILE; x += 8) {
-        g.fillStyle = shade(def.color, 0.92 + hash(x, y, s + 50) * 0.14);
-        g.fillRect(x, y, 8, 8);
-        g.fillStyle = shade(def.color, 0.7);
-        g.fillRect(x, y + 7, 8, 1);
-        g.fillRect(x + 7, y, 1, 8);
-      }
-    return toTexture(c);
-  });
-
-  const desig = ["", "S", "M", "C", "X"].map((glyph, i) => {
-    const [c, g] = canvas();
-    if (i === 0) return toTexture(c);
-    g.strokeStyle = "rgba(239,216,164,.9)";
-    g.lineWidth = 2;
-    g.setLineDash([4, 3]);
-    g.strokeRect(2, 2, TILE - 4, TILE - 4);
-    g.fillStyle = "rgba(27,23,20,.8)";
-    g.fillRect(TILE - 13, 1, 12, 12);
-    g.fillStyle = "#efd8a4";
-    g.font = "bold 10px monospace";
-    g.textAlign = "center";
-    g.fillText(glyph, TILE - 7, 11);
-    return toTexture(c);
-  });
-
-  // Survivor placeholder: white so each pawn can be tinted. Head, body, legs.
-  const [pc, pg] = canvas();
-  pg.fillStyle = "#ffffff";
-  pg.fillRect(12, 4, 8, 8); // head
-  pg.fillRect(10, 12, 12, 10); // body
-  pg.fillRect(11, 22, 4, 7); // legs
-  pg.fillRect(17, 22, 4, 7);
-  pg.fillStyle = "rgba(0,0,0,.55)";
-  pg.fillRect(17, 7, 2, 2); // eye, shows facing
-  const pawn = toTexture(pc);
-
-  const [cc, cg] = canvas();
-  cg.fillStyle = "#ffffff";
-  cg.fillRect(6, 12, 18, 9); // body
-  cg.fillRect(22, 8, 7, 7); // head
-  cg.fillRect(7, 21, 3, 7); // legs
-  cg.fillRect(19, 21, 3, 7);
-  cg.fillRect(2, 11, 5, 2); // tail
-  cg.fillStyle = "rgba(0,0,0,.6)";
-  cg.fillRect(26, 10, 2, 2);
-  const creature = toTexture(cc);
-
-  const [sc, sg] = canvas();
-  sg.fillStyle = "rgba(0,0,0,.35)";
-  sg.beginPath();
-  sg.ellipse(16, 29, 9, 3, 0, 0, Math.PI * 2);
-  sg.fill();
-  const shadow = toTexture(sc);
-
-  return { terrain, things, items, floors, desig, pawn, creature, shadow };
+/** Stable variant per tile so the ground does not repeat. */
+export function variantAt(x: number, y: number): number {
+  let h = (x * 374761393 + y * 668265263) | 0;
+  h = Math.imul(h ^ (h >>> 13), 1274126177);
+  return ((h ^ (h >>> 16)) >>> 0) % TERRAIN_VARIANTS;
 }

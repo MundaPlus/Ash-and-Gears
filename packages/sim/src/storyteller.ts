@@ -13,6 +13,7 @@ export interface StoryState {
   lastThreat: number;
   lastGood: number;
   log: { tick: number; event: string }[];
+  raidsSurvived: number;
 }
 
 const GRACE_DAYS = 3;

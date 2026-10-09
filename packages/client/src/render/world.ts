@@ -5,7 +5,7 @@
  */
 import { Container, Sprite, Texture } from "pixi.js";
 import { CHUNK, NO_THING, type Game } from "@wc/sim";
-import { TILE, type TextureSet } from "./textures.ts";
+import { TILE, variantAt, type TextureSet } from "./textures.ts";
 
 /** Below this zoom the overview texture replaces the chunks. */
 const OVERVIEW_ZOOM = 0.3;
@@ -27,7 +27,7 @@ export class WorldRenderer {
 
   constructor(
     private game: Game,
-    private tex: TextureSet,
+    public tex: TextureSet,
   ) {
     const { w, h } = game.map;
     for (const L of game.map.layers) {
@@ -52,6 +52,12 @@ export class WorldRenderer {
       this.overview.push(ov);
       this.overviewVersion.push(-1);
     }
+  }
+
+  /** New textures (palette or size changed): redraw everything. */
+  setTextures(tex: TextureSet) {
+    this.tex = tex;
+    for (const list of this.chunks) for (const c of list) c.version = -1;
   }
 
   setLayer(l: number) {
@@ -93,8 +99,9 @@ export class WorldRenderer {
       for (let x = c.cx * CHUNK; x < Math.min(L.w, (c.cx + 1) * CHUNK); x++) {
         const i = L.i(x, y);
         const fl = L.floor[i];
-        const s = new Sprite(fl ? this.tex.floors[fl - 1] : this.tex.terrain[L.terrain[i]]);
+        const s = new Sprite(fl ? this.tex.floors[fl - 1] : this.tex.terrain[L.terrain[i]][variantAt(x, y)]);
         s.position.set((x - c.cx * CHUNK) * TILE, (y - c.cy * CHUNK) * TILE);
+        s.width = s.height = TILE;
         c.root.addChild(s);
         const z = L.zone[i];
         if (z !== NO_THING) {
@@ -110,6 +117,7 @@ export class WorldRenderer {
           const bp = g.blueprints.get(bpId)!;
           const bs = new Sprite(bp.kind === "floor" ? this.tex.floors[bp.def] : this.tex.things[bp.def]);
           bs.position.copyFrom(s.position);
+          bs.width = bs.height = TILE;
           bs.tint = 0xa8d0ff;
           bs.alpha = Object.values(bp.need).some((n) => n > 0) ? 0.55 : 0.8;
           overlays.push(bs);
@@ -118,13 +126,16 @@ export class WorldRenderer {
         if (d) {
           const ds = new Sprite(this.tex.desig[d]);
           ds.position.copyFrom(s.position);
+          ds.width = ds.height = TILE;
           marks.push(ds);
         }
         const it = L.item[i];
         if (it !== NO_THING) {
           const st = g.items.get(it)!;
           const t = new Sprite(this.tex.items[st.def]);
-          t.position.copyFrom(s.position);
+          // Items lie a bit smaller than a full tile.
+          t.width = t.height = TILE * 0.85;
+          t.position.set(s.x + TILE * 0.075, s.y + TILE * 0.1);
           if (st.contaminated) t.tint = 0xb8ff6a;
           items.push(t);
         }
@@ -132,14 +143,24 @@ export class WorldRenderer {
         if (th !== NO_THING) {
           const thing = g.things.get(th)!;
           const t = new Sprite(this.tex.things[thing.def]);
-          if (g.reg.things.list[thing.def].crop) {
+          const def = g.reg.things.list[thing.def];
+          if (def.crop) {
             // Crops grow in size; contaminated ones glow green.
             const sc = 0.35 + 0.65 * Math.min(1, thing.growth ?? 0);
             t.anchor.set(0.5, 1);
-            t.scale.set(sc);
-            t.position.set(s.x + TILE / 2, s.y + TILE - 2);
+            t.width = t.height = TILE * sc;
+            t.position.set(s.x + TILE / 2, s.y + TILE);
             if ((thing.contamUntil ?? 0) > g.tick) t.tint = 0xb8ff6a;
-          } else t.position.copyFrom(s.position);
+          } else if (def.rotatable && def.belt) {
+            // Belts turn with their facing (the art runs left to right).
+            t.anchor.set(0.5);
+            t.width = t.height = TILE;
+            t.rotation = ((thing.rot ?? 0) * Math.PI) / 2;
+            t.position.set(s.x + TILE / 2, s.y + TILE / 2);
+          } else {
+            t.width = t.height = TILE;
+            t.position.copyFrom(s.position);
+          }
           things.push(t);
         }
       }

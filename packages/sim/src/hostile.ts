@@ -157,7 +157,10 @@ export function updateGroups(game: Game): void {
     if (members.length === 0 || (g.fleeing && fighting === 0)) {
       game.groups.delete(g.id);
       // Downed enemies left behind bleed out on their own.
-      if (g.kind === "raid") for (const p of game.pawns.values()) if (p.faction === "colony") addMemory(game, p, "survived_raid");
+      if (g.kind === "raid" && [...game.pawns.values()].some((p) => p.faction === "colony")) {
+        game.story.raidsSurvived++;
+        for (const p of game.pawns.values()) if (p.faction === "colony") addMemory(game, p, "survived_raid");
+      }
     }
   }
 }

@@ -21,11 +21,14 @@ import {
 } from "@wc/sim";
 import { ToolController } from "./input/tools.ts";
 import * as sim from "@wc/sim";
+import { Audio } from "./audio.ts";
+import { listSlots, readSlot, writeSlot } from "./storage.ts";
+import { TitleScreen } from "./ui/Screens.tsx";
 import { Camera } from "./input/camera.ts";
 import { PawnRenderer } from "./render/pawns.ts";
 import { FxRenderer } from "./render/fx.ts";
 import { DynamicRenderer } from "./render/dynamic.ts";
-import { makePlaceholderTextures, TILE } from "./render/textures.ts";
+import { makeTextures, TILE, type ArtSettings } from "./render/textures.ts";
 import { WorldRenderer } from "./render/world.ts";
 import { Hud } from "./ui/Hud.tsx";
 import { actions, store, type BuildOption, type ColonistSummary, type PawnDetail, type WorkRow } from "./ui/store.ts";
@@ -46,18 +49,68 @@ function darkness(hour: number): number {
   return 1 - (hour - 4) / 3;
 }
 
+/** Art settings: URL (?palette=ash&px=32) wins, then saved choice, then rust/16. */
+function loadArt(params: URLSearchParams): ArtSettings {
+  let saved: Partial<ArtSettings>;
+  try {
+    saved = JSON.parse(localStorage.getItem("wc-art") ?? "{}");
+  } catch {
+    saved = {};
+  }
+  const palette = params.get("palette") ?? saved.palette ?? "rust";
+  const size = (params.get("px") ?? saved.size ?? "16") === "32" ? "32" : "16";
+  return { palette, size };
+}
+
+/** Game options from the URL (new-game screen, tests). */
+function optionsFromParams(params: URLSearchParams) {
+  const num = (k: string, d: number) => (params.has(k) ? Number(params.get(k)) : d);
+  const story = params.get("story");
+  return {
+    seed: params.get("seed") ?? Math.random().toString(36).slice(2, 8),
+    mapSize: num("size", 200),
+    dayLengthSec: num("day", 360),
+    raidScale: num("raid", 1),
+    mutantScale: num("mutant", 1),
+    radCloudScale: num("rad", 1),
+    storyteller: (story === "grandma" || story === "chaos" || story === "none" ? story : "sheriff") as "sheriff" | "grandma" | "chaos" | "none",
+  };
+}
+
 async function boot() {
   const params = new URLSearchParams(location.search);
-  const seed = params.get("seed") ?? Math.random().toString(36).slice(2, 8);
-  const mapSize = Number(params.get("size") ?? 200);
-  const game = Game.create(loadCoreContent(), { seed, mapSize });
+  const content = loadCoreContent();
+  let game: Game;
+  if (params.has("load")) {
+    let slot: string | null;
+    try {
+      slot = sessionStorage.getItem("wc-load");
+    } catch {
+      slot = null;
+    }
+    const bytes = slot ? await readSlot(slot) : null;
+    if (!bytes) {
+      location.search = "";
+      return;
+    }
+    game = sim.loadGame(content, await sim.unpackSave(bytes));
+  } else if ([...params.keys()].some((k) => ["seed", "story", "new"].includes(k))) {
+    game = Game.create(content, optionsFromParams(params));
+  } else {
+    // Title screen first.
+    const slots = await listSlots();
+    render(h(TitleScreen, { hasAutosave: slots.some((s) => s.id === "autosave") }), document.getElementById("ui")!);
+    return;
+  }
+  const seed = game.opts.seed;
 
   const app = new Application();
   const host = document.getElementById("game")!;
   await app.init({ resizeTo: host, background: "#1b1714", antialias: false, autoDensity: true, resolution: Math.min(window.devicePixelRatio, 2) });
   host.appendChild(app.canvas);
 
-  const tex = makePlaceholderTextures(game.reg);
+  const art: ArtSettings = loadArt(params);
+  let tex = makeTextures(game.reg, art);
   const world = new Container();
   app.stage.addChild(world);
   const renderer = new WorldRenderer(game, tex);
@@ -117,6 +170,77 @@ async function boot() {
     tools.rot = (tools.rot + d + 4) % 4;
     store.set({ toolRot: tools.rot });
   };
+  actions.setArt = (patch) => {
+    Object.assign(art, patch);
+    try {
+      localStorage.setItem("wc-art", JSON.stringify(art));
+    } catch {
+      // storage blocked: the setting lasts for this session only
+    }
+    tex = makeTextures(game.reg, art);
+    renderer.setTextures(tex);
+    pawnsR.setTextures(tex);
+    store.set({ art: { ...art } });
+  };
+  // ---------------------------------------------------------------- audio
+  const audio = new Audio();
+  let prefs: { music?: number; sfx?: number; ui?: number };
+  try {
+    prefs = JSON.parse(localStorage.getItem("wc-prefs") ?? "{}");
+  } catch {
+    prefs = {};
+  }
+  audio.volume = { music: prefs.music ?? 0.6, sfx: prefs.sfx ?? 0.7 };
+  const savePrefs = () => {
+    try {
+      localStorage.setItem("wc-prefs", JSON.stringify({ ...audio.volume, ui: store.state.uiScale }));
+    } catch {
+      // storage blocked: settings last for this session
+    }
+  };
+  const unlockAudio = () => audio.start();
+  window.addEventListener("pointerdown", unlockAudio);
+  window.addEventListener("keydown", unlockAudio);
+  actions.setVolume = (k, v) => {
+    audio.setVolume(k, v);
+    store.set({ volume: { ...audio.volume } });
+    savePrefs();
+  };
+  actions.setUiScale = (z) => {
+    document.documentElement.style.setProperty("--ui-scale", String(z));
+    store.set({ uiScale: z });
+    savePrefs();
+  };
+  store.set({ volume: { ...audio.volume } });
+  actions.setUiScale(prefs.ui ?? 1);
+
+  // ---------------------------------------------------------------- saving
+  const slotInfo = (id: string, name: string) => ({
+    id,
+    name,
+    savedAt: new Date().toISOString(),
+    day: game.time.day,
+    colonists: [...game.pawns.values()].filter((p) => p.faction === "colony").length,
+    seed: game.opts.seed,
+  });
+  actions.saveGame = async (name) => {
+    const label = name ?? t("menu.slot_name", { day: game.time.day, seed: game.opts.seed });
+    await writeSlot(slotInfo(`save-${Date.now()}`, label), await sim.packSave(sim.saveGame(game)));
+    return label;
+  };
+  let autosaving = false;
+  async function autosave() {
+    if (autosaving) return;
+    autosaving = true;
+    try {
+      await writeSlot(slotInfo("autosave", t("menu.autosave")), await sim.packSave(sim.saveGame(game)));
+    } catch (e) {
+      console.warn("autosave failed", e);
+    } finally {
+      autosaving = false;
+    }
+  }
+
   actions.setResearch = (id) => {
     sim.setResearch(game, id);
     store.set({ research: researchRows() });
@@ -320,12 +444,16 @@ async function boot() {
     let toasts = store.state.toasts.filter((x) => x.until > now);
     for (const m of fresh) {
       if (AUTO_PAUSE.has(m.key)) paused = true;
+      if (m.key === "msg.research_done" || m.key.startsWith("goal.")) audio.play("done");
+      else if (m.level === "bad") audio.play("bad");
+      else if (m.level === "warn") audio.play("alert", 0.7);
       const params = { ...m.params };
       if (m.key === "msg.skill_up") params.skill = t(`skill.${params.skill}`);
       if (typeof params.item === "string") params.item = t(`item.${params.item}`);
       if (typeof params.thing === "string") params.thing = t(`thing.${params.thing}`);
       if (typeof params.part === "string") params.part = t(`part.${params.part}`);
       if (typeof params.cause === "string") params.cause = t(`cause.${params.cause}`);
+      if (typeof params.project === "string") params.project = t(`research.${params.project}`);
       toasts.push({ id: toastId++, text: t(m.key, params), level: m.level, until: now + TOAST_SEC });
     }
     toasts = toasts.slice(-4);
@@ -350,7 +478,7 @@ async function boot() {
     }
   });
 
-  let fpsFrames = 0, fpsTime = 0, uiTime = 0, clock = 0;
+  let fpsFrames = 0, fpsTime = 0, uiTime = 0, clock = 0, lastFxTick = game.tick;
   app.ticker.add((tk) => {
     const dt = Math.min(tk.deltaMS, 250) / 1000;
     clock += dt;
@@ -358,7 +486,10 @@ async function boot() {
       acc += dt * TICKS_PER_SECOND * speed;
       let n = Math.min(Math.floor(acc), MAX_TICKS_PER_FRAME * speed);
       acc -= Math.floor(acc);
-      while (n-- > 0) game.step();
+      while (n-- > 0) {
+        game.step();
+        if (game.tick % game.ticksPerDay === 0) void autosave();
+      }
     }
     camera.update(dt);
     renderer.update(camera.view, camera.zoom);
@@ -385,6 +516,37 @@ async function boot() {
       weatherFx.stroke({ width: 1, color: wk === "rain" ? 0xa8c0d0 : 0xc6ff3a, alpha: 0.45 });
     }
 
+    // Audio: music mood from the situation, sound effects from new combat events and messages.
+    const hostiles = [...game.pawns.values()].some((p) => p.faction !== "colony" && !p.health.downed);
+    const recentFight = game.fx.some((f) => game.tick - f.tick < 120);
+    audio.mood = hostiles && recentFight ? "combat" : hostiles || game.weather.kind === "rad_cloud" || game.weather.next?.kind === "rad_cloud" ? "tense" : darkness(game.hourOfDay) > 0.5 ? "night" : "calm";
+    audio.tier = Math.max(0, ...game.reg.content.research.filter((r) => game.research.done.has(r.id)).map((r) => r.tier));
+    audio.update();
+    const v = camera.view;
+    for (const f of game.fx) {
+      if (f.tick <= lastFxTick || f.layer !== renderer.layer) continue;
+      const fx0 = (f.from.x + 0.5) * TILE, fy0 = (f.from.y + 0.5) * TILE;
+      const cx = v.x + v.w / 2, cy = v.y + v.h / 2;
+      const dist = Math.hypot(fx0 - cx, fy0 - cy) / Math.max(v.w, v.h);
+      const vol = Math.max(0, 1 - dist * 1.2);
+      const pan = (fx0 - cx) / (v.w / 2);
+      audio.play(f.kind === "melee" ? "melee" : f.kind === "turret" ? "turret" : "shot", vol, pan);
+      if (f.hit) audio.play("hit", vol * 0.8, pan);
+    }
+    if (game.fx.length) lastFxTick = game.fx[game.fx.length - 1].tick;
+    if (game.weather.kind === "rad_cloud" && renderer.layer === 0 && !paused && Math.random() < 0.25 * speed) audio.play("geiger", 0.5, Math.random() * 2 - 1);
+    // Work sounds for survivors on screen.
+    if (!paused && Math.random() < 0.08 * speed) {
+      for (const p of game.pawns.values()) {
+        const task = p.job?.kind === "work" && p.job.stage === 2 ? (p.job.data?.task as string) : null;
+        if (!task || p.layer !== renderer.layer) continue;
+        const px = (p.x + 0.5) * TILE, py = (p.y + 0.5) * TILE;
+        if (px < v.x || py < v.y || px > v.x + v.w || py > v.y + v.h) continue;
+        audio.play(task === "mine" || task === "clear" ? "pick" : "hammer", 0.35, (px - (v.x + v.w / 2)) / (v.w / 2));
+        break;
+      }
+    }
+
     fpsFrames++;
     fpsTime += dt;
     uiTime += dt;
@@ -398,6 +560,7 @@ async function boot() {
         clock: t("clock", { day: tm.day, hh: pad(tm.hour), mm: pad(tm.minute) }),
         season: t(`season.${tm.season}`, { year: tm.year }),
         weather: game.weather.kind,
+        goals: sim.GOALS.map((id) => ({ id, done: !!game.goals[id] })),
         radWarning: game.weather.next?.kind === "rad_cloud" ? Math.max(0, Math.ceil((game.weather.next.at - game.tick) / game.ticksPerHour)) : null,
         fps: fpsTime > 1 ? Math.round(fpsFrames / fpsTime) : store.state.fps,
         colonists: colonists(),
@@ -421,6 +584,7 @@ async function boot() {
     }
   });
 
+  store.set({ art: { ...art } });
   store.set({ seed, layerCount: game.map.layers.length, buildOptions: buildRows(), workTypes: activeWorkTypes(), workRows: workRows(), research: researchRows() });
   render(h(Hud, {}), document.getElementById("ui")!);
 
@@ -441,6 +605,8 @@ async function boot() {
       setTool: actions.setTool,
       sim,
       pause: () => (paused = true),
+      audio,
+      autosave,
       ready: true,
     },
   });

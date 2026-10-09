@@ -102,6 +102,11 @@ export interface UiState {
   research: ResearchRow[];
   /** Rotation of the build tool (0 = east). */
   toolRot: number;
+  art: { palette: string; size: "16" | "32" };
+  menuOpen: boolean;
+  volume: { music: number; sfx: number };
+  uiScale: number;
+  goals: { id: string; done: boolean }[];
   /** Hours until a radiation cloud, or null. */
   radWarning: number | null;
 }
@@ -131,6 +136,11 @@ class Store {
     weather: "clear",
     research: [],
     toolRot: 0,
+    art: { palette: "rust", size: "16" },
+    menuOpen: false,
+    volume: { music: 0.6, sfx: 0.7 },
+    uiScale: 1,
+    goals: [],
     radWarning: null,
   };
   private listeners = new Set<Listener>();
@@ -164,6 +174,11 @@ export const actions = {
   setBillTarget: (_bench: number, _recipe: string, _n: number) => {},
   toggleDraft: (_id: number) => {},
   setResearch: (_id: string | null) => {},
+  setArt: (_patch: Partial<{ palette: string; size: "16" | "32" }>) => {},
+  toggleMenu: () => store.set({ menuOpen: !store.state.menuOpen }),
+  saveGame: async (_name: string | null): Promise<string> => "",
+  setVolume: (_k: "music" | "sfx", _v: number) => {},
+  setUiScale: (_s: number) => {},
   rotateTool: (_d: number) => {},
   setCrafterRecipe: (_thing: number, _recipe: string) => {},
   draftAll: () => {},

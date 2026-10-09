@@ -4,6 +4,7 @@ import { PawnPanel } from "./PawnPanel.tsx";
 import { actions, useStore } from "./store.ts";
 import { Toasts } from "./Toasts.tsx";
 import { Toolbar } from "./Toolbar.tsx";
+import { GameMenu } from "./Screens.tsx";
 
 export function Hud() {
   const s = useStore();
@@ -22,6 +23,17 @@ export function Hud() {
       </div>
       <Toasts />
       <Toolbar />
+      <GameMenu />
+      {s.goals.length > 0 && !s.goals.every((g) => g.done) && (
+        <aside class="goals" data-testid="goals">
+          <h3>{t("goal.title")}</h3>
+          {s.goals.map((g) => (
+            <p key={g.id} class={g.done ? "done" : ""}>
+              {g.done ? "✔" : "○"} {t(`goal.${g.id}`)}
+            </p>
+          ))}
+        </aside>
+      )}
       <PawnPanel />
       <header class="topbar">
         <div class="clock" data-testid="clock">
@@ -30,6 +42,9 @@ export function Hud() {
             {s.season} · <em class={`wx ${s.weather}`}>{t(`weather.${s.weather}`)}</em>
           </span>
         </div>
+        <button class="menubtn" data-testid="menu-btn" onClick={actions.toggleMenu} title={t("menu.title")} aria-label={t("menu.title")}>
+          ☰
+        </button>
         <div class="speed" role="group">
           <button class={s.paused ? "on" : ""} onClick={actions.togglePause} title={t("speed.pause")} aria-label={t("speed.pause")}>
             ❚❚
