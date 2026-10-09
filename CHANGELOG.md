@@ -1,6 +1,7 @@
 # Changelog
 
 ## 2026-10-10
+- Wrote `handover.md` for the next session (state, decisions, next steps: AI art integration, can cleanup fix, then belt logistics A1).
 - First-hour help: the goals panel shows the next step toward the first open goal (walls, close gaps, roof, bed, well, raid prep, research, generator, wires), from the colony's state (`packages/sim/src/goals.ts` `goalHint`, `packages/client/src/ui/Hud.tsx`, `ui/store.ts`, `main.ts`, `style.css`, `packages/data/i18n/en.json`).
 - AI sprites: first full run of 10 sprites (44 tries) in `art/ai/` with a pick page; the wall and the can use their own full prompts (`own_style`) because the shared style made the wall a crate with a face (`tools/art/ai/make.py`, `sprites.json`).
 - Renamed the game to Ash & Gears in the title screen, browser tab, presentation page and README (`packages/data/i18n/en.json`, `packages/client/index.html`, `public/site/index.html`, `README.md`).
