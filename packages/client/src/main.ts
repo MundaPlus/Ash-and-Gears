@@ -528,6 +528,7 @@ async function boot() {
     const recentFight = game.fx.some((f) => game.tick - f.tick < 120);
     audio.mood = hostiles && recentFight ? "combat" : hostiles || game.weather.kind === "rad_cloud" || game.weather.next?.kind === "rad_cloud" ? "tense" : darkness(game.hourOfDay) > 0.5 ? "night" : "calm";
     audio.tier = Math.max(0, ...game.reg.content.research.filter((r) => game.research.done.has(r.id)).map((r) => r.tier));
+    audio.day = game.time.day;
     audio.update();
     const v = camera.view;
     for (const f of game.fx) {

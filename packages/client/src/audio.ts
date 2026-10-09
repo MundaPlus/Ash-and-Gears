@@ -24,6 +24,11 @@ export class Audio {
   private droneNodes: { osc: OscillatorNode[]; gain: GainNode } | null = null;
   mood: Mood = "calm";
   tier = 0;
+  /** In-game day, to alternate calm tracks. */
+  day = 1;
+  /** Generated music tracks (YuE2 via ComfyUI), by id. Missing ones fall back to the synthesizer. */
+  private tracks = new Map<string, AudioBuffer>();
+  private playing: { id: string; src: AudioBufferSourceNode; gain: GainNode; started: number } | null = null;
   volume = { music: 0.6, sfx: 0.7 };
   private lastSfx = new Map<string, number>();
 
@@ -49,6 +54,56 @@ export class Audio {
     const d = this.noise.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     this.nextBeat = this.ctx.currentTime + 0.2;
+    void this.loadTracks();
+  }
+
+  /** Load the generated tracks that exist on the server. */
+  private async loadTracks() {
+    const ids = ["calm_western", "calm_folk", "calm_tech", "night_ambient", "tense", "combat"];
+    await Promise.all(
+      ids.map(async (id) => {
+        try {
+          const r = await fetch(`music/${id}.mp3`);
+          if (!r.ok) return;
+          this.tracks.set(id, await this.ctx!.decodeAudioData(await r.arrayBuffer()));
+        } catch {
+          // No file or no decoder: the synthesizer covers this mood.
+        }
+      }),
+    );
+  }
+
+  /** Which generated track fits the moment, or null to use the synthesizer. */
+  private pickTrack(): string | null {
+    const want =
+      this.mood === "combat" ? "combat" : this.mood === "tense" ? "tense" : this.mood === "night" ? "night_ambient" : this.tier >= 2 ? "calm_tech" : this.day % 2 ? "calm_western" : "calm_folk";
+    if (this.tracks.has(want)) return want;
+    // Calm moods can borrow the other calm track.
+    for (const alt of ["calm_western", "calm_folk", "calm_tech"]) if (this.mood === "calm" && this.tracks.has(alt)) return alt;
+    return null;
+  }
+
+  /** Crossfade to a generated track (or stop it with null). Tracks loop by crossfading into themselves. */
+  private crossfade(id: string | null) {
+    const c = this.ctx!;
+    const p = this.playing;
+    const nearEnd = p && c.currentTime > p.started + p.src.buffer!.duration - 3.5;
+    if (p?.id === id && !nearEnd) return;
+    if (this.playing) {
+      const old = this.playing;
+      old.gain.gain.setTargetAtTime(0.0001, c.currentTime, 1);
+      old.src.stop(c.currentTime + 4);
+      this.playing = null;
+    }
+    if (!id) return;
+    const src = c.createBufferSource();
+    src.buffer = this.tracks.get(id)!;
+    const gain = c.createGain();
+    gain.gain.value = 0.0001;
+    gain.gain.setTargetAtTime(0.8, c.currentTime, 1);
+    src.connect(gain).connect(this.music);
+    src.start();
+    this.playing = { id, src, gain, started: c.currentTime };
   }
 
   setVolume(kind: "music" | "sfx", v: number): void {
@@ -194,6 +249,14 @@ export class Audio {
   update(): void {
     const c = this.ctx;
     if (!c || c.state !== "running") return;
+    const track = this.pickTrack();
+    this.crossfade(track);
+    if (track) {
+      // A generated track is playing: keep the synthesizer quiet.
+      this.setDrone(false);
+      this.nextBeat = c.currentTime + 0.25;
+      return;
+    }
     const dark = this.mood === "tense" || this.mood === "combat" || this.mood === "night" || this.tier >= 2;
     this.setDrone(dark);
     while (this.nextBeat < c.currentTime + 0.25) {
