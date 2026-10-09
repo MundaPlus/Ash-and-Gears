@@ -1,0 +1,645 @@
+[
+ {
+  "id": "ruin_wall",
+  "kind": "structure",
+  "color": "#b0a090",
+  "glyph": "#",
+  "hp": 300,
+  "blocks": true,
+  "wall": true,
+  "insulation": 0.4,
+  "beauty": -2,
+  "work": 150,
+  "yield": {
+   "stone": 3,
+   "scrap": 2
+  },
+  "lootChance": 0.05
+ },
+ {
+  "id": "car_wreck",
+  "kind": "structure",
+  "color": "#a8481a",
+  "glyph": "W",
+  "hp": 400,
+  "blocks": true,
+  "beauty": -3,
+  "work": 400,
+  "yield": {
+   "scrap": 18,
+   "components": 1
+  },
+  "lootChance": 0.25,
+  "cover": 0.55
+ },
+ {
+  "id": "scrap_pile",
+  "kind": "structure",
+  "color": "#d9742e",
+  "glyph": "%",
+  "hp": 80,
+  "beauty": -2,
+  "work": 100,
+  "yield": {
+   "scrap": 12
+  },
+  "lootChance": 0.15,
+  "cover": 0.3
+ },
+ {
+  "id": "loot_crate",
+  "kind": "structure",
+  "color": "#efd8a4",
+  "glyph": "$",
+  "hp": 60,
+  "work": 60,
+  "yield": {
+   "canned_food": 4
+  },
+  "lootChance": 0.9
+ },
+ {
+  "id": "dead_tree",
+  "kind": "plant",
+  "color": "#5c4636",
+  "glyph": "T",
+  "hp": 120,
+  "blocks": true,
+  "work": 120,
+  "yield": {
+   "wood": 12
+  },
+  "flammable": true
+ },
+ {
+  "id": "mutant_shrub",
+  "kind": "plant",
+  "color": "#7a8a4e",
+  "glyph": "*",
+  "hp": 40,
+  "work": 40,
+  "yield": {
+   "wood": 3
+  },
+  "flammable": true
+ },
+ {
+  "id": "stairs_down",
+  "kind": "stairs",
+  "color": "#f6efe0",
+  "glyph": "v",
+  "hp": 1000,
+  "stairs": 1
+ },
+ {
+  "id": "stairs_up",
+  "kind": "stairs",
+  "color": "#f6efe0",
+  "glyph": "^",
+  "hp": 1000,
+  "stairs": -1
+ },
+ {
+  "id": "scrap_wall",
+  "kind": "structure",
+  "color": "#8a6a52",
+  "glyph": "#",
+  "hp": 250,
+  "blocks": true,
+  "wall": true,
+  "insulation": 0.6,
+  "beauty": -1,
+  "build": {
+   "cost": {
+    "scrap": 5
+   },
+   "work": 120,
+   "menu": "structure"
+  }
+ },
+ {
+  "id": "wood_wall",
+  "kind": "structure",
+  "color": "#a07a4e",
+  "glyph": "#",
+  "hp": 200,
+  "blocks": true,
+  "wall": true,
+  "insulation": 0.8,
+  "build": {
+   "cost": {
+    "wood": 5
+   },
+   "work": 100,
+   "menu": "structure"
+  },
+  "flammable": true
+ },
+ {
+  "id": "stone_wall",
+  "kind": "structure",
+  "color": "#9a9088",
+  "glyph": "#",
+  "hp": 450,
+  "blocks": true,
+  "wall": true,
+  "insulation": 0.9,
+  "beauty": 1,
+  "build": {
+   "cost": {
+    "stone": 5
+   },
+   "work": 220,
+   "menu": "structure"
+  }
+ },
+ {
+  "id": "scrap_door",
+  "kind": "structure",
+  "color": "#c0904e",
+  "glyph": "D",
+  "hp": 200,
+  "door": true,
+  "wall": true,
+  "insulation": 0.5,
+  "build": {
+   "cost": {
+    "scrap": 6
+   },
+   "work": 110,
+   "menu": "structure"
+  }
+ },
+ {
+  "id": "bedroll",
+  "kind": "furniture",
+  "color": "#b0834e",
+  "glyph": "b",
+  "hp": 60,
+  "bed": {
+   "efficiency": 0.9,
+   "thought": "slept_on_bedroll"
+  },
+  "build": {
+   "cost": {
+    "cloth": 6
+   },
+   "work": 60,
+   "menu": "furniture"
+  },
+  "flammable": true
+ },
+ {
+  "id": "scrap_bed",
+  "kind": "furniture",
+  "color": "#d6ab6b",
+  "glyph": "B",
+  "hp": 120,
+  "beauty": 1,
+  "bed": {
+   "efficiency": 1.05,
+   "thought": "slept_in_bed"
+  },
+  "build": {
+   "cost": {
+    "scrap": 15,
+    "cloth": 4
+   },
+   "work": 160,
+   "menu": "furniture"
+  },
+  "flammable": true
+ },
+ {
+  "id": "table",
+  "kind": "furniture",
+  "color": "#84603f",
+  "glyph": "=",
+  "hp": 100,
+  "blocks": true,
+  "table": true,
+  "beauty": 1,
+  "build": {
+   "cost": {
+    "wood": 12
+   },
+   "work": 120,
+   "menu": "furniture"
+  },
+  "flammable": true
+ },
+ {
+  "id": "chair",
+  "kind": "furniture",
+  "color": "#a07a4e",
+  "glyph": "h",
+  "hp": 60,
+  "seat": true,
+  "build": {
+   "cost": {
+    "wood": 5
+   },
+   "work": 60,
+   "menu": "furniture"
+  },
+  "flammable": true
+ },
+ {
+  "id": "campfire",
+  "kind": "furniture",
+  "color": "#d9742e",
+  "glyph": "^",
+  "hp": 50,
+  "heat": 9,
+  "light": 6,
+  "build": {
+   "cost": {
+    "wood": 10
+   },
+   "work": 50,
+   "menu": "furniture"
+  },
+  "bench": true
+ },
+ {
+  "id": "scrap_bench",
+  "kind": "furniture",
+  "color": "#6f8088",
+  "glyph": "S",
+  "hp": 200,
+  "blocks": true,
+  "build": {
+   "cost": {
+    "scrap": 25,
+    "wood": 10
+   },
+   "work": 240,
+   "menu": "production"
+  },
+  "bench": true
+ },
+ {
+  "id": "stove",
+  "kind": "furniture",
+  "color": "#4a3b33",
+  "glyph": "O",
+  "hp": 200,
+  "blocks": true,
+  "heat": 3,
+  "build": {
+   "cost": {
+    "scrap": 30,
+    "stone": 10
+   },
+   "work": 260,
+   "menu": "production"
+  },
+  "bench": true
+ },
+ {
+  "id": "glowcorn_plant",
+  "kind": "plant",
+  "color": "#c8d24a",
+  "glyph": "c",
+  "hp": 30,
+  "work": 40,
+  "crop": {
+   "growDays": 3.5,
+   "yield": {
+    "glowcorn": 12
+   },
+   "minTemp": 6
+  },
+  "flammable": true
+ },
+ {
+  "id": "scrub_potato_plant",
+  "kind": "plant",
+  "color": "#7a8a4e",
+  "glyph": "p",
+  "hp": 30,
+  "work": 50,
+  "crop": {
+   "growDays": 5,
+   "yield": {
+    "scrub_potato": 14
+   },
+   "minTemp": -2
+  },
+  "flammable": true
+ },
+ {
+  "id": "fiber_weed_plant",
+  "kind": "plant",
+  "color": "#a3b57a",
+  "glyph": "f",
+  "hp": 30,
+  "work": 40,
+  "crop": {
+   "growDays": 6,
+   "yield": {
+    "cloth": 6
+   },
+   "minTemp": 4
+  },
+  "flammable": true
+ },
+ {
+  "id": "well",
+  "kind": "furniture",
+  "color": "#6f8088",
+  "glyph": "O",
+  "hp": 300,
+  "blocks": true,
+  "water": "clean",
+  "bench": true,
+  "build": {
+   "cost": {
+    "wood": 20,
+    "scrap": 10
+   },
+   "work": 350,
+   "menu": "production"
+  }
+ },
+ {
+  "id": "rain_collector",
+  "kind": "furniture",
+  "color": "#4d6670",
+  "glyph": "U",
+  "hp": 120,
+  "rainCollect": 2,
+  "build": {
+   "cost": {
+    "scrap": 15,
+    "cloth": 4
+   },
+   "work": 150,
+   "menu": "production",
+   "research": "rain_catchers"
+  }
+ },
+ {
+  "id": "sandbags",
+  "kind": "structure",
+  "color": "#b0834e",
+  "glyph": "=",
+  "hp": 250,
+  "cover": 0.65,
+  "beauty": -1,
+  "build": {
+   "cost": {
+    "cloth": 4,
+    "stone": 4
+   },
+   "work": 80,
+   "menu": "defense"
+  }
+ },
+ {
+  "id": "scrap_turret",
+  "kind": "structure",
+  "color": "#6b2b1a",
+  "glyph": "T",
+  "hp": 180,
+  "blocks": true,
+  "blocksSight": false,
+  "turret": {
+   "dmg": 7,
+   "range": 13,
+   "cooldown": 55,
+   "accuracy": 0.05,
+   "kind": "gunshot"
+  },
+  "build": {
+   "cost": {
+    "scrap": 40,
+    "components": 2
+   },
+   "work": 350,
+   "menu": "defense",
+   "research": "turret_wiring"
+  },
+  "power": {
+   "use": 60
+  }
+ },
+ {
+  "id": "old_safe",
+  "kind": "structure",
+  "color": "#56616d",
+  "glyph": "S",
+  "hp": 400,
+  "blocks": true,
+  "work": 500,
+  "yield": {
+   "factory_manual": 1,
+   "components": 2
+  }
+ },
+ {
+  "id": "research_desk",
+  "kind": "furniture",
+  "color": "#4d6670",
+  "glyph": "R",
+  "hp": 150,
+  "blocks": true,
+  "research": 1,
+  "build": {
+   "cost": {
+    "wood": 25,
+    "scrap": 15
+   },
+   "work": 300,
+   "menu": "production"
+  }
+ },
+ {
+  "id": "scrap_generator",
+  "kind": "furniture",
+  "color": "#8a3b2e",
+  "glyph": "G",
+  "hp": 200,
+  "blocks": true,
+  "heat": 2,
+  "power": {
+   "produce": 600,
+   "fuel": {
+    "item": "wood",
+    "perHour": 1,
+    "capacity": 30
+   }
+  },
+  "build": {
+   "cost": {
+    "scrap": 45,
+    "components": 2
+   },
+   "work": 500,
+   "menu": "power",
+   "research": "scrap_power"
+  }
+ },
+ {
+  "id": "wire",
+  "kind": "structure",
+  "color": "#c2603f",
+  "glyph": "-",
+  "hp": 30,
+  "conduit": true,
+  "build": {
+   "cost": {
+    "scrap": 1
+   },
+   "work": 15,
+   "menu": "power",
+   "research": "scrap_power"
+  }
+ },
+ {
+  "id": "battery",
+  "kind": "furniture",
+  "color": "#3b4f63",
+  "glyph": "B",
+  "hp": 120,
+  "blocks": true,
+  "power": {
+   "store": 2400
+  },
+  "build": {
+   "cost": {
+    "scrap": 30,
+    "components": 2
+   },
+   "work": 350,
+   "menu": "power",
+   "research": "batteries"
+  }
+ },
+ {
+  "id": "lamp",
+  "kind": "furniture",
+  "color": "#ffd27a",
+  "glyph": "*",
+  "hp": 60,
+  "light": 7,
+  "power": {
+   "use": 30
+  },
+  "build": {
+   "cost": {
+    "scrap": 8
+   },
+   "work": 80,
+   "menu": "power",
+   "research": "electric_lights"
+  }
+ },
+ {
+  "id": "powered_bench",
+  "kind": "furniture",
+  "color": "#6d86a0",
+  "glyph": "P",
+  "hp": 220,
+  "blocks": true,
+  "bench": true,
+  "benchSpeed": 1.6,
+  "power": {
+   "use": 200
+  },
+  "build": {
+   "cost": {
+    "scrap": 50,
+    "components": 3
+   },
+   "work": 500,
+   "menu": "production",
+   "research": "powered_tools"
+  }
+ },
+ {
+  "id": "smelter",
+  "kind": "furniture",
+  "color": "#a8481a",
+  "glyph": "F",
+  "hp": 250,
+  "blocks": true,
+  "bench": true,
+  "heat": 8,
+  "power": {
+   "use": 350
+  },
+  "build": {
+   "cost": {
+    "stone": 30,
+    "scrap": 30
+   },
+   "work": 500,
+   "menu": "production",
+   "research": "smelting"
+  }
+ },
+ {
+  "id": "conveyor",
+  "kind": "structure",
+  "color": "#39424c",
+  "glyph": ">",
+  "hp": 60,
+  "belt": 30,
+  "rotatable": true,
+  "power": {
+   "use": 10
+  },
+  "build": {
+   "cost": {
+    "scrap": 3
+   },
+   "work": 40,
+   "menu": "production",
+   "research": "conveyors"
+  }
+ },
+ {
+  "id": "loader",
+  "kind": "furniture",
+  "color": "#e3c25a",
+  "glyph": "L",
+  "hp": 100,
+  "loader": true,
+  "rotatable": true,
+  "power": {
+   "use": 25
+  },
+  "build": {
+   "cost": {
+    "scrap": 15,
+    "components": 1
+   },
+   "work": 150,
+   "menu": "production",
+   "research": "conveyors"
+  }
+ },
+ {
+  "id": "auto_crafter",
+  "kind": "furniture",
+  "color": "#9fd14a",
+  "glyph": "A",
+  "hp": 250,
+  "blocks": true,
+  "autoCrafter": true,
+  "rotatable": true,
+  "power": {
+   "use": 250
+  },
+  "build": {
+   "cost": {
+    "steel": 20,
+    "components": 6
+   },
+   "work": 900,
+   "menu": "production",
+   "research": "auto_crafting"
+  }
+ }
+]

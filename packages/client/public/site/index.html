@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wasteland Colony</title>
+<meta name="description" content="A post-apocalyptic colony sim with progressive automation. Playable demo.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil+Display:wght@700;900&family=Barlow:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a field poster. Full-bleed hero clip, then alternating clip/text rows on a dusty dark ground, one accent (rust) plus toxic glow for radiation only. */
+:root {
+  --ink: #14110f;
+  --ground: #1c1814;
+  --panel: #241e19;
+  --line: #3d3128;
+  --sand: #efd8a4;
+  --dim: #a8916f;
+  --rust: #d9742e;
+  --glow: #a7e05a;
+  --display: "Big Shoulders Stencil Display", Impact, "Arial Narrow", sans-serif;
+  --body: "Barlow", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--ground); color: var(--sand); font: 18px/1.6 var(--body); }
+img.px { image-rendering: pixelated; image-rendering: crisp-edges; }
+a { color: var(--rust); }
+.wrap { max-width: 1160px; margin: 0 auto; padding-inline: 20px; }
+
+/* Hero */
+.hero { position: relative; min-height: min(78vh, 760px); display: grid; align-items: end; overflow: hidden; background: var(--ink); }
+.hero video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .62; }
+.hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(20,17,15,.2) 0%, rgba(20,17,15,.35) 45%, var(--ground) 98%); pointer-events: none; }
+.hero .wrap { position: relative; z-index: 2; padding-block: 120px 56px; width: 100%; }
+.eyebrow { font: 600 13px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--dim); display: flex; gap: 14px; flex-wrap: wrap; }
+.eyebrow b { color: var(--glow); font-weight: 600; }
+h1 { font: 900 clamp(64px, 13vw, 168px)/.84 var(--display); margin: 18px 0 18px; letter-spacing: .01em; color: var(--sand); text-wrap: balance; text-shadow: 0 6px 30px rgba(0,0,0,.6); }
+h1 span { color: var(--rust); display: block; }
+.lede { font-size: clamp(18px, 2.2vw, 23px); max-width: 38ch; margin: 0 0 30px; }
+.ctas { display: flex; gap: 12px; flex-wrap: wrap; }
+.btn { display: inline-flex; align-items: center; gap: 10px; padding: 15px 24px; font: 700 17px/1 var(--body); text-decoration: none; border: 2px solid var(--rust); color: var(--ink); background: var(--rust); transition: transform .15s ease, background .15s; }
+.btn:hover { transform: translateY(-2px); background: #ef8a42; }
+.btn.ghost { background: rgba(20,17,15,.55); color: var(--sand); border-color: var(--line); }
+.btn.ghost:hover { border-color: var(--sand); background: rgba(20,17,15,.8); }
+.btn:focus-visible { outline: 3px solid var(--glow); outline-offset: 3px; }
+.note { font: 13px var(--mono); color: var(--dim); margin-top: 14px; }
+
+/* Walking sprites along the bottom of the hero */
+.walkers { position: absolute; left: 0; right: 0; bottom: 10px; height: 64px; z-index: 3; pointer-events: none; overflow: hidden; }
+.walker { position: absolute; bottom: 0; width: 48px; height: 48px; animation: walk linear infinite; }
+.walker img { width: 48px; height: 48px; animation: bob .5s ease-in-out infinite alternate; }
+.walker.rev { animation-name: walkrev; }
+.walker.rev img { transform: scaleX(-1); }
+@keyframes walk { from { left: -60px; } to { left: 100%; } }
+@keyframes walkrev { from { left: 100%; } to { left: -60px; } }
+@keyframes bob { from { translate: 0 0; } to { translate: 0 -4px; } }
+
+/* Geiger strip */
+.ticker { border-block: 1px solid var(--line); background: var(--ink); font: 600 13px/1 var(--mono); color: var(--dim); overflow: hidden; white-space: nowrap; }
+.ticker div { display: inline-block; padding: 12px 0; animation: tick 40s linear infinite; }
+.ticker span { margin-right: 48px; }
+.ticker b { color: var(--glow); }
+@keyframes tick { to { transform: translateX(-50%); } }
+
+section { padding-block: 84px; }
+.kicker { font: 600 12px/1 var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--rust); margin: 0 0 12px; }
+h2 { font: 900 clamp(40px, 6vw, 72px)/.92 var(--display); margin: 0 0 18px; text-wrap: balance; }
+h3 { font: 700 30px/1 var(--display); margin: 0 0 10px; letter-spacing: .02em; }
+p { max-width: 62ch; }
+.muted { color: var(--dim); }
+
+/* Pillars */
+.pillars { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 18px; margin-top: 36px; }
+.pillar { background: var(--panel); border-top: 3px solid var(--rust); padding: 22px 22px 18px; }
+.pillar img { width: 64px; height: 64px; display: block; margin-bottom: 12px; }
+.pillar p { margin: 0; color: var(--dim); font-size: 16px; }
+
+/* Feature rows */
+.feature { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 44px; align-items: center; padding-block: 44px; }
+.feature.flip { grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); }
+.feature.flip .clip { order: 2; }
+.clip { position: relative; border: 1px solid var(--line); background: var(--ink); box-shadow: 0 30px 60px rgba(0,0,0,.45); }
+.clip video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; }
+.clip .tag { position: absolute; left: 12px; top: 12px; font: 600 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; background: rgba(20,17,15,.8); padding: 7px 9px; color: var(--sand); }
+.feature ul { margin: 14px 0 0; padding-left: 1.1em; color: var(--dim); }
+.feature li { margin: 4px 0; }
+.feature li::marker { color: var(--rust); }
+.feature.rad h3 { color: var(--glow); }
+.feature.rad .clip { border-color: #4f6b2a; box-shadow: 0 30px 70px rgba(120,190,40,.12); }
+
+/* Art styles */
+.art { background: var(--ink); }
+.palettes { display: flex; gap: 6px; margin: 22px 0 18px; flex-wrap: wrap; }
+.palettes button { font: 600 14px var(--mono); padding: 10px 16px; background: var(--panel); color: var(--sand); border: 1px solid var(--line); cursor: pointer; }
+.palettes button[aria-pressed="true"] { background: var(--rust); color: var(--ink); border-color: var(--rust); }
+.palettes button:focus-visible { outline: 2px solid var(--glow); outline-offset: 2px; }
+.stripbox { overflow-x: auto; padding: 18px; background: var(--panel); border: 1px solid var(--line); }
+.stripbox img { height: 72px; width: auto; display: block; }
+
+/* Demo contents + roadmap */
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px; }
+.checklist { list-style: none; padding: 0; margin: 0; columns: 2 220px; column-gap: 28px; }
+.checklist li { break-inside: avoid; padding: 6px 0 6px 28px; position: relative; font-size: 16px; }
+.checklist li::before { content: ""; position: absolute; left: 0; top: 12px; width: 12px; height: 12px; background: var(--rust); box-shadow: 3px 3px 0 var(--ink); }
+.road { display: grid; gap: 0; margin-top: 10px; }
+.road div { display: grid; grid-template-columns: 110px 1fr; gap: 16px; padding: 16px 0; border-top: 1px solid var(--line); }
+.road b { font: 700 24px/1 var(--display); color: var(--rust); }
+.road b.now { color: var(--glow); }
+.road span { color: var(--dim); font-size: 16px; }
+
+/* How to play */
+.keys { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px 26px; font-size: 16px; }
+.keys div { display: flex; gap: 12px; align-items: baseline; border-bottom: 1px dashed var(--line); padding: 6px 0; }
+kbd { font: 600 13px var(--mono); background: var(--panel); border: 1px solid var(--line); border-bottom-width: 3px; padding: 2px 8px; color: var(--sand); white-space: nowrap; }
+
+footer { border-top: 1px solid var(--line); padding-block: 36px 60px; color: var(--dim); font-size: 15px; }
+footer .wrap { display: flex; gap: 20px; justify-content: space-between; flex-wrap: wrap; }
+
+@media (max-width: 820px) {
+  .feature, .feature.flip { grid-template-columns: minmax(0, 1fr); gap: 22px; }
+  .feature.flip .clip { order: 0; }
+  section { padding-block: 56px; }
+  .hero .wrap { padding-block: 96px 80px; }
+  .road div { grid-template-columns: 84px 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .walker, .walker img, .ticker div { animation: none; }
+  .walkers { display: none; }
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <video id="herovid" src="media/hero.mp4" poster="media/hero.jpg" autoplay muted loop playsinline aria-hidden="true"></video>
+  <div class="wrap">
+    <div class="eyebrow"><span>Playable demo</span><span>Web + phone</span><span>Working title</span><span>Geiger <b id="geiger">0.07</b> rad/h</span></div>
+    <h1>Wasteland <span>Colony</span></h1>
+    <p class="lede">Three survivors. One ruined town. Salvage the old world, keep everyone fed and sane, and slowly let the machines do the work.</p>
+    <div class="ctas">
+      <a class="btn" id="play" href="/">Play the demo</a>
+      <a class="btn ghost" id="showcase" href="/?showcase=1">See a grown colony</a>
+    </div>
+    <p class="note" id="lan">Runs in the browser on PC and phone. Same Wi-Fi: <span id="lanurl">http://192.168.31.215:4173/</span></p>
+  </div>
+  <div class="walkers" aria-hidden="true">
+    <div class="walker" style="animation-duration:26s"><img class="px" src="img/survivor.png" alt=""></div>
+    <div class="walker" style="animation-duration:26s;animation-delay:-1.6s"><img class="px" src="img/survivor2.png" alt=""></div>
+    <div class="walker" style="animation-duration:26s;animation-delay:-3.1s"><img class="px" src="img/survivor3.png" alt=""></div>
+    <div class="walker" style="animation-duration:19s;animation-delay:-8s"><img class="px" src="img/hound.png" alt=""></div>
+    <div class="walker rev" style="animation-duration:34s;animation-delay:-12s"><img class="px" src="img/raider.png" alt=""></div>
+    <div class="walker" style="animation-duration:15s;animation-delay:-4s"><img class="px" src="img/rat.png" alt=""></div>
+  </div>
+</header>
+
+<div class="ticker" aria-hidden="true"><div>
+  <span>DAY 1 · <b>3 SURVIVORS</b> · 36 CANS OF BEANS</span><span>RADIATION CLOUD IN 12 H · <b>MOVE THE FOOD INSIDE</b></span><span>RAIDERS SIGHTED · THEY DID NOT COME TO TRADE</span><span>RESEARCH DONE: <b>SCRAP POWER</b></span><span>A DOG FOUND YOU · IT GLOWS</span><span>"TWO-CAN" GOT BETTER AT COOKING</span>
+  <span>DAY 1 · <b>3 SURVIVORS</b> · 36 CANS OF BEANS</span><span>RADIATION CLOUD IN 12 H · <b>MOVE THE FOOD INSIDE</b></span><span>RAIDERS SIGHTED · THEY DID NOT COME TO TRADE</span><span>RESEARCH DONE: <b>SCRAP POWER</b></span><span>A DOG FOUND YOU · IT GLOWS</span><span>"TWO-CAN" GOT BETTER AT COOKING</span>
+</div></div>
+
+<main>
+<section class="wrap" id="pillars">
+  <p class="kicker">The idea</p>
+  <h2>RimWorld's people. Factorio's machines. The end of the world.</h2>
+  <p class="muted">You do not control anyone directly. You give orders, mark zones and set priorities. Your survivors decide the rest, and they have opinions.</p>
+  <div class="pillars">
+    <div class="pillar"><img class="px" src="img/icon-scrap_bed.png" alt=""><h3>Every survivor is a story</h3><p>Names, traits, skills, moods and bodies that break. Sulks, lost limbs, and the occasional hero.</p></div>
+    <div class="pillar"><img class="px" src="img/icon-auto_crafter.png" alt=""><h3>From scrap to machines</h3><p>Start with bare hands. Research power, belts and auto-crafters, and let the machines take over the chores.</p></div>
+    <div class="pillar"><img class="px" src="img/icon-scrap_turret.png" alt=""><h3>The wasteland pushes back</h3><p>Raiders, rad-rats, glow-hounds at night, fire, and radiation clouds that poison what you leave outside.</p></div>
+    <div class="pillar"><img class="px" src="img/icon-canned_food.png" alt=""><h3>Laugh so you don't cry</h3><p>Cold beans from a can: +1 mood. Raw mutant meat: −9. The writing is grim and a little funny.</p></div>
+  </div>
+</section>
+
+<section class="wrap" id="features">
+  <div class="feature">
+    <div class="clip"><span class="tag">Build</span><video src="media/build.mp4" poster="media/build.jpg" muted loop playsinline preload="none"></video></div>
+    <div>
+      <p class="kicker">Orders, not puppets</p>
+      <h3>Drag a room. Watch it happen.</h3>
+      <p>Mark walls, floors and beds. Survivors haul the scrap and wood, build, and move in. Closed rooms get a roof and keep the heat in.</p>
+      <ul><li>Salvage ruins and wrecks, mine underground, cut trees</li><li>Rooms with temperature, beds you own, stockpiles</li><li>Work priorities for every survivor</li></ul>
+    </div>
+  </div>
+  <div class="feature flip">
+    <div class="clip"><span class="tag">Fight</span><video src="media/combat.mp4" poster="media/combat.jpg" muted loop playsinline preload="none"></video></div>
+    <div>
+      <p class="kicker">Draft and defend</p>
+      <h3>Raiders want your beans.</h3>
+      <p>Draft survivors, take cover, and shoot back. Turrets help once you have power. Doctors drag the wounded to bed and patch them up.</p>
+      <ul><li>Hit chance from skill, range and cover</li><li>Body parts, bleeding, downed survivors</li><li>A storyteller that paces the trouble</li></ul>
+    </div>
+  </div>
+  <div class="feature rad">
+    <div class="clip"><span class="tag">Radiation</span><video src="media/night.mp4" poster="media/night.jpg" muted loop playsinline preload="none"></video></div>
+    <div>
+      <p class="kicker">Weather with teeth</p>
+      <h3>The cloud is coming. Move the food inside.</h3>
+      <p>You get half a day of warning. Survivors run for cover. Crops, water and food left under the open sky stay radioactive for a whole season.</p>
+      <ul><li>Sealed rooms keep supplies clean</li><li>Wells inside the walls stay safe</li><li>Lamps and campfires light up the night</li></ul>
+    </div>
+  </div>
+  <div class="feature flip">
+    <div class="clip"><span class="tag">Automate</span><video src="media/factory.mp4" poster="media/factory.jpg" muted loop playsinline preload="none"></video></div>
+    <div>
+      <p class="kicker">Progressive automation</p>
+      <h3>Belts first. Then the machines run themselves.</h3>
+      <p>Research scrap power, wire up generators and batteries, and feed an auto-crafter with a conveyor line. One project needs a manual you have to find in an old safe.</p>
+      <ul><li>Power networks with brownouts</li><li>Loaders, belts and auto-crafters</li><li>Research tree with salvaged blueprints</li></ul>
+    </div>
+  </div>
+</section>
+
+<section class="art" id="art">
+  <div class="wrap">
+    <p class="kicker">Pick the look</p>
+    <h2>Hand-pixeled. Three palettes.</h2>
+    <p class="muted">Every sprite is drawn on a 16-pixel grid with shared color roles, so the whole game can switch palettes live. Try it in the game menu under Settings, at 16 px or smoothed 32 px.</p>
+    <div class="palettes" role="group" aria-label="Palette">
+      <button type="button" id="pal-rust" aria-pressed="true">Rust</button>
+      <button type="button" id="pal-toxic" aria-pressed="false">Toxic</button>
+      <button type="button" id="pal-ash" aria-pressed="false">Ash</button>
+    </div>
+    <div class="stripbox"><img class="px" id="strip" src="img/strip-rust.png" alt="Survivor, raider, glow-hound, walls, bed, campfire, generator, lamp, turret, auto-crafter, glowcorn, canned food, water, pistol and manual, in the chosen palette"></div>
+  </div>
+</section>
+
+<section class="wrap" id="demo">
+  <div class="cols">
+    <div>
+      <p class="kicker">In this demo</p>
+      <h2>What you can play now</h2>
+      <ul class="checklist">
+        <li>Ruined town map with an underground layer</li>
+        <li>Survivors with needs, mood, skills, traits</li>
+        <li>Building, salvage, mining, stockpiles</li>
+        <li>Farming, cooking, wells, rot</li>
+        <li>Radiation clouds and contamination</li>
+        <li>Raiders, rad-rats, glow-hounds, fire</li>
+        <li>Health, doctors, drafting, turrets</li>
+        <li>Research, power, belts, auto-crafter</li>
+        <li>Three storytellers with sliders</li>
+        <li>Save, load and autosave</li>
+        <li>Adaptive music and sound, made live in the browser</li>
+        <li>Four goals to guide your first days</li>
+      </ul>
+    </div>
+    <div>
+      <p class="kicker">Roadmap</p>
+      <h2>Where it goes next</h2>
+      <div class="road">
+        <div><b class="now">Demo</b><span>Home map, core loop, early automation. You are here.</span></div>
+        <div><b>Alpha</b><span>World map, expeditions, factions and trade, outposts, a second underground layer, tech tiers 2–3.</span></div>
+        <div><b>Beta</b><span>Three storylines: restart the reactor, reach the safe zone, signal the orbit. Robots, scenarios, mods, the phone app.</span></div>
+        <div><b>1.0</b><span>Balance, polish, more languages, maybe Steam.</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap" id="controls">
+  <p class="kicker">How to play</p>
+  <h2>Controls</h2>
+  <div class="keys">
+    <div><kbd>WASD</kbd><span>Move the view (or drag)</span></div>
+    <div><kbd>Wheel</kbd><span>Zoom (pinch on phones)</span></div>
+    <div><kbd>Space</kbd><span>Pause</span></div>
+    <div><kbd>1 2 3</kbd><span>Game speed</span></div>
+    <div><kbd>R</kbd><span>Draft or release the selected survivor</span></div>
+    <div><kbd>Right click</kbd><span>Move or attack with a drafted survivor</span></div>
+    <div><kbd>Q / E</kbd><span>Rotate belts and machines while placing</span></div>
+    <div><kbd>PgUp / PgDn</kbd><span>Surface or underground</span></div>
+    <div><kbd>Esc</kbd><span>Stop a tool, close panels</span></div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Wasteland Colony (working title) · demo build · TypeScript, PixiJS, Web Audio · art hand-pixeled, music synthesized live</span>
+    <a href="/">Play the demo →</a>
+  </div>
+</footer>
+
+<script>
+// Play links: relative when served by the game server; the LAN address when this page is opened elsewhere.
+(function () {
+  var LAN = "http://192.168.31.215:4173/";
+  var local = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(location.hostname);
+  if (!local) {
+    document.getElementById("play").href = LAN;
+    document.getElementById("showcase").href = LAN + "?showcase=1";
+    document.querySelectorAll('footer a').forEach(function (a) { a.href = LAN; });
+  } else if (!/^(localhost|127\.)/.test(location.hostname)) {
+    // Opened over the network: show the address actually in use.
+    document.getElementById("lanurl").textContent = location.protocol + "//" + location.host + "/";
+  }
+})();
+
+// Clips play while on screen, pause when scrolled away.
+(function () {
+  var vids = document.querySelectorAll(".clip video");
+  if (!("IntersectionObserver" in window)) { vids.forEach(function (v) { v.preload = "auto"; v.play().catch(function () {}); }); return; }
+  var io = new IntersectionObserver(function (es) {
+    es.forEach(function (e) {
+      var v = e.target;
+      if (e.isIntersecting) { v.preload = "auto"; v.play().catch(function () {}); } else v.pause();
+    });
+  }, { threshold: 0.35 });
+  vids.forEach(function (v) { io.observe(v); });
+})();
+
+// Palette switcher for the sprite strip.
+(function () {
+  ["rust", "toxic", "ash"].forEach(function (p) {
+    var b = document.getElementById("pal-" + p);
+    b.addEventListener("click", function () {
+      document.getElementById("strip").src = "img/strip-" + p + ".png";
+      document.querySelectorAll(".palettes button").forEach(function (x) { x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+    });
+  });
+})();
+
+// A Geiger readout that never quite settles.
+(function () {
+  var el = document.getElementById("geiger");
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  setInterval(function () { el.textContent = (0.04 + Math.random() * 0.09).toFixed(2); }, 900);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+[
+ {
+  "id": "human",
+  "color": "#d6ab6b",
+  "glyph": "@",
+  "size": 1,
+  "hp": 1,
+  "speed": 1,
+  "attack": {
+   "dmg": 3,
+   "cooldown": 40,
+   "range": 1.5,
+   "kind": "blunt"
+  },
+  "behavior": "human"
+ },
+ {
+  "id": "rad_rat",
+  "color": "#9fd14a",
+  "glyph": "r",
+  "size": 0.5,
+  "hp": 0.25,
+  "speed": 1.25,
+  "attack": {
+   "dmg": 2,
+   "cooldown": 35,
+   "range": 1.5,
+   "kind": "bite"
+  },
+  "behavior": "food_swarm",
+  "meat": 4
+ },
+ {
+  "id": "glow_hound",
+  "color": "#7fd12a",
+  "glyph": "h",
+  "size": 0.85,
+  "hp": 0.7,
+  "speed": 1.45,
+  "attack": {
+   "dmg": 5,
+   "cooldown": 45,
+   "range": 1.5,
+   "kind": "bite"
+  },
+  "behavior": "hunter",
+  "meat": 12
+ }
+]

@@ -1,0 +1,123 @@
+{
+  "model": "qwen3.6:35b-nothink",
+  "sizes": [
+    16,
+    32
+  ],
+  "styleHint": "Post-apocalyptic wasteland game, top-down three-quarter view pixel art, clear dark outline, readable silhouette",
+  "palettes": {
+    "rust": [
+      "#1b1714",
+      "#3a2e26",
+      "#5c4636",
+      "#84603f",
+      "#b0834e",
+      "#d6ab6b",
+      "#efd8a4",
+      "#f6efe0",
+      "#6b2b1a",
+      "#a8481a",
+      "#d9742e",
+      "#4a5a3a",
+      "#7a8a4e",
+      "#3d4a52",
+      "#6f8088",
+      "#9fd14a"
+    ],
+    "toxic": [
+      "#0f1410",
+      "#1f2a1e",
+      "#34452f",
+      "#4f6644",
+      "#73895c",
+      "#a3b57a",
+      "#d4dca8",
+      "#f1f3dc",
+      "#5a3a22",
+      "#8c6236",
+      "#e9533b",
+      "#4f8a2a",
+      "#7fd12a",
+      "#4d6670",
+      "#8aa1a6",
+      "#c6ff3a"
+    ],
+    "ash": [
+      "#121519",
+      "#232930",
+      "#39424c",
+      "#56616d",
+      "#7b8794",
+      "#a6b0ba",
+      "#d0d6dc",
+      "#f0f2f4",
+      "#8a3b2e",
+      "#c2603f",
+      "#e3c25a",
+      "#4f6b5a",
+      "#8fae7e",
+      "#3b4f63",
+      "#6d86a0",
+      "#b8e05a"
+    ]
+  },
+  "sprites": [
+    {
+      "id": "survivor",
+      "type": "character",
+      "prompt": "A scruffy human survivor seen from the front, ragged jacket, gas mask hanging at the neck, backpack"
+    },
+    {
+      "id": "glow_hound",
+      "type": "character",
+      "prompt": "A mutant dog with patchy fur and glowing green sores, side view, hunched and hungry"
+    },
+    {
+      "id": "raider",
+      "type": "character",
+      "prompt": "A wasteland raider seen from the front, spiked shoulder pad made of a car tire, pipe weapon"
+    },
+    {
+      "id": "dirt",
+      "type": "block",
+      "prompt": "Seamless tileable dry cracked dirt ground with small pebbles, top-down"
+    },
+    {
+      "id": "scrap_wall",
+      "type": "block",
+      "prompt": "Seamless tileable wall made of rusty corrugated metal sheets and bolts"
+    },
+    {
+      "id": "rubble",
+      "type": "icon",
+      "prompt": "A pile of broken concrete rubble with bent rebar sticking out"
+    },
+    {
+      "id": "generator",
+      "type": "icon",
+      "prompt": "A small scrap diesel generator machine with a fuel can, pipes and a red warning light"
+    },
+    {
+      "id": "conveyor",
+      "type": "block",
+      "prompt": "Seamless tileable conveyor belt segment running left to right, dark rubber belt with metal rollers on the sides"
+    },
+    {
+      "id": "glowcorn",
+      "type": "icon",
+      "prompt": "A mutant corn plant with faintly glowing yellow-green cobs"
+    },
+    {
+      "id": "canned_food",
+      "type": "icon",
+      "prompt": "A dented tin can of food with a faded torn label"
+    },
+    {
+      "id": "water_jug",
+      "type": "icon",
+      "prompt": "A plastic water jug, half full of slightly murky water"
+    }
+  ],
+  "_paletteRoles": "Index roles are shared by all palettes: 0-7 neutral ramp dark to light, 8-10 warm accent ramp, 11-12 plant ramp, 13-14 metal ramp, 15 glow. Sprites are painted in 'paintPalette' and swapped into the others by index.",
+  "paintPalette": "rust"
+}

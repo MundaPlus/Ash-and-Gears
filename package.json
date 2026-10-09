@@ -1,0 +1,33 @@
+{
+  "name": "wasteland-colony",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @wc/client",
+    "build": "npm run build -w @wc/client",
+    "preview": "npm run preview -w @wc/client",
+    "test": "vitest run",
+    "e2e": "playwright test",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "playtest": "tsx tools/playtest/run.ts",
+    "check": "npm run lint && npm run typecheck && npm test && npm run e2e",
+    "art": "tsx tools/art/texel.ts",
+    "spec:page": "python3 tools/docs/build_spec_page.py docs/spec docs/spec.html"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.64.0",
+    "@preact/preset-vite": "^2.10.6",
+    "@types/node": "^26.6.4",
+    "eslint": "^10.12.0",
+    "prettier": "^3.9.9",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.1",
+    "vite": "^8.3.4",
+    "vitest": "^4.1.11"
+  }
+}

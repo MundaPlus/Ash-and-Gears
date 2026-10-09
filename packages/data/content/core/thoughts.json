@@ -1,0 +1,150 @@
+[
+ {
+  "id": "hungry",
+  "mood": -6
+ },
+ {
+  "id": "starving",
+  "mood": -20
+ },
+ {
+  "id": "thirsty",
+  "mood": -8
+ },
+ {
+  "id": "dehydrated",
+  "mood": -22
+ },
+ {
+  "id": "tired",
+  "mood": -6
+ },
+ {
+  "id": "exhausted",
+  "mood": -14
+ },
+ {
+  "id": "slept_on_ground",
+  "mood": -4,
+  "hours": 12
+ },
+ {
+  "id": "slept_in_bed",
+  "mood": 2,
+  "hours": 12
+ },
+ {
+  "id": "ate_canned",
+  "mood": 1,
+  "hours": 8
+ },
+ {
+  "id": "ate_raw",
+  "mood": -7,
+  "hours": 8
+ },
+ {
+  "id": "drank_dirty",
+  "mood": -5,
+  "hours": 10,
+  "stack": 3
+ },
+ {
+  "id": "drank_clean",
+  "mood": 2,
+  "hours": 6
+ },
+ {
+  "id": "sulked",
+  "mood": 5,
+  "hours": 12
+ },
+ {
+  "id": "survived_the_end",
+  "mood": 8,
+  "hours": 72
+ },
+ {
+  "id": "slept_on_bedroll",
+  "mood": 0,
+  "hours": 12
+ },
+ {
+  "id": "cold",
+  "mood": -6
+ },
+ {
+  "id": "freezing",
+  "mood": -14
+ },
+ {
+  "id": "hot",
+  "mood": -6
+ },
+ {
+  "id": "sweltering",
+  "mood": -14
+ },
+ {
+  "id": "room_impressive",
+  "mood": 4
+ },
+ {
+  "id": "room_awful",
+  "mood": -3
+ },
+ {
+  "id": "slept_outside",
+  "mood": -3,
+  "hours": 12
+ },
+ {
+  "id": "ate_meal",
+  "mood": 3,
+  "hours": 8
+ },
+ {
+  "id": "ate_raw_meat",
+  "mood": -9,
+  "hours": 8
+ },
+ {
+  "id": "ate_glowing_food",
+  "mood": -4,
+  "hours": 12
+ },
+ {
+  "id": "rad_sick",
+  "mood": -8
+ },
+ {
+  "id": "in_rad_cloud",
+  "mood": -5
+ },
+ {
+  "id": "colonist_died",
+  "mood": -15,
+  "hours": 96,
+  "stack": 3
+ },
+ {
+  "id": "in_pain",
+  "mood": -8
+ },
+ {
+  "id": "saw_corpse",
+  "mood": -4,
+  "hours": 24,
+  "stack": 2
+ },
+ {
+  "id": "survived_raid",
+  "mood": 4,
+  "hours": 48
+ },
+ {
+  "id": "wanderer_joined",
+  "mood": 3,
+  "hours": 48
+ }
+]
