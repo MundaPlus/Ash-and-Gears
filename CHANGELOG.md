@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026-10-10
+- Wires reach into every machine next to them (not only at wire ends), but never into belts. The showcase turret line now starts under the lamp, so lamp, turret and powered bench share the generator (`packages/client/src/render/world.ts`, `packages/sim/src/showcase.ts`) — the user saw a gap at the turret and between turret and lamp.
+
 ## 2026-10-09
 - New art size "Hybrid": a crisp 16 px world with smooth 32 px items and characters. The 16/32 selector stays (`packages/client/src/render/textures.ts`, `ui/Screens.tsx`, `ui/store.ts`, `main.ts`, `?px=hybrid`) — the user asked to keep the selector and add the hybrid.
 - Wires join by neighbors (straight, corner, T, cross) instead of always lying horizontal. A wire end reaches into the machine next to it, and a short stub runs under the machine to its middle, so lamps and benches look plugged in. Sandbags turn 90° in a vertical line. Placing or removing any thing redraws its neighbors (`packages/data/src/art/index.ts` `lineVariant`, `rotateGrid`, `TURN_IN_LINE`; `packages/client/src/render/world.ts`, `textures.ts`; `packages/sim/src/game.ts`) — the user said vertical wires did not work.

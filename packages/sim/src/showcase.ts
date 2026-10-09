@@ -59,7 +59,8 @@ export function buildShowcase(game: Game): void {
   if (bat) bat.charge = 1600;
   for (let x = rx - 3; x <= rx + 3; x++) put("wire", x, ry + 9);
   put("lamp", rx + 4, ry + 9);
-  for (let x = rx + 5; x <= rx + 12; x++) put("wire", x, ry + 10);
+  // The turret line drops from the lamp, so lamp, bench and turret share the generator.
+  for (let x = rx + 4; x <= rx + 12; x++) put("wire", x, ry + 10);
   put("scrap_turret", rx + 13, ry + 10);
   for (let y = ry + 8; y <= ry + 12; y++) put("sandbags", rx + 15, y);
 

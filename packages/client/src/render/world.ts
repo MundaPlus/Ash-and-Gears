@@ -183,12 +183,10 @@ export class WorldRenderer {
             const d0 = def;
             if (joined) t.texture = joined[near((d) => d.wall)];
             else if (line) {
-              // Wires join wires. A wire end (one wire neighbor or none) also reaches into machines.
-              const wires = near((d) => !!d.conduit);
-              const bits = (wires & 1) + ((wires >> 1) & 1) + ((wires >> 2) & 1) + ((wires >> 3) & 1);
-              t.texture = line[bits <= 1 ? wires | near((d) => !!d.power) : wires];
+              // Wires join wires and reach into machines next to them. Belts are left alone (no comb under a belt line).
+              t.texture = line[near((d) => !!d.conduit || (!!d.power && !d.belt))];
             }
-            else if (d0.power && this.tex.stubs.length) {
+            else if (d0.power && !d0.belt && this.tex.stubs.length) {
               // A machine next to wires: the wire runs in under it, to its middle.
               const m = near((d) => !!d.conduit);
               if (m) {
