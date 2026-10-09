@@ -1,0 +1,16 @@
+[
+  { "id": "dirt", "color": "#84603f", "walkCost": 1, "fertility": 0.7 },
+  { "id": "rich_soil", "color": "#5c4636", "walkCost": 1, "fertility": 1.3 },
+  { "id": "sand", "color": "#d6ab6b", "walkCost": 1.4 },
+  { "id": "ash", "color": "#6b6158", "walkCost": 1.2, "fertility": 0.3 },
+  { "id": "asphalt", "color": "#46403b", "walkCost": 0.8 },
+  { "id": "rubble", "color": "#7a7068", "walkCost": 2.2, "buildable": false },
+  { "id": "ruin_floor", "color": "#9a8e7e", "walkCost": 0.9 },
+  { "id": "sludge", "color": "#4a5a3a", "walkCost": 3, "buildable": false, "water": "dirty" },
+  { "id": "toxic_pool", "color": "#9fd14a", "walkCost": 4, "buildable": false, "water": "toxic", "radiation": 2 },
+  { "id": "rock", "color": "#3a2e26", "walkCost": 0, "solid": true, "buildable": false, "minedTo": "rough_floor", "mineYield": { "stone": 6 } },
+  { "id": "coal_seam", "color": "#1b1714", "walkCost": 0, "solid": true, "buildable": false, "minedTo": "rough_floor", "mineYield": { "coal": 8, "stone": 2 } },
+  { "id": "scrap_vein", "color": "#6b2b1a", "walkCost": 0, "solid": true, "buildable": false, "minedTo": "rough_floor", "mineYield": { "scrap": 10 } },
+  { "id": "rough_floor", "color": "#5a5049", "walkCost": 1 },
+  { "id": "cave_floor", "color": "#4d443d", "walkCost": 1.1 }
+]

@@ -1,0 +1,12 @@
+[
+  { "id": "scrap", "color": "#a8481a", "glyph": "s", "category": "resource" },
+  { "id": "wood", "color": "#84603f", "glyph": "w", "category": "resource" },
+  { "id": "stone", "color": "#9a8e7e", "glyph": "o", "category": "resource" },
+  { "id": "coal", "color": "#1b1714", "glyph": "c", "category": "resource" },
+  { "id": "cloth", "color": "#d6ab6b", "glyph": "~", "category": "resource" },
+  { "id": "components", "color": "#6f8088", "glyph": "g", "category": "resource", "stack": 25 },
+  { "id": "steel", "color": "#a7b4bb", "glyph": "S", "category": "resource" },
+  { "id": "canned_food", "color": "#efd8a4", "glyph": "f", "category": "food", "nutrition": 0.45, "stack": 25 },
+  { "id": "dirty_water", "color": "#4a5a3a", "glyph": "d", "category": "water", "hydration": 0.5, "stack": 20 },
+  { "id": "clean_water", "color": "#6f8088", "glyph": "W", "category": "water", "hydration": 0.5, "stack": 20 }
+]

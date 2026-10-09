@@ -1,0 +1,10 @@
+[
+  { "id": "ruin_wall", "kind": "structure", "color": "#b0a090", "glyph": "#", "hp": 300, "blocks": true, "wall": true, "yield": { "stone": 3, "scrap": 2 }, "lootChance": 0.05 },
+  { "id": "car_wreck", "kind": "structure", "color": "#a8481a", "glyph": "W", "hp": 400, "blocks": true, "yield": { "scrap": 18, "components": 1 }, "lootChance": 0.25 },
+  { "id": "scrap_pile", "kind": "structure", "color": "#d9742e", "glyph": "%", "hp": 80, "yield": { "scrap": 12 }, "lootChance": 0.15 },
+  { "id": "loot_crate", "kind": "structure", "color": "#efd8a4", "glyph": "$", "hp": 60, "yield": { "canned_food": 4 }, "lootChance": 0.9 },
+  { "id": "dead_tree", "kind": "plant", "color": "#5c4636", "glyph": "T", "hp": 120, "blocks": true, "yield": { "wood": 12 } },
+  { "id": "mutant_shrub", "kind": "plant", "color": "#7a8a4e", "glyph": "*", "hp": 40, "yield": { "wood": 3 } },
+  { "id": "stairs_down", "kind": "stairs", "color": "#f6efe0", "glyph": "v", "hp": 1000, "stairs": 1 },
+  { "id": "stairs_up", "kind": "stairs", "color": "#f6efe0", "glyph": "^", "hp": 1000, "stairs": -1 }
+]

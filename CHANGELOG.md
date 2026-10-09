@@ -1,6 +1,8 @@
 # Changelog
 
 ## 2026-10-09
+- M1 map: seeded home map generator with a ruined town, roads, wrecks, plants, rock, sludge, toxic pools, and an underground layer with caves, coal and junk seams linked by stairs (`packages/sim/src/mapgen.ts`). Chunked PixiJS renderer with a far-zoom overview, camera pan/zoom/pinch, layer switch, tile inspect and HUD (`packages/client/src/`) — milestone M1 of the demo.
+- M0 scaffold: npm workspaces (`packages/sim`, `packages/client`, `packages/data`), TypeScript strict, ESLint, Vitest, Playwright desktop + phone, Vite on 0.0.0.0, content schemas with zod, English string table, project `CLAUDE.md`, Gitea remote `admin/wasteland-colony` — milestone M0 of the demo.
 - Added the art sample tools (`tools/art/texel.ts`, `recolor.ts`, `png.ts`, `gallery.ts`, `gallery.template.html`, `samples.json`) — Phase B needs sample sprites in several sizes and palettes for the user to choose from.
 - Painted samples in one palette only and made the others by index swap (`tools/art/samples.json`) — the local art model takes 10–30 minutes per sprite, so 66 jobs drop to 22.
 - Set up the repo base (`package.json`, `.gitignore`) on branch `develop` — tools need tsx and TypeScript.

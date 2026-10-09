@@ -1,0 +1,47 @@
+:root {
+  --ink: #1b1714;
+  --panel: rgba(27, 23, 20, 0.88);
+  --line: #5c4636;
+  --text: #efd8a4;
+  --dim: #b0834e;
+  --rust: #d9742e;
+  --font: "Barlow", "Segoe UI", system-ui, sans-serif;
+  --mono: ui-monospace, "IBM Plex Mono", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--ink); color: var(--text); font: 15px/1.4 var(--font); }
+#game { position: fixed; inset: 0; touch-action: none; }
+#game canvas { display: block; }
+#ui { position: fixed; inset: 0; pointer-events: none; }
+#ui > * { pointer-events: auto; }
+button { font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--line); min-width: 44px; min-height: 40px; cursor: pointer; }
+button:hover:not(:disabled) { border-color: var(--rust); }
+button:focus-visible { outline: 2px solid var(--rust); outline-offset: 1px; }
+button:disabled { opacity: 0.4; cursor: default; }
+button.on { background: var(--rust); color: var(--ink); border-color: var(--rust); }
+
+.topbar { position: absolute; top: env(safe-area-inset-top, 0px); right: 8px; margin-top: 8px; display: flex; gap: 8px; align-items: stretch; }
+.clock { background: var(--panel); border: 1px solid var(--line); padding: 4px 12px; display: grid; font-family: var(--mono); font-size: 13px; }
+.clock b { color: var(--text); }
+.clock span { color: var(--dim); }
+.speed { display: flex; }
+.speed button { font-size: 11px; letter-spacing: -2px; }
+
+.layerbox { position: absolute; right: 8px; bottom: calc(env(safe-area-inset-bottom, 0px) + 36px); display: flex; align-items: center; gap: 4px;
+  background: var(--panel); border: 1px solid var(--line); padding: 4px; }
+.layerbox span { font: 600 13px var(--mono); padding: 0 8px; min-width: 96px; text-align: center; }
+
+.inspect { position: absolute; left: 8px; bottom: calc(env(safe-area-inset-bottom, 0px) + 36px); width: min(320px, calc(100vw - 16px));
+  background: var(--panel); border: 1px solid var(--line); padding: 10px 14px; }
+.inspect h2 { margin: 0 32px 6px 0; font-size: 16px; color: var(--rust); }
+.inspect p { margin: 2px 0; font-size: 14px; }
+.inspect .close { position: absolute; top: 4px; right: 4px; min-width: 32px; min-height: 32px; border: 0; background: transparent; font-size: 20px; }
+
+.debug { position: absolute; left: 8px; bottom: calc(env(safe-area-inset-bottom, 0px) + 6px); font: 11px var(--mono); color: var(--dim); pointer-events: none; }
+.fatal { position: fixed; inset: 20px; background: #300; color: #fcc; padding: 20px; overflow: auto; white-space: pre-wrap; z-index: 9; }
+
+@media (max-width: 640px) {
+  .topbar { left: 8px; right: 8px; justify-content: space-between; }
+  .layerbox span { min-width: 80px; }
+}

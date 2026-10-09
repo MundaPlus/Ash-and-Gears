@@ -1,7 +1,7 @@
-node_modules/
-dist/
 artifacts/
+dist/
+.DS_Store
 .env
 .env.*
 *.log
-.DS_Store
+node_modules/
