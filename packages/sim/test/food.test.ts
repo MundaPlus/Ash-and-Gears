@@ -135,6 +135,6 @@ describe("rot", () => {
     dropItems(g, "simple_meal", 5, 0, hx + 4, hy + 4);
     run(g, 24 * 12);
     expect(countItems(g, "simple_meal")).toBe(0);
-    expect(countItems(g, "canned_food")).toBe(30);
+    expect(countItems(g, "canned_food")).toBe(36);
   });
 });

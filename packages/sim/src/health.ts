@@ -15,11 +15,11 @@ const VITAL: PartId[] = ["head", "torso"];
 
 /** Damage kinds: pain factor and bleeding per point of damage per in-game hour. */
 const KIND: Record<string, { pain: number; bleed: number }> = {
-  cut: { pain: 1, bleed: 0.01 },
+  cut: { pain: 1, bleed: 0.004 },
   blunt: { pain: 0.8, bleed: 0 },
-  gunshot: { pain: 1.2, bleed: 0.012 },
-  arrow: { pain: 1.1, bleed: 0.011 },
-  bite: { pain: 1.1, bleed: 0.008 },
+  gunshot: { pain: 1.2, bleed: 0.005 },
+  arrow: { pain: 1.1, bleed: 0.0045 },
+  bite: { pain: 1.1, bleed: 0.0032 },
   burn: { pain: 1.4, bleed: 0 },
   starvation: { pain: 0.3, bleed: 0 },
   dehydration: { pain: 0.4, bleed: 0 },
@@ -62,11 +62,11 @@ export function partDamage(p: Pawn, part: PartId): number {
 export function pain(game: Game, p: Pawn): number {
   let s = 0;
   for (const i of p.health.injuries) s += i.dmg * (KIND[i.kind]?.pain ?? 1);
-  return Math.min(1, s / (60 * game.reg.content.creatures[p.creature].hp));
+  return Math.min(1, s / (90 * game.reg.content.creatures[p.creature].hp));
 }
 
 /** Hours until an untended wound stops bleeding on its own. */
-const CLOT_HOURS = 10;
+const CLOT_HOURS = 8;
 
 /** Bleeding in blood-loss per in-game hour. Wounds clot over time; tending stops most bleeding. */
 export function bleedRate(p: Pawn): number {
@@ -139,7 +139,7 @@ function checkParts(game: Game, p: Pawn, part: PartId, kind: string) {
 function updateDowned(game: Game, p: Pawn) {
   const legs = p.health.missing.filter((x) => x === "l_leg" || x === "r_leg").length;
   const was = p.health.downed;
-  p.health.downed = p.health.bloodLoss > 0.5 || pain(game, p) > 0.85 || legs >= 2;
+  p.health.downed = p.health.bloodLoss > 0.6 || pain(game, p) > 0.85 || legs >= 2;
   if (p.health.downed && !was) {
     p.path = null;
     p.asleep = false;

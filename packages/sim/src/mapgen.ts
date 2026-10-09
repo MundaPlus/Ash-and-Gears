@@ -78,7 +78,8 @@ function generateSurface(game: Game, rng: Rng) {
         if (!layer.inBounds(x, y)) continue;
         const roll = rng.next();
         setT(game, layer, x, y, roll < 0.08 ? "dirt" : roll < 0.11 ? "rubble" : "asphalt");
-        if (rng.chance(0.012)) game.spawnThing("car_wreck", 0, x, y);
+        // Roads cross, so a tile may already hold a wreck from the other road.
+        if (rng.chance(0.012) && layer.thing[layer.i(x, y)] === NO_THING) game.spawnThing("car_wreck", 0, x, y);
       }
   }
 

@@ -247,6 +247,7 @@ export function loadGame(content: Content, raw: SaveFile): Game {
   // Rebuild derived state, then give rooms their saved temperatures.
   game.pathVersion++;
   game.wallVersion++;
+  for (const L of game.map.layers) game.wallDirty.add(L.index);
   game.powerVersion++;
   game.mapVersion++;
   game.rebuildDerived();

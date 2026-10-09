@@ -68,8 +68,8 @@ export function tickWeather(game: Game): void {
     const L = game.map.layers[p.layer];
     const rad = game.reg.terrain.list[L.terrain[L.i(p.x, p.y)]].radiation;
     if (rad > 0) addRad(game, p, rad * 0.02);
-    // The body clears radiation slowly: about 0.05 per day.
-    p.rad = Math.max(0, p.rad - 0.05 / 24);
+    // The body clears radiation slowly: about 0.1 per day.
+    p.rad = Math.max(0, p.rad - 0.1 / 24);
   }
   if (w.kind === "rain") {
     for (const t of game.things.values()) {

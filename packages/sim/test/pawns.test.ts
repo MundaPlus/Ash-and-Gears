@@ -52,7 +52,7 @@ describe("survivors", () => {
     expect(g.pawns.size).toBe(3);
     const nicks = new Set([...g.pawns.values()].map((p) => p.nick));
     expect(nicks.size).toBe(3);
-    expect(countItems(g, "canned_food")).toBe(30);
+    expect(countItems(g, "canned_food")).toBe(36);
   });
 
   it("eat, drink and sleep to stay alive for 5 days with supplies", () => {

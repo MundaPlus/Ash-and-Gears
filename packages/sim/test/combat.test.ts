@@ -42,7 +42,7 @@ describe("health", () => {
     const p = colonists(g)[0];
     damage(g, p, 12, "cut", "l_arm");
     const raw = bleedRate(p);
-    expect(raw).toBeGreaterThan(0.05);
+    expect(raw).toBeGreaterThan(0.02);
     for (const i of untendedInjuries(p)) i.tended = 0.6;
     expect(bleedRate(p)).toBeLessThan(raw / 2);
     dropItems(g, "canned_food", 40, 0, g.home.x - 3, g.home.y - 3);
@@ -147,7 +147,7 @@ describe("fights", () => {
     const [patient] = colonists(g);
     damage(g, patient, 20, "gunshot", "l_leg");
     damage(g, patient, 20, "gunshot", "r_leg");
-    patient.health.bloodLoss = 0.55;
+    patient.health.bloodLoss = 0.65;
     damage(g, patient, 1, "cut", "torso"); // re-check downed state
     expect(patient.health.downed).toBe(true);
     run(g, 6);

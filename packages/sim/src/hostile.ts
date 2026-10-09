@@ -51,11 +51,13 @@ export function draftedTick(game: Game, p: Pawn): void {
     }
     if (atGoal(p)) p.order = null;
   }
-  // Standing still: shoot at anything in range. Melee fighters only hit what is next to them.
+  // Standing still: shoot at anything in range. Melee fighters charge enemies that come within 6 tiles.
   if (!p.path?.length) {
     const atk = attackOf(game, p);
-    const target = nearestHostile(game, p, p.faction, isMelee(atk) ? 1.5 : atk.range);
-    if (target) attack(game, p, target);
+    const melee = isMelee(atk);
+    const target = nearestHostile(game, p, p.faction, melee ? 6 : atk.range);
+    if (target && melee && dist(p, target) > 1.5) p.order = { kind: "attack", target: target.id };
+    else if (target) attack(game, p, target);
   }
 }
 
@@ -150,7 +152,9 @@ export function updateGroups(game: Game): void {
   for (const g of game.groups.values()) {
     const members = [...game.pawns.values()].filter((p) => p.group === g.id);
     const fighting = members.filter((p) => !p.health.downed).length;
-    if (!g.fleeing && fighting <= g.size / 2) {
+    // Rats scatter after losing a third; raiders and hounds after losing half.
+    const breakAt = g.kind === "rad_rats" ? g.size * 0.67 : g.size / 2;
+    if (!g.fleeing && fighting <= breakAt) {
       g.fleeing = true;
       game.message(`msg.${g.kind}_fled`, {}, "info");
     }
@@ -172,8 +176,12 @@ export function hostileTick(game: Game, p: Pawn): void {
   const daylight = game.hourOfDay >= 6 && game.hourOfDay < 19;
   // Groups do not stay forever: rats get bored, raiders give up.
   const stayHours = creature.behavior === "food_swarm" ? 8 : creature.behavior === "hunter" ? 10 : 18;
-  const overstayed = !!group && game.tick - group.arrived > stayHours * game.ticksPerHour;
-  if (overstayed || group?.fleeing || pain(game, p) > 0.6 || (creature.behavior === "hunter" && daylight && game.tick - (group?.arrived ?? 0) > game.ticksPerHour * 3)) {
+  // No group (its raid already ended, e.g. this one got up again after being downed): go home.
+  const orphan = p.group !== null && !group;
+  const overstayed = orphan || (!!group && game.tick - group.arrived > stayHours * game.ticksPerHour);
+  // Animals bolt once badly hurt; raiders hold on a little longer.
+  const painLimit = creature.behavior === "human" ? 0.6 : 0.4;
+  if (overstayed || group?.fleeing || pain(game, p) > painLimit || (creature.behavior === "hunter" && daylight && game.tick - (group?.arrived ?? 0) > game.ticksPerHour * 3)) {
     leave(game, p);
     return;
   }
@@ -194,7 +202,8 @@ export function hostileTick(game: Game, p: Pawn): void {
     if (food) {
       if (dist(p, food) <= 1.5) {
         p.path = null;
-        if ((game.tick + p.id) % 50 === 0) takeFromStack(game, food.id, 2);
+        // A rat nibbles one unit every two in-game minutes or so; a swarm is a nuisance, not a famine.
+        if ((game.tick + p.id) % 120 === 0) takeFromStack(game, food.id, 1);
       } else chase(game, p, food);
       return;
     }

@@ -16,7 +16,7 @@ export const NEEDS = ["hunger", "thirst", "rest"] as const;
 export type NeedId = (typeof NEEDS)[number];
 
 /** Need drop per in-game day (1 = full bar). Rest drops only while awake. */
-export const NEED_DECAY: Record<NeedId, number> = { hunger: 0.9, thirst: 1.4, rest: 1.5 };
+export const NEED_DECAY: Record<NeedId, number> = { hunger: 0.9, thirst: 1.2, rest: 1.5 };
 
 export type Passion = 0 | 1 | 2;
 export interface Skill {
@@ -34,6 +34,8 @@ export interface Memory {
 export interface Job {
   kind: string;
   stage: number;
+  /** Tick when the job started (set by the AI loop). */
+  started?: number;
   /** Target tile. */
   target?: Pos;
   /** Target entity (item stack, thing). */

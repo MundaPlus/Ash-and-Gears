@@ -45,6 +45,11 @@ registerWorkGiver({
         const src = findItem(game, p, (d, cont) => game.reg.items.list[d].category === want && !cont);
         if (src !== null && reserve(game, `pawn:${patient.id}`, p) && reserve(game, `item:${src}`, p))
           return { kind: "feed", stage: 0, targetId: patient.id, data: { src } };
+        // No water jugs: draw water at a well and carry it over.
+        if (want === "water") {
+          const well = [...game.things.values()].find((t) => game.reg.things.list[t.def].water === "clean" && game.path.canReachAdjacent(p, t));
+          if (well && reserve(game, `pawn:${patient.id}`, p)) return { kind: "feed", stage: 0, targetId: patient.id, data: { well: well.id } };
+        }
       }
       // 3. Tend: untended wounds. Downed or resting patients first; others also get tended where they stand.
       if (untendedInjuries(patient).length > 0 && reserve(game, `pawn:${patient.id}`, p)) {
@@ -80,6 +85,23 @@ registerJob("rescue", (game, p, job) => {
 registerJob("feed", (game, p, job) => {
   const patient = game.pawns.get(job.targetId!);
   if (!patient) return "fail";
+  if (job.data!.well !== undefined) {
+    // Water from a well: walk there, fill a jug, bring it.
+    const well = game.things.get(job.data!.well as number);
+    if (!well) return "fail";
+    if (job.stage === 0) {
+      if (!goTo(game, p, well, true)) return "fail";
+      job.stage = 1;
+    }
+    if (job.stage === 1) {
+      if (!atGoal(p)) return "run";
+      const def = game.reg.items.idx("clean_water");
+      const cont = (well.contamUntil ?? 0) > game.tick;
+      p.carrying = { id: game.newId(), def, count: 2, layer: -1, x: 0, y: 0, ...(cont ? { contaminated: true, contamUntil: well.contamUntil } : {}) };
+      if (!goTo(game, p, patient, true)) return "fail";
+      job.stage = 2;
+    }
+  }
   if (job.stage === 0) {
     const s = game.items.get(job.data!.src as number);
     if (!s || !goTo(game, p, s)) return "fail";

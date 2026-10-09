@@ -58,6 +58,13 @@ describe("home map generation", () => {
     });
   }
 
+  it("never crashes on many seeds and sizes", () => {
+    for (let i = 0; i < 60; i++) {
+      const size = [96, 128, 200][i % 3];
+      expect(() => Game.create(content, { seed: `many${i}`, mapSize: size, storyteller: "none" })).not.toThrow();
+    }
+  });
+
   it("has ruins, wrecks, trees and loot on the surface", () => {
     const g = Game.create(content, { seed: "content-check" });
     const count = (id: string) => [...g.things.values()].filter((t) => g.reg.things.list[t.def].id === id).length;

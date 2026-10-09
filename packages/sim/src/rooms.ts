@@ -48,37 +48,48 @@ function boundaryInsulation(game: Game, layer: number, i: number): number {
 export function ensureRooms(game: Game): void {
   if (game.roomsVersion === game.wallVersion) return;
   const old = game.rooms;
+  // Rebuild only layers whose walls changed (all layers on the first build).
+  const first = game.roomsVersion === -1 || game.wallDirty.size === 0;
+  const dirty = first ? new Set(game.map.layers.map((L) => L.index)) : new Set(game.wallDirty);
   const fresh = new Map<number, Room>();
-  let nextId = 1;
+  for (const r of old.values()) if (!dirty.has(r.layer)) fresh.set(r.id, r);
+  let nextId = Math.max(0, ...old.keys()) + 1;
   for (const L of game.map.layers) {
+    if (!dirty.has(L.index)) continue;
     const { w, h } = L;
+    const n = w * h;
     const oldRoom = Int32Array.from(L.room);
     L.room.fill(-1);
-    const stack: number[] = [];
-    for (let start = 0; start < w * h; start++) {
-      if (L.room[start] !== -1 || isBoundary(game, L.index, start)) continue;
+    // Boundary insulation per tile, or -1 for open ground.
+    const wallIns = new Float32Array(n).fill(-1);
+    for (let i = 0; i < n; i++) if (isBoundary(game, L.index, i)) wallIns[i] = boundaryInsulation(game, L.index, i);
+    const stack = new Int32Array(n);
+    /** Which room last counted this wall tile, so each wall counts once per room. */
+    const wallSeen = new Int32Array(n).fill(-1);
+    for (let start = 0; start < n; start++) {
+      if (L.room[start] !== -1 || wallIns[start] >= 0) continue;
       const id = nextId++;
-      let size = 0, touchesEdge = false, insSum = 0, insN = 0;
+      let size = 0, touchesEdge = false, insSum = 0, insN = 0, top = 0;
       L.room[start] = id;
-      stack.push(start);
-      const seenWall = new Set<number>();
-      while (stack.length) {
-        const i = stack.pop()!;
+      stack[top++] = start;
+      while (top > 0) {
+        const i = stack[--top];
         size++;
         const x = i % w, y = (i - x) / w;
         if (x === 0 || y === 0 || x === w - 1 || y === h - 1) touchesEdge = true;
-        for (const n of [x > 0 ? i - 1 : -1, x < w - 1 ? i + 1 : -1, y > 0 ? i - w : -1, y < h - 1 ? i + w : -1]) {
-          if (n < 0 || L.room[n] !== -1) continue;
-          if (isBoundary(game, L.index, n)) {
-            if (!seenWall.has(n)) {
-              seenWall.add(n);
-              insSum += boundaryInsulation(game, L.index, n);
+        for (let k = 0; k < 4; k++) {
+          const nb = k === 0 ? (x > 0 ? i - 1 : -1) : k === 1 ? (x < w - 1 ? i + 1 : -1) : k === 2 ? (y > 0 ? i - w : -1) : y < h - 1 ? i + w : -1;
+          if (nb < 0 || L.room[nb] !== -1) continue;
+          if (wallIns[nb] >= 0) {
+            if (wallSeen[nb] !== id) {
+              wallSeen[nb] = id;
+              insSum += wallIns[nb];
               insN++;
             }
             continue;
           }
-          L.room[n] = id;
-          stack.push(n);
+          L.room[nb] = id;
+          stack[top++] = nb;
         }
       }
       const outdoor = L.index === 0 && (touchesEdge || size > MAX_ROOM);
@@ -93,17 +104,14 @@ export function ensureRooms(game: Game): void {
       });
     }
     // Roofs: enclosed surface rooms, and the walls around them. Underground is always roofed.
-    for (let i = 0; i < w * h; i++) {
+    const enclosed = (r: number) => r !== -1 && !fresh.get(r)!.outdoor;
+    for (let i = 0; i < n; i++) {
       let roofed: boolean;
       if (L.index > 0) roofed = true;
-      else if (L.room[i] !== -1) roofed = !fresh.get(L.room[i])!.outdoor;
+      else if (L.room[i] !== -1) roofed = enclosed(L.room[i]);
       else {
-        const x = i % w, y = (i - x) / w;
-        roofed = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => {
-          if (!L.inBounds(x + dx, y + dy)) return false;
-          const r = L.room[L.i(x + dx, y + dy)];
-          return r !== -1 && !fresh.get(r)!.outdoor;
-        });
+        const x = i % w;
+        roofed = (x > 0 && enclosed(L.room[i - 1])) || (x < w - 1 && enclosed(L.room[i + 1])) || (i >= w && enclosed(L.room[i - w])) || (i + w < n && enclosed(L.room[i + w]));
       }
       const v = roofed ? 1 : 0;
       if (L.roof[i] !== v) {
@@ -114,6 +122,7 @@ export function ensureRooms(game: Game): void {
   }
   game.rooms = fresh;
   game.roomsVersion = game.wallVersion;
+  game.wallDirty.clear();
   game.mapVersion++;
 }
 

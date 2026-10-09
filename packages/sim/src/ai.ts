@@ -48,7 +48,8 @@ export function goTo(game: Game, p: Pawn, pos: Pos, adjacent = false): boolean {
   const path = game.path.find(p, pos, adjacent);
   if (!path) return false;
   p.path = path;
-  p.goal = { pos, adjacent };
+  // Copy the position: callers often pass a pawn or item object that moves later.
+  p.goal = { pos: { layer: pos.layer, x: pos.x, y: pos.y }, adjacent };
   p.moveT = 0;
   return true;
 }
@@ -126,10 +127,25 @@ export function tickPawns(game: Game): void {
       tickMove(game, p);
       continue;
     }
-    if (p.mentalBreak && p.job && !p.job.data?.sulk) endJob(game, p, false);
+    if (p.mentalBreak && p.job && !p.job.data?.sulk && p.job.kind !== "eat" && p.job.kind !== "drink") endJob(game, p, false);
     // A radiation cloud is coming: drop idle or outdoor work and think again (that finds shelter).
-    if ((game.tick + p.id) % 30 === 0 && p.job && p.job.kind !== "shelter" && radDanger(game) && !sheltered(game, p) && !p.mentalBreak)
-      endJob(game, p, false);
+    // Eating and drinking finish first: cutting them off would loop (drink, interrupted, drink...).
+    const keep = p.job?.kind === "shelter" || p.job?.kind === "eat" || p.job?.kind === "drink";
+    if ((game.tick + p.id) % 30 === 0 && p.job && !keep && radDanger(game) && !sheltered(game, p) && !p.mentalBreak) endJob(game, p, false);
+    if (p.job) {
+      // Safety nets: urgent needs win over any work, and no job may run forever.
+      p.job.started ??= game.tick;
+      const k = p.job.kind;
+      const needJob = k === "eat" || k === "drink" || k === "sleep";
+      const urgent = p.needs.hunger < 0.1 || p.needs.thirst < 0.1;
+      const longOk = k === "sleep" || k === "shelter" || k === "research";
+      if ((urgent && !needJob) || (!longOk && game.tick - p.job.started > game.ticksPerHour * 6)) {
+        endJob(game, p, false);
+        think(game, p);
+        tickMove(game, p);
+        continue;
+      }
+    }
     if (p.job) {
       const driver = drivers.get(p.job.kind);
       const r: JobResult = driver ? driver(game, p, p.job) : "fail";
@@ -172,11 +188,14 @@ function startJob(game: Game, p: Pawn, job: Job | null): boolean {
 
 /** The decision tree. Order matters: survival first, then schedule, then work, then idle. */
 export function think(game: Game, p: Pawn): void {
+  const n = p.needs;
   if (p.mentalBreak) {
+    // Sulking survivors still eat and drink when it gets urgent.
+    if (n.thirst < 0.2 && startJob(game, p, drinkJob(game, p, true))) return;
+    if (n.hunger < 0.2 && startJob(game, p, eatJob(game, p, true))) return;
     startJob(game, p, wanderJob(game, p, true));
     return;
   }
-  const n = p.needs;
   if (n.thirst < 0.2 && startJob(game, p, drinkJob(game, p, true))) return;
   if (n.hunger < 0.2 && startJob(game, p, eatJob(game, p, true))) return;
   if (n.rest < 0.12 && startJob(game, p, sleepJob(game, p))) return;
@@ -277,7 +296,7 @@ registerJob("eat", (game, p, job) => {
   const raw = def.raw && hasTraitFlag(game, p, "eats_raw_ok");
   addMemory(game, p, raw ? "ate_canned" : (def.eatThought ?? "ate_canned"));
   if (job.data!.glowing) {
-    addRad(game, p, 0.08);
+    addRad(game, p, 0.05);
     addMemory(game, p, "ate_glowing_food");
   }
   return "done";
@@ -349,7 +368,7 @@ registerJob("drink", (game, p, job) => {
   if (game.tick < job.until!) return "run";
   p.needs.thirst = Math.min(1, p.needs.thirst + (job.data!.hydration as number));
   addMemory(game, p, job.data!.source === "clean" && !job.data!.glowing ? "drank_clean" : "drank_dirty");
-  if (job.data!.glowing) addRad(game, p, 0.06);
+  if (job.data!.glowing) addRad(game, p, 0.04);
   // Disease from dirty water arrives with the health system (M5).
   return "done";
 });

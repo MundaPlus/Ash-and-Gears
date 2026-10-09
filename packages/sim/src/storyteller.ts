@@ -16,7 +16,7 @@ export interface StoryState {
   raidsSurvived: number;
 }
 
-const GRACE_DAYS = 3;
+const GRACE_DAYS = 4;
 const STYLE = {
   sheriff: { calmDays: 3, pointsPerDay: 1.2, goodChance: 0.18 },
   grandma: { calmDays: 6, pointsPerDay: 0.8, goodChance: 0.25 },
@@ -48,8 +48,11 @@ function weight(game: Game, kind: EventKind): number {
     case "rad_rats":
     case "glow_hounds":
       return 0.9 * o.mutantScale;
-    case "rad_cloud":
-      return game.weather.next || game.weather.kind === "rad_cloud" ? 0 : 0.7 * o.radCloudScale;
+    case "rad_cloud": {
+      // At most one cloud per 8 days.
+      const recent = game.tick - game.weather.lastRadCloud < 8 * game.ticksPerDay && game.weather.lastRadCloud > 0;
+      return game.weather.next || game.weather.kind === "rad_cloud" || recent ? 0 : 0.4 * o.radCloudScale;
+    }
   }
 }
 
@@ -70,7 +73,9 @@ function spawnGroup(game: Game, kind: "raid" | "rad_rats" | "glow_hounds", size:
   game.groups.set(id, { id, kind, size, fleeing: false, arrived: game.tick });
   const at = edgeSpawn(game);
   const creature = kind === "raid" ? "human" : kind === "rad_rats" ? "rad_rat" : "glow_hound";
-  const weapons = ["pipe", "machete", "pipe_pistol", "pipe_pistol", "crossbow", "scrap_shotgun"];
+  // Early raiders carry mostly melee junk; guns get common as the days go by.
+  const day = game.tick / game.ticksPerDay;
+  const weapons = day < 15 ? ["pipe", "pipe", "machete", "machete", "pipe_pistol"] : ["pipe", "machete", "pipe_pistol", "pipe_pistol", "crossbow", "scrap_shotgun"];
   for (let i = 0; i < size; i++) {
     let x = at.x, y = at.y;
     for (let k = 0; k < 10; k++) {
@@ -92,19 +97,23 @@ export function fireEvent(game: Game, kind: EventKind): void {
   s.log.push({ tick: game.tick, event: kind });
   switch (kind) {
     case "raid": {
-      const size = Math.max(2, Math.min(7, Math.floor(1 + s.points / 3)));
+      // Never more raiders than survivors + 1: a small colony gets a small raid.
+      const colonists = [...game.pawns.values()].filter((p) => p.faction === "colony").length;
+      const first = !s.log.some((e) => e.event === "raid" && e.tick < game.tick);
+      const size = first ? 2 : Math.max(2, Math.min(7, colonists + 1, 2 + Math.floor((s.points - 6) / 4)));
       spawnGroup(game, "raid", size);
       game.message("msg.raid", { n: size }, "bad");
       break;
     }
     case "rad_rats": {
-      const size = Math.min(10, 4 + Math.floor(s.points));
+      const size = Math.min(8, 3 + Math.floor(s.points / 2));
       spawnGroup(game, "rad_rats", size);
       game.message("msg.rad_rats", { n: size }, "bad");
       break;
     }
     case "glow_hounds": {
-      const size = Math.max(2, Math.min(5, Math.floor(s.points / 2)));
+      const colonists = [...game.pawns.values()].filter((p) => p.faction === "colony").length;
+      const size = Math.max(2, Math.min(3, colonists, Math.floor(s.points / 3)));
       spawnGroup(game, "glow_hounds", size);
       game.message("msg.glow_hounds", { n: size }, "bad");
       break;
@@ -153,7 +162,8 @@ export function tickStoryteller(game: Game): void {
   if (game.groups.size > 0) return;
   // Pick an affordable threat by weight. Saving up is fine: bigger raids later.
   const kinds: EventKind[] = ["raid", "rad_rats", "glow_hounds", "rad_cloud"];
-  const options = kinds.filter((k) => s.points >= cost(game, k) && weight(game, k) > 0);
+  // No raids before day 10: the first days are for mutants and weather.
+  const options = kinds.filter((k) => s.points >= cost(game, k) && weight(game, k) > 0 && (k !== "raid" || day >= 10));
   if (!options.length || !game.aiRng.chance(0.45)) return;
   const total = options.reduce((n, k) => n + weight(game, k), 0);
   let r = game.aiRng.next() * total;

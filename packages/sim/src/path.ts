@@ -133,34 +133,66 @@ export class PathFinder {
     }
   }
 
-  /** Recompute connected areas when walkability changed. */
+  /**
+   * Recompute connected areas when walkability changed. A tight flood fill over a walkability array
+   * (same 8-way rules as pathfinding, no corner cutting), with stairs linking layers.
+   */
   private ensureReach() {
     if (this.reachVersion === this.game.pathVersion) return;
-    this.reach.fill(-1);
+    const game = this.game;
+    const { w, h, layers } = game.map;
+    const wh = w * h;
+    const open = new Uint8Array(this.size);
+    for (let l = 0; l < layers.length; l++)
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (game.walkCost(l, x, y) > 0) open[l * wh + y * w + x] = 1;
+    // Stairs: node -> node on the other layer.
+    const link = new Map<number, number>();
+    for (const t of game.things.values()) {
+      const s = game.reg.things.list[t.def].stairs;
+      if (!s) continue;
+      const nl = t.layer + s;
+      if (nl < 0 || nl >= layers.length) continue;
+      const a = t.layer * wh + t.y * w + t.x, b = nl * wh + t.y * w + t.x;
+      if (open[a] && open[b]) link.set(a, b);
+    }
+    const reach = this.reach;
+    reach.fill(-1);
+    const stack = new Int32Array(this.size);
     let label = 0;
-    const stack: number[] = [];
-    const { w, h, layers } = this.game.map;
-    for (let l = 0; l < layers.length; l++) {
-      for (let y = 0; y < h; y++) {
-        for (let x = 0; x < w; x++) {
-          const n = l * w * h + y * w + x;
-          if (this.reach[n] !== -1 || this.enterCost(l, x, y) === 0) continue;
-          this.reach[n] = label;
-          stack.push(n);
-          while (stack.length) {
-            const c = stack.pop()!;
-            this.neighbors(c, (m) => {
-              if (this.reach[m] === -1) {
-                this.reach[m] = label;
-                stack.push(m);
-              }
-            });
+    for (let start = 0; start < this.size; start++) {
+      if (!open[start] || reach[start] !== -1) continue;
+      let top = 0;
+      stack[top++] = start;
+      reach[start] = label;
+      while (top > 0) {
+        const n = stack[--top];
+        const base = n - (n % wh);
+        const r = n - base;
+        const x = r % w, y = (r - x) / w;
+        for (let dy = -1; dy <= 1; dy++) {
+          const ny = y + dy;
+          if (ny < 0 || ny >= h) continue;
+          for (let dx = -1; dx <= 1; dx++) {
+            if (dx === 0 && dy === 0) continue;
+            const nx = x + dx;
+            if (nx < 0 || nx >= w) continue;
+            const m = base + ny * w + nx;
+            if (!open[m] || reach[m] !== -1) continue;
+            // No corner cutting on diagonals.
+            if (dx !== 0 && dy !== 0 && (!open[base + y * w + nx] || !open[base + ny * w + x])) continue;
+            reach[m] = label;
+            stack[top++] = m;
           }
-          label++;
+        }
+        const other = link.get(n);
+        if (other !== undefined && reach[other] === -1) {
+          reach[other] = label;
+          stack[top++] = other;
         }
       }
+      label++;
     }
-    this.reachVersion = this.game.pathVersion;
+    this.reachVersion = game.pathVersion;
   }
 
   /** True if a pawn standing at `a` can walk to `b` (b itself must be walkable). */

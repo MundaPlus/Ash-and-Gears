@@ -304,9 +304,9 @@
   "hp": 30,
   "work": 40,
   "crop": {
-   "growDays": 5,
+   "growDays": 3.5,
    "yield": {
-    "glowcorn": 10
+    "glowcorn": 12
    },
    "minTemp": 6
   },
@@ -320,9 +320,9 @@
   "hp": 30,
   "work": 50,
   "crop": {
-   "growDays": 7,
+   "growDays": 5,
    "yield": {
-    "scrub_potato": 12
+    "scrub_potato": 14
    },
    "minTemp": -2
   },
@@ -355,10 +355,10 @@
   "bench": true,
   "build": {
    "cost": {
-    "stone": 20,
-    "wood": 10
+    "wood": 20,
+    "scrap": 10
    },
-   "work": 400,
+   "work": 350,
    "menu": "production"
   }
  },

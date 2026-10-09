@@ -103,6 +103,8 @@ export class Game {
   readonly progress = new Map<string, number>();
   /** Bumped when walls, doors or solid terrain change. Rooms are rebuilt when it changes. */
   wallVersion = 0;
+  /** Layers whose walls changed since rooms were last built. */
+  readonly wallDirty = new Set<number>();
   /** Bumped when power things or wires change. Power nets are rebuilt when it changes. */
   powerVersion = 0;
   nets: PowerNet[] = [];
@@ -208,7 +210,10 @@ export class Game {
     this.mapVersion++;
     const d = this.reg.things.list[def];
     if (d.blocks || d.stairs) this.pathVersion++;
-    if (d.wall) this.wallVersion++;
+    if (d.wall) {
+      this.wallVersion++;
+      this.wallDirty.add(layer);
+    }
     if (d.power || d.conduit) this.powerVersion++;
     return t;
   }
@@ -223,7 +228,10 @@ export class Game {
     this.mapVersion++;
     const d = this.reg.things.list[t.def];
     if (d.blocks || d.stairs) this.pathVersion++;
-    if (d.wall) this.wallVersion++;
+    if (d.wall) {
+      this.wallVersion++;
+      this.wallDirty.add(t.layer);
+    }
     if (d.power || d.conduit) this.powerVersion++;
   }
 
@@ -260,6 +268,7 @@ export class Game {
     this.mapVersion++;
     this.pathVersion++;
     this.wallVersion++;
+    this.wallDirty.add(layer);
   }
 
   /** Advance one fixed sim tick. Systems are added here milestone by milestone. */

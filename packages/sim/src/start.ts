@@ -4,8 +4,8 @@ import { dropItems } from "./items.ts";
 import { addMemory, makeSurvivor } from "./pawn.ts";
 
 export const START_SUPPLIES: Record<string, number> = {
-  canned_food: 30,
-  clean_water: 24,
+  canned_food: 36,
+  clean_water: 30,
   scrap: 40,
   wood: 40,
   cloth: 10,
