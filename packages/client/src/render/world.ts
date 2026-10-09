@@ -21,6 +21,8 @@ interface Chunk {
   cx: number;
   cy: number;
   root: Container;
+  /** Items, things and marks of this chunk. Kept above all ground, so big things can reach into the next chunk. */
+  top: Container;
   version: number;
 }
 
@@ -42,14 +44,21 @@ export class WorldRenderer {
       lr.visible = L.index === 0;
       this.root.addChild(lr);
       this.layerRoots.push(lr);
+      const ground = new Container();
+      const tops = new Container();
+      lr.addChild(ground, tops);
       const list: Chunk[] = [];
       for (let cy = 0; cy < Math.ceil(h / CHUNK); cy++)
         for (let cx = 0; cx < Math.ceil(w / CHUNK); cx++) {
           const root = new Container();
           root.position.set(cx * CHUNK * TILE, cy * CHUNK * TILE);
           root.visible = false;
-          lr.addChild(root);
-          list.push({ cx, cy, root, version: -1 });
+          ground.addChild(root);
+          const top = new Container();
+          top.position.copyFrom(root.position);
+          top.visible = false;
+          tops.addChild(top);
+          list.push({ cx, cy, root, top, version: -1 });
         }
       this.chunks.push(list);
       const ov = new Sprite(Texture.EMPTY);
@@ -79,14 +88,14 @@ export class WorldRenderer {
     ov.visible = far;
     if (far) {
       if (this.overviewVersion[this.layer] !== this.game.mapVersion) this.buildOverview(this.layer);
-      for (const c of this.chunks[this.layer]) c.root.visible = false;
+      for (const c of this.chunks[this.layer]) c.root.visible = c.top.visible = false;
       return;
     }
     const span = CHUNK * TILE;
     for (const c of this.chunks[this.layer]) {
       const x0 = c.cx * span, y0 = c.cy * span;
       const vis = x0 < view.x + view.w && x0 + span > view.x && y0 < view.y + view.h && y0 + span > view.y;
-      c.root.visible = vis;
+      c.root.visible = c.top.visible = vis;
       if (vis) {
         const L = this.game.map.layers[this.layer];
         const v = L.chunkVersion[c.cy * L.chunksX + c.cx];
@@ -98,6 +107,7 @@ export class WorldRenderer {
   private buildChunk(l: number, c: Chunk, version: number) {
     const g = this.game, L = g.map.layers[l];
     c.root.removeChildren().forEach((ch) => ch.destroy());
+    c.top.removeChildren().forEach((ch) => ch.destroy());
     const things: Sprite[] = [];
     const items: Sprite[] = [];
     const overlays: Sprite[] = [];
@@ -220,11 +230,11 @@ export class WorldRenderer {
           things.push(t);
         }
       }
-    // Items and things after all terrain, so tall sprites are never covered by the next row of ground.
-    for (const t of overlays) c.root.addChild(t);
-    for (const t of items) c.root.addChild(t);
-    for (const t of things) c.root.addChild(t);
-    for (const t of marks) c.root.addChild(t);
+    // Zones, plans, items, things and marks go on top of every chunk's ground (big plans reach over chunk edges).
+    for (const t of overlays) c.top.addChild(t);
+    for (const t of items) c.top.addChild(t);
+    for (const t of things) c.top.addChild(t);
+    for (const t of marks) c.top.addChild(t);
     c.version = version;
   }
 

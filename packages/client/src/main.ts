@@ -29,6 +29,7 @@ import { Camera } from "./input/camera.ts";
 import { PawnRenderer } from "./render/pawns.ts";
 import { FxRenderer } from "./render/fx.ts";
 import { DynamicRenderer } from "./render/dynamic.ts";
+import { loadAiArt } from "./render/aiArt.ts";
 import { ART_SIZES, makeTextures, TILE, type ArtSettings } from "./render/textures.ts";
 import { WorldRenderer } from "./render/world.ts";
 import { Hud } from "./ui/Hud.tsx";
@@ -116,7 +117,8 @@ async function boot() {
   host.appendChild(app.canvas);
 
   const art: ArtSettings = loadArt(params);
-  let tex = makeTextures(game.reg, art);
+  const ai = await loadAiArt();
+  let tex = makeTextures(game.reg, art, ai);
   const world = new Container();
   app.stage.addChild(world);
   const renderer = new WorldRenderer(game, tex);
@@ -183,7 +185,7 @@ async function boot() {
     } catch {
       // storage blocked: the setting lasts for this session only
     }
-    tex = makeTextures(game.reg, art);
+    tex = makeTextures(game.reg, art, ai);
     renderer.setTextures(tex);
     pawnsR.setTextures(tex);
     store.set({ art: { ...art } });

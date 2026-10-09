@@ -17,6 +17,7 @@ The user wants a full post-apocalyptic colony + automation game (RimWorld + Fact
 - AI pixel-art pipeline (`tools/art/ai/`): `make.py` (ComfyUI superPixelartXL, tries per sprite from `sprites.json`), `clean.py` = "method B" (crop, BOX shrink, own 15-color palette, dark outline; `texture` mode for walls). Output `art/ai/<id>/<n>.png` (+ raw_*.png, gitignored) and `art/ai/pick.html` (Artifact https://claude.ai/artifact/4Pn7rHSeakfWmF3Ya1eUY2). Trial page: https://claude.ai/artifact/TseYAmYTCo8XXAwyyfXRQ5
 
 ## Current state
+- 2026-10-10 later: AI art integration committed (see Next steps 1). Tests: 50 unit, 14 e2e pass. Preview build updated.
 - Everything committed (last: b8f2dac). Tests: 50 unit, 14 e2e pass. Demo service `wasteland-colony` (systemd user, vite preview 0.0.0.0:4173) serves the latest build: http://192.168.31.215:4173/
 - No running processes of mine.
 
@@ -28,18 +29,20 @@ The user wants a full post-apocalyptic colony + automation game (RimWorld + Fact
 - Combat: fair but dangerous. Robots = workforce with limits. Full factory late game. World map late Alpha.
 
 ## Next steps
-1. AI art integration (P1): load chosen `art/ai/<id>/<n>.png` as the "32 px" option for those ids (client textures: PNG sprites instead of index grids; palette switch → optional color grade for AI sprites). Change `scrap_bed` footprint to 2×2 and use the 64×64 art. Add a picks file (e.g. `tools/art/ai/picks.json`: id → chosen try).
-2. Fix the can cleanup: white label parts are removed with the background (use flood fill from the border instead of a global color threshold in `clean.py`, as `tools/art/ai/clean.py` method A did).
-3. Generate more tries for people; add more sprite ids (all things/items/creatures), walls/floors as textures with seamless edge fix.
-4. Finish P1: UX fixes from play, then start A1 (belt logistics: splitters, filters, underground belts, robot arms, chests, machine I/O sides).
-5. Keep playing in Chrome after each change (see Gotchas).
+1. Done (2026-10-10): AI art in game (`render/aiArt.ts`, `tools/art/ai/picks.json` + `publish.py`), 2×2 double bed, `clean.py` flood-fill fix, chunk-edge draw fix. Change a pick: edit `picks.json`, run `python3 tools/art/ai/publish.py`.
+2. Regenerate `art/ai/pick.html` so it shows the re-cleaned tries (make.py keeps existing tries; check it does not call ComfyUI when all tries exist).
+3. Generate more tries for people; add more sprite ids (all things/items/creatures, glow_hound), walls/floors as textures with seamless edge fix (walls need joined variants by neighbor mask).
+4. Maybe: AI bed art is wider than tall, so it fills about 1.4×1.3 of its 2×2 tiles. A `fill` option in `sprites.json` could stretch furniture to its footprint.
+5. Survivor UI swatch colors (`SHIRT_SWATCH` in `pawns.ts`) no longer match the AI looks at hybrid/32. Pick swatch colors per AI look, or drop the swatch.
+6. Finish P1: UX fixes from play, then start A1 (belt logistics: splitters, filters, underground belts, robot arms, chests, machine I/O sides).
+7. Keep playing in Chrome after each change (see Gotchas). `?showcase=1&px=32&palette=toxic` is a good art check.
 
 ## Key files
 - `docs/spec/` (00–12), `docs/spec/12-alpha-plan.md` — plan after demo.
 - `packages/sim/src/` — simulation (rooms, construction, health, goals, weather, power, game.ts footprint/fits).
 - `packages/client/src/render/{world,textures}.ts` — joined walls/wires, big things, art sizes.
 - `packages/data/src/art/index.ts` — grids, `wallVariant`, `lineVariant`, `thingGrid`, `BIG_ART`.
-- `tools/art/ai/{make.py,clean.py,sprites.json}` — AI sprite pipeline. Run: `uv run --with pillow --with numpy python tools/art/ai/make.py [--only id,id]`.
+- `tools/art/ai/{make.py,clean.py,sprites.json}` — AI sprite pipeline. Run: `uv run --with pillow --with numpy --with scipy python tools/art/ai/make.py [--only id,id]`.
 - `tools/playtest/run.ts` (`--seed`), `tools/playtest/autoplay.ts` — headless checks.
 - `CHANGELOG.md`, `CLAUDE.md`.
 

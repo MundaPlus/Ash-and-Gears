@@ -1,6 +1,11 @@
 # Changelog
 
 ## 2026-10-10
+- AI sprites in the game: the "32" art size uses the chosen AI tries for things; "hybrid" and "32" use them for items and characters. Each survivor and raider gets one of several looks. Other palettes shift the AI colors by palette role (`packages/client/src/render/aiArt.ts`, `render/textures.ts`, `render/pawns.ts`, `main.ts`) — the user picked AI art at 32 px per tile.
+- AI pick list and publish step: `tools/art/ai/picks.json` (id → chosen try or list of tries) and `tools/art/ai/publish.py` copy the picks to `packages/client/src/assets/ai/<id>.<k>.png` — one place to change a chosen sprite.
+- The scrap bed is a 2×2 double bed, with a new 32×32 hand-made grid for the 16 px art (`packages/data/content/core/things.json`, `packages/data/src/art/index.ts`) — the user asked for a double bed.
+- Fix: big things that cross a chunk edge (x or y = 32, 64, ...) lost their far part under the next chunk's ground. Zones, plans, items, things and marks now draw in a layer above all chunk ground (`packages/client/src/render/world.ts`).
+- AI cleanup keeps light parts inside an object (can labels, bed sheets): the background is now a flood fill from the border, plus large enclosed areas of pure background color (gaps between table legs). Needs scipy (`tools/art/ai/clean.py`, `make.py`). All saved tries were cleaned again.
 - Wrote `handover.md` for the next session (state, decisions, next steps: AI art integration, can cleanup fix, then belt logistics A1).
 - First-hour help: the goals panel shows the next step toward the first open goal (walls, close gaps, roof, bed, well, raid prep, research, generator, wires), from the colony's state (`packages/sim/src/goals.ts` `goalHint`, `packages/client/src/ui/Hud.tsx`, `ui/store.ts`, `main.ts`, `style.css`, `packages/data/i18n/en.json`).
 - AI sprites: first full run of 10 sprites (44 tries) in `art/ai/` with a pick page; the wall and the can use their own full prompts (`own_style`) because the shared style made the wall a crate with a face (`tools/art/ai/make.py`, `sprites.json`).

@@ -3,10 +3,13 @@
  * changes palette or sprite size (settings). "16" = hand-pixeled 16 px grids drawn 2x on a
  * 32 px tile; "32" = the same grids doubled with Scale2x (smoother edges); "hybrid" = a crisp
  * 16 px world (ground, floors, structures) with smooth 32 px items and characters.
+ * AI-drawn sprites (aiArt.ts) replace the grids where they exist: things in "32", items and
+ * characters in "hybrid" and "32".
  */
 import { Texture } from "pixi.js";
 import { CREATURES, FLOORS, ITEMS, PALETTES, parseGrid, scale2x, SHIRTS, terrainGrid, TERRAIN_VARIANTS, THINGS, lineVariant, rotateGrid, thingGrid, TURN_IN_LINE, wallVariant } from "@wc/data";
 import type { Registry } from "@wc/sim";
+import { aiTexture, type AiArt } from "./aiArt.ts";
 
 /** World units per tile. Sprites are drawn to this size whatever their pixel size. */
 export const TILE = 32;
@@ -39,7 +42,8 @@ export interface TextureSet {
   desig: Texture[];
   /** Survivor textures, one per shirt color. */
   survivors: Texture[];
-  raider: Texture;
+  /** Raider looks, one is chosen per raider. */
+  raiders: Texture[];
   creatures: Record<string, Texture>;
   shadow: Texture;
 }
@@ -90,8 +94,12 @@ function fallback(color: string, glyph: string): Texture {
   });
 }
 
-export function makeTextures(reg: Registry, art: ArtSettings): TextureSet {
+export function makeTextures(reg: Registry, art: ArtSettings, ai: AiArt = new Map()): TextureSet {
   const colors = PALETTES[art.palette] ?? PALETTES.rust;
+  const palette = PALETTES[art.palette] ? art.palette : "rust";
+  /** AI looks for an id: things only at "32", details (items, characters) at "hybrid" and "32". */
+  const aiWorld = (id: string) => (art.size === "32" ? ai.get(id) : undefined);
+  const aiDetail = (id: string) => (art.size !== "16" ? ai.get(id) : undefined);
   // World art (ground, floors, structures) and detail art (items, characters) can differ in size.
   const prepGrid = (g: number[][]) => (art.size === "32" ? scale2x(g) : g);
   const prep = (rows: string[]) => prepGrid(parseGrid(rows));
@@ -99,6 +107,8 @@ export function makeTextures(reg: Registry, art: ArtSettings): TextureSet {
 
   const terrain = reg.terrain.list.map((d) => Array.from({ length: TERRAIN_VARIANTS }, (_, v) => gridTexture(prepGrid(terrainGrid(d.id, v)), colors)));
   const things = reg.things.list.map((d) => {
+    const look = aiWorld(d.id)?.[0];
+    if (look && !d.wall && !d.conduit) return aiTexture(look, palette);
     const grid = thingGrid(d.id, ...d.footprint);
     return grid ? gridTexture(prepGrid(grid), colors) : fallback(d.color, d.glyph);
   });
@@ -111,16 +121,29 @@ export function makeTextures(reg: Registry, art: ArtSettings): TextureSet {
   const wireId = reg.things.list.find((d) => d.conduit && THINGS[d.id])?.id;
   const stubs = wireId ? Array.from({ length: 16 }, (_, m) => gridTexture(prepGrid(lineVariant(parseGrid(THINGS[wireId]), m, true)), colors)) : [];
   const turned = reg.things.list.map((d) => (TURN_IN_LINE.has(d.id) && THINGS[d.id] ? gridTexture(prepGrid(rotateGrid(parseGrid(THINGS[d.id]))), colors) : null));
-  const thingsTurned = reg.things.list.map((d) =>
-    d.footprint[0] !== d.footprint[1] && THINGS[d.id] ? gridTexture(prepGrid(rotateGrid(thingGrid(d.id, ...d.footprint)!)), colors) : null,
-  );
-  const items = reg.items.list.map((d) => (ITEMS[d.id] ? gridTexture(prepDetail(ITEMS[d.id]), colors) : fallback(d.color, d.glyph)));
+  const thingsTurned = reg.things.list.map((d) => {
+    const look = aiWorld(d.id)?.[0];
+    if (look && d.footprint[0] !== d.footprint[1]) return aiTexture(look, palette, true);
+    return d.footprint[0] !== d.footprint[1] && THINGS[d.id] ? gridTexture(prepGrid(rotateGrid(thingGrid(d.id, ...d.footprint)!)), colors) : null;
+  });
+  const items = reg.items.list.map((d) => {
+    const look = aiDetail(d.id)?.[0];
+    if (look) return aiTexture(look, palette);
+    return ITEMS[d.id] ? gridTexture(prepDetail(ITEMS[d.id]), colors) : fallback(d.color, d.glyph);
+  });
   const floors = reg.floors.list.map((d) => (FLOORS[d.id] ? gridTexture(prep(FLOORS[d.id]), colors) : fallback(d.color, "=")));
   const survivorGrid = prepDetail(CREATURES.survivor);
-  const survivors = SHIRTS.map(([a, b, c]) => gridTexture(survivorGrid, colors, { 8: a, 9: b, 10: c }));
-  const raider = gridTexture(prepDetail(CREATURES.raider), colors);
+  const aiPeople = aiDetail("survivor");
+  const survivors = aiPeople?.length
+    ? aiPeople.map((c) => aiTexture(c, palette))
+    : SHIRTS.map(([a, b, c]) => gridTexture(survivorGrid, colors, { 8: a, 9: b, 10: c }));
+  const aiRaiders = aiDetail("raider");
+  const raiders = aiRaiders?.length ? aiRaiders.map((c) => aiTexture(c, palette)) : [gridTexture(prepDetail(CREATURES.raider), colors)];
   const creatures: Record<string, Texture> = {};
-  for (const id of ["rad_rat", "glow_hound"]) creatures[id] = gridTexture(prepDetail(CREATURES[id]), colors);
+  for (const id of ["rad_rat", "glow_hound"]) {
+    const look = aiDetail(id)?.[0];
+    creatures[id] = look ? aiTexture(look, palette) : gridTexture(prepDetail(CREATURES[id]), colors);
+  }
 
   const desig = ["", "S", "M", "C", "X", "D"].map((glyph, i) =>
     drawn(TILE, (g) => {
@@ -143,7 +166,7 @@ export function makeTextures(reg: Registry, art: ArtSettings): TextureSet {
     g.ellipse(16, 29, 9, 3, 0, 0, Math.PI * 2);
     g.fill();
   });
-  return { terrain, things, walls, lines, stubs, turned, thingsTurned, items, floors, desig, survivors, raider, creatures, shadow };
+  return { terrain, things, walls, lines, stubs, turned, thingsTurned, items, floors, desig, survivors, raiders, creatures, shadow };
 }
 
 /** Stable variant per tile so the ground does not repeat. */

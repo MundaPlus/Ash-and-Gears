@@ -192,7 +192,7 @@
  },
  {
   "id": "scrap_bed",
-  "footprint": [1, 2],
+  "footprint": [2, 2],
   "kind": "furniture",
   "color": "#d6ab6b",
   "glyph": "B",

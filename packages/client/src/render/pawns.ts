@@ -44,8 +44,9 @@ export class PawnRenderer {
   private textureFor(p: Pawn) {
     if (p.faction === "colony") return this.tex.survivors[p.id % this.tex.survivors.length];
     const creature = this.game.reg.content.creatures[p.creature];
-    if (creature.behavior === "human") return this.tex.raider;
-    return this.tex.creatures[creature.id] ?? this.tex.raider;
+    const raider = this.tex.raiders[p.id % this.tex.raiders.length];
+    if (creature.behavior === "human") return raider;
+    return this.tex.creatures[creature.id] ?? raider;
   }
 
   /** New textures (palette or size changed). */

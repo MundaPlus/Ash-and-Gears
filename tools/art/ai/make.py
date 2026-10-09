@@ -1,7 +1,7 @@
 """
 AI sprites for Ash & Gears: ComfyUI (superPixelartXL) draws each try, clean.py shrinks it to game size
 with its own 16 colors (method B), and a pick page shows all tries side by side.
-Usage: uv run --with pillow --with numpy python tools/art/ai/make.py [--only id,id] [--server URL]
+Usage: uv run --with pillow --with numpy --with scipy python tools/art/ai/make.py [--only id,id] [--server URL]
 Output: art/ai/<id>/raw_<n>.png, art/ai/<id>/<n>.png and art/ai/pick.html. Existing tries are kept.
 """
 import argparse, base64, io, json, os, subprocess, sys, time, urllib.parse, urllib.request
