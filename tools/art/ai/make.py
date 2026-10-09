@@ -63,7 +63,8 @@ for sid, s in spec["sprites"].items():
     for n in range(1, s["tries"] + 1):
         raw, small = os.path.join(d, f"raw_{n}.png"), os.path.join(d, f"{n}.png")
         if not os.path.exists(raw):
-            draw(f'{spec["style"]}, {s["prompt"]}', f'{s.get("neg", "")}, {NEG}', pw, ph, n * 13 + 5, raw)
+            prompt = s["prompt"] if s.get("own_style") else f'{spec["style"]}, {s["prompt"]}'
+            draw(prompt, f'{s.get("neg", "")}, {NEG}', pw, ph, n * 13 + 5, raw)
             print("drew", sid, n, flush=True)
         if not os.path.exists(small):
             subprocess.run([sys.executable, os.path.join(HERE, "clean.py"), raw, str(w), str(h), small] + (["texture"] if s.get("texture") else []), check=True)

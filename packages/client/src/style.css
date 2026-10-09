@@ -189,3 +189,6 @@ button.primary { background: var(--rust); color: var(--ink); border-color: var(-
 
 /* Clean view for trailers: ?cinematic=1 */
 body.cinematic #ui { display: none; }
+
+/* Next-step help under the goals (first hour). */
+.goals .hint { margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(239, 216, 164, 0.25); color: #e3c25a; font-size: 12px; }

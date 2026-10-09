@@ -32,6 +32,11 @@ export function Hud() {
               {g.done ? "✔" : "○"} {t(`goal.${g.id}`)}
             </p>
           ))}
+          {s.goalHint && (
+            <p class="hint" data-testid="goal-hint">
+              {t(s.goalHint)}
+            </p>
+          )}
         </aside>
       )}
       <PawnPanel />

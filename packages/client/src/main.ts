@@ -580,6 +580,10 @@ async function boot() {
         season: t(`season.${tm.season}`, { year: tm.year }),
         weather: game.weather.kind,
         goals: sim.GOALS.map((id) => ({ id, done: !!game.goals[id] })),
+        goalHint: (() => {
+          const next = sim.GOALS.find((id) => !game.goals[id]);
+          return next ? sim.goalHint(game, next) : null;
+        })(),
         radWarning: game.weather.next?.kind === "rad_cloud" ? Math.max(0, Math.ceil((game.weather.next.at - game.tick) / game.ticksPerHour)) : null,
         fps: fpsTime > 1 ? Math.round(fpsFrames / fpsTime) : store.state.fps,
         colonists: colonists(),

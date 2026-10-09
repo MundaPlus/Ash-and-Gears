@@ -108,6 +108,8 @@ export interface UiState {
   volume: { music: number; sfx: number };
   uiScale: number;
   goals: { id: string; done: boolean }[];
+  /** i18n key: the next step toward the first open goal. */
+  goalHint: string | null;
   /** Hours until a radiation cloud, or null. */
   radWarning: number | null;
 }
@@ -142,6 +144,7 @@ class Store {
     volume: { music: 0.6, sfx: 0.7 },
     uiScale: 1,
     goals: [],
+    goalHint: null,
     radWarning: null,
   };
   private listeners = new Set<Listener>();

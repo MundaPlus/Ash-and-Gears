@@ -1,6 +1,8 @@
 # Changelog
 
 ## 2026-10-10
+- First-hour help: the goals panel shows the next step toward the first open goal (walls, close gaps, roof, bed, well, raid prep, research, generator, wires), from the colony's state (`packages/sim/src/goals.ts` `goalHint`, `packages/client/src/ui/Hud.tsx`, `ui/store.ts`, `main.ts`, `style.css`, `packages/data/i18n/en.json`).
+- AI sprites: first full run of 10 sprites (44 tries) in `art/ai/` with a pick page; the wall and the can use their own full prompts (`own_style`) because the shared style made the wall a crate with a face (`tools/art/ai/make.py`, `sprites.json`).
 - Renamed the game to Ash & Gears in the title screen, browser tab, presentation page and README (`packages/data/i18n/en.json`, `packages/client/index.html`, `public/site/index.html`, `README.md`).
 - Fair-but-dangerous combat (spec 12): downed survivors bleed at half speed and slower again near death, and a hit that would destroy a standing survivor's head or torso downs them instead unless the blow is huge. Headless runs on four seeds: deaths from fights dropped from 2-3 per seed to none (`packages/sim/src/health.ts`).
 - AI sprite pipeline (`tools/art/ai/`): `make.py` asks ComfyUI (superPixelartXL on 192.168.31.205) for several tries per sprite from `sprites.json`, `clean.py` shrinks each to game size at 32 px per tile with its own 16 colors and a dark outline (method B), and `art/ai/pick.html` shows all tries. Raw model pictures stay out of git (`.gitignore`) — the user wants a better way to make pixel art than texel-studio; trial page: https://claude.ai/artifact/TseYAmYTCo8XXAwyyfXRQ5.
