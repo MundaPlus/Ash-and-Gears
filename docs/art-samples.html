@@ -1,0 +1,189 @@
+<title>Wasteland Colony Art Samples</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil+Display:wght@700;800&family=Barlow:wght@400;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one column. Controls, then a big mock game scene, then the three palettes side by side, then the sprite sheet. */
+:root {
+  --bg: #eceef0; --surface: #f8f9fa; --fg: #1d2125; --muted: #58616a; --line: #cdd3d8; --rust: #a8481a;
+  --display: "Big Shoulders Stencil Display", Impact, "Arial Narrow", sans-serif;
+  --body: "Barlow", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #14171a; --surface: #1c2024; --fg: #e2e5e8; --muted: #9aa3ab; --line: #2e343a; --rust: #e27b44; color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #14171a; --surface: #1c2024; --fg: #e2e5e8; --muted: #9aa3ab; --line: #2e343a; --rust: #e27b44; color-scheme: dark; }
+body { background: var(--bg); color: var(--fg); font: 16px/1.55 var(--body); }
+.wrap { max-width: 1100px; margin: 0 auto; padding-inline: 16px; padding-block: 32px 64px; display: grid; gap: 28px; }
+.eyebrow { font: 600 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font: 800 clamp(40px, 7vw, 72px)/.95 var(--display); margin: 10px 0 10px; text-wrap: balance; }
+h2 { font: 700 28px/1.1 var(--display); margin: 0 0 12px; }
+p { max-width: 66ch; margin: 0; }
+.muted { color: var(--muted); }
+.controls { display: flex; flex-wrap: wrap; gap: 20px 32px; align-items: flex-end; position: sticky; top: env(safe-area-inset-top, 0px);
+  background: var(--bg); padding-block: 12px; border-bottom: 1px solid var(--line); z-index: 2; }
+fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 6px; }
+legend { font: 600 12px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+.seg { display: flex; flex-wrap: wrap; border: 1px solid var(--line); }
+.seg label { cursor: pointer; }
+.seg input { position: absolute; opacity: 0; }
+.seg span { display: block; padding: 9px 14px; font: 600 14px/1 var(--mono); border-right: 1px solid var(--line); background: var(--surface); }
+.seg label:last-child span { border-right: 0; }
+.seg input:checked + span { background: var(--fg); color: var(--bg); }
+.seg input:focus-visible + span { outline: 2px solid var(--rust); outline-offset: -2px; }
+.scene { display: grid; gap: 8px; }
+canvas { image-rendering: pixelated; image-rendering: crisp-edges; display: block; max-width: 100%; height: auto; border: 1px solid var(--line); }
+.cmp { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.cmp figure { margin: 0; display: grid; gap: 6px; min-width: 0; }
+.cmp figure.sel figcaption { color: var(--rust); }
+figcaption { font: 600 13px/1.3 var(--mono); }
+.swatches { display: flex; flex-wrap: wrap; gap: 0; }
+.swatches i { width: 18px; height: 14px; display: block; }
+.sheet { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--line); padding: 12px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.card .img { height: 128px; display: grid; place-items: center;
+  background-color: var(--bg); background-image: linear-gradient(45deg, var(--line) 25%, transparent 25%, transparent 75%, var(--line) 75%),
+  linear-gradient(45deg, var(--line) 25%, transparent 25%, transparent 75%, var(--line) 75%); background-size: 16px 16px; background-position: 0 0, 8px 8px; }
+.card img { image-rendering: pixelated; width: 128px; height: 128px; }
+.card b { font: 600 13px/1.2 var(--mono); }
+.card small { color: var(--muted); font-size: 13px; line-height: 1.35; }
+.missing { font: 400 12px/1.3 var(--mono); color: var(--muted); }
+.pick { border: 1px solid var(--rust); padding: 14px 16px; background: var(--surface); }
+.pick code { font: 600 14px var(--mono); }
+</style>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Gate 2 · Art style choice</div>
+    <h1>Pick the look of the wasteland</h1>
+    <p class="muted">Two sample sources. <b>Hand-pixeled</b>: drawn by Claude as palette grids; the 32 px versions are the 16 px drawings doubled with Scale2x. <b>texel-studio</b>: painted by the local AI agent (slow on the shared GPU, so this set may be incomplete). Every sprite is drawn once in the Rust palette; the other palettes swap the colors pixel for pixel. Pick a palette and a size. The source can be mixed later.</p>
+  </header>
+
+  <div class="controls">
+    <fieldset><legend>Source</legend><div class="seg" id="src"></div></fieldset>
+    <fieldset><legend>Palette</legend><div class="seg" id="pal"></div></fieldset>
+    <fieldset><legend>Sprite size</legend><div class="seg" id="size">
+      <label><input type="radio" name="size" id="size-16" value="16"><span>16 px</span></label>
+      <label><input type="radio" name="size" id="size-32" value="32" checked><span>32 px</span></label>
+      <label><input type="radio" name="size" id="size-mixed" value="mixed"><span>16 world + 32 icons</span></label>
+    </div></fieldset>
+  </div>
+
+  <section class="scene">
+    <h2>In a game scene</h2>
+    <p class="muted">Every option is drawn at the same tile size on screen (64 px). 16 px sprites are scaled 4×. 32 px sprites are scaled 2×. The bar below the map is the item hotbar.</p>
+    <canvas id="main" width="768" height="600"></canvas>
+  </section>
+
+  <section>
+    <h2>All palettes at this size</h2>
+    <div class="cmp" id="cmp"></div>
+  </section>
+
+  <section>
+    <h2>Sprite sheet</h2>
+    <p class="muted" id="sheetnote"></p>
+    <div class="sheet" id="sheet" style="margin-top:12px"></div>
+  </section>
+
+  <div class="pick">Reply in chat with your pick, for example <code>rust + 32</code> or <code>ash + mixed, hand-pixeled</code>. You can also ask for changes: other colors, other prompts, or a retry of single sprites.</div>
+</div>
+<script>
+const D = {"palettes":{"rust":["#1b1714","#3a2e26","#5c4636","#84603f","#b0834e","#d6ab6b","#efd8a4","#f6efe0","#6b2b1a","#a8481a","#d9742e","#4a5a3a","#7a8a4e","#3d4a52","#6f8088","#9fd14a"],"toxic":["#0f1410","#1f2a1e","#34452f","#4f6644","#73895c","#a3b57a","#d4dca8","#f1f3dc","#5a3a22","#8c6236","#e9533b","#4f8a2a","#7fd12a","#4d6670","#8aa1a6","#c6ff3a"],"ash":["#121519","#232930","#39424c","#56616d","#7b8794","#a6b0ba","#d0d6dc","#f0f2f4","#8a3b2e","#c2603f","#e3c25a","#4f6b5a","#8fae7e","#3b4f63","#6d86a0","#b8e05a"]},"sizes":[16,32],"sprites":[{"id":"survivor","type":"character","prompt":"A scruffy human survivor seen from the front, ragged jacket, gas mask hanging at the neck, backpack"},{"id":"glow_hound","type":"character","prompt":"A mutant dog with patchy fur and glowing green sores, side view, hunched and hungry"},{"id":"raider","type":"character","prompt":"A wasteland raider seen from the front, spiked shoulder pad made of a car tire, pipe weapon"},{"id":"dirt","type":"block","prompt":"Seamless tileable dry cracked dirt ground with small pebbles, top-down"},{"id":"scrap_wall","type":"block","prompt":"Seamless tileable wall made of rusty corrugated metal sheets and bolts"},{"id":"rubble","type":"icon","prompt":"A pile of broken concrete rubble with bent rebar sticking out"},{"id":"generator","type":"icon","prompt":"A small scrap diesel generator machine with a fuel can, pipes and a red warning light"},{"id":"conveyor","type":"block","prompt":"Seamless tileable conveyor belt segment running left to right, dark rubber belt with metal rollers on the sides"},{"id":"glowcorn","type":"icon","prompt":"A mutant corn plant with faintly glowing yellow-green cobs"},{"id":"canned_food","type":"icon","prompt":"A dented tin can of food with a faded torn label"},{"id":"water_jug","type":"icon","prompt":"A plastic water jug, half full of slightly murky water"}],"images":{"handmade":{"rust":{"16":{"survivor":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAjElEQVR4nGNgoBWQFhf5j4xJ1tySYI+CiTYEWfOGZj8wJskQmAHXVmejYJIMAGnARRPtDXQXkBWQ+Q0d/229gkjTDIu2myV6/1d4SIExiE1UdIIUVHX5wTUhGwCiQXJ4DUE2ABsmygBQgGEzBCRGVGDCXGGlp4aCCdqObgi6ASTHBEgTMpusqMTFRwYAQOzFgrOdg+0AAAAASUVORK5CYII=","glow_hound":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAYklEQVR4nGNgGDlAWlzkPzImWXNLgj0cYzUEl8nImjc0+/2ff9ELbgiGInRnwjCy7TCc39CBMASbIphN2DDWMMBlEy7DsIYBIZthGKaeaBeQ7A1c8UxIfpAYgC+ZkpWMCQEAosvCJpGDJroAAAAASUVORK5CYII=","raider":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAlUlEQVR4nGNgoBWQFhf5j4xJ1pitLfXfSk8NjEFsogxC14iOYQbhNSC/oeM/uvNhGCZH0BUg2+Zf9ILbDGMTHRYwQ5AxUTYjBxS2WMAZK+h+BAXWCg9UDBKDydt6BeE3AKYBGYPEcBqAbAiIjcsAkBxWzegGXVudjeEKEB8kTpQBIEXosQASo200YjMAmU1WhsLFRwYAIHPC9llb7vkAAAAASUVORK5CYII=","dirt":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAcElEQVR4nGNoSbD/j4w3NPv9RxfDJ85ASEGMmxlewxiwaSIFM2CzGZutuOQIuuDa6mz8LiDWZlwBS1QY4ApguAvwKSAUDhguINUbeL1AjMuITge4EhQDMVFFlguIDViSkjI2lzKQE/LIerC6gJR0AQDNYyY/j/XhugAAAABJRU5ErkJggg==","scrap_wall":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAZElEQVR4nGOQFhf5TwlmABE3S/TAeIWHFElsuAEgwfyGDjBNCpt6LoBJwCSJZVPPBRTHQrY2wlmksFEMgPkPmY0c6jBxmBiIj2EAiEZmE6Kp7wWyXUCVWCAHoxhgpadGEqaaFwDExMaMZfr+EgAAAABJRU5ErkJggg==","rubble":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAhklEQVR4nGNgGN5AWlzkPwiTrTm/oeM/jE2WzSADYGyiDQEpfH9jCRhfW50NNgREg/gEDYJpBmmA4Q3NfhhiWA1C1wzSCFMIEweJoRuEYgC6ZlgYwMRwGoDNdnRvgDAsPJAtwWo7zAB0jTA+DIMNQHcisbglwR5hALoEsRjFC+RgklInLgAABggsvZ5dbj8AAAAASUVORK5CYII=","generator":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAbklEQVR4nGNgoAWQFhf5j4zJMsDWKwiM0Q3AaSi6rcgGIOObJXqYBoAE8hs6iMI4bYdJ4sNEGYDPZnRLcBqAj17hIQXGeA0g5AKMgCQ1DDBcQWosYDUAFu+EMNZUCjMAn0HIagimQnyYUDagPwAADAcPXUkvg1cAAAAASUVORK5CYII=","conveyor":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAS0lEQVR4nGOQFhf5TwlmsPUK+p/f0EEWBukFGwAyiVyagWIvWOmp/acEgw2IcTP7D6NJZVPHBciuIJU9GgZqVEhIFCdlijMTpV4AAK+snpTs5aajAAAAAElFTkSuQmCC","glowcorn":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAa0lEQVR4nGNgoCWQFhf5T5Hmqi6//yQZgqwYmwF4DUPXQIiP1wAQnn/RC45hYgS9hKwI3QCiwwOmGJsBRGsmywXoipANICoQGSiNRkIuIhlQZABIk1eUFdgAEE2yISANLQn2KJgsQ5AxLnUA4zWfUoGPS28AAAAASUVORK5CYII=","canned_food":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAWUlEQVR4nGNgGJ5AWlzkPzZMtOb8ho7/tl5BKBgkRpQhMAOwYZIMQHc+SQbcLNH7v8JDCgWDxEgy4P2NJSiYLAOurc4GY7INoMgFFIUBxbFAUUJioDQpkwoAyoW1A4z0C3IAAAAASUVORK5CYII=","water_jug":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAYklEQVR4nGNgGLRAWlzkPwyTpfn9jSVgTLYB6C4g2kUgBd/eP0DBMI0wNkma0Q0h2wAQzm/oIGwASBE+TNAAW68gvJgoA6q6/DA0wsTo4wJ0W4k2gJAriE6V6CmR7DxBDAAASI7bBulOz2EAAAAASUVORK5CYII="},"32":{"survivor":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABB0lEQVR4nGNgGAVkAGlxkf/Y8IBZTDeHwCxoSbDHimnmAEIW09whuBywodkPjGnqAEKW09wR2BxwbXU2VkxzB+CyGN0RVM0RMINgFhDLh4lR7ACYI0h1ANUsZ8ASCvgwTQsjQo6gS5EMsyS/oQOMbb2CwJju9QFdHYBe2dws0fu/wkMKBYPEqF4pYavpQBbhcgA2R1DkEJgBVV1+GBbhcgCMD9JDkQOQLSfXARQ5ApcDiMVUdwApjkDWQ7EDQAUMuQ6guHAixxFUs5wBLRvCDLbSU8OL0YOequUBsQ6gWZsQhAk5gGbNc1IdQFXLcTkAJk5XB8AsRJejqwPQLaBqBUSOA4iRxwUAWBT8S/OTcroAAAAASUVORK5CYII=","glow_hound":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAuElEQVR4nGNgGAWjYBTQAEiLi/zHhgfMYro5BGZBS4I9Cqa5A3BZjM8hRBlIiQM2NPuB8fyLXmBMlANIjTNkNei+xeYAgo5ANojYBEVs8MNwfkMHdkdgM4jalsMcgOwIkhMSepASi0lKfLR0AF5HkBOkpDiMaqFASciQHArkBjk6Rjd/6DiA2pim6YAqluNzAKn1A9kOwOYISisokqviUQcMSgcQrZkK+rE2TuipH8UQkjVSSf/IAAAOEgIVSRV+tgAAAABJRU5ErkJggg==","raider":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABKUlEQVR4nO2WQQoCMQxFewhB0L0bwQMI7mWWXsOFV3DpLdwKnsaN1xnpQKB+kjZJ23FjIQy0yfzXtE0bwr852nq5GDn7mXB3EBQ4b1fjfrf5stjXHISbHSeeg6gC0YhqYKrFvQBVEBR4ud4m025AKc6dhRYALvEAm5BSe38Nk2HKsb/5afAAVAtLECXrVhVxOTjhLgUoN2bxNQtzwVoA1z2RO8dUWB7HvJEfd3QPw0kGKBUSEs9BpD4YH8WrAFCAs9THDFBaAkxxDgIBVOLSxqExKwDFkbgKAEHSPm6jWQDU4ghC3/fzbAKI/tGqANJs0A9LEByAWzwFoJmU7gHya1aWEUID0FQ8CO+C0oXU5Tq2ADQVlwAC807oDkCCODYrgOaNMCuAZlxqH8L090d3E1YOAAAAAElFTkSuQmCC","dirt":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAoElEQVR4nNWVsRGAIAxFmcrWztIJLOwdQ7excRrX0TvuLJFPEsineB2Ed/m5EI51fP649jmSOyc9H+gESgss0xCRivEJtMZfAG052urSe/4C2hbe5xZxm4FqAtKWo3zR8wpICzafATMBaQGUVKQ8AqUXreAXSGEVWb8C2sjMF5FaQPupqCNwF0CxXlj9CaCgkfII1F65qXd4BHLU+q7dBV5GSpj5VG1hVwAAAABJRU5ErkJggg==","scrap_wall":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAyklEQVR4nM2VvQmAQAyFHUIQtLcRbgAncBcLGwewdBRXchpF4eRxfwomlxSvuHcJ+bjEWDRVeUiqUAWwz+bRNtS30KPygwCxRDeZyvcAbNC0rLcwkcPXByDegpzFkwDuk3H5egHEWiC+iFSsYnGAsfOH5fKo/SAABuDwUPkxCA8glvR11brxGGfvLn0CwAQKALx/BcDiIf/vWS9Ajq8gOYTiAG9DyNYCC5FjBvSuYnEA99m5lPwX5IYIAvSmZVESwEJwFUcIvUMooROMWQgQX8wX4QAAAABJRU5ErkJggg==","rubble":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA/0lEQVR4nO2UsQ0CMQxFbwgkCoZhA2agp2AFJCgYhI7mpkFswQiHgmRkku/YIcFXEEu/uEsu7/kSZRh69epVUavlYqLMBp5FgoD7w3mK37mACY4EfiqBBFy2AkFIQJJoKkILPu6Xd27X3YdEeA4JY81EEJjgFC5AY0jiK5FYgIMp43HzCofHc4pFLGAkoM01i2gCARgvFs8lMU0kC5e6RfuL4JIAlxAFcr8b3QNoXrEA70jrngsgcJVA7vdbDmRIfD9IZ6gILgmgzpEAHxcFNIC1YyQlCmj7jgS0js0C6OBpH9fmtF2nAl5gSiJg/bBV4BZ4w5ND6B3xGnYH/3U9Aex/q2D7D3pEAAAAAElFTkSuQmCC","generator":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA00lEQVR4nGNgGAUkAGlxkf/Y8IBaTjdHIFtm6xUExsQ6gGJHYrOcGEeQHVL4ghqfA7DhmyV6YEyUAwgZRqkDiPZ5fkMHVTBJwU9ty9EdQZbviYkSbJgqDiDXcnzmkO0AcoIcn0dIcgC5cU4oJEl2ALn8FR5ScDzgDkB2BN2jgGCJSOtEiO4ADEfQOhsSTAv4ChFyLScpLZAb58RGyYA7ANkReKMAvbqlFBOKrsHrAHIdhMscrHkfWzbEppEc3yKL4bUY3QG0wEQ5gBaOINriUTCiAQCmrjWLKiOxYwAAAABJRU5ErkJggg==","conveyor":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAjklEQVR4nGOQFhf5P5CYYcAdYOsV9B+E8xs66Iph9g6IA2B2ojgAFiT04sPEGJAl6emAwZMIB9wBVnpq/wcSDx4HxLiZgTE6n9big8cBAx4Fg8YB6EFFa/HB54ABj4IBc8CAZ8MBd8CAR8GgccCAZ0O6O2DAGyQD7oABb5QOimb5oOiYDFjXbMAT4UA7AACp3Hkv9UoaRgAAAABJRU5ErkJggg==","glowcorn":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA2klEQVR4nO3Wuw2EMAwG4AyBRMEmNPQUDEDFHNRULMFMTAQKEshYieM83SSSpZO4+P8uiS4oVUfg6Nrm0iUaLobQoes+PVUc8P5qCMiCsDXmAqJg1B5zANFnhNpjLiD4jLgCYp8HA2Ad5/gr03eiDilsgBE43ITAc73CTasAES6AaY43gFoJLiDZfwNuzAUkCRcHiG2B6CF0NbIBOHODAHgyBYA9kqyC2GWkpK9jDiz7C0kFUOG267oYYJz7D6A/FwHAcAyAiGyQt/m2DGSJI4oAXJUlnIvw7XcDgoCH+sFJezAAAAAASUVORK5CYII=","canned_food":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAj0lEQVR4nGNgGAWjYBSQAKTFRf4TgwfMYpo5BGZgfkPHf1uvILwYpIaqDkC2HIbxWQ7DVHMENgcQg4e3A3AlOro4gFDKp5kDbpbogfEKDym8GKZu+Drg/Y0lePHIccC11dkoeOQ5YMCjYMAcMODZcMAcMOBF8aBxADEtIpq2iujeJGMYDI1SUh1CdYuHNQAAgCjN7SQd61QAAAAASUVORK5CYII=","water_jug":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAApklEQVR4nGNgGAWjgAwgLS7yHxkPmMV0dwTIovc3lqBgujkAZtGAO4CYKKB69BCyHNkSmqQRmCHf3j/AirFZiC5HE4vxOWTAHUBxFJBqOSGH0NUBIJzf0DFwDgBZDsMUOwDZMHLw0HeArVcQRXj4OKCqyw+MCVmIrm74OGDAo2DQOYDYKKFKZUSuAyhuC1AaDVRvEdHdYnQHkIqp5gBSHUJ1i4c1AACRAF6AiQIc+wAAAABJRU5ErkJggg=="}},"toxic":{"16":{"survivor":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAjElEQVR4nGNgoBXgFxH4j4xJ1uyf5oKCiTYEWXNxZwwYk2QIzIDFW6tQMEkGgDTgoon2BroLyArIroXL/vumFZCmGRZtL4Ot//ckmYExiE1UdIIU1F/UgmtCNgBEg+TwGoJsADZMlAGgAMNmCEiMqMCEuUJeSw4FE7Qd3RB0A0iOCZAmZDZZUYmLjwwAFsrBKVkfXAEAAAAASUVORK5CYII=","glow_hound":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAYklEQVR4nGNgGDmAX0TgPzImWbN/mgscYzUEl8nImos7Y/4f+28FNwRDEbozYRjZdhjuWrgMYQg2RTCbsGGsYYDLJlyGYQ0DQjbDMEw90S4g2Ru44pmQ/CAxAF8yJSsZEwIA8jK2thG8ryUAAAAASUVORK5CYII=","raider":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAlklEQVR4nGNgoBXgFxH4j4xJ1hhlpfRfXksOjEFsogxC14iOYQbhNaBr4bL/6M6HYZgcQVeAbDv23wpuM4xNdFjADEHGRNmMHFDYYgFnrKD7ERRYPUlmKBgkBpP3TSvAbwBMAzIGieE0ANkQEBuXASA5rJrRDVq8tQrDFSA+SJwoA0CK0GMBJEbbaMRmADKbrAyFi48MAPCQwJaPAbnqAAAAAElFTkSuQmCC","dirt":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAcElEQVR4nGPwT3P5j4yLO2P+o4vhE2cgpMDEVR+vYQzYNJGCGbDZjM1WXHIEXbB4axV+FxBrM66AJSoMcAUw3AX4FBAKBwwXkOoNvF4gxmVEpwNcCYqBmKgiywXEBixJSRmbSxnICXlkPVhdQEq6AAAhrvw2k3xyYQAAAABJRU5ErkJggg==","scrap_wall":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAZUlEQVR4nGPgFxH4TwlmABEvg63BuCfJjCQ23ACQYNfCZWCaFDb1XACTgEkSy6aeCyiOhSgrJbjppLBRDID5D5mNHOowcZgYiI9hAIhGZhOiqe8Fsl1AlVggB6MYIK8lRxKmmhcAkPzG6nlLB5kAAAAASUVORK5CYII=","rubble":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAhklEQVR4nGNgGN6AX0TgPwiTrblr4bL/MDZZNoMMgLGJNgSk8MqdFWC8eGsV2BAQDeITNAimGaQBhos7YzDEsBqErhmkEaYQJg4SQzcIxQB0zbAwgInhNACb7ejeAGFYeCBbgtV2mAHoGmF8GAYbgO5EYrF/mgvCAHQJYjGKF8jBJKVOXAAAJbcgaXoHytYAAAAASUVORK5CYII=","generator":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAbklEQVR4nGNgoAXgFxH4j4zJMsA3rQCM0Q3AaSi6rcgGIOOXwdaYBoAEuhYuIwrjtB0miQ8TZQA+m9EtwWkAPronyQyM8RpAyAUYAUlqGGC4gtRYwGoALN4JYaypFGYAPoOQ1RBMhfgwoWxAfwAAQf0gHOWDyi8AAAAASUVORK5CYII=","conveyor":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAS0lEQVR4nGPgFxH4Twlm8E0r+N+1cBlZGKQXbADIJHJpBoq9IK8l958SDDbAxFX/P4wmlU0dFyC7glT2aBjIUSEhUZyUKc5MlHoBAKAck7YgzaA3AAAAAElFTkSuQmCC","glowcorn":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAa0lEQVR4nGNgoCXgFxH4T5Hm+ota/0kyBFkxNgPwGoaugRAfrwEgfOy/FRzDxAh6CVkRugFEhwdMMTYDiNZMlgvQFSEbQFQgMlAajYRcRDKgyACQJv8uLbABIJpkQ8AGpLmgYLIMQca41AEAzCuiVJrIACMAAAAASUVORK5CYII=","canned_food":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAWklEQVR4nGNgGJ6AX0TgPzZMtOauhcv++6YVoGCQGFGGwAzAhkkyAN35JBnwMtj6f0+SGQoGiZFkwJU7K1AwWQYs3loFxmQbQJELKAoDimOBooTEQGlSJhUAAKgIuP319VW4AAAAAElFTkSuQmCC","water_jug":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAYklEQVR4nGNgGLSAX0TgPwyTpfnKnRVgTLYB6C4g2kUgBR8/30HBMI0wNkma0Q0h2wAQ7lq4jLABIEX4MEEDfNMK8GKiDKi/qIWhESZGHxeg20q0AYRcQXSqRE+JZOcJYgAAkMPlTi65YoQAAAAASUVORK5CYII="},"32":{"survivor":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABCElEQVR4nGNgGAVkAH4Rgf/Y8IBZTDeHwCzwT3PBimnmAEIW09whuBxQ3BkDxjR1ACHLae4IbA5YvLUKK6a5A3BZjO4IquYImEEwC4jlw8QodgDMEaQ6gGqWM2AJBXyYpoURIUfQpUiGWdK1cBkY+6YVgDHd6wO6OgC9snkZbP2/J8kMBYPEqF4pYavpQBbhcgA2R1DkEJgB9Re1MCzC5QAYH6SHIgcgW06uAyhyBC4HEIup7gBSHIGsh2IHgAoYch1AceFEjiOoZjkDWjaEGSyvJYcXowc9VcsDYh1AszYhCBNyAM2a56Q6gKqW43IATJyuDoBZiC5HVwegW0DVCogcBxAjjwsAACxO6w5V3lbeAAAAAElFTkSuQmCC","glow_hound":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAuElEQVR4nGNgGAWjYBTQAPCLCPzHhgfMYro5BGaBf5oLCqa5A3BZjM8hRBlIiQOKO2PA+Nh/KzAmygGkxhmyGnTfYnMAQUcgG0RsgiI2+GG4a+Ey7I7AZhC1LYc5ANkRJCck9CAlFpOU+GjpALyOICdISXEY1UKBkpAhORTIDXJ0jG7+0HEAtTFN0wFVLMfnAFLrB7IdgM0RlFZQJFfFow4YlA4gWjMV9GNtnNBTP4ohJGukkv6RAQBsINQhd9ZgAQAAAABJRU5ErkJggg==","raider":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABLElEQVR4nO2WsQ0CMQxFswEU1CBRMgAFO7AAJQU1NSMglkBIbMAKrHUoJ1kKX3ZiO8nREMk6KbHvvziJkxD+zdFmi/nA2c+Eu4OgwGG3Hlab5ZfFvuYg3Ow48RxEFYhGVANTLe4FqIKgwOv9OZp2A0px7iy0AHCJB9iElNr3sBsNU479zU+DB6BaWIIoWbeqiMvBCXcpQLkxi69ZmAvWArjuidw5psJyO26zRn7c0d2fzjJAqZCQeA4i9cH4KF4FgAKcpT5mgNISYIpzEAigEpc2Do1ZASiOxFUACJL2cRvNAqAWRxD6Pl4XE0D0j1YFkGaDfliC4ADc4ikAzaR0D5Bfs7KMEBqApuJBeBeULqQu17EFoKm4BBCYd0J3ABLEsUkBNG+ESQE041L7ALET7ImrR+87AAAAAElFTkSuQmCC","dirt":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAoUlEQVR4nNWVsRGAIAxF2cjGEbR2AWsXsHMD53AG59M77iyRTxLIp3gdhHf5uRCWbXr+2M81kjsnPR/oBEoLjPMQkYrxCbTGXwBtOdrq0nv+AtoWXvcRcZuBagLSlqN80fMKSAs2nwEzAWkBlFSkPAKlF63gF0hhFVm/AtrIzBeRWkD7qagjcBdAsV5Y/QmgoJHyCNReual3eARy1Pqu3QVeuPfxAin85CEAAAAASUVORK5CYII=","scrap_wall":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAzElEQVR4nGPgFxH4P5CYYVA54GWwNRz3JJmBMbIYtcSxOgCXRnTN1BLHcABMUdfCZWCMrJEW4oPPAQMeBfS0HK8D0IOMVuKD1wEDFgUDXhANiqJ4wB0QZaWEEXQgMWqLY3UAsgLkxEMtcVyOwHAALk3EFrXo6pHVweRAmCgHIGughgOQ5Qk6ANlybOKU8gevA+iRC/AmwgF3AKFESLMogDmCHmlg8BbFA+4A9GCnFcZbF9DbEVgdIK8lRxOM1wEwR9DKcmRHDN5EOBAYAONSC0r2zT64AAAAAElFTkSuQmCC","rubble":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA/UlEQVR4nO2UwQ3CMAxFuwEcGIk7C3BmAW5sAFsgJNQF2IQjuxQFycgk37FDgnsglv6hTZr33EQZhl69elXUYrWcKLOBZ5Eg4Ol8neJ3LmCCI4GfSiABl61AEBKQJJqK0IL3x/jO5Xb4kAjPIWGsmQgCE5zCBWgMSXwlEgtwMGV/3L7C4fGcYhELGAloc80imkAAxovFc0lME8nCpW7R/iK4JMAlRIHc70b3AJpXLMA70rrnAghcJZD7/ZYDGRLfD9IZKoJLAqhzJMDHRQENYO0YSYkC2r4jAa1jswA6eNrHtdns1qmAF5iSCFg/bBW4Bd7w5BB6R7yG3cF/XU/dWHp3Ao+kIAAAAABJRU5ErkJggg==","generator":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA00lEQVR4nGNgGAUkAH4Rgf/Y8IBaTjdHIFvmm1YAxsQ6gGJHYrOcGEeQHVL4ghqfA7Dhl8HWYEyUAwgZRqkDiPZ518JlVMEkBT+1LUd3BFm+JyZKsGGqOIBcy/GZQ7YDyAlyfB4hyQHkxjmhkCTZAeTye5LM4HjAHYDsCLpHAcESkdaJEN0BGI6gdTYkmBbwFSLkWk5SWiA3zomNkgF3ALIj8EYBenVLKSYUXYPXAeQ6CJc5WPM+tmyITSM5vkUWw2sxugNogYlyAC0cQbTFo2BEAwB5rHaFL9eNUQAAAABJRU5ErkJggg==","conveyor":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAjklEQVR4nGPgFxH4P5CYYcAd4JtW8B+EuxYuoyuG2TsgDoDZieIAWJDQiw8TY0CWpKcDBk8iHHAHyGvJ/R9IPHgcYOKqD8bofFqLDx4HDHgUDBoHoAcVrcUHnwMGPAoGzAEDng0H3AEDHgWDxgEDng3p7oABb5AMuAMGvFE6KJrlg6JjMmBdswFPhAPtAACfaU2XG00XigAAAABJRU5ErkJggg==","glowcorn":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA1klEQVR4nO3Wuw2EMAwG4GwABVMwAjU9W7AGPYPRM1FQkABjJY7zdBMkSycd8f9dEi4o1a7Iqxt6bUo0XAxhQrdzvKs64PnVEFAE4WrMBSTBqDXmAJL3CLXGXED0HvEFpH4fDYB16OlXtnuSNilsgBE43IbAY4PCbbMAET6AbUwwgJoJLiDbfwNuzAVkCRcHiC2B6Cb0NXIBOGOjAHgwBYA9ssyC2GGkpI9jDqz4C0kDUOGu47oaYNm/59x8rgKA4RgAEcUgL2CdyRJHVAH4qkg4FxHa7wIjTpT7zOAPHQAAAABJRU5ErkJggg==","canned_food":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAj0lEQVR4nGNgGAWjYBSQAPhFBP4TgwfMYpo5BGZg18Jl/33TCvBikBqqOgDZchjGZzkMU80R2BxADB7eDsCV6OjiAEIpn2YOeBlsDcY9SWZ4MUzd8HXAlTsr8OKR44DFW6tQ8MhzwIBHwYA5YMCz4YA5YMCL4kHjAGJaRDRtFdG9ScYwGBqlpDqE6hYPawAARF/dZ1N5Dz0AAAAASUVORK5CYII=","water_jug":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAApklEQVR4nGNgGAWjgAzALyLwHxkPmMV0dwTIoit3VqBgujkAZtGAO4CYKKB69BCyHNkSmqQRmCEfP9/BirFZiC5HE4vxOWTAHUBxFJBqOSGH0NUBINy1cNnAOQBkOQxT7ABkw8jBQ98BvmkFFOHh44D6i1pgTMhCdHXDxwEDHgWDzgHERglVKiNyHUBxW4DSaKB6i4juFqM7gFRMNQeQ6hCqWzysAQBoaoc8ZUw0zQAAAABJRU5ErkJggg=="}},"ash":{"16":{"survivor":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAjUlEQVR4nGNgoBUQEpX8j4xJ1hyWmIuCiTYEWXN1+xQwJskQmAHLNuxCwSQZANKAiybaG+guICsgc9sW/Lf2TyZNMyzaHh+K+n8owR6MQWyiohOkoH9dHVwTsgEgGiSH1xBkA7BhogwABRg2Q0BiRAUmzBXKmgYomKDt6IagG0ByTIA0IbPJikpcfGQAAKCq0QiALZXKAAAAAElFTkSuQmCC","glow_hound":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAYklEQVR4nGNgGDlASFTyPzImWXNYYi4cYzUEl8nImqvbp/zf8SAKbgiGInRnwjCy7TCc27YAYQg2RTCbsGGsYYDLJlyGYQ0DQjbDMEw90S4g2Ru44pmQ/CAxAF8yJSsZEwIAcTjCb7ZzNeIAAAAASUVORK5CYII=","raider":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAl0lEQVR4nGNgoBUQEpX8j4xJ1thlrfdfWdMAjEFsogxC14iOYQbhNSC3bcF/dOfDMEyOoCtAtu14EAW3GcYmOixghiBjomxGDihssYAzVtD9CAqsQwn2KBgkBpO39k/GbwBMAzIGieE0ANkQEBuXASA5rJrRDVq2YReGK0B8kDhRBoAUoccCSIy20YjNAGQ2WRkKFx8ZAAAvMMmPAIAmLQAAAABJRU5ErkJggg==","dirt":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAcElEQVR4nGMIS8z9j4yr26f8RxfDJ85ASIGlkw9ewxiwaSIFM2CzGZutuOQIumDZhl34XUCszbgClqgwwBXAcBfgU0AoHDBcQKo38HqBGJcRnQ5wJSgGYqKKLBcQG7AkJWVsLmUgJ+SR9WB1ASnpAgAe6Sf225P+ZQAAAABJRU5ErkJggg==","scrap_wall":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAZklEQVR4nGMQEpX8TwlmABGPD0WB8aEEe5LYcANAgrltC8A0KWzquQAmAZMklk09F1AcC13WenDTSWGjGADzHzIbOdRh4jAxEB/DABCNzCZEU98LZLuAKrFADkYxQFnTgCRMNS8AAMAy+1w0SnV9AAAAAElFTkSuQmCC","rubble":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAhklEQVR4nGNgGN5ASFTyPwiTrTm3bcF/GJssm0EGwNhEGwJSeOHaHTBetmEX2BAQDeITNAimGaQBhqvbp2CIYTUIXTNII0whTBwkhm4QigHommFhABPDaQA229G9AcKw8EC2BKvtMAPQNcL4MAw2AN2JxOKwxFyEAegSxGIUL5CDSUqduAAA6/Q0UK+qPqEAAAAASUVORK5CYII=","generator":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAbklEQVR4nGNgoAUQEpX8j4zJMsDaPxmM0Q3AaSi6rcgGIOPHh6IwDQAJ5LYtIArjtB0miQ8TZQA+m9EtwWkAPvpQgj0Y4zWAkAswApLUMMBwBamxgNUAWLwTwlhTKcwAfAYhqyGYCvFhQtmA/gAANSYXLZd3Q68AAAAASUVORK5CYII=","conveyor":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAS0lEQVR4nGMQEpX8TwlmsPZP/p/btoAsDNILNgBkErk0A8VeUNY0+E8JBhtg6eTzH0aTyqaOC5BdQSp7NAwMqJCQKE7KFGcmSr0AABySmHLDANwWAAAAAElFTkSuQmCC","glowcorn":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAa0lEQVR4nGNgoCUQEpX8T5Hm/nV1/0kyBFkxNgPwGoaugRAfrwEgvONBFBzDxAh6CVkRugFEhwdMMTYDiNZMlgvQFSEbQFQgMlAajYRcRDKgyACQJv/sKLABIJpkQ0AawhJzUTBZhiBjXOoA3Pypr5Y0wWkAAAAASUVORK5CYII=","canned_food":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAWklEQVR4nGNgGJ5ASFTyPzZMtObctgX/rf2TUTBIjChDYAZgwyQZgO58kgx4fCjq/6EEexQMEiPJgAvX7qBgsgxYtmEXGJNtAEUuoCgMKI4FihISA6VJmVQAAG/Bv0lfm2Q2AAAAAElFTkSuQmCC","water_jug":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAYklEQVR4nGNgGLRASFTyPwyTpfnCtTtgTLYB6C4g2kUgBR8+fUHBMI0wNkma0Q0h2wAQzm1bQNgAkCJ8mKAB1v7JeDFRBvSvq8PQCBOjjwvQbSXaAEKuIDpVoqdEsvMEMQAAb8bgaeStjWIAAAAASUVORK5CYII="},"32":{"survivor":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABCElEQVR4nGNgGAVkACFRyf/Y8IBZTDeHwCwIS8zFimnmAEIW09whuBxQ3T4FjGnqAEKW09wR2BywbMMurJjmDsBlMbojqJojYAbBLCCWDxOj2AEwR5DqAKpZzoAlFPBhmhZGhBxBlyIZZklu2wIwtvZPBmO61wd0dQB6ZfP4UNT/Qwn2KBgkRvVKCVtNB7IIlwOwOYIih8AM6F9Xh2ERLgfA+CA9FDkA2XJyHUCRI3A5gFhMdQeQ4ghkPRQ7AFTAkOsAigsnchxBNcsZ0LIhzGBlTQO8GD3oqVoeEOsAmrUJQZiQA2jWPCfVAVS1HJcDYOJ0dQDMQnQ5ujoA3QKqVkDkOIAYeVwAACPEJzzh7mmBAAAAAElFTkSuQmCC","glow_hound":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAuElEQVR4nGNgGAWjYBTQAAiJSv7HhgfMYro5BGZBWGIuCqa5A3BZjM8hRBlIiQOq26eA8Y4HUWBMlANIjTNkNei+xeYAgo5ANojYBEVs8MNwbtsC7I7AZhC1LYc5ANkRJCck9CAlFpOU+GjpALyOICdISXEY1UKBkpAhORTIDXJ0jG7+0HEAtTFN0wFVLMfnAFLrB7IdgM0RlFZQJFfFow4YlA4gWjMV9GNtnNBTP4ohJGukkv6RAQAwNgM8XgXAYgAAAABJRU5ErkJggg==","raider":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAABLUlEQVR4nO2WsQoCMQyG+wyCg7OTi7jf4CO4OwnOvoaDT+Hk7CiOPolvcnIHP9SQtEnanouFcNAm939N27Qh/JujzeaLnrOfCTcHoQKXbt0vV5svG/qqg3Cz48RTEEUgGlENTLG4F6AIAoGn83U07QaU4txZqAHgEg9kEyK1j/d+NJpy2l/9NHgAioUliJw1q4p0OTjhJgUoNWbxNQtzwVoA1z2ROscoLK/DNmnw445utzvKALlCAvEUROxD4wfxIgAqwFnsYwbILQFNcQqCAqjEpY2DMSsA4iCuAqAgcR+30SwAanEKgu/t/jQBDP6DFQHE2cAPcxAcgFs8BsBMcvcA/KqVZQqhAagqHoR3Qe5CanIdWwCqiksAgXknNAeAIB2bFEDzRpgUQDMutQ8ijg/rymLa/QAAAABJRU5ErkJggg==","dirt":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAoklEQVR4nGMIS8z9jw9Xt08BY0LqyFXPMOgcQKoBlk4+YEyuwwafA+iNB94BxAY5sUFNqr6BdwClQbhswy4wHrA0QDMHkBvkxGJY1A9eB5BrIN3TANUcQK4BxGJcUTp4HECqRmrhwe8AXJhaUTZ0HUBplFG9IKLYAZRWKhRHwYA7gFhM7QJr6DmAWExslA4eB9C6yMVlz+BxACFMq+p6wB0AACALn9XUgtzMAAAAAElFTkSuQmCC","scrap_wall":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAzElEQVR4nGMQEpX8P5CYYVA54PGhKDg+lGAPxshi1BLH6gBcGtE1U0scwwEwRbltC8AYWSMtxAefAwY8CuhpOV4HoAcZrcQHrwMGLAoGvCAaFEXxgDugy1oPI+hAYtQWx+oAZAXIiYda4rgcgeEAXJqILWrR1SOrg8mBMFEOQNZADQcgyxN0ALLl2MQp5Q9eB9AjF+BNhAPuAEKJkGZRAHMEPdLA4C2KB9wB6MFOK4y3LqC3I7A6QFnTgCYYrwNgjqCV5ciOGLyJcCAwAITO04SN5atjAAAAAElFTkSuQmCC","rubble":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA/UlEQVR4nO2UMQ7CMAxFewYkBi7GzgF6Ana4AAdgYmbmFJ2YuEtRkIyM8x07JKQDsfSHNmnecxNlGHr16lVQq/VmpiwGXkSCgOPhPMt3TcAERwI/lUACTbYCQUhAk6gqQgtO98c7l+vtQyI8h4SxaiIITHAKF6AxJPGViBTgYMr+eHqFw+WcbBEPGAlYc90ilkAAysXkXBKzRJJwrVu0vwiuCXAJVSD1u9E9gOZlC/COrO65AAIXCaR+v+dAhsj7QTtDWXBNAHWOBPi4KmABvB0jKVXA2nckYHXsFkAHz/q4NNvdGAu0AlMiAe+HtQK3oDU8OoSto17DzcF/XU8BGMlajFya4gAAAABJRU5ErkJggg==","generator":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA00lEQVR4nGNgGAUkACFRyf/Y8IBaTjdHIFtm7Z8MxsQ6gGJHYrOcGEeQHVL4ghqfA7Dhx4eiwJgoBxAyjFIHEO3z3LYFVMEkBT+1LUd3BFm+JyZKsGGqOIBcy/GZQ7YDyAlyfB4hyQHkxjmhkCTZAeTyDyXYw/GAOwDZEXSPAoIlIq0TIboDMBxB62xIMC3gK0TItZyktEBunBMbJQPuAGRH4I0C9OqWUkwougavA8h1EC5zsOZ9bNkQm0ZyfIsshtdidAfQAhPlAFo4gmiLR8GIBgDWZVL7+hc7TQAAAABJRU5ErkJggg==","conveyor":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAjklEQVR4nGMQEpX8P5CYYcAdYO2f/B+Ec9sW0BXD7B0QB8DsRHEALEjoxYeJMSBL0tMBgycRDrgDlDUN/g8kHjwOsHTyAWN0Pq3FB48DBjwKBo0D0IOK1uKDzwEDHgUD5oABz4YD7oABj4JB44ABz4Z0d8CAN0gG3AED3igdFM3yQdExGbCu2YAnwoF2AADILWCXvKzTMwAAAABJRU5ErkJggg==","glowcorn":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAA2UlEQVR4nO3WOwqEMBAG4JxBsPBUdhZ21uIVvII3sfY43kSJoIxDMpk8p0lgYMHN/N8mYaNSdQSOpu0uXaLhYggduu3rU8UB76+GgCwIW2MuIApG7TEHEH1GqD3mAoLPiCsg9nkwANZxjr8yfSfqkMIGGIHDTQg81yvctAoQ4QKY5ngDqJXgApL9N+DGXECScHGA2BaIHkJXIxuAMzcIgCdTANgjySqIXUZK+jrmwLK/kFQAFW67rosB+nn8APpzEQAMxwCIyAZ5mw/TQpY4ogjAVVnCuQjffjdOLbSx2D1nqQAAAABJRU5ErkJggg==","canned_food":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAj0lEQVR4nGNgGAWjYBSQAIREJf8TgwfMYpo5BGZgbtuC/9b+yXgxSA1VHYBsOQzjsxyGqeYIbA4gBg9vB+BKdHRxAKGUTzMHPD4UBcaHEuzxYpi64euAC9fu4MUjxwHLNuxCwSPPAQMeBQPmgAHPhgPmgAEvigeNA4hpEdG0VUT3JhnDYGiUkuoQqls8rAEAID326RPqqQAAAAAASUVORK5CYII=","water_jug":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAApklEQVR4nGNgGAWjgAwgJCr5HxkPmMV0dwTIogvX7qBgujkAZtGAO4CYKKB69BCyHNkSmqQRmCEfPn3BirFZiC5HE4vxOWTAHUBxFJBqOSGH0NUBIJzbtmDgHACyHIYpdgCyYeTgoe8Aa/9kivDwcUD/ujowJmQhurrh44ABj4JB5wBio4QqlRG5DqC4LUBpNFC9RUR3i9EdQCqmmgNIdQjVLR7WAAALo3POyizhMgAAAABJRU5ErkJggg=="}}},"texel":{"rust":{"16":{"canned_food":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABTElEQVR4nM2TsUtCURjFfy8bGgIhApGGAgskbQiMyBIXEVzazL9BcrX/IGiMUN4Q/QEt5RJvcAqpRygEPYXg0RAizwePIGgIQWyQe+HlxYKWzni/73z3nPPdC/8eS6HF0bS6No3Uvj3FsUzCGzs4lgnAer7q48yoyMVcjHqlgGOZrGTKVE/OAQg8NCYUaSoyQDwSJJ0/wLFMrm7aOE0bgJo3AKDnehrArMrCat/m0BhA5R4A+7kla7Vowtc7YUGgXimwHFoAIJPOAtA93kcoFJAKhPx4JMhnf3x2lI/6mofbKfTSJcVcDN3ojHqup0kFPdfTdKND++V9Qk22dAYwDrSURDc6MgOlhUYXni6ulda+X6AMMby1RqNpk7prMbeboLyXVA4DxUMSWYi1PQbm2Rx+yHrNG0j5ygFiCCC3APDqvgH4yL/CT3/hz/gCKv111cLpu5gAAAAASUVORK5CYII="},"32":{}},"toxic":{"16":{"canned_food":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAqklEQVR4nGNgGPSAX0TgP1maQPjKnRX/F2+tgtMgTJRm/zQXuIaPn+/A+S+Drf/jdRFMMwgXd8bAbQbxo6yUwBjmOrwG9CSZwRWCMMgVMEy0ASCb5bXkwIpBNEgzyAsgeawGwDSDnA4zAMSGYZABIDGYOryGoBuA7AUQn6AXQIEFMgSbAThtR48FZENgMYAcEwSjEqYYFIBEa0Y2BBb6MIw3+ggZRrImUgAAHVzm973x9/kAAAAASUVORK5CYII="},"32":{}},"ash":{"16":{"canned_food":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAq0lEQVR4nGNgGPRASFTyP1maQPjCtTv/l23YBadBmCjNYYm5cA0fPn2B8x8fivqP10UwzSBc3T4FbjOI32WtB8Yw1+E14FCCPVwhCINcAcNEGwCyWVnTAKwYRIM0g7wAksdqAEwzyOkwA0BsGAYZABKDqcNrCLoByF4A8Ql6ARRYIEOwGYDTdvRYQDYEFgPIMUEwKmGKQQFItGZkQ2ChD8N4o4+QYSRrIgUAAHuj+EOoIFrlAAAAAElFTkSuQmCC"},"32":{}}}},"sources":["handmade","texel"],"counts":{"handmade":66,"texel":3}};
+const T = 64, COLS = 12, ROWS = 8, BAR = 88;
+const ICONS = ["canned_food", "water_jug", "glowcorn"];
+// Mock base: room of scrap wall with a door gap, generator and belt outside, crops, threats on the right.
+const scene = [];
+for (let x = 2; x <= 6; x++) { scene.push(["scrap_wall", x, 1]); if (x !== 4) scene.push(["scrap_wall", x, 5]); }
+for (let y = 2; y <= 4; y++) { scene.push(["scrap_wall", 2, y]); scene.push(["scrap_wall", 6, y]); }
+for (let x = 6; x <= 11; x++) scene.push(["conveyor", x, 6]);
+scene.push(["survivor", 4, 3], ["water_jug", 3, 2], ["canned_food", 5, 2], ["generator", 8, 2],
+  ["rubble", 10, 0], ["rubble", 0, 7], ["rubble", 1, 2],
+  ["glowcorn", 8, 4], ["glowcorn", 9, 4], ["glowcorn", 8, 5], ["glowcorn", 9, 5],
+  ["glow_hound", 10, 4], ["raider", 11, 2], ["survivor", 5, 7]);
+
+const imgCache = {};
+function img(uri) {
+  if (!uri) return null;
+  if (!imgCache[uri]) { const i = new Image(); i.src = uri; imgCache[uri] = i; i.onload = drawAll; }
+  return imgCache[uri].complete ? imgCache[uri] : null;
+}
+function sprite(pal, size, id) { return img(D.images[state.src]?.[pal]?.[size]?.[id]); }
+function placeholder(ctx, id, x, y, w) {
+  ctx.fillStyle = "rgba(128,128,128,.35)"; ctx.fillRect(x + 6, y + 6, w - 12, w - 12);
+  ctx.fillStyle = "#888"; ctx.font = "600 12px monospace"; ctx.textAlign = "center";
+  ctx.fillText(id.slice(0, 7), x + w / 2, y + w / 2 + 4);
+}
+function drawScene(canvas, pal, mode) {
+  const ctx = canvas.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+  const world = mode === "mixed" ? 16 : Number(mode), icon = mode === "mixed" ? 32 : Number(mode);
+  ctx.fillStyle = D.palettes[pal][1]; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  const dirt = sprite(pal, world, "dirt");
+  for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
+    if (dirt) ctx.drawImage(dirt, x * T, y * T, T, T);
+  }
+  for (const [id, x, y] of scene) {
+    const s = sprite(pal, world, id);
+    if (s) ctx.drawImage(s, x * T, y * T, T, T); else placeholder(ctx, id, x * T, y * T, T);
+  }
+  // Hotbar
+  const by = ROWS * T;
+  ctx.fillStyle = D.palettes[pal][0]; ctx.fillRect(0, by, canvas.width, BAR);
+  ICONS.forEach((id, i) => {
+    const x = 16 + i * (T + 12), y = by + 12;
+    ctx.fillStyle = D.palettes[pal][2]; ctx.fillRect(x, y, T, T);
+    const s = sprite(pal, icon, id);
+    if (s) ctx.drawImage(s, x, y, T, T); else placeholder(ctx, id, x, y, T);
+  });
+  ctx.fillStyle = D.palettes[pal][6]; ctx.font = "600 15px monospace"; ctx.textAlign = "right";
+  ctx.fillText(mode === "mixed" ? "world 16 px · icons 32 px" : `${mode} px`, canvas.width - 16, by + 50);
+}
+const state = { src: D.sources[0], pal: Object.keys(D.palettes)[0], size: "32" };
+try { const s = JSON.parse(localStorage.getItem("artpick") || "{}"); if (D.palettes[s.pal]) state.pal = s.pal; if (s.size) state.size = s.size; if (D.sources.includes(s.src)) state.src = s.src; } catch (e) {}
+const SRC_LABEL = { handmade: "Hand-pixeled", texel: "texel-studio" };
+const srcBox = document.getElementById("src");
+D.sources.forEach((src) => {
+  srcBox.insertAdjacentHTML("beforeend", `<label><input type="radio" name="src" id="src-${src}" value="${src}"><span>${SRC_LABEL[src] || src} (${D.counts[src]})</span></label>`);
+});
+document.getElementById("src-" + state.src).checked = true;
+
+const palBox = document.getElementById("pal");
+Object.keys(D.palettes).forEach((p) => {
+  palBox.insertAdjacentHTML("beforeend", `<label><input type="radio" name="pal" id="pal-${p}" value="${p}"><span>${p}</span></label>`);
+});
+document.getElementById("pal-" + state.pal).checked = true;
+document.getElementById("size-" + state.size).checked = true;
+document.querySelectorAll('input[name=pal],input[name=size],input[name=src]').forEach((el) => el.addEventListener("change", () => {
+  state.src = document.querySelector("input[name=src]:checked").value;
+  state.pal = document.querySelector("input[name=pal]:checked").value;
+  state.size = document.querySelector("input[name=size]:checked").value;
+  try { localStorage.setItem("artpick", JSON.stringify(state)); } catch (e) {}
+  drawAll();
+}));
+
+const cmp = document.getElementById("cmp");
+Object.keys(D.palettes).forEach((p) => {
+  cmp.insertAdjacentHTML("beforeend", `<figure data-p="${p}"><canvas width="768" height="600"></canvas>
+    <figcaption>${p}</figcaption><div class="swatches">${D.palettes[p].map((c) => `<i style="background:${c}" title="${c}"></i>`).join("")}</div></figure>`);
+});
+
+function drawAll() {
+  drawScene(document.getElementById("main"), state.pal, state.size);
+  cmp.querySelectorAll("figure").forEach((f) => {
+    f.classList.toggle("sel", f.dataset.p === state.pal);
+    drawScene(f.querySelector("canvas"), f.dataset.p, state.size);
+  });
+  const sizes = state.size === "mixed" ? ["16", "32"] : [state.size];
+  document.getElementById("sheetnote").textContent =
+    `${SRC_LABEL[state.src] || state.src}, palette ${state.pal}, ${sizes.join(" and ")} px. Shown at 128 px on a checkerboard so transparent pixels are visible.`;
+  const sheet = document.getElementById("sheet");
+  sheet.innerHTML = "";
+  for (const size of sizes) for (const s of D.sprites) {
+    const uri = D.images[state.src]?.[state.pal]?.[size]?.[s.id];
+    sheet.insertAdjacentHTML("beforeend", `<div class="card"><div class="img">${uri ? `<img src="${uri}" alt="${s.id}">` : `<span class="missing">not painted yet</span>`}</div>
+      <b>${s.id} · ${size} px</b><small>${s.prompt}</small></div>`);
+  }
+}
+drawAll();
+</script>

@@ -56,10 +56,11 @@ figcaption { font: 600 13px/1.3 var(--mono); }
   <header>
     <div class="eyebrow">Gate 2 · Art style choice</div>
     <h1>Pick the look of the wasteland</h1>
-    <p class="muted">The local texel-studio agent painted every sprite once, in the Rust palette. The other palettes use the same pixels with swapped colors. Pick one palette and one size option.</p>
+    <p class="muted">Two sample sources. <b>Hand-pixeled</b>: drawn by Claude as palette grids; the 32 px versions are the 16 px drawings doubled with Scale2x. <b>texel-studio</b>: painted by the local AI agent (slow on the shared GPU, so this set may be incomplete). Every sprite is drawn once in the Rust palette; the other palettes swap the colors pixel for pixel. Pick a palette and a size. The source can be mixed later.</p>
   </header>
 
   <div class="controls">
+    <fieldset><legend>Source</legend><div class="seg" id="src"></div></fieldset>
     <fieldset><legend>Palette</legend><div class="seg" id="pal"></div></fieldset>
     <fieldset><legend>Sprite size</legend><div class="seg" id="size">
       <label><input type="radio" name="size" id="size-16" value="16"><span>16 px</span></label>
@@ -85,7 +86,7 @@ figcaption { font: 600 13px/1.3 var(--mono); }
     <div class="sheet" id="sheet" style="margin-top:12px"></div>
   </section>
 
-  <div class="pick">Reply in chat with your pick, for example <code>rust + 32</code> or <code>ash + mixed</code>. You can also ask for changes: other colors, other prompts, or a retry of single sprites.</div>
+  <div class="pick">Reply in chat with your pick, for example <code>rust + 32</code> or <code>ash + mixed, hand-pixeled</code>. You can also ask for changes: other colors, other prompts, or a retry of single sprites.</div>
 </div>
 <script>
 const D = /*__DATA__*/null;
@@ -107,7 +108,7 @@ function img(uri) {
   if (!imgCache[uri]) { const i = new Image(); i.src = uri; imgCache[uri] = i; i.onload = drawAll; }
   return imgCache[uri].complete ? imgCache[uri] : null;
 }
-function sprite(pal, size, id) { return img(D.images[pal]?.[size]?.[id]); }
+function sprite(pal, size, id) { return img(D.images[state.src]?.[pal]?.[size]?.[id]); }
 function placeholder(ctx, id, x, y, w) {
   ctx.fillStyle = "rgba(128,128,128,.35)"; ctx.fillRect(x + 6, y + 6, w - 12, w - 12);
   ctx.fillStyle = "#888"; ctx.font = "600 12px monospace"; ctx.textAlign = "center";
@@ -138,8 +139,14 @@ function drawScene(canvas, pal, mode) {
   ctx.fillStyle = D.palettes[pal][6]; ctx.font = "600 15px monospace"; ctx.textAlign = "right";
   ctx.fillText(mode === "mixed" ? "world 16 px · icons 32 px" : `${mode} px`, canvas.width - 16, by + 50);
 }
-const state = { pal: Object.keys(D.palettes)[0], size: "32" };
-try { const s = JSON.parse(localStorage.getItem("artpick") || "{}"); if (D.palettes[s.pal]) state.pal = s.pal; if (s.size) state.size = s.size; } catch (e) {}
+const state = { src: D.sources[0], pal: Object.keys(D.palettes)[0], size: "32" };
+try { const s = JSON.parse(localStorage.getItem("artpick") || "{}"); if (D.palettes[s.pal]) state.pal = s.pal; if (s.size) state.size = s.size; if (D.sources.includes(s.src)) state.src = s.src; } catch (e) {}
+const SRC_LABEL = { handmade: "Hand-pixeled", texel: "texel-studio" };
+const srcBox = document.getElementById("src");
+D.sources.forEach((src) => {
+  srcBox.insertAdjacentHTML("beforeend", `<label><input type="radio" name="src" id="src-${src}" value="${src}"><span>${SRC_LABEL[src] || src} (${D.counts[src]})</span></label>`);
+});
+document.getElementById("src-" + state.src).checked = true;
 
 const palBox = document.getElementById("pal");
 Object.keys(D.palettes).forEach((p) => {
@@ -147,7 +154,8 @@ Object.keys(D.palettes).forEach((p) => {
 });
 document.getElementById("pal-" + state.pal).checked = true;
 document.getElementById("size-" + state.size).checked = true;
-document.querySelectorAll('input[name=pal],input[name=size]').forEach((el) => el.addEventListener("change", () => {
+document.querySelectorAll('input[name=pal],input[name=size],input[name=src]').forEach((el) => el.addEventListener("change", () => {
+  state.src = document.querySelector("input[name=src]:checked").value;
   state.pal = document.querySelector("input[name=pal]:checked").value;
   state.size = document.querySelector("input[name=size]:checked").value;
   try { localStorage.setItem("artpick", JSON.stringify(state)); } catch (e) {}
@@ -168,11 +176,11 @@ function drawAll() {
   });
   const sizes = state.size === "mixed" ? ["16", "32"] : [state.size];
   document.getElementById("sheetnote").textContent =
-    `Palette ${state.pal}, ${sizes.join(" and ")} px. Shown at 128 px on a checkerboard so transparent pixels are visible.`;
+    `${SRC_LABEL[state.src] || state.src}, palette ${state.pal}, ${sizes.join(" and ")} px. Shown at 128 px on a checkerboard so transparent pixels are visible.`;
   const sheet = document.getElementById("sheet");
   sheet.innerHTML = "";
   for (const size of sizes) for (const s of D.sprites) {
-    const uri = D.images[state.pal]?.[size]?.[s.id];
+    const uri = D.images[state.src]?.[state.pal]?.[size]?.[s.id];
     sheet.insertAdjacentHTML("beforeend", `<div class="card"><div class="img">${uri ? `<img src="${uri}" alt="${s.id}">` : `<span class="missing">not painted yet</span>`}</div>
       <b>${s.id} · ${size} px</b><small>${s.prompt}</small></div>`);
   }
