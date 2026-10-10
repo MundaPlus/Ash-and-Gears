@@ -15,6 +15,9 @@ import {
   placeBlueprint,
   removeZoneTiles,
   undesignate,
+  canHaul,
+  haulNow,
+  cancelHaulNow,
   type DesigKind,
   type Game,
 } from "@wc/sim";
@@ -24,6 +27,8 @@ import type { ToolHandler } from "./camera.ts";
 export type ToolSpec =
   | { kind: "build"; defKind: "thing" | "floor"; def: string }
   | { kind: "order"; desig: DesigKind }
+  /** Mark every loose stack in the drag "haul now" (user request: mass haul). */
+  | { kind: "haul" }
   | { kind: "cancel" }
   | { kind: "zone"; zone: "stockpile" | "remove" }
   | { kind: "zone"; zone: "grow"; crop: string };
@@ -156,8 +161,10 @@ export class ToolController implements ToolHandler {
         return canPlace(g, s.defKind, s.def, l, t.x, t.y, this.rotatable() ? this.rot : undefined);
       case "order":
         return canDesignate(g, s.desig, l, t.x, t.y);
+      case "haul":
+        return L.item[i] !== NO_THING && canHaul(g, L.item[i]);
       case "cancel":
-        return L.blueprint[i] !== NO_THING || L.desig[i] !== 0;
+        return L.blueprint[i] !== NO_THING || L.desig[i] !== 0 || (L.item[i] !== NO_THING && !!g.items.get(L.item[i])?.haulNow);
       case "zone":
         if (s.zone === "remove") return L.zone[i] !== NO_THING;
         if (s.zone === "grow") return L.zone[i] === NO_THING && L.floor[i] === 0 && g.reg.terrain.list[L.terrain[i]].fertility > 0;
@@ -224,12 +231,18 @@ export class ToolController implements ToolHandler {
       case "order":
         for (const t of tiles) designate(g, s.desig, l, t.x, t.y);
         break;
+      case "haul":
+        for (const t of tiles) if (L.inBounds(t.x, t.y) && L.item[L.i(t.x, t.y)] !== NO_THING) haulNow(g, L.item[L.i(t.x, t.y)]);
+        g.mapVersion++;
+        break;
       case "cancel":
         for (const t of tiles) {
           if (!L.inBounds(t.x, t.y)) continue;
           const bp = L.blueprint[L.i(t.x, t.y)];
           if (bp !== NO_THING) cancelBlueprint(g, bp);
           undesignate(g, l, t.x, t.y);
+          const it = L.item[L.i(t.x, t.y)];
+          if (it !== NO_THING) cancelHaulNow(g, it);
         }
         break;
       case "zone": {

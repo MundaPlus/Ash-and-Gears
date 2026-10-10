@@ -51,6 +51,10 @@ export function Toolbar() {
               <small>{t(`order.${o}.desc`)}</small>
             </button>
           ))}
+          <button data-testid="order-haul" onClick={() => pick({ kind: "haul" })}>
+            <b>{t("order.haul")}</b>
+            <small>{t("order.haul.desc")}</small>
+          </button>
           <button data-testid="order-cancel" onClick={() => pick({ kind: "cancel" })}>
             <b>{t("order.cancel")}</b>
             <small>{t("order.cancel.desc")}</small>

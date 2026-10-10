@@ -245,6 +245,8 @@ export const FloorDef = z.object({
   beauty: z.number().default(0),
   /** Replaces the terrain walk cost while the floor exists. */
   walkCost: z.number().positive().default(0.9),
+  /** A deck built over open air on a floor above the surface (N1). Needs a wall or a closed room below. */
+  overAir: z.boolean().default(false),
 });
 export type FloorDef = z.infer<typeof FloorDef>;
 

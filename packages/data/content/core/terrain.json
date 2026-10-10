@@ -130,5 +130,15 @@
   "color": "#14100d",
   "walkCost": 0,
   "buildable": false
+ },
+ {
+  "id": "deck",
+  "color": "#8a6a44",
+  "walkCost": 1,
+  "buildable": true,
+  "unfloorTo": "open_air",
+  "unfloorYield": {
+   "wood": 2
+  }
  }
 ]

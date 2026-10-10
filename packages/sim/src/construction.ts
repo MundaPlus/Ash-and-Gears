@@ -12,7 +12,7 @@ import { NO_THING, type Blueprint } from "./map.ts";
 import { dropCarried, pickUp } from "./hauling.ts";
 import type { Pawn } from "./pawn.ts";
 import { canDesignate, designate } from "./designations.ts";
-import { setRoof } from "./rooms.ts";
+import { ensureRooms, setRoof } from "./rooms.ts";
 import { registerTask, workJob } from "./work.ts";
 
 /** Blueprints within this many tiles share one delivery trip. */
@@ -51,10 +51,34 @@ export function canPlace(game: Game, kind: Blueprint["kind"], defId: string, lay
   return tiles.every((t) => L.inBounds(t.x, t.y) && L.blueprint[L.i(t.x, t.y)] === NO_THING && canPlaceTile(game, kind, defId, layer, t.x, t.y));
 }
 
+/** Can a deck on this upper-floor tile stand? A wall, or a closed room, must be right below it (N1). */
+export function deckSupported(game: Game, layer: number, x: number, y: number): boolean {
+  if (game.map.layers[layer].level <= 0) return false;
+  const below = game.map.below(layer);
+  if (below < 0) return false;
+  const B = game.map.layers[below];
+  if (!B.inBounds(x, y)) return false;
+  const i = B.i(x, y);
+  const th = B.thing[i];
+  if (th !== NO_THING && game.reg.things.list[game.things.get(th)!.def].wall) return true;
+  ensureRooms(game);
+  const r = game.rooms.get(B.room[i]);
+  return !!r && !r.outdoor;
+}
+
+function isAir(game: Game, layer: number, x: number, y: number): boolean {
+  const L = game.map.layers[layer];
+  return game.reg.terrain.has("open_air") && L.terrain[L.i(x, y)] === game.reg.terrain.idx("open_air");
+}
+
 function canPlaceTile(game: Game, kind: Blueprint["kind"], defId: string, layer: number, x: number, y: number): boolean {
   const L = game.map.layers[layer];
   if (!L.inBounds(x, y)) return false;
   const i = L.i(x, y);
+  // A deck goes only over open air, with support below.
+  if (kind === "floor" && game.reg.floors.get(defId).overAir) {
+    return isAir(game, layer, x, y) && L.blueprint[i] === NO_THING && deckSupported(game, layer, x, y);
+  }
   const td = game.reg.terrain.list[L.terrain[i]];
   if (td.solid || !td.buildable) return false;
   // A new blueprint may replace a different one on the same tile (a door over a wall plan).
@@ -68,6 +92,14 @@ function canPlaceTile(game: Game, kind: Blueprint["kind"], defId: string, layer:
   if ((game.reg.things.get(defId).stairs ?? 0) > 0) {
     const below = game.map.below(layer);
     if (below < 0 || !game.map.layers[below].underground) return false;
+  }
+  // Stairs up (N1): from the surface or a deck, to a free tile above (air with support, or open floor).
+  if ((game.reg.things.get(defId).stairs ?? 0) < 0) {
+    const up = game.map.above(layer);
+    if (up < 0 || L.underground) return false;
+    const U = game.map.layers[up];
+    if (U.thing[U.i(x, y)] !== NO_THING || U.blueprint[U.i(x, y)] !== NO_THING) return false;
+    if (isAir(game, up, x, y) ? !deckSupported(game, up, x, y) : !game.walkable(up, x, y)) return false;
   }
   return L.thing[i] === NO_THING || clearOrder(game, layer, x, y) !== null;
 }
@@ -130,6 +162,8 @@ function completeBlueprint(game: Game, bp: Blueprint) {
   const L = game.map.layers[bp.layer];
   const i = L.i(bp.x, bp.y);
   if (bp.kind === "floor") {
+    // A deck over open air: the air becomes walkable planks first.
+    if (game.reg.floors.list[bp.def].overAir && isAir(game, bp.layer, bp.x, bp.y)) game.setTerrain(bp.layer, bp.x, bp.y, "deck");
     L.floor[i] = bp.def + 1;
     L.touch(bp.x, bp.y);
     game.mapVersion++;
@@ -148,6 +182,14 @@ function completeBlueprint(game: Game, bp: Blueprint) {
   }
   game.spawnThing(def.id, bp.layer, bp.x, bp.y, bp.rot);
   if ((def.stairs ?? 0) > 0) digDown(game, game.map.below(bp.layer), bp.x, bp.y);
+  if ((def.stairs ?? 0) < 0) {
+    // Built stairs up: a landing above (planks where there was air) and stairs down there.
+    const up = game.map.above(bp.layer);
+    if (up >= 0) {
+      if (isAir(game, up, bp.x, bp.y)) game.setTerrain(up, bp.x, bp.y, "deck");
+      game.spawnThing("stairs_down", up, bp.x, bp.y);
+    }
+  }
   for (const m of moved) dropItems(game, m.def, m.count, bp.layer, m.x, m.y, m.contaminated);
   if (def.blocks) {
     for (const p of game.pawns.values()) {
