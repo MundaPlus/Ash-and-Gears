@@ -79,6 +79,14 @@
   ]
  },
  {
+  "id": "biofuel",
+  "cost": 1800,
+  "tier": 1,
+  "prereqs": [
+   "plumbing"
+  ]
+ },
+ {
   "id": "belt_logistics",
   "cost": 2800,
   "tier": 2,

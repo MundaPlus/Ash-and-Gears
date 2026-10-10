@@ -394,7 +394,7 @@ async function boot() {
       if (def.pipe || (def.fluid && def.fluid.role !== "purifier")) {
         const net = sim.fluidNetOf(game, thing);
         if (net)
-          lines.push(t("inspect.fluids", { water: Math.round(sim.netAmount(game, net, "water")), clean: Math.round(sim.netAmount(game, net, "clean_water")), room: Math.round(sim.netRoom(game, net)) }));
+          lines.push(t("inspect.fluids", { water: Math.round(sim.netAmount(game, net, "water")), clean: Math.round(sim.netAmount(game, net, "clean_water")), fuel: Math.round(sim.netAmount(game, net, "fuel")), room: Math.round(sim.netRoom(game, net)) }));
         if (def.fluid?.role === "pump" && !sim.pumpSource(game, thing)) lines.push(t("inspect.pump_dry"));
       }
       if (def.fluid?.role === "purifier") {

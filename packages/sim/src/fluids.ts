@@ -4,14 +4,15 @@
  * grouping: its amount is the sum, its room the sum of capacities. Fluids: "water" (dirty) and
  * "clean_water". A pump fills its network from a water tile next to it. A purifier sits between two
  * networks: water from its input side becomes clean water on its output side. Survivors drink clean
- * water at taps.
+ * water at taps. A fuel still's bills put fuel into its network, and generators that touch a pipe
+ * network with fuel fill up from it (1 liter = 1 fuel unit).
  */
 import type { Game } from "./game.ts";
 import { benchSide } from "./logistics.ts";
 import { NO_THING, type Thing } from "./map.ts";
 import { isPowered } from "./power.ts";
 
-export type Fluid = "water" | "clean_water";
+export type Fluid = "water" | "clean_water" | "fuel";
 const FLUIDS_EVERY = 20;
 /** Liters a pipe tile holds. */
 const PIPE_CAPACITY = 10;
@@ -160,6 +161,33 @@ export function tickFluids(game: Game): void {
       if (n > 0) netAdd(game, to, "clean_water", netDraw(game, from, "water", n));
     }
   }
+  // Generators next to a pipe network with fuel top up from it.
+  for (const t of game.things.values()) {
+    const f = game.reg.things.list[t.def].power?.fuel;
+    if (!f || (t.fuel ?? 0) > f.capacity - 1) continue;
+    for (const net of touchingNets(game, t)) {
+      const got = netDraw(game, net, "fuel", f.capacity - (t.fuel ?? 0));
+      t.fuel = (t.fuel ?? 0) + got;
+      if (t.fuel > f.capacity - 1) break;
+    }
+  }
+}
+
+/** Fluid networks on the tiles around a thing (for things that are not part of a network). */
+export function touchingNets(game: Game, t: Thing): FluidNet[] {
+  const out = new Set<FluidNet>();
+  for (const f of game.footprint(t.def, t.x, t.y, t.rot))
+    for (const [x, y] of [[f.x + 1, f.y], [f.x - 1, f.y], [f.x, f.y + 1], [f.x, f.y - 1]]) {
+      const n = netAt(game, t.layer, x, y);
+      if (n && !game.fluidNetOf.has(t.id)) out.add(n);
+    }
+  return [...out];
+}
+
+/** Liters of a fluid in all networks (the "stock" for fuel bills). */
+export function totalFluid(game: Game, kind: Fluid): number {
+  ensureFluidNets(game);
+  return game.fluidNets.reduce((a, n) => a + netAmount(game, n, kind), 0);
 }
 
 /** A tap with enough clean water for a drink of `liters`. */

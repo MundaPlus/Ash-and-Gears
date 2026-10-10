@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadCoreContent } from "@wc/data";
-import { fluidNetOf, Game, loadGame, netAmount, NO_THING, saveGame, WORK_TYPES } from "../src/index.ts";
+import { dropItems, fluidNetOf, Game, loadGame, netAmount, NO_THING, saveGame, WORK_TYPES } from "../src/index.ts";
 
 const content = loadCoreContent();
 const run = (g: Game, hours: number) => {
@@ -77,5 +77,21 @@ describe("pipes and fluids (A2)", () => {
     const g2 = loadGame(content, JSON.parse(JSON.stringify(saveGame(g))));
     const t2 = g2.things.get(tank.id)!;
     expect(netAmount(g2, fluidNetOf(g2, t2)!, "water")).toBeCloseTo(amount);
+  });
+
+  it("a fuel still makes fuel from raw food, and a generator on its pipes fills up", () => {
+    const { g, x0, y0 } = waterworks("still");
+    g.research.done.add("biofuel");
+    // Still (2x1) at y0+2, a pipe, and a second generator touching the pipe.
+    const still = g.spawnThing("fuel_still", 0, x0 + 1, y0 + 2);
+    g.spawnThing("pipe", 0, x0 + 3, y0 + 2);
+    const gen2 = g.spawnThing("scrap_generator", 0, x0 + 4, y0 + 2);
+    gen2.fuel = 0;
+    dropItems(g, "glowcorn", 40, 0, x0 + 1, y0 + 3);
+    const [cook] = [...g.pawns.values()].filter((p) => p.faction === "colony");
+    cook.work = Object.fromEntries(WORK_TYPES.map((w) => [w, w === "craft" ? 1 : 0]));
+    run(g, 12);
+    expect(gen2.fuel).toBeGreaterThan(5);
+    expect(fluidNetOf(g, still)).not.toBeNull();
   });
 });

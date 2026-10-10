@@ -131,11 +131,11 @@ export const ThingDef = z.object({
   /**
    * Fluid role (A2). pump: rate L/h from a water tile next to it (needs power); tank: holds capacity L;
    * purifier: rate L/h of water from its input side to clean water on its output side (needs power);
-   * tap: survivors drink clean water from its network.
+   * tap: survivors drink clean water from its network; still: a bench whose fuel bills fill its network.
    */
   fluid: z
     .object({
-      role: z.enum(["pump", "tank", "purifier", "tap"]),
+      role: z.enum(["pump", "tank", "purifier", "tap", "still"]),
       rate: z.number().positive().optional(),
       capacity: z.number().positive().optional(),
     })
@@ -208,6 +208,8 @@ export const RecipeDef = z.object({
   /** Inputs by item id, or by tag "raw_food". */
   inputs: z.array(z.object({ item: id.optional(), tag: z.enum(["raw_food"]).optional(), count: z.number().int().positive() })),
   output: z.record(id, z.number().int().positive()),
+  /** Fluid made instead of (or with) items: liters go into the bench's pipe network (A2). */
+  fluidOut: z.object({ kind: z.enum(["fuel"]), liters: z.number().positive() }).optional(),
   work: z.number().int().positive(),
   skill: id.optional(),
   /** Default "keep this many in stock" target. "per_colonist" multiplies by colony size. */

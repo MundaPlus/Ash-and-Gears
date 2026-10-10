@@ -879,5 +879,29 @@
    "menu": "water",
    "research": "plumbing"
   }
+ },
+ {
+  "id": "fuel_still",
+  "kind": "furniture",
+  "footprint": [2, 1],
+  "color": "#5a3a22",
+  "glyph": "S",
+  "hp": 160,
+  "blocks": true,
+  "bench": true,
+  "heat": 4,
+  "fluid": {
+   "role": "still",
+   "capacity": 40
+  },
+  "build": {
+   "cost": {
+    "scrap": 30,
+    "stone": 10
+   },
+   "work": 350,
+   "menu": "water",
+   "research": "biofuel"
+  }
  }
 ]
