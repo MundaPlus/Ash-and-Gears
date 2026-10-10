@@ -1,6 +1,7 @@
 # Changelog
 
 ## 2026-10-11
+- Downed creatures (user report: a glow-hound without legs lay healthy next to the base for days). New order "Put down" (Orders, Warden work): a survivor ends a downed animal or machine; animals leave meat, machines scrap. A downed wild animal or machine whose pack is gone now dies within a day by itself (`packages/sim/src/designations.ts` `downedBeast`, `health.ts`, `map.ts`, `tileactions.ts`; client `ui/Toolbar.tsx`, `render/textures.ts`; `en.json`; tests `packages/sim/test/downed.test.ts`).
 - Radiation clouds (user: "strive to be in a room with an airlock, or the bunker"). A room whose door opens straight outside now lets in a third of a cloud's dose; sealed rooms and underground stay safe. When a cloud comes, survivors look for the nearest sealed room (airlock or closed hall), else go underground by the stairs (caves, bunker), else any roof. They move on from a leaky room when something safer is in reach, and stay put (and keep working) when nothing better is. Banner and inspect texts say so (`packages/sim/src/ai.ts` `shelterRank`/`shelterJob`, `weather.ts`, `en.json`; test in `packages/sim/test/food.test.ts`).
 - A reload or a loaded save starts paused; a new game starts running (`packages/client/src/main.ts`; check in `tests/e2e/menu.spec.ts`) — user request.
 

@@ -44,6 +44,8 @@ export interface Health {
   /** 0..1. 0.5 downs a pawn, 1 kills. */
   bloodLoss: number;
   downed: boolean;
+  /** Tick when the pawn went down (for wild creatures that never get up again). */
+  downedAt?: number;
 }
 
 export function newHealth(): Health {
@@ -163,7 +165,9 @@ function updateDowned(game: Game, p: Pawn) {
   const legs = p.health.missing.filter((x) => x === "l_leg" || x === "r_leg").length;
   const was = p.health.downed;
   p.health.downed = p.health.bloodLoss > 0.6 || pain(game, p) > 0.85 || legs >= 2;
+  if (!p.health.downed) delete p.health.downedAt;
   if (p.health.downed && !was) {
+    p.health.downedAt = game.tick;
     p.path = null;
     p.asleep = false;
     if (p.faction === "colony") game.message("msg.downed", { name: p.nick }, "bad", p);
@@ -220,6 +224,12 @@ export function tickHealthHourly(game: Game, p: Pawn, inBed: boolean): void {
   }
   h.injuries = h.injuries.filter((i) => i.dmg > 0.05);
   updateDowned(game, p);
+  // A downed wild animal or machine whose pack is gone does not last: after a day it dies (user report:
+  // a hound without legs lay healthy by the base forever).
+  if (h.downed && p.faction === "wild" && game.reg.content.creatures[p.creature].behavior !== "human" && (p.group === null || !game.groups.has(p.group))) {
+    h.downedAt ??= game.tick;
+    if (game.tick - h.downedAt >= game.ticksPerDay) kill(game, p, "exposure");
+  }
 }
 
 export function untendedInjuries(p: Pawn): Injury[] {
