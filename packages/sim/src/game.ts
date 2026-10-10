@@ -25,6 +25,8 @@ import { ensureFluidNets, tickFluids, type FluidNet } from "./fluids.ts";
 import { tickSocial, type Bond } from "./social.ts";
 import { tickWorld, type Expedition, type WorldMap } from "./world.ts";
 import type { Caravan } from "./factions.ts";
+import { newPlot, startPlot, tickPlot, type Plot } from "./plot.ts";
+import { applyScenario, startSurvivors } from "./scenarios.ts";
 import { tickGoals } from "./goals.ts";
 
 /** Sim ticks per real second at 1x speed. */
@@ -46,6 +48,10 @@ export interface GameOptions {
   raidScale: number;
   mutantScale: number;
   storyteller: "sheriff" | "grandma" | "chaos" | "none";
+  /** Storyline id from story.json, or null for the sandbox (Beta). */
+  storyline: string | null;
+  /** Start scenario (Beta B5). */
+  scenario: string;
 }
 
 export const DEFAULT_OPTIONS: GameOptions = {
@@ -58,6 +64,8 @@ export const DEFAULT_OPTIONS: GameOptions = {
   raidScale: 1,
   mutantScale: 1,
   storyteller: "sheriff",
+  storyline: null,
+  scenario: "standard",
 };
 
 export const SEASONS = ["spring", "summer", "autumn", "winter"] as const;
@@ -92,6 +100,8 @@ export class Game {
   /** Pawns that died: for messages, stats and tests. */
   /** World map (A8), made on first use. */
   world: WorldMap | null = null;
+  /** Storyline progress (Beta). */
+  plot: Plot = newPlot(null);
   /** Goodwill per faction id; missing = the faction's start value (A9). */
   goodwill: Record<string, number> = {};
   /** Trader caravan near home, if any (A9). */
@@ -151,7 +161,8 @@ export class Game {
   /** Bumped only when walkability changes. Pathfinding caches use it. */
   pathVersion = 0;
   /** Messages for the player (alerts, events). The client drains this list. */
-  readonly messages: { tick: number; key: string; params: Record<string, string | number>; level: "info" | "warn" | "bad" }[] = [];
+  /** Messages for the player; `at` is where it happened (the UI can jump there). */
+  readonly messages: { tick: number; key: string; params: Record<string, string | number>; level: "info" | "warn" | "bad"; at?: { layer: number; x: number; y: number } }[] = [];
 
   constructor(content: Content, opts: Partial<GameOptions> = {}) {
     this.reg = new Registry(content);
@@ -182,16 +193,18 @@ export class Game {
     ensureFluidNets(this);
   }
 
-  message(key: string, params: Record<string, string | number> = {}, level: "info" | "warn" | "bad" = "info") {
-    this.messages.push({ tick: this.tick, key, params, level });
+  message(key: string, params: Record<string, string | number> = {}, level: "info" | "warn" | "bad" = "info", at?: { layer: number; x: number; y: number }) {
+    this.messages.push({ tick: this.tick, key, params, level, ...(at ? { at: { layer: at.layer, x: at.x, y: at.y } } : {}) });
     if (this.messages.length > 200) this.messages.shift();
   }
 
   /** Make a new game with a generated home map. */
   static create(content: Content, opts: Partial<GameOptions> = {}): Game {
     const g = new Game(content, opts);
+    if (g.opts.scenario === "rad_season") g.opts.radCloudScale = Math.max(g.opts.radCloudScale, 3);
     generateHomeMap(g);
-    setupStart(g);
+    setupStart(g, startSurvivors(g.opts.scenario));
+    applyScenario(g);
     // Ruins that still stand closed keep their old roofs.
     completeRoofs(g);
     // Start at 07:00, so the first look at the world is in daylight.
@@ -199,6 +212,7 @@ export class Game {
     g.story.lastThreat = g.tick;
     g.weather.until = g.tick + g.ticksPerDay / 2;
     g.message("msg.intro", {}, "info");
+    startPlot(g, g.opts.storyline);
     return g;
   }
 
@@ -308,9 +322,12 @@ export class Game {
     const td = this.reg.terrain.list[L.terrain[i]];
     if (td.walkCost === 0) return 0;
     const th = L.thing[i];
-    if (th !== NO_THING && this.reg.things.list[this.things.get(th)!.def].blocks) return 0;
+    const thd = th !== NO_THING ? this.reg.things.list[this.things.get(th)!.def] : null;
+    if (thd?.blocks) return 0;
     const fl = L.floor[i];
-    return fl ? this.reg.floors.list[fl - 1].walkCost : td.walkCost;
+    const base = fl ? this.reg.floors.list[fl - 1].walkCost : td.walkCost;
+    // Opening a door takes a moment: walkers go 25% slower through it.
+    return thd?.door ? base / 0.75 : base;
   }
 
   /** Def of the thing on a tile, if any. */
@@ -348,6 +365,7 @@ export class Game {
     tickPawns(this);
     tickSocial(this);
     tickWorld(this);
+    tickPlot(this);
     tickTurrets(this);
     tickGoals(this);
   }

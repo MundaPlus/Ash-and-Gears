@@ -13,6 +13,15 @@ const SCALE = [110, 130.81, 146.83, 164.81, 196, 220, 261.63, 293.66, 329.63, 39
 const PROGRESSION = [110, 98, 87.31, 82.41];
 const BEAT = 0.42; // seconds per beat (about 140 bpm in eighths)
 
+/** Generated songs per mood (YuE2 via ComfyUI, `tools/audio/comfy-music.ts`). Missing files are skipped. */
+const POOLS: Record<string, string[]> = {
+  calm: ["calm_western", "calm_folk", "calm_western_2", "calm_folk_2", "calm_desert"],
+  calm_tech: ["calm_tech", "calm_tech_2", "calm_desert"],
+  night: ["night_ambient", "night_ambient_2"],
+  tense: ["tense", "tense_2"],
+  combat: ["combat", "combat_2"],
+};
+
 export class Audio {
   private ctx: AudioContext | null = null;
   private music!: GainNode;
@@ -59,7 +68,7 @@ export class Audio {
 
   /** Load the generated tracks that exist on the server. */
   private async loadTracks() {
-    const ids = ["calm_western", "calm_folk", "calm_tech", "night_ambient", "tense", "combat"];
+    const ids = [...new Set(Object.values(POOLS).flat())];
     await Promise.all(
       ids.map(async (id) => {
         try {
@@ -73,14 +82,24 @@ export class Audio {
     );
   }
 
-  /** Which generated track fits the moment, or null to use the synthesizer. */
+  /** Next track index per pool, so each mood rotates through its songs. */
+  private poolNext: Record<string, number> = {};
+
+  /** Which generated track fits the moment, or null to use the synthesizer. Keeps the song until it ends. */
   private pickTrack(): string | null {
-    const want =
-      this.mood === "combat" ? "combat" : this.mood === "tense" ? "tense" : this.mood === "night" ? "night_ambient" : this.tier >= 2 ? "calm_tech" : this.day % 2 ? "calm_western" : "calm_folk";
-    if (this.tracks.has(want)) return want;
-    // Calm moods can borrow the other calm track.
-    for (const alt of ["calm_western", "calm_folk", "calm_tech"]) if (this.mood === "calm" && this.tracks.has(alt)) return alt;
-    return null;
+    const pool = this.mood === "calm" ? (this.tier >= 2 ? "calm_tech" : "calm") : this.mood;
+    let have = (POOLS[pool] ?? []).filter((id) => this.tracks.has(id));
+    // Calm moods can borrow any calm song.
+    if (!have.length && this.mood === "calm") have = [...POOLS.calm, ...POOLS.calm_tech].filter((id) => this.tracks.has(id));
+    if (!have.length) return null;
+    const p = this.playing;
+    const nearEnd = p && this.ctx!.currentTime > p.started + p.src.buffer!.duration - 3.5;
+    if (p && have.includes(p.id) && !nearEnd) return p.id;
+    // The next song of the pool, not the one that just played.
+    let i = this.poolNext[pool] ?? Math.floor(this.day) % have.length;
+    if (have.length > 1 && have[i % have.length] === p?.id) i++;
+    this.poolNext[pool] = i + 1;
+    return have[i % have.length];
   }
 
   /** Crossfade to a generated track (or stop it with null). Tracks loop by crossfading into themselves. */
@@ -381,4 +400,85 @@ export class Audio {
         break;
     }
   }
+
+  // ---------------------------------------------------------------- story cues (Beta B9)
+
+  /**
+   * A short melodic cue for a story moment. Each storyline has its own motif and sound:
+   * the reactor hums in low square pulses, the bus plucks like a dusty guitar, the orbit shimmers
+   * in high sines. The music ducks while a cue plays.
+   */
+  cue(kind: "beat" | "site" | "won" | "lost" | "hacked", line: string | null = null): void {
+    const c = this.ctx;
+    if (!c || c.state !== "running") return;
+    const t = c.currentTime + 0.05;
+    const motif = STORY_MOTIFS[line ?? ""] ?? STORY_MOTIFS[""];
+    const out = c.createGain();
+    out.gain.value = 0.9;
+    out.connect(this.sfx);
+    const note = (f: number, at: number, dur: number, peak: number, type: OscillatorType = motif.wave) => {
+      const o = c.createOscillator();
+      o.type = type;
+      o.frequency.setValueAtTime(f, t + at);
+      const g = c.createGain();
+      g.gain.setValueAtTime(0.0001, t + at);
+      g.gain.exponentialRampToValueAtTime(peak, t + at + (motif.wave === "triangle" ? 0.004 : 0.03));
+      g.gain.exponentialRampToValueAtTime(0.0001, t + at + dur);
+      const f2 = c.createBiquadFilter();
+      f2.type = "lowpass";
+      f2.frequency.value = motif.wave === "square" ? 1400 : 5000;
+      o.connect(f2).connect(g).connect(out);
+      o.start(t + at);
+      o.stop(t + at + dur + 0.05);
+    };
+    let len = 1.5;
+    switch (kind) {
+      case "beat":
+        // The storyline's motif, then a held root a fifth below.
+        motif.notes.forEach((f, i) => note(f, i * 0.22, 0.5, 0.16));
+        note(motif.notes[0] / 1.5, motif.notes.length * 0.22, 1.6, 0.12, "sine");
+        len = motif.notes.length * 0.22 + 1.6;
+        break;
+      case "site":
+        // A radio blip, then the motif's first two notes.
+        note(1760, 0, 0.06, 0.08, "square");
+        note(1760, 0.12, 0.06, 0.08, "square");
+        note(motif.notes[0], 0.35, 0.5, 0.14);
+        note(motif.notes[1], 0.6, 0.8, 0.14);
+        len = 1.5;
+        break;
+      case "won":
+        // The motif twice, the second time an octave up, over a major chord.
+        motif.notes.forEach((f, i) => note(f, i * 0.3, 0.6, 0.15));
+        motif.notes.forEach((f, i) => note(f * 2, 1.4 + i * 0.3, 0.7, 0.12));
+        for (const r of [1, 1.25, 1.5, 2]) note(motif.notes[0] * r, 2.8, 3.2, 0.07, "sine");
+        len = 6;
+        break;
+      case "lost":
+        // The motif slow and falling, in sines.
+        [...motif.notes].reverse().forEach((f, i) => note(f / 2, i * 0.7, 1.2, 0.13, "sine"));
+        note(motif.notes[0] / 4, motif.notes.length * 0.7, 3, 0.1, "sine");
+        len = motif.notes.length * 0.7 + 3;
+        break;
+      case "hacked":
+        // A broken arpeggio: fast square notes that slip out of tune.
+        for (let i = 0; i < 8; i++) note(440 * 2 ** ((i % 4) / 4) * (1 + i * 0.03), i * 0.07, 0.08, 0.07, "square");
+        len = 1;
+        break;
+    }
+    // Duck the music under the cue.
+    const m = this.music.gain;
+    const full = this.volume.music * 0.5;
+    m.cancelScheduledValues(c.currentTime);
+    m.setTargetAtTime(full * 0.3, c.currentTime, 0.08);
+    m.setTargetAtTime(full, t + len, 0.6);
+  }
 }
+
+/** Story motifs (B9): notes in Hz and the sound of each storyline. "" is the default. */
+const STORY_MOTIFS: Record<string, { notes: number[]; wave: OscillatorType }> = {
+  "": { notes: [220, 261.63, 329.63, 392], wave: "triangle" },
+  reactor: { notes: [110, 164.81, 146.83, 220], wave: "square" },
+  bus: { notes: [196, 220, 261.63, 293.66, 329.63], wave: "triangle" },
+  orbit: { notes: [523.25, 659.25, 783.99, 1046.5], wave: "sine" },
+};

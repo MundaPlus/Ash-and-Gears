@@ -1,12 +1,33 @@
 import { t } from "@wc/data";
+import { useState } from "preact/hooks";
 import { ColonistBar } from "./ColonistBar.tsx";
+import { Ending } from "./Ending.tsx";
 import { PawnPanel } from "./PawnPanel.tsx";
 import { actions, useStore } from "./store.ts";
 import { Toasts } from "./Toasts.tsx";
 import { Toolbar } from "./Toolbar.tsx";
 import { GameMenu } from "./Screens.tsx";
 
+/** Item categories a stockpile can take (same list as the sim). */
+const STOCK_CATEGORIES = ["resource", "food", "water", "medicine", "weapon", "apparel", "blueprint", "misc"];
+
 export function Hud() {
+  const [folded, setFolded] = useState<Record<string, boolean>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem("wc-fold") ?? "{}");
+    } catch {
+      return {};
+    }
+  });
+  const toggleFold = (k: string) => {
+    const next = { ...folded, [k]: !folded[k] };
+    setFolded(next);
+    try {
+      localStorage.setItem("wc-fold", JSON.stringify(next));
+    } catch {
+      // no storage: the fold lasts for this page only
+    }
+  };
   const s = useStore();
   const layerName = s.layer <= 2 ? t(`layer.${s.layer}`) : t("layer.n", { n: s.layer });
   return (
@@ -14,8 +35,9 @@ export function Hud() {
       <div class="topleft">
         <div class="resources" data-testid="resources">
           {s.resources.map((r) => (
-            <span key={r.id} class="res">
+            <span key={r.id} class="res" title={r.loose > 0 ? t("res.loose", { n: r.loose }) : undefined}>
               {t(`res.${r.id}`)} <b>{r.count}</b>
+              {r.loose > 0 && <small class="loose">+{r.loose}</small>}
             </span>
           ))}
         </div>
@@ -24,22 +46,57 @@ export function Hud() {
       <Toasts />
       <Toolbar />
       <GameMenu />
-      {s.goals.length > 0 && !s.goals.every((g) => g.done) && (
+      {((s.goals.length > 0 && !s.goals.every((g) => g.done)) || s.alerts.length > 0 || s.story) && (
         <aside class="goals" data-testid="goals">
-          <h3>{t("goal.title")}</h3>
-          {s.goals.map((g) => (
-            <p key={g.id} class={g.done ? "done" : ""}>
-              {g.done ? "✔" : "○"} {t(`goal.${g.id}`)}
-            </p>
-          ))}
-          {s.goalHint && (
-            <p class="hint" data-testid="goal-hint">
-              {t(s.goalHint)}
-            </p>
+          {s.story && (
+            <div class="story" data-testid="story">
+              <h3 class="fold" onClick={() => toggleFold("story")}>
+                {folded.story ? "▸" : "▾"} {t(`line.${s.story.line}`)}
+              </h3>
+              <b>{t(`story.${s.story.line}.${s.story.beat}`)}</b>
+              {!folded.story && s.story.goals.map((g, i) => (
+                <p key={i} class={g.met ? "done" : ""}>
+                  {g.met ? "✔" : "○"} {t(g.key, g.params)}
+                </p>
+              ))}
+            </div>
+          )}
+          {s.goals.length > 0 && !s.goals.every((g) => g.done) && (
+            <>
+              <h3 class="fold" onClick={() => toggleFold("goals")}>
+                {folded.goals ? "▸" : "▾"} {t("goal.title")}
+              </h3>
+              {!folded.goals && s.goals.map((g) => (
+                <p key={g.id} class={g.done ? "done" : ""}>
+                  {g.done ? "✔" : "○"} {t(`goal.${g.id}`)}
+                </p>
+              ))}
+              {s.goalHint && !folded.goals && (
+                <p class="hint" data-testid="goal-hint">
+                  {t(s.goalHint)}
+                </p>
+              )}
+            </>
+          )}
+          {s.alerts.length > 0 && (
+            <div class="alerts" data-testid="alerts">
+              {s.alerts.map((a) => (
+                <button key={a.key} class={`alert ${a.level}`} disabled={!a.at} onClick={() => a.at && actions.jumpTo(a.at)}>
+                  {t(a.key, a.params)}
+                </button>
+              ))}
+            </div>
           )}
         </aside>
       )}
+      {s.banner && (
+        <div class="banner" key={s.banner.title} data-testid="banner">
+          <small>{s.banner.kicker}</small>
+          <b>{s.banner.title}</b>
+        </div>
+      )}
       <PawnPanel />
+      <Ending />
       <header class="topbar">
         <div class="clock" data-testid="clock">
           <b>{s.clock}</b>
@@ -101,6 +158,16 @@ export function Hud() {
           {s.inspect.lines.map((l) => (
             <p key={l}>{l}</p>
           ))}
+          {s.inspect.actions && (
+            <div class="tileactions" data-testid="tile-actions">
+              {s.inspect.actions.list.map((a) => (
+                <button key={a} class={s.inspect!.actions!.first === a ? "on" : ""} data-testid={`act-${a}`} onClick={() => actions.tileAction(a)}>
+                  {t(`action.${a}`)}
+                  {s.inspect!.actions!.first === a && <kbd>F</kbd>}
+                </button>
+              ))}
+            </div>
+          )}
           {s.inspect.bills && s.inspect.bills.length > 0 && (
             <div class="bills" data-testid="bills">
               <h3>{t("bills.title")}</h3>
@@ -129,6 +196,27 @@ export function Hud() {
                   {t(`recipe.${r}`)}
                 </button>
               ))}
+            </div>
+          )}
+          {s.inspect.stockpile && (
+            <div class="bills" data-testid="stockpile">
+              <h3>{t("stockpile.title")}</h3>
+              <div class="prio-row">
+                <span>{t("stockpile.priority")}</span>
+                {[1, 2, 3, 4].map((n) => (
+                  <button key={n} class={s.inspect!.stockpile!.priority === n ? "on" : ""} data-testid={`stock-prio-${n}`} onClick={() => actions.setZonePriority(s.inspect!.stockpile!.zoneId, n)}>
+                    {t(`stockpile.prio_${n}`)}
+                  </button>
+                ))}
+              </div>
+              {STOCK_CATEGORIES.map((c) => {
+                const on = s.inspect!.stockpile!.allow.includes(c);
+                return (
+                  <button key={c} class={on ? "on" : ""} onClick={() => actions.setZoneAllow(s.inspect!.stockpile!.zoneId, c, !on)}>
+                    {t(`category.${c}`)}
+                  </button>
+                );
+              })}
             </div>
           )}
           {s.inspect.prisonBed && (

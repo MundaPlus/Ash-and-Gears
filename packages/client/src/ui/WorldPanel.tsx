@@ -33,17 +33,17 @@ export function WorldPanel() {
         <rect x={w.home.x * CELL + 2} y={w.home.y * CELL + 2} width={CELL - 4} height={CELL - 4} fill="#efd8a4" stroke="#1b1714" />
         {w.sites.map((x) => (
           <g key={x.id} class={`site ${x.id === siteId ? "on" : ""}`} data-testid={`site-${x.id}`} onClick={() => setSite(x.id)}>
-            <circle cx={x.x * CELL + CELL / 2} cy={x.y * CELL + CELL / 2} r={CELL / 2 - 1} fill={x.outpost !== null ? "#9fd14a" : "#1b1714"} stroke={x.id === siteId ? "#efd8a4" : "#d9742e"} stroke-width={2} />
-            <text x={x.x * CELL + CELL / 2} y={x.y * CELL + CELL / 2 + 4} text-anchor="middle" font-size="9" fill="#efd8a4">
-              {SITE_ICON[x.kind]}
+            <circle cx={x.x * CELL + CELL / 2} cy={x.y * CELL + CELL / 2} r={CELL / 2 - 1} fill={x.outpost !== null ? "#9fd14a" : x.story ? "#e3c25a" : "#1b1714"} stroke={x.id === siteId ? "#efd8a4" : x.story ? "#ffffff" : "#d9742e"} stroke-width={2} />
+            <text x={x.x * CELL + CELL / 2} y={x.y * CELL + CELL / 2 + 4} text-anchor="middle" font-size="9" fill={x.story ? "#1b1714" : "#efd8a4"}>
+              {x.story ? "★" : SITE_ICON[x.kind]}
             </text>
           </g>
         ))}
       </svg>
       {site ? (
         <section>
-          <h4>{t(`site.${site.kind}`)}</h4>
-          <p class="hint">{t(`site.${site.kind}.desc`)}</p>
+          <h4>{site.story ? t(`story.site.${site.story}`) : t(`site.${site.kind}`)}</h4>
+          <p class="hint">{site.story ? t("world.story_site") : t(`site.${site.kind}.desc`)}</p>
           <p>
             {t("world.travel", { h: site.travel })} · {t("world.danger", { n: Math.round(site.danger * 100) })} · {t("world.richness", { n: Math.round(site.richness * 100) })}
           </p>
@@ -90,7 +90,7 @@ export function WorldPanel() {
           <h4>{t("world.away")}</h4>
           {w.expeditions.map((e) => (
             <p key={e.id}>
-              {e.names.join(", ")} · {t(`site.${e.site}`)} · {t(`world.stage.${e.stage}`, { h: e.hoursLeft })}
+              {e.names.join(", ")} · {t(e.site)} · {t(`world.stage.${e.stage}`, { h: e.hoursLeft })}
             </p>
           ))}
         </section>

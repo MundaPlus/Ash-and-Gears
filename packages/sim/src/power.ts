@@ -13,6 +13,17 @@ import { NO_THING, type Thing } from "./map.ts";
 import { pickUp } from "./hauling.ts";
 
 const POWER_EVERY = 20;
+/** A consumer's backup battery, in hours of its own use, unless the thing sets `bank`. */
+const BACKUP_HOURS = 0.5;
+/** A backup battery fills from empty in this many hours (when the network has power to spare). */
+const BANK_FILL_HOURS = 4;
+
+/** Size of a consumer's backup battery (Wh); 0 for things that use no power. */
+export function bankSize(game: Game, t: Thing): number {
+  const p = game.reg.things.list[t.def].power;
+  if (!p?.use && !p?.bank) return 0;
+  return p.bank ?? p.use * BACKUP_HOURS;
+}
 
 export interface PowerNet {
   id: number;
@@ -114,6 +125,11 @@ export function tickPower(game: Game): void {
   ensureNets(game);
   if (game.tick % POWER_EVERY !== 0) return;
   const dtH = POWER_EVERY / game.ticksPerHour;
+  // Fires burn their fuel all the time.
+  for (const t of game.things.values()) {
+    const b = game.reg.things.list[t.def].burns;
+    if (b && !b.whileWorking && (t.fuel ?? 0) > 0) t.fuel = Math.max(0, t.fuel! - b.perHour * dtH);
+  }
   for (const net of game.nets) {
     let produce = 0, use = 0, stored = 0, capacity = 0;
     const gens: Thing[] = [], batteries: Thing[] = [], users: Thing[] = [];
@@ -167,6 +183,25 @@ export function tickPower(game: Game): void {
         game.lastBlackoutMsg = game.tick;
       }
     }
+    // Cut machines run on their own backup battery while it lasts.
+    for (const u of users) {
+      if (!cut.has(u.id)) continue;
+      const need = game.reg.things.list[u.def].power!.use * dtH;
+      if ((u.bank ?? 0) >= need) {
+        u.bank! -= need;
+        cut.delete(u.id);
+      }
+    }
+    // Backup batteries fill next, from what is left (generators first, then the batteries).
+    let spare = Math.max(0, avail - served);
+    for (const u of users) {
+      const size = bankSize(game, u);
+      const add = Math.min(size - (u.bank ?? 0), (size / BANK_FILL_HOURS) * dtH, spare * dtH);
+      if (add <= 0) continue;
+      u.bank = (u.bank ?? 0) + add;
+      spare -= add / dtH;
+      served += add / dtH;
+    }
     // Balance: surplus charges batteries, shortage drains them.
     stored = Math.max(0, Math.min(capacity, stored + (produce - served) * dtH));
     // Spread the charge evenly over the batteries.
@@ -174,6 +209,17 @@ export function tickPower(game: Game): void {
     for (const u of users) u.powered = !cut.has(u.id);
     Object.assign(net, { produce, use, stored, capacity });
   }
+}
+
+/** Fuel a thing takes: a generator's or a fire's (`burns`). */
+export function fuelOf(game: Game, t: Thing) {
+  const d = game.reg.things.list[t.def];
+  return d.power?.fuel ?? d.burns;
+}
+
+/** Fires burn while they have fuel; things that burn nothing are always "lit". */
+export function isLit(game: Game, t: Thing): boolean {
+  return !game.reg.things.list[t.def].burns || (t.fuel ?? 0) > 0;
 }
 
 export function isPowered(game: Game, t: Thing): boolean {
@@ -190,7 +236,7 @@ registerWorkGiver({
   workType: "haul",
   give(game, p) {
     for (const t of game.things.values()) {
-      const f = game.reg.things.list[t.def].power?.fuel;
+      const f = fuelOf(game, t);
       if (!f || (t.fuel ?? 0) > f.capacity * 0.5 || isReserved(game, `thing:${t.id}`, p)) continue;
       if (!game.path.canReachAdjacent(p, t)) continue;
       const fuelDef = game.reg.items.idx(f.item);
@@ -210,7 +256,7 @@ registerWorkGiver({
 registerJob("refuel", (game, p, job) => {
   const gen = game.things.get(job.targetId!);
   if (!gen) return "fail";
-  const f = game.reg.things.list[gen.def].power!.fuel!;
+  const f = fuelOf(game, gen)!;
   if (job.stage === 0) {
     const s = game.items.get(job.data!.src as number);
     if (!s || !goTo(game, p, s)) return "fail";

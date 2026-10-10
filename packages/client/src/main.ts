@@ -1,13 +1,13 @@
 import { Application, Container, Graphics } from "pixi.js";
 import { h, render } from "preact";
-import { loadCoreContent, t } from "@wc/data";
+import { applyMods, loadCoreContent, t } from "@wc/data";
+import { enabledPacks, setModErrors } from "./mods.ts";
 import {
   activeWorkTypes,
   billTarget,
   recipesFor,
   setBillTarget,
   stockOf,
-  countItems,
   DESIG_KINDS,
   Game,
   moodTarget,
@@ -33,12 +33,14 @@ import { loadAiArt } from "./render/aiArt.ts";
 import { ART_SIZES, makeTextures, TILE, type ArtSettings } from "./render/textures.ts";
 import { WorldRenderer } from "./render/world.ts";
 import { Hud } from "./ui/Hud.tsx";
-import { actions, store, type BuildOption, type ColonistSummary, type PawnDetail, type WorkRow, type WorldUi, type CaravanUi } from "./ui/store.ts";
+import { actions, store, type BuildOption, type ColonistSummary, type PawnDetail, type WorkRow, type WorldUi, type CaravanUi, type StoryUi, type EndingUi } from "./ui/store.ts";
 
 /** Most sim ticks per frame, so a slow frame cannot snowball. */
 const MAX_TICKS_PER_FRAME = 12;
 const TOAST_SEC = 7;
 /** Big events pause the game so the player can react (spec 06). */
+/** Toolbar menus by key (W, A, S, D move the camera). */
+const MENU_KEYS: Record<string, "build" | "orders" | "zones" | "work" | "research" | "world"> = { b: "build", o: "orders", z: "zones", j: "work", t: "research", m: "world" };
 const AUTO_PAUSE = new Set(["msg.raid", "msg.raid_faction", "msg.glow_hounds", "msg.rad_rats", "msg.rad_warning", "msg.downed", "msg.died"]);
 
 const hex = (n: number) => `#${n.toString(16).padStart(6, "0")}`;
@@ -76,13 +78,18 @@ function optionsFromParams(params: URLSearchParams) {
     raidScale: num("raid", 1),
     mutantScale: num("mutant", 1),
     radCloudScale: num("rad", 1),
+    storyline: /^[a-z0-9_-]+$/.test(params.get("line") ?? "") ? params.get("line") : null,
+    scenario: (sim.SCENARIOS as readonly string[]).includes(params.get("scen") ?? "") ? params.get("scen")! : "standard",
     storyteller: (story === "grandma" || story === "chaos" || story === "none" ? story : "sheriff") as "sheriff" | "grandma" | "chaos" | "none",
   };
 }
 
 async function boot() {
   const params = new URLSearchParams(location.search);
-  const content = loadCoreContent();
+  // Mods (B7): enabled packs go on top of the core content; bad packs are left out and shown in the mod list.
+  const modded = applyMods(loadCoreContent(), enabledPacks());
+  setModErrors(modded.errors);
+  const content = modded.content;
   let game: Game;
   if (params.has("load")) {
     let slot: string | null;
@@ -138,6 +145,16 @@ async function boot() {
   /** Rain drops in screen space: x, y, speed. */
   const drops = Array.from({ length: 140 }, () => [Math.random(), Math.random(), 0.6 + Math.random() * 0.6]);
 
+  // A left click on the map while a menu is open only closes the menu (it does not select or build).
+  app.canvas.addEventListener(
+    "pointerdown",
+    (e) => {
+      if (e.button !== 0 || !store.state.menu) return;
+      store.set({ menu: null });
+      e.stopImmediatePropagation();
+    },
+    { capture: true },
+  );
   const camera = new Camera(app.canvas, world, { w: game.map.w * TILE, h: game.map.h * TILE });
   camera.centerOn((game.home.x + 0.5) * TILE, (game.home.y + 0.5) * TILE);
   camera.zoom = 1.5;
@@ -253,6 +270,23 @@ async function boot() {
     sim.setResearch(game, id);
     store.set({ research: researchRows() });
   };
+  actions.setZonePriority = (zoneId, priority) => {
+    sim.setZonePriority(game, zoneId, priority);
+    if (inspected) inspectTile(inspected.x, inspected.y);
+  };
+  actions.setZoneAllow = (zoneId, category, on) => {
+    sim.setZoneAllow(game, zoneId, category, on);
+    if (inspected) inspectTile(inspected.x, inspected.y);
+  };
+  actions.jumpTo = (at) => {
+    if (at.layer !== renderer.layer) actions.setLayer(at.layer);
+    camera.centerOn((at.x + 0.5) * TILE, (at.y + 0.5) * TILE);
+  };
+  actions.tileAction = (a) => {
+    if (!inspected) return;
+    if (sim.doTileAction(game, renderer.layer, inspected.x, inspected.y, a as sim.TileAction)) audio.play("click");
+    inspectTile(inspected.x, inspected.y);
+  };
   actions.setCapture = (id, on) => {
     const p = game.pawns.get(id);
     if (p) sim.setCapture(game, p, on);
@@ -315,6 +349,12 @@ async function boot() {
   actions.setWork = (id, work, value) => {
     const p = game.pawns.get(id);
     if (p && !p.noWork?.includes(work)) p.work[work] = value;
+    store.set({ workRows: workRows() });
+  };
+
+  actions.setSchedule = (id, hour, slot) => {
+    const p = game.pawns.get(id);
+    if (p && (sim.SLOTS as string[]).includes(slot)) sim.setSchedule(game, p, hour, slot as sim.Slot);
     store.set({ workRows: workRows() });
   };
 
@@ -399,6 +439,11 @@ async function boot() {
       if ((thing.contamUntil ?? 0) > game.tick) lines.push(t("inspect.contaminated"));
       if (def.bench)
         bills = recipesFor(game, def.id).map((r) => ({ benchId: thing.id, recipe: r.id, target: billTarget(game, thing, r), stock: stockOf(game, r) }));
+      if (def.grave && thing.filled) lines.push(t("inspect.grave_filled"));
+      if (def.burns) {
+        lines.push(t("inspect.fuel", { v: Math.round(thing.fuel ?? 0), max: def.burns.capacity, item: t(`item.${def.burns.item}`) }));
+        if (!thing.fuel) lines.push(t("inspect.fire_out"));
+      }
       if (def.power) {
         const p = def.power;
         if (p.fuel) lines.push(t("inspect.fuel", { v: Math.round(thing.fuel ?? 0), max: p.fuel.capacity, item: t(`item.${p.fuel.item}`) }));
@@ -454,8 +499,17 @@ async function boot() {
       const st = game.items.get(it)!;
       const name = t(`item.${game.reg.items.list[st.def].id}`);
       lines.push(t("inspect.items", { count: st.count, item: st.contaminated ? `${name} (${t("item.contaminated")})` : name }));
+      // Food and bodies: how long until it rots, here and at this temperature.
+      if (game.reg.items.list[st.def].rotDays) {
+        const d = sim.daysToRot(game, st);
+        lines.push(d === Infinity ? t("inspect.rot_frozen") : t("inspect.rot_days", { n: d < 1 ? Math.max(1, Math.round(d * 24)) + " h" : Math.round(d * 10) / 10 + " d" }));
+      }
     }
-    store.set({ inspect: { title, lines, bills, crafter, filter, power, prisonBed } });
+    const zoneHere = L.zone[i] !== sim.NO_THING ? game.zones.get(L.zone[i]) : undefined;
+    const stockpile = zoneHere?.kind === "stockpile" ? { zoneId: zoneHere.id, allow: [...zoneHere.allow], priority: sim.zonePriority(zoneHere) } : undefined;
+    const ta = sim.tileActions(game, renderer.layer, x, y);
+    const actionsUi = ta.actions.length ? { list: ta.actions as string[], first: ta.first } : undefined;
+    store.set({ inspect: { title, lines, bills, crafter, filter, power, prisonBed, actions: actionsUi, stockpile } });
   }
   let inspected: { x: number; y: number } | null = null;
   actions.setBillTarget = (benchId, recipe, n) => {
@@ -466,6 +520,32 @@ async function boot() {
   const jobKey = (p: Pawn) =>
     p.mentalBreak ? "job.sulk" : p.job?.kind === "work" ? `task.${p.job.data!.task}` : `job.${p.job?.kind ?? "none"}`;
 
+  // ---------------------------------------------------------------- story (Beta)
+  let endingSeen = !!(game.plot.won || game.plot.lost);
+  function storyUi(): StoryUi | null {
+    const b = sim.currentBeat(game);
+    if (!b || !game.plot.line) return null;
+    const goals = b.until.map((c) => {
+      const met = sim.conditionMet(game, c);
+      const id = c.id ?? "";
+      const params: Record<string, string | number> = { n: c.n ?? 1 };
+      if (c.type === "items") params.item = t(`item.${id}`);
+      if (c.type === "research") params.project = t(`research.${id}`);
+      if (c.type === "built") params.thing = t(`thing.${id}`);
+      if (c.type === "visited" || c.type === "outpost") params.site = t(`story.site.${id}`);
+      if (c.type === "flag") params.flag = t(`story.flag.${id}`);
+      if (c.type === "items") params.have = sim.countItems(game, id);
+      return { key: `goal.story.${c.type}`, params, met };
+    });
+    return { line: game.plot.line, beat: b.id, goals };
+  }
+  function endingUi(): EndingUi | null {
+    if (endingSeen || !(game.plot.won || game.plot.lost)) return null;
+    endingSeen = true;
+    paused = true;
+    return { kind: game.plot.won ? "won" : "lost", line: game.plot.line, slides: sim.endingSlides(game) };
+  }
+  actions.closeEnding = () => store.set({ ending: null });
   let worldProblem: string | null = null;
   function worldUi(): WorldUi {
     const w = sim.ensureWorld(game);
@@ -476,11 +556,14 @@ async function boot() {
       home: w.home,
       sites: w.sites.map((s) => {
         const need = sim.suppliesNeeded(game, s, 1);
-        return { id: s.id, x: s.x, y: s.y, kind: s.kind, richness: s.richness, danger: s.danger, travel: sim.travelHours(game, s), outpost: s.outpost ? Object.values(s.outpost.stock).reduce((a, b) => a + b, 0) : null, food: need.food, water: need.water };
+        return { id: s.id, x: s.x, y: s.y, kind: s.kind, story: s.storyKey ?? null, richness: s.richness, danger: s.danger, travel: sim.travelHours(game, s), outpost: s.outpost ? Object.values(s.outpost.stock).reduce((a, b) => a + b, 0) : null, food: need.food, water: need.water };
       }),
       expeditions: game.expeditions.map((e) => ({
         id: e.id,
-        site: w.sites.find((s) => s.id === e.siteId)?.kind ?? "",
+        site: (() => {
+          const st = w.sites.find((s) => s.id === e.siteId);
+          return st?.storyKey ? `story.site.${st.storyKey}` : `site.${st?.kind ?? ""}`;
+        })(),
         stage: e.stage,
         hoursLeft: Math.max(0, Math.ceil((e.until - game.tick) / game.ticksPerHour)),
         names: e.pawns.map((p) => p.nick),
@@ -509,6 +592,13 @@ async function boot() {
     tradeProblem = p ? `trade.problem.${p}` : null;
     store.set({ caravan: caravanUi() });
   };
+  // Panels with data fill at once when they open (not on the next UI update).
+  const openMenuBase = actions.openMenu;
+  actions.openMenu = (m) => {
+    openMenuBase(m);
+    if (store.state.menu === "world") store.set({ world: worldUi() });
+    if (store.state.menu === "trade") store.set({ caravan: caravanUi() });
+  };
   actions.sendExpedition = (siteId, ids, outpost) => {
     const site = sim.ensureWorld(game).sites.find((s) => s.id === siteId);
     const pawns = ids.map((id) => game.pawns.get(id)).filter((p): p is sim.Pawn => !!p);
@@ -518,13 +608,15 @@ async function boot() {
     store.set({ world: worldUi() });
   };
   function workRows(): WorkRow[] {
-    return [...game.pawns.values()].map((p) => ({
+    return [...game.pawns.values()].filter((p) => p.faction === "colony").map((p) => ({
       id: p.id,
       nick: p.nick,
       color: hex(PawnRenderer.colorOf(p)),
       work: { ...p.work },
       skills: Object.fromEntries(game.reg.skills.list.map((s) => [s.id, sim.skillLevel(game, p, s.id)])),
       noWork: p.noWork ?? [],
+      schedule: sim.scheduleOf(game, p),
+      robot: !!p.robot,
     }));
   }
 
@@ -582,8 +674,8 @@ async function boot() {
     return [...game.pawns.values()].filter((p) => p.faction === "colony").map((p) => {
       const worst = p.situational.map((ti) => game.reg.thoughts.list[ti]).sort((a, b) => a.mood - b.mood)[0];
       const warn = p.health.downed ? "downed" : p.drafted ? "drafted" : (worst?.id ?? null);
-      return { id: p.id, nick: p.nick, mood: Math.round(p.mood), color: hex(PawnRenderer.colorOf(p)), job: jobKey(p), warn };
-    });
+      return { id: p.id, nick: p.nick, mood: Math.round(p.mood), color: hex(PawnRenderer.colorOf(p)), job: jobKey(p), warn, ...(p.robot ? { charge: p.charge ?? 1 } : {}) };
+    }).sort((a, b) => Number(a.charge !== undefined) - Number(b.charge !== undefined));
   }
 
   let msgSeen = 0;
@@ -596,9 +688,18 @@ async function boot() {
     let toasts = store.state.toasts.filter((x) => x.until > now);
     for (const m of fresh) {
       if (AUTO_PAUSE.has(m.key) && !capturing) paused = true;
-      if (m.key === "msg.research_done" || m.key.startsWith("goal.")) audio.play("done");
+      // Story moments get their storyline's music cue (B9).
+      if (m.key === "msg.story_beat") audio.cue("beat", game.plot.line);
+      else if (m.key === "msg.story_site") audio.cue("site", game.plot.line);
+      else if (m.key === "msg.story_won") audio.cue("won", game.plot.line);
+      else if (m.key === "msg.colony_lost") audio.cue("lost", game.plot.line);
+      else if (m.key === "msg.robot_hacked") audio.cue("hacked");
+      else if (m.key === "msg.research_done" || m.key.startsWith("goal.")) audio.play("done");
       else if (m.level === "bad") audio.play("bad");
       else if (m.level === "warn") audio.play("alert", 0.7);
+      // A new story chapter: its title fades in at the top (B9).
+      if (m.key === "msg.story_beat" && typeof m.params.beat === "string" && game.plot.line)
+        store.set({ banner: { kicker: t(`line.${game.plot.line}`), title: t(m.params.beat), until: now + 6 } });
       const params = { ...m.params };
       if (m.key === "msg.skill_up") params.skill = t(`skill.${params.skill}`);
       if (typeof params.item === "string") params.item = t(`item.${params.item}`);
@@ -607,12 +708,14 @@ async function boot() {
       if (typeof params.cause === "string") params.cause = t(`cause.${params.cause}`);
       if (typeof params.project === "string") params.project = t(`research.${params.project}`);
       if (typeof params.faction === "string") params.faction = t(`fac.${params.faction}`);
-      if (typeof params.site === "string") params.site = t(`site.${params.site}`);
+      if (typeof params.site === "string") params.site = params.site.startsWith("story.") ? t(params.site) : t(`site.${params.site}`);
+      if (typeof params.beat === "string") params.beat = t(params.beat);
       if (typeof params.kind === "string") params.kind = t(`pawn.${params.kind}`);
-      toasts.push({ id: toastId++, text: t(m.key, params), level: m.level, until: now + TOAST_SEC });
+      toasts.push({ id: toastId++, text: t(m.key, params), level: m.level, until: now + TOAST_SEC, ...(m.at ? { at: m.at } : {}) });
     }
     toasts = toasts.slice(-4);
     if (fresh.length || toasts.length !== store.state.toasts.length) store.set({ toasts });
+    if (store.state.banner && store.state.banner.until < now) store.set({ banner: null });
   }
 
   window.addEventListener("keydown", (e) => {
@@ -623,6 +726,8 @@ async function boot() {
     } else if (e.key === "1" || e.key === "2" || e.key === "3") actions.setSpeed(Number(e.key));
     else if ((e.key === "q" || e.key === "e") && tools.spec) actions.rotateTool(e.key === "e" ? 1 : -1);
     else if (e.key === "p" || e.key === "P") actions.togglePowerOverlay();
+    else if (MENU_KEYS[e.key.toLowerCase()]) actions.openMenu(MENU_KEYS[e.key.toLowerCase()]);
+    else if ((e.key === "f" || e.key === "F") && store.state.inspect?.actions?.first) actions.tileAction(store.state.inspect.actions.first);
     else if (e.key === "r" || e.key === "R") {
       if (selected !== null) actions.toggleDraft(selected);
     } else if (e.key === "PageUp") actions.setLayer(renderer.layer - 1);
@@ -635,10 +740,17 @@ async function boot() {
   });
 
   let fpsFrames = 0, fpsTime = 0, uiTime = 0, clock = 0, lastFxTick = game.tick;
+  // A new story game opens with the storyline and its first chapter.
+  const firstBeat = sim.currentBeat(game);
+  if (firstBeat && game.plot.line && game.plot.beat === 0 && game.tick - game.plot.beatStart < game.ticksPerHour * 2)
+    store.set({ banner: { kicker: t(`line.${game.plot.line}`), title: t(`story.${game.plot.line}.${firstBeat.id}`), until: 7 } });
+  /** Animation time: runs only while the game runs (a little faster at higher speeds), so pause freezes everything. */
+  let anim = 0;
   /** One frame: sim ticks for the elapsed time, camera, renderers, audio, UI. */
   function frame(deltaMS: number) {
     const dt = Math.min(deltaMS, 250) / 1000;
     clock += dt;
+    if (!paused) anim += dt * Math.min(speed, 2);
     if (!paused) {
       acc += dt * TICKS_PER_SECOND * speed;
       let n = Math.min(Math.floor(acc), MAX_TICKS_PER_FRAME * speed);
@@ -650,9 +762,9 @@ async function boot() {
     }
     camera.update(dt);
     renderer.update(camera.view, camera.zoom);
-    pawnsR.update(clock, camera.zoom);
+    pawnsR.update(anim, camera.zoom);
     fx.update(clock, camera.view);
-    dyn.update(clock, camera.view, renderer.layer > 0 ? 0.6 : darkness(game.hourOfDay), (x, y) => ({ x: x * camera.zoom + world.position.x, y: y * camera.zoom + world.position.y }), camera.zoom);
+    dyn.update(anim, camera.view, renderer.layer > 0 ? 0.6 : darkness(game.hourOfDay), (x, y) => ({ x: x * camera.zoom + world.position.x, y: y * camera.zoom + world.position.y }), camera.zoom);
 
     // Night: underground is always dim, the surface follows the clock.
     const dark = renderer.layer > 0 ? 0.35 : darkness(game.hourOfDay) * 0.55;
@@ -719,6 +831,9 @@ async function boot() {
         season: t(`season.${tm.season}`, { year: tm.year }),
         weather: game.weather.kind,
         goals: sim.GOALS.map((id) => ({ id, done: !!game.goals[id] })),
+        alerts: sim.computeAlerts(game),
+        story: storyUi(),
+        ...((e) => (e ? { ending: e } : {}))(endingUi()),
         goalHint: (() => {
           const next = sim.GOALS.find((id) => !game.goals[id]);
           return next ? sim.goalHint(game, next) : null;
@@ -732,15 +847,21 @@ async function boot() {
         ...(store.state.menu === "research" ? { research: researchRows() } : {}),
         ...(store.state.menu === "build" ? { buildOptions: buildRows() } : {}),
         pawn: sel ? pawnDetail(sel) : null,
-        resources: [
-          { id: "meals", count: countItems(game, "simple_meal") },
-          { id: "food", count: countItems(game, "canned_food") },
-          { id: "raw", count: game.reg.items.list.filter((d) => d.raw).reduce((n, d) => n + countItems(game, d.id), 0) },
-          { id: "water", count: countItems(game, "clean_water") + countItems(game, "dirty_water") },
-          { id: "scrap", count: countItems(game, "scrap") },
-          { id: "wood", count: countItems(game, "wood") },
-          { id: "stone", count: countItems(game, "stone") },
-        ],
+        // Only what is stored counts: loose items on the map are not in the colony's hands yet (shown as "+N").
+        resources: (
+          [
+            ["meals", ["simple_meal"]],
+            ["food", ["canned_food"]],
+            ["raw", game.reg.items.list.filter((d) => d.raw).map((d) => d.id)],
+            ["water", ["clean_water", "dirty_water"]],
+            ["scrap", ["scrap"]],
+            ["wood", ["wood"]],
+            ["stone", ["stone"]],
+          ] as [string, string[]][]
+        ).map(([id, items]) => {
+          const count = items.reduce((n, i) => n + sim.storedCount(game, i), 0);
+          return { id, count, loose: items.reduce((n, i) => n + sim.countItems(game, i), 0) - count };
+        }),
       });
       drainMessages(clock);
       if (fpsTime > 1) fpsFrames = fpsTime = 0;

@@ -158,9 +158,18 @@
    "components": 2
   },
   "drops": {
-   "steel": [2, 6],
-   "bandage": [1, 4],
-   "canned_food": [2, 6]
+   "steel": [
+    2,
+    6
+   ],
+   "bandage": [
+    1,
+    4
+   ],
+   "canned_food": [
+    2,
+    6
+   ]
   },
   "lootChance": 0.5,
   "blueprintChance": 0.7
@@ -238,7 +247,10 @@
  },
  {
   "id": "bedroll",
-  "footprint": [1, 2],
+  "footprint": [
+   1,
+   2
+  ],
   "kind": "furniture",
   "color": "#b0834e",
   "glyph": "b",
@@ -258,7 +270,10 @@
  },
  {
   "id": "scrap_bed",
-  "footprint": [2, 2],
+  "footprint": [
+   2,
+   2
+  ],
   "kind": "furniture",
   "color": "#d6ab6b",
   "glyph": "B",
@@ -280,7 +295,10 @@
  },
  {
   "id": "table",
-  "footprint": [2, 1],
+  "footprint": [
+   2,
+   1
+  ],
   "kind": "furniture",
   "color": "#84603f",
   "glyph": "=",
@@ -328,11 +346,23 @@
    "work": 50,
    "menu": "furniture"
   },
-  "bench": true
+  "bench": true,
+  "burns": {
+   "item": "wood",
+   "perHour": 0.25,
+   "capacity": 15
+  },
+  "joy": {
+   "fun": 0.35,
+   "seats": 4
+  }
  },
  {
   "id": "scrap_bench",
-  "footprint": [2, 1],
+  "footprint": [
+   2,
+   1
+  ],
   "kind": "furniture",
   "color": "#6f8088",
   "glyph": "S",
@@ -350,7 +380,10 @@
  },
  {
   "id": "stove",
-  "footprint": [2, 1],
+  "footprint": [
+   2,
+   1
+  ],
   "kind": "furniture",
   "color": "#4a3b33",
   "glyph": "O",
@@ -365,7 +398,13 @@
    "work": 260,
    "menu": "production"
   },
-  "bench": true
+  "bench": true,
+  "burns": {
+   "item": "wood",
+   "perHour": 1,
+   "capacity": 20,
+   "whileWorking": true
+  }
  },
  {
   "id": "glowcorn_plant",
@@ -511,7 +550,10 @@
  },
  {
   "id": "research_desk",
-  "footprint": [2, 1],
+  "footprint": [
+   2,
+   1
+  ],
   "kind": "furniture",
   "color": "#4d6670",
   "glyph": "R",
@@ -529,7 +571,10 @@
  },
  {
   "id": "scrap_generator",
-  "footprint": [2, 1],
+  "footprint": [
+   2,
+   1
+  ],
   "kind": "furniture",
   "color": "#8a3b2e",
   "glyph": "G",
@@ -609,7 +654,10 @@
  {
   "id": "solar_panel",
   "kind": "furniture",
-  "footprint": [2, 2],
+  "footprint": [
+   2,
+   2
+  ],
   "color": "#3b4f63",
   "glyph": "*",
   "hp": 120,
@@ -631,6 +679,10 @@
  },
  {
   "id": "wind_turbine",
+  "footprint": [
+   2,
+   2
+  ],
   "kind": "furniture",
   "color": "#a6b0ba",
   "glyph": "Y",
@@ -653,6 +705,10 @@
  },
  {
   "id": "battery",
+  "footprint": [
+   1,
+   2
+  ],
   "kind": "furniture",
   "color": "#3b4f63",
   "glyph": "B",
@@ -693,7 +749,10 @@
  },
  {
   "id": "powered_bench",
-  "footprint": [2, 1],
+  "footprint": [
+   2,
+   1
+  ],
   "kind": "furniture",
   "color": "#6d86a0",
   "glyph": "P",
@@ -716,7 +775,10 @@
  },
  {
   "id": "smelter",
-  "footprint": [2, 1],
+  "footprint": [
+   2,
+   1
+  ],
   "kind": "furniture",
   "color": "#a8481a",
   "glyph": "F",
@@ -803,7 +865,10 @@
  {
   "id": "refinery",
   "kind": "furniture",
-  "footprint": [2, 1],
+  "footprint": [
+   2,
+   1
+  ],
   "color": "#5c4636",
   "glyph": "R",
   "hp": 250,
@@ -855,7 +920,10 @@
  {
   "id": "robot_bay",
   "kind": "furniture",
-  "footprint": [2, 2],
+  "footprint": [
+   2,
+   2
+  ],
   "color": "#56616d",
   "glyph": "B",
   "hp": 300,
@@ -863,7 +931,8 @@
   "bench": true,
   "robotBay": true,
   "power": {
-   "use": 200
+   "use": 50,
+   "bank": 4800
   },
   "build": {
    "cost": {
@@ -1063,7 +1132,10 @@
  {
   "id": "water_purifier",
   "kind": "furniture",
-  "footprint": [2, 1],
+  "footprint": [
+   2,
+   1
+  ],
   "color": "#8fae7e",
   "glyph": "U",
   "hp": 180,
@@ -1108,7 +1180,10 @@
  {
   "id": "fuel_still",
   "kind": "furniture",
-  "footprint": [2, 1],
+  "footprint": [
+   2,
+   1
+  ],
   "color": "#5a3a22",
   "glyph": "S",
   "hp": 160,
@@ -1127,6 +1202,173 @@
    "work": 350,
    "menu": "water",
    "research": "biofuel"
+  }
+ },
+ {
+  "id": "reactor_console",
+  "kind": "furniture",
+  "footprint": [
+   2,
+   2
+  ],
+  "color": "#9fd14a",
+  "glyph": "R",
+  "hp": 400,
+  "blocks": true,
+  "bench": true,
+  "power": {
+   "use": 300
+  },
+  "build": {
+   "cost": {
+    "steel": 40,
+    "electronics": 8,
+    "components": 10
+   },
+   "work": 1500,
+   "menu": "production",
+   "research": "reactor_control"
+  }
+ },
+ {
+  "id": "school_bus",
+  "kind": "furniture",
+  "footprint": [
+   3,
+   2
+  ],
+  "color": "#e3c25a",
+  "glyph": "B",
+  "hp": 800,
+  "blocks": true,
+  "bench": true,
+  "build": {
+   "cost": {
+    "steel": 60,
+    "scrap": 80,
+    "components": 10
+   },
+   "work": 2000,
+   "menu": "production",
+   "research": "vehicle_repair"
+  }
+ },
+ {
+  "id": "satellite_dish",
+  "kind": "furniture",
+  "footprint": [
+   3,
+   3
+  ],
+  "color": "#a6b0ba",
+  "glyph": "D",
+  "hp": 500,
+  "blocks": true,
+  "bench": true,
+  "power": {
+   "use": 400
+  },
+  "build": {
+   "cost": {
+    "steel": 50,
+    "electronics": 12,
+    "components": 10
+   },
+   "work": 1800,
+   "menu": "production",
+   "research": "dish_design"
+  }
+ },
+ {
+  "id": "card_table",
+  "kind": "furniture",
+  "color": "#84603f",
+  "glyph": "T",
+  "hp": 80,
+  "blocks": true,
+  "flammable": true,
+  "joy": {
+   "fun": 0.6,
+   "seats": 2
+  },
+  "build": {
+   "cost": {
+    "wood": 25
+   },
+   "work": 200,
+   "menu": "furniture"
+  }
+ },
+ {
+  "id": "horseshoe_pit",
+  "kind": "furniture",
+  "color": "#b0834e",
+  "glyph": "h",
+  "hp": 60,
+  "blocks": false,
+  "joy": {
+   "fun": 0.5,
+   "seats": 2
+  },
+  "build": {
+   "cost": {
+    "scrap": 10,
+    "wood": 5
+   },
+   "work": 120,
+   "menu": "furniture"
+  }
+ },
+ {
+  "id": "ash_willow_plant",
+  "kind": "plant",
+  "color": "#7a8a4e",
+  "glyph": "W",
+  "hp": 100,
+  "work": 90,
+  "blocks": false,
+  "crop": {
+   "growDays": 9,
+   "yield": {
+    "wood": 14
+   },
+   "minTemp": 2
+  },
+  "flammable": true
+ },
+ {
+  "id": "grave",
+  "kind": "furniture",
+  "color": "#3a2e26",
+  "glyph": "+",
+  "hp": 200,
+  "blocks": false,
+  "grave": true,
+  "build": {
+   "cost": {},
+   "work": 180,
+   "menu": "furniture"
+  }
+ },
+ {
+  "id": "electric_heater",
+  "kind": "furniture",
+  "color": "#a8481a",
+  "glyph": "H",
+  "hp": 80,
+  "blocks": true,
+  "heat": 10,
+  "power": {
+   "use": 150
+  },
+  "build": {
+   "cost": {
+    "steel": 10,
+    "components": 2
+   },
+   "work": 200,
+   "menu": "power",
+   "research": "power_grid"
   }
  }
 ]

@@ -8,6 +8,10 @@ export interface Inspect {
   bills?: { benchId: number; recipe: string; target: number; stock: number }[];
   /** Auto-crafter: recipe choice. */
   crafter?: { thingId: number; current: string | null; options: string[] };
+  /** Things to do on this tile (buttons); `first` is what the F key does. */
+  actions?: { list: string[]; first: string | null };
+  /** Stockpile under the tile: which item categories it takes. */
+  stockpile?: { zoneId: number; allow: string[]; priority: number };
   /** Beds: for prisoners or not. */
   prisonBed?: { thingId: number; on: boolean };
   /** Power consumers: priority; switches: on or off. */
@@ -23,6 +27,8 @@ export interface ColonistSummary {
   color: string;
   job: string;
   warn: string | null;
+  /** Robots get a small chip with their charge instead of mood. */
+  charge?: number;
 }
 
 export interface PawnDetail {
@@ -63,6 +69,28 @@ export interface Toast {
   text: string;
   level: "info" | "warn" | "bad";
   until: number;
+  /** Where it happened: clicking the message moves the camera there. */
+  at?: { layer: number; x: number; y: number };
+}
+
+export interface StoryUi {
+  line: string;
+  beat: string;
+  /** Goal lines: i18n key, params, met. */
+  goals: { key: string; params: Record<string, string | number>; met: boolean }[];
+}
+
+export interface EndingUi {
+  kind: "won" | "lost";
+  line: string | null;
+  slides: { name: string; key: string; params: Record<string, string | number> }[];
+}
+
+export interface AlertUi {
+  key: string;
+  params: Record<string, string | number>;
+  level: "warn" | "bad";
+  at?: { layer: number; x: number; y: number };
 }
 
 export interface BuildOption {
@@ -99,7 +127,7 @@ export interface WorldUi {
   h: number;
   biome: string[];
   home: { x: number; y: number };
-  sites: { id: number; x: number; y: number; kind: string; richness: number; danger: number; travel: number; outpost: number | null; food: number; water: number }[];
+  sites: { id: number; x: number; y: number; kind: string; story: string | null; richness: number; danger: number; travel: number; outpost: number | null; food: number; water: number }[];
   expeditions: { id: number; site: string; stage: string; hoursLeft: number; names: string[] }[];
   free: { id: number; nick: string }[];
   outpostCost: { item: string; n: number }[];
@@ -116,6 +144,10 @@ export interface WorkRow {
   skills: Record<string, number>;
   /** Work types the backstory rules out. */
   noWork: string[];
+  /** 24 hourly slots: any, work, sleep, joy (B9). */
+  schedule: string[];
+  /** Robots have no schedule (they do not sleep or relax). */
+  robot: boolean;
 }
 
 export interface UiState {
@@ -131,11 +163,19 @@ export interface UiState {
   colonists: ColonistSummary[];
   pawn: PawnDetail | null;
   toasts: Toast[];
-  resources: { id: string; count: number }[];
+  /** Story chapter banner (B9): shown at the top until `until` (UI clock seconds). */
+  banner: { kicker: string; title: string; until: number } | null;
+  resources: { id: string; count: number; loose: number }[];
   /** Open toolbar menu. */
   menu: "build" | "orders" | "zones" | "work" | "research" | "world" | "trade" | null;
   /** Trader caravan near home (A9), or null. */
   caravan: CaravanUi | null;
+  /** Storyline beat in progress, or null (sandbox or finished). */
+  story: StoryUi | null;
+  /** Ending screen (win slides or obituary), until the player closes it. */
+  ending: EndingUi | null;
+  /** Current problems (alerts list under the goals). */
+  alerts: AlertUi[];
   /** World map panel data (A8), filled while the panel is open. */
   world: WorldUi | null;
   /** i18n key + params describing the active tool, or null. */
@@ -169,6 +209,9 @@ class Store {
     layer: 0,
     layerCount: 1,
     world: null,
+    alerts: [],
+    story: null,
+    ending: null,
     caravan: null,
     powerOverlay: false,
     clock: "",
@@ -179,6 +222,7 @@ class Store {
     colonists: [],
     pawn: null,
     toasts: [],
+    banner: null,
     resources: [],
     menu: null,
     toolLabel: null,
@@ -223,6 +267,11 @@ export const actions = {
   setLayer: (_l: number) => {},
   togglePowerOverlay: () => {},
   setCapture: (_pawn: number, _on: boolean) => {},
+  tileAction: (_action: string) => {},
+  setZonePriority: (_zone: number, _priority: number) => {},
+  setZoneAllow: (_zone: number, _category: string, _on: boolean) => {},
+  jumpTo: (_at: { layer: number; x: number; y: number }) => {},
+  closeEnding: () => {},
   sendExpedition: (_site: number, _pawns: number[], _outpost: boolean) => {},
   trade: (_buy: Record<string, number>, _sell: Record<string, number>) => {},
   release: (_pawn: number) => {},
@@ -232,6 +281,7 @@ export const actions = {
   selectPawn: (_id: number | null, _center = false) => {},
   setTool: (_spec: import("../input/tools.ts").ToolSpec | null) => {},
   setWork: (_pawn: number, _work: string, _value: number) => {},
+  setSchedule: (_pawn: number, _hour: number, _slot: string) => {},
   setBillTarget: (_bench: number, _recipe: string, _n: number) => {},
   toggleDraft: (_id: number) => {},
   setResearch: (_id: string | null) => {},

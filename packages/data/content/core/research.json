@@ -171,5 +171,47 @@
   "prereqs": [
    "electronics"
   ]
+ },
+ {
+  "id": "reactor_control",
+  "cost": 5000,
+  "tier": 3,
+  "prereqs": [
+   "electronics"
+  ],
+  "blueprint": "reactor_manual"
+ },
+ {
+  "id": "vehicle_repair",
+  "cost": 3500,
+  "tier": 2,
+  "prereqs": [
+   "smelting"
+  ],
+  "blueprint": "bus_manual"
+ },
+ {
+  "id": "radio_tech",
+  "cost": 3000,
+  "tier": 2,
+  "prereqs": [
+   "electronics"
+  ]
+ },
+ {
+  "id": "dish_design",
+  "cost": 4500,
+  "tier": 3,
+  "prereqs": [
+   "radio_tech"
+  ]
+ },
+ {
+  "id": "advanced_robotics",
+  "cost": 7000,
+  "tier": 4,
+  "prereqs": [
+   "robotics"
+  ]
  }
 ]

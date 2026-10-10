@@ -49,7 +49,8 @@ export function buildShowcase(game: Game): void {
   put("table", rx + 4, ry + 4);
   put("chair", rx + 3, ry + 4);
   put("chair", rx + 6, ry + 4);
-  put("campfire", rx + 8, ry + 5);
+  const fire = put("campfire", rx + 8, ry + 5);
+  if (fire) fire.fuel = 15;
   put("well", rx + 9, ry + 1);
   put("research_desk", rx + 1, ry + 5);
 
@@ -67,7 +68,8 @@ export function buildShowcase(game: Game): void {
 
   // Workshop row: benches, stove, smelter.
   put("scrap_bench", rx + 13, ry + 1);
-  put("stove", rx + 13, ry + 3);
+  const stove = put("stove", rx + 13, ry + 3);
+  if (stove) stove.fuel = 20;
   put("powered_bench", rx + 13, ry + 5);
   put("wire", rx + 12, ry + 5);
   put("wire", rx + 12, ry + 6);
@@ -133,14 +135,16 @@ export function buildShowcase(game: Game): void {
   put("power_pole", hx - 11, hy - 13);
   put("wire", hx - 11, hy - 12);
 
-  // Robots (A7): a powered robot bay with a robot and a hauler drone.
-  put("robot_bay", hx + 12, hy - 8);
+  // Robots (A7, B6): a powered robot bay with one robot of each kind.
+  const bay = put("robot_bay", hx + 12, hy - 8);
+  if (bay) bay.bank = 4800;
   put("solar_panel", hx + 14, hy - 8);
   put("wind_turbine", hx + 14, hy - 6);
   const bat3 = put("battery", hx + 16, hy - 8);
   if (bat3) bat3.charge = 2400;
-  for (const kind of ["robot", "hauler_drone"]) {
-    const bot = makeRobot(game, kind, 0, hx + 11, hy - 5);
+  game.research.done.add("advanced_robotics");
+  for (const [k, kind] of ["robot", "hauler_drone", "builder_bot", "miner_bot", "farmer_bot", "guard_bot"].entries()) {
+    const bot = makeRobot(game, kind, 0, hx + 9 + k, hy - 5);
     game.pawns.set(bot.id, bot);
   }
 

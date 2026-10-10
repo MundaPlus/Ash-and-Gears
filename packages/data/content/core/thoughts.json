@@ -195,5 +195,26 @@
   "id": "rescued",
   "mood": 4,
   "hours": 48
+ },
+ {
+  "id": "had_fun",
+  "mood": 3,
+  "hours": 8
+ },
+ {
+  "id": "bored",
+  "mood": -4
+ },
+ {
+  "id": "joyless",
+  "mood": -10
+ },
+ {
+  "id": "corpse_nearby",
+  "mood": -3
+ },
+ {
+  "id": "rotting_corpse",
+  "mood": -7
  }
 ]

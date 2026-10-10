@@ -28,6 +28,8 @@ export interface Thing {
   /** Generators: fuel units inside. Batteries: stored Wh. */
   fuel?: number;
   charge?: number;
+  /** Consumers: charge in the machine's own backup battery (Wh). */
+  bank?: number;
   /** Belt cargo moving across this tile. */
   cargo?: { def: number; count: number; progress: number; contaminated?: boolean } | null;
   /** Auto-crafter: chosen recipe, input buffer (item index -> count), work progress. */
@@ -44,6 +46,8 @@ export interface Thing {
   forPrisoners?: boolean;
   /** Power switch turned off. */
   off?: boolean;
+  /** Graves: a corpse lies here. */
+  filled?: boolean;
   /** Consumer priority set by the player (1 keep on longest .. 3 cut first); default from the def. */
   priority?: number;
   /** Pipes, tanks, pumps, taps: liters of each fluid held here ("water", "clean_water"). */
@@ -65,6 +69,10 @@ export interface ItemStack {
   contamUntil?: number;
   /** Rot progress 0..1 for food that rots. */
   rot?: number;
+  /** Forbidden by the player: survivors leave it alone (belts and arms still move it). */
+  forbidden?: boolean;
+  /** The player asked to haul this stack now: it goes first on the haul list. */
+  haulNow?: boolean;
   /** Inside this chest (thing id). Chest stacks sit at the chest's tile but not in the tile's item slot. */
   chest?: number;
 }
@@ -98,6 +106,8 @@ export interface Zone {
   allow: string[];
   /** Crop def id (grow zones, M4). */
   crop?: string;
+  /** Stockpile priority (B9): 1 low, 2 normal (default), 3 high, 4 critical. Items move up to better stockpiles. */
+  priority?: number;
 }
 
 export class Layer {

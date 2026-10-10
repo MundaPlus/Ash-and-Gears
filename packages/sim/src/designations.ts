@@ -160,12 +160,12 @@ registerTask("salvage", {
     // A blueprint the colony still needs: not researched yet and not in stock.
     if (def.blueprintChance > 0 && game.aiRng.chance(def.blueprintChance)) {
       const wanted = game.reg.content.research
-        .filter((r) => r.blueprint && !game.research.done.has(r.id) && countItems(game, r.blueprint) < 1)
+        .filter((r) => r.blueprint && !storyItems(game).has(r.blueprint) && !game.research.done.has(r.id) && countItems(game, r.blueprint) < 1)
         .map((r) => r.blueprint!);
       if (wanted.length) {
         const item = game.aiRng.pick(wanted);
         dropItems(game, item, 1, t.layer, t.x, t.y);
-        game.message("msg.blueprint_found", { name: p.nick, item }, "info");
+        game.message("msg.blueprint_found", { name: p.nick, item }, "info", { layer: t.layer, x: t.x, y: t.y });
       }
     }
     if (game.aiRng.chance(def.lootChance * (1 + lvl / 20))) {
@@ -173,7 +173,7 @@ registerTask("salvage", {
       const [item, [lo, hi]] = game.aiRng.pick(loot);
       const n = game.aiRng.int(lo, hi);
       dropItems(game, item, n, t.layer, t.x, t.y);
-      game.message("msg.loot_found", { name: p.nick, count: n, item });
+      game.message("msg.loot_found", { name: p.nick, count: n, item }, "info", { layer: t.layer, x: t.x, y: t.y });
     }
   },
 });
@@ -233,4 +233,11 @@ function nearestDesignated(game: Game, p: Pawn, kind: DesigKind): Job | null {
 
 for (const [workType, kind] of GIVERS) {
   registerWorkGiver({ workType, give: (game, p) => (game.desigTiles.size ? nearestDesignated(game, p, kind) : null) });
+}
+
+/** Items that only story sites give (never found by random salvage). */
+function storyItems(game: Game): Set<string> {
+  const out = new Set<string>();
+  for (const s of game.reg.content.story) for (const b of s.beats) for (const e of [...b.start, ...b.done]) for (const k of Object.keys(e.items ?? {})) out.add(k);
+  return out;
 }

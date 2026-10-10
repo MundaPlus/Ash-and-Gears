@@ -1,12 +1,14 @@
 /**
  * Carrying and stockpiles (spec 03, "Zones"). A pawn carries one stack at a time.
  * The haul work giver moves loose items into stockpile zones that accept them.
+ * A haul list keeps every loose stack that has a place to go, with its distance to the nearest
+ * storage. Stacks the player marked "haul now" go first; then the closest to storage; far stacks wait.
  */
-import { atGoal, findItem, goTo, isReserved, reserve } from "./ai.ts";
+import { atGoal, goTo, isReserved, reserve } from "./ai.ts";
 import { registerJob, registerWorkGiver } from "./jobs.ts";
 import type { Game } from "./game.ts";
 import { canHoldItem, chestCount, dropItems, putInChest, stackLimit, takeFromStack } from "./items.ts";
-import { NO_THING, type Zone } from "./map.ts";
+import { NO_THING, type ItemStack, type Zone } from "./map.ts";
 import type { Pos } from "./path.ts";
 import type { Job, Pawn } from "./pawn.ts";
 
@@ -96,11 +98,47 @@ function accepts(game: Game, z: Zone | null, def: number, contaminated: boolean)
   return z.allow.includes(game.reg.items.list[def].category);
 }
 
-/** Nearest stockpile tile or chest with room that can take this item. */
-function findStorage(game: Game, p: Pawn, from: Pos, def: number, contaminated: boolean): Pos | null {
+const isCorpse = (game: Game, def: number) => game.reg.items.list[def].category === "corpse";
+
+/** Nearest empty grave (corpses go only there). */
+function findGrave(game: Game, p: Pawn | null, from: Pos): Pos | null {
+  let best: Pos | null = null, bestD = Infinity;
+  for (const t of game.things.values()) {
+    if (!game.reg.things.list[t.def].grave || t.filled || (p && isReserved(game, `tile:${t.layer},${t.x},${t.y}`, p))) continue;
+    const d = (t.x - from.x) ** 2 + (t.y - from.y) ** 2 + (t.layer !== from.layer ? 900 : 0);
+    if (d < bestD) {
+      best = { layer: t.layer, x: t.x, y: t.y };
+      bestD = d;
+    }
+  }
+  return best && (!p || game.path.canReach(from, best)) ? best : null;
+}
+
+/** Chests count as normal-priority storage. */
+const CHEST_PRIORITY = 2;
+export const zonePriority = (z: Zone) => z.priority ?? 2;
+
+/** Set a stockpile's priority (1 low .. 4 critical). */
+export function setZonePriority(game: Game, zoneId: number, priority: number): void {
+  const z = game.zones.get(zoneId);
+  if (!z || z.kind !== "stockpile") return;
+  z.priority = Math.max(1, Math.min(4, Math.round(priority)));
+  haulCache.delete(game);
+}
+
+/** Priority of where a stack is stored now: 0 when loose. */
+function storedPriority(game: Game, s: ItemStack): number {
+  if (s.chest !== undefined) return CHEST_PRIORITY;
+  const z = zoneAt(game, s.layer, s.x, s.y);
+  return z && accepts(game, z, s.def, !!s.contaminated) ? zonePriority(z) : 0;
+}
+
+/** Nearest stockpile tile or chest with room that can take this item (a grave for a corpse), better than `above`. */
+function findStorage(game: Game, p: Pawn, from: Pos, def: number, contaminated: boolean, above = 0): Pos | null {
+  if (isCorpse(game, def)) return findGrave(game, p, from);
   let best: Pos | null = null, bestD = Infinity;
   // Chests take anything while they have room.
-  for (const t of game.things.values()) {
+  for (const t of above >= CHEST_PRIORITY ? [] : game.things.values()) {
     const cap = game.reg.things.list[t.def].chest;
     if (!cap || chestCount(game, t) >= cap || isReserved(game, `tile:${t.layer},${t.x},${t.y}`, p)) continue;
     const d = (t.x - from.x) ** 2 + (t.y - from.y) ** 2 + (t.layer !== from.layer ? 900 : 0);
@@ -110,7 +148,7 @@ function findStorage(game: Game, p: Pawn, from: Pos, def: number, contaminated: 
     }
   }
   for (const z of game.zones.values()) {
-    if (!accepts(game, z, def, contaminated)) continue;
+    if (!accepts(game, z, def, contaminated) || zonePriority(z) <= above) continue;
     const L = game.map.layers[z.layer];
     for (let i = 0; i < L.zone.length; i++) {
       if (L.zone[i] !== z.id) continue;
@@ -126,24 +164,136 @@ function findStorage(game: Game, p: Pawn, from: Pos, def: number, contaminated: 
   return best && game.path.canReach(from, best) ? best : null;
 }
 
+/** Items stored in stockpiles and chests (the top bar counts only these, not loose items on the map). */
+export function storedCount(game: Game, defId: string): number {
+  const def = game.reg.items.idx(defId);
+  let n = 0;
+  for (const s of game.items.values()) {
+    if (s.def !== def || s.layer < 0) continue;
+    if (s.chest !== undefined || zoneAt(game, s.layer, s.x, s.y)?.kind === "stockpile") n += s.count;
+  }
+  return n;
+}
+
+// ---------------------------------------------------------------- haul list
+
+export interface HaulEntry {
+  /** Item stack id. */
+  id: number;
+  /** Tiles to the nearest storage that takes it (straight line; another layer adds 30). */
+  dist: number;
+  urgent: boolean;
+}
+
+/** Rebuilt at most this often (ticks), or at once when the player marks a stack. */
+const HAUL_LIST_EVERY = 60;
+const haulCache = new WeakMap<Game, { at: number; list: HaulEntry[] }>();
+
+/** Stacks to haul: loose (not in a chest, not on a stockpile that takes them), or on a stockpile with a better one for them. Not forbidden. */
+function isLoose(game: Game, s: ItemStack): boolean {
+  if (s.layer < 0 || s.chest !== undefined || s.forbidden) return false;
+  const here = storedPriority(game, s);
+  if (here === 0) return true;
+  const cat = game.reg.items.list[s.def].category;
+  return [...game.zones.values()].some((z) => z.kind === "stockpile" && zonePriority(z) > here && z.allow.includes(cat));
+}
+
+/** What needs hauling, best first: urgent stacks, then the ones closest to storage. Internal (not shown to players). */
+export function haulList(game: Game): HaulEntry[] {
+  const c = haulCache.get(game);
+  if (c && game.tick - c.at < HAUL_LIST_EVERY) return c.list;
+  // Storage spots: chests with room take anything; stockpile tiles take their categories.
+  const chests: Pos[] = [];
+  for (const t of game.things.values()) {
+    const cap = game.reg.things.list[t.def].chest;
+    if (cap && chestCount(game, t) < cap) chests.push({ layer: t.layer, x: t.x, y: t.y });
+  }
+  const tilesByCat = new Map<string, (Pos & { pr: number })[]>();
+  for (const z of game.zones.values()) {
+    if (z.kind !== "stockpile") continue;
+    const L = game.map.layers[z.layer];
+    const tiles: Pos[] = [];
+    for (let i = 0; i < L.zone.length; i++) if (L.zone[i] === z.id) tiles.push({ layer: z.layer, x: i % L.w, y: Math.floor(i / L.w) });
+    const pr = zonePriority(z);
+    for (const cat of z.allow) tilesByCat.set(cat, [...(tilesByCat.get(cat) ?? []), ...tiles.map((q) => ({ ...q, pr }))]);
+  }
+  const list: HaulEntry[] = [];
+  if (chests.length || tilesByCat.size)
+    for (const s of game.items.values()) {
+      if (!isLoose(game, s)) continue;
+      if (isCorpse(game, s.def)) {
+        // Corpses: only to a grave; they go first, before they rot.
+        const g = findGrave(game, null, s);
+        if (g) list.push({ id: s.id, dist: 0, urgent: !!s.haulNow });
+        continue;
+      }
+      let best = Infinity;
+      const here = storedPriority(game, s);
+      for (const q of [...chests.map((c) => ({ ...c, pr: CHEST_PRIORITY })), ...(tilesByCat.get(game.reg.items.list[s.def].category) ?? [])]) {
+        if (q.pr <= here) continue;
+        const d = Math.hypot(q.x - s.x, q.y - s.y) + (q.layer !== s.layer ? 30 : 0);
+        if (d < best) best = d;
+      }
+      if (best < Infinity) list.push({ id: s.id, dist: best, urgent: !!s.haulNow });
+    }
+  list.sort((a, b) => Number(b.urgent) - Number(a.urgent) || a.dist - b.dist || a.id - b.id);
+  haulCache.set(game, { at: game.tick, list });
+  return list;
+}
+
+/** Mark a stack "haul now" (tile action). Returns false when it cannot be hauled anywhere. */
+export function haulNow(game: Game, stackId: number): boolean {
+  const s = game.items.get(stackId);
+  if (!s || !isLoose(game, s)) return false;
+  s.haulNow = true;
+  haulCache.delete(game);
+  return true;
+}
+
+/** Can this stack go on the haul list (loose, and some storage takes it)? */
+export function canHaul(game: Game, stackId: number): boolean {
+  const s = game.items.get(stackId);
+  if (!s || !isLoose(game, s) || s.haulNow) return false;
+  if (isCorpse(game, s.def)) return !!findGrave(game, null, s);
+  // Some chest with room, or some stockpile that takes the category (the haul list may be a few ticks old).
+  const cat = game.reg.items.list[s.def].category;
+  const here = storedPriority(game, s);
+  if ([...game.zones.values()].some((z) => z.kind === "stockpile" && zonePriority(z) > here && z.allow.includes(cat))) return true;
+  if (here >= CHEST_PRIORITY) return false;
+  return [...game.things.values()].some((t) => {
+    const cap = game.reg.things.list[t.def].chest;
+    return !!cap && chestCount(game, t) < cap;
+  });
+}
+
+/** A haul job from the list. `urgentOnly`: only stacks the player marked. */
+export function haulJob(game: Game, p: Pawn, urgentOnly: boolean): Job | null {
+  let tries = 0;
+  for (const e of haulList(game)) {
+    if (urgentOnly && !e.urgent) break;
+    const s = game.items.get(e.id);
+    if (!s || !isLoose(game, s) || isReserved(game, `item:${s.id}`, p)) continue;
+    // Among stacks at about the same distance from storage, prefer the ones near the hauler.
+    if (tries++ > 12) break;
+    if (!game.path.canReach(p, s)) continue;
+    const dest = findStorage(game, p, s, s.def, !!s.contaminated, storedPriority(game, s));
+    if (!dest) continue;
+    if (!reserve(game, `item:${s.id}`, p)) continue;
+    if (!reserve(game, `tile:${dest.layer},${dest.x},${dest.y}`, p)) {
+      game.reservations.delete(`item:${s.id}`);
+      continue;
+    }
+    return { kind: "haul", stage: 0, targetId: s.id, target: dest };
+  }
+  return null;
+}
+
 // ---------------------------------------------------------------- haul job
 
 registerWorkGiver({
   workType: "haul",
   give(game, p) {
-    if (!game.zones.size && ![...game.things.values()].some((t) => game.reg.things.list[t.def].chest)) return null;
-    // Loose items only: stacks in a chest or on a stockpile that takes them are stored already.
-    const stack = findItem(game, p, () => true, (s) => s.chest === undefined && !accepts(game, zoneAt(game, s.layer, s.x, s.y), s.def, !!s.contaminated));
-    if (stack === null) return null;
-    const s = game.items.get(stack)!;
-    const dest = findStorage(game, p, s, s.def, !!s.contaminated);
-    if (!dest) return null;
-    if (!reserve(game, `item:${stack}`, p)) return null;
-    if (!reserve(game, `tile:${dest.layer},${dest.x},${dest.y}`, p)) {
-      game.reservations.delete(`item:${stack}`);
-      return null;
-    }
-    return { kind: "haul", stage: 0, targetId: stack, target: dest };
+    return haulJob(game, p, false);
   },
 });
 
@@ -164,6 +314,15 @@ registerJob("haul", (game, p, job: Job) => {
   const L = game.map.layers[job.target!.layer];
   const tid = L.thing[L.i(job.target!.x, job.target!.y)];
   const chest = tid !== NO_THING && game.reg.things.list[game.things.get(tid)!.def].chest ? game.things.get(tid)! : null;
+  // A corpse into a grave: it is buried.
+  const grave = tid !== NO_THING && game.reg.things.list[game.things.get(tid)!.def].grave ? game.things.get(tid)! : null;
+  if (grave && p.carrying && isCorpse(game, p.carrying.def) && !grave.filled) {
+    grave.filled = true;
+    p.carrying = null;
+    L.touch(grave.x, grave.y);
+    game.mapVersion++;
+    return "done";
+  }
   if (chest && p.carrying) {
     p.carrying.count -= putInChest(game, chest, p.carrying.def, p.carrying.count, !!p.carrying.contaminated, p.carrying.contamUntil);
     if (p.carrying.count <= 0) p.carrying = null;

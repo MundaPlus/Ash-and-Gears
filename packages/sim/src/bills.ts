@@ -4,6 +4,7 @@
  * time, carries them to the bench, works, and drops the product next to the bench.
  * The auto-crafter in M6 uses the same recipes without a survivor.
  */
+import { lightWorkFactor } from "./light.ts";
 import type { RecipeDef } from "@wc/data";
 import { atGoal, findItem, goTo, reserve } from "./ai.ts";
 import { registerCleanup, registerJob, registerWorkGiver } from "./jobs.ts";
@@ -14,7 +15,7 @@ import { benchFeedsOut } from "./logistics.ts";
 import { fluidNetOf, netAdd, netAmount, netDraw, totalFluid } from "./fluids.ts";
 import { makeRobot, robotCount } from "./robots.ts";
 import { pickUp } from "./hauling.ts";
-import { learn, workSpeed, skillLevel, type Job, type Pawn } from "./pawn.ts";
+import { addStat, learn, workSpeed, skillLevel, type Job, type Pawn } from "./pawn.ts";
 import type { WorkType } from "./worktypes.ts";
 import { isContaminatedThing } from "./weather.ts";
 
@@ -56,13 +57,14 @@ export function matchesInput(game: Game, input: RecipeDef["inputs"][number], def
 
 function benchWorkSpeed(game: Game, p: Pawn, r: RecipeDef, bench: Thing): number {
   const base = r.skill ? workSpeed(game, p) * (0.4 + 0.06 * skillLevel(game, p, r.skill)) : workSpeed(game, p);
-  return base * game.reg.things.list[bench.def].benchSpeed;
+  return base * game.reg.things.list[bench.def].benchSpeed * lightWorkFactor(game, p);
 }
 
 /** Benches that need power only work while powered. */
 function benchReady(game: Game, bench: Thing): boolean {
-  const p = game.reg.things.list[bench.def].power;
-  return !p?.use || !!bench.powered;
+  const d = game.reg.things.list[bench.def];
+  if (d.burns && !(bench.fuel ?? 0)) return false;
+  return !d.power?.use || !!bench.powered;
 }
 
 /** Give a bill job of this work type, if any bench needs one done. */
@@ -79,7 +81,7 @@ function billJob(game: Game, p: Pawn, workType: WorkType): Job | null {
       // All inputs must exist somewhere before starting.
       const enough = r.inputs.every((inp) => {
         let n = 0;
-        for (const s of game.items.values()) if (s.layer >= 0 && !s.contaminated && matchesInput(game, inp, s.def)) n += s.count;
+        for (const s of game.items.values()) if (s.layer >= 0 && !s.contaminated && !s.forbidden && matchesInput(game, inp, s.def)) n += s.count;
         for (const [k, v] of Object.entries(bench.buffer ?? {})) if (matchesInput(game, inp, Number(k))) n += v;
         return n >= inp.count;
       });
@@ -180,6 +182,9 @@ registerJob("bill", (game, p, job) => {
   if (bench.x !== p.x) p.facing = bench.x > p.x ? 1 : -1;
   if (!benchReady(game, bench)) return "fail";
   job.data!.work = (job.data!.work as number) - benchWorkSpeed(game, p, r, bench);
+  // A stove burns its fuel only while someone cooks on it.
+  const burns = game.reg.things.list[bench.def].burns;
+  if (burns?.whileWorking) bench.fuel = Math.max(0, (bench.fuel ?? 0) - burns.perHour / game.ticksPerHour);
   if (r.skill) learn(game, p, r.skill, 0.4);
   if ((job.data!.work as number) > 0) return "run";
   // Water from a contaminated well is contaminated too.
@@ -188,7 +193,7 @@ registerJob("bill", (game, p, job) => {
   if (r.spawn) {
     const bot = makeRobot(game, r.spawn, bench.layer, bench.x, bench.y);
     game.pawns.set(bot.id, bot);
-    game.message("msg.robot_built", { kind: r.spawn, name: bot.nick }, "info");
+    game.message("msg.robot_built", { kind: r.spawn, name: bot.nick }, "info", bot);
   }
   // Fluids go into the bench's own pipe network (what does not fit is lost).
   if (r.fluidOut) {
@@ -205,6 +210,7 @@ registerJob("bill", (game, p, job) => {
     }
   }
   job.data!.done = true;
+  addStat(p, "crafted");
   return "done";
 });
 

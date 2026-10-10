@@ -4,7 +4,7 @@
  */
 import type { Game } from "./game.ts";
 import { dropItems } from "./items.ts";
-import { addMemory, pawnName, traitMult, type Pawn } from "./pawn.ts";
+import { addMemory, addStat, pawnName, traitMult, type Pawn } from "./pawn.ts";
 import { onDeath } from "./social.ts";
 
 export const PARTS = ["head", "torso", "l_arm", "r_arm", "l_leg", "r_leg"] as const;
@@ -144,7 +144,7 @@ function checkParts(game: Game, p: Pawn, part: PartId, kind: string) {
     if (p.faction === "colony" && !p.health.downed && last && last.part === part && last.dmg < max * 0.6) {
       last.dmg = Math.max(0, last.dmg - (partDamage(p, part) - (max - 0.5)));
       p.health.downed = true;
-      game.message("msg.downed", { name: p.nick }, "bad");
+      game.message("msg.downed", { name: p.nick }, "bad", p);
       return;
     }
     return kill(game, p, kind);
@@ -164,7 +164,7 @@ function updateDowned(game: Game, p: Pawn) {
   if (p.health.downed && !was) {
     p.path = null;
     p.asleep = false;
-    if (p.faction === "colony") game.message("msg.downed", { name: p.nick }, "bad");
+    if (p.faction === "colony") game.message("msg.downed", { name: p.nick }, "bad", p);
   }
 }
 
@@ -178,9 +178,12 @@ export function kill(game: Game, p: Pawn, cause: string): void {
   else if (creature.meat > 0) dropItems(game, "mutant_meat", creature.meat, p.layer, p.x, p.y);
   if (p.weapon !== null) dropItems(game, p.weapon, 1, p.layer, p.x, p.y);
   if (p.carrying) dropItems(game, p.carrying.def, p.carrying.count, p.layer, p.x, p.y);
+  // The one who struck last gets the kill.
+  const killer = p.lastAttacker !== undefined ? game.pawns.get(p.lastAttacker) : undefined;
+  if (killer && killer.faction === "colony" && p.faction !== "colony") addStat(killer, "kills");
   if (p.faction === "colony" && p.robot) game.message("msg.robot_destroyed", { name: p.nick }, "bad");
   else if (p.faction === "colony") {
-    game.message("msg.died", { name: pawnName(p), cause }, "bad");
+    game.message("msg.died", { name: pawnName(p), cause }, "bad", p);
     for (const o of game.pawns.values()) if (o.faction === "colony") addMemory(game, o, "colonist_died");
     onDeath(game, p);
   }

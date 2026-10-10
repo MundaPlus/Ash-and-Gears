@@ -26,6 +26,13 @@ export const TRACKS: { id: string; style: string }[] = [
   { id: "tense", style: "instrumental, dark synth, tense, low pulse, ticking percussion, suspense, rising danger, no vocals" },
   { id: "combat", style: "instrumental, intense, war drums, distorted guitar riff, fast tempo, post-apocalyptic battle, no vocals" },
   { id: "calm_tech", style: "instrumental, folk guitar with analog synth pads, rebuilding, hopeful, mid tempo, retro electronics, no vocals" },
+  { id: "calm_western_2", style: "instrumental, spaghetti western, twangy electric guitar, whistling melody, slow, wide open desert, dusty, no vocals" },
+  { id: "calm_folk_2", style: "instrumental, americana folk, fingerpicked acoustic guitar, mandolin, quiet morning, warm, slow, no vocals" },
+  { id: "calm_desert", style: "instrumental, desert blues, hypnotic guitar riff, hand drums, heat haze, slow groove, no vocals" },
+  { id: "calm_tech_2", style: "instrumental, warm analog synthesizer, arpeggios, hopeful, workshop machines humming, mid tempo, no vocals" },
+  { id: "night_ambient_2", style: "instrumental, dark ambient, wind, distant metallic echoes, deep drones, cold night, slow, no drums, no vocals" },
+  { id: "tense_2", style: "instrumental, suspense, low strings and synth bass, heartbeat drum, something is coming, no vocals" },
+  { id: "combat_2", style: "instrumental, fast industrial rock, heavy drums, aggressive guitar, metal clanging, battle, no vocals" },
 ];
 
 async function post(path: string, body: unknown) {

@@ -57,7 +57,7 @@ Each milestone ends like the demo ones: tests green, headless playtests on sever
 | A7 | Done | Robot bay builds robots and hauler drones; charge, bay charging and repair; limited work types; no needs or mood. Robot art is hand-pixeled |
 | A8 | Done | World of biomes and 14 sites; expeditions resolve off-map (travel, scavenge, ambush) and return at the map edge; outposts gather and are emptied by visits. No tactical site maps |
 | A9 | Done | 4 factions with goodwill; faction raids; trader caravans with value trade and gifts; prisoners affect goodwill. Diplomacy beyond gifts (peace talks, allies helping) is left for later |
-| A10 | Next | Alpha delivery: presentation page, LAN build, review with the user |
+| A10 | Done, waiting for the review | Presentation updated (site + Artifact), showcase shows the Alpha, `master` tagged `v0.2.0-alpha`. Next: Alpha review with the user |
 
 ### A4 design (tech tiers 2–3)
 

@@ -3,8 +3,10 @@
  * body: no hunger, thirst, sleep, mood or social life. They do only some work types, fight badly,
  * and run on charge. Below a quarter charge they go to a free powered robot bay; a robot on a bay
  * charges and gets repaired. A robot bay builds robots and hauler drones with bills.
+ * The bay has its own battery (twice a battery): it fills from the network and charges robots.
  */
-import { atGoal, goTo, isReserved, reserve } from "./ai.ts";
+import { atGoal, endJob, goTo, isReserved, reserve } from "./ai.ts";
+import { hostile } from "./combat.ts";
 import type { Game } from "./game.ts";
 import { registerJob } from "./jobs.ts";
 import type { Thing } from "./map.ts";
@@ -19,22 +21,39 @@ const CHARGE_PER_HOUR = 0.3;
 /** Damage repaired per in-game hour on a powered bay (each injury). */
 const REPAIR_PER_HOUR = 1.5;
 const GO_CHARGE_AT = 0.25;
+/** Energy for a full robot charge (Wh), taken from the bay's own battery. */
+const ROBOT_WH = 1000;
 
 /** What each kind may do. Everything else is ruled out. */
 const ALLOWED: Record<string, string[]> = {
   robot: ["firefight", "construct", "mine", "salvage", "craft", "haul"],
   hauler_drone: ["haul"],
+  // Tier 4 (Beta B6): one job each, done well.
+  builder_bot: ["construct", "salvage", "haul"],
+  miner_bot: ["mine", "haul"],
+  farmer_bot: ["grow", "haul"],
+  guard_bot: ["firefight"],
 };
 const SKILLS: Record<string, Record<string, number>> = {
   robot: { construction: 6, mining: 6, crafting: 5, scavenging: 4, melee: 2 },
   hauler_drone: {},
+  builder_bot: { construction: 10, scavenging: 6, melee: 2 },
+  miner_bot: { mining: 10, melee: 3 },
+  farmer_bot: { farming: 9 },
+  guard_bot: { shooting: 8, melee: 6 },
 };
+/** Name prefixes for the serial number. */
+const PREFIX: Record<string, string> = { hauler_drone: "D", builder_bot: "B", miner_bot: "M", farmer_bot: "F", guard_bot: "G" };
+/** A guard robot goes for hostiles this close (tiles). */
+const GUARD_RANGE = 14;
+/** A hacked robot shakes off the hack after this many in-game hours, or when it goes down. */
+const HACK_HOURS = 12;
 
 export function isRobot(p: Pawn): boolean {
   return !!p.robot;
 }
 
-/** A new colony robot of the given creature kind ("robot" or "hauler_drone"). */
+/** A new colony robot of the given creature kind ("robot", "hauler_drone" or a tier-4 kind). */
 export function makeRobot(game: Game, kind: string, layer: number, x: number, y: number): Pawn {
   const p = makeSurvivor(game, layer, x, y, new Set());
   p.creature = Math.max(0, game.reg.content.creatures.findIndex((c) => c.id === kind));
@@ -43,20 +62,22 @@ export function makeRobot(game: Game, kind: string, layer: number, x: number, y:
   const serial = [...game.pawns.values()].filter((o) => o.robot).length + 1;
   p.first = "";
   p.last = "";
-  p.nick = `${kind === "hauler_drone" ? "D" : "R"}-${String(serial).padStart(2, "0")}`;
+  p.nick = `${PREFIX[kind] ?? "R"}-${String(serial).padStart(2, "0")}`;
   p.age = 0;
   p.traits = [];
   delete p.backstory;
   p.noWork = WORK_TYPES.filter((w) => !(ALLOWED[kind] ?? []).includes(w));
   p.skills = game.reg.skills.list.map((s) => ({ level: SKILLS[kind]?.[s.id] ?? 0, xp: 0, passion: 0 }));
   p.memories = [];
-  p.needs = { hunger: 1, thirst: 1, rest: 1 };
+  p.needs = { hunger: 1, thirst: 1, rest: 1, fun: 1 };
   p.mood = 50;
   return p;
 }
 
-/** Every tick for colony robots: charge runs down while they are off the bay. */
+/** Every tick for robots: charge runs down while they are off the bay; guards and hacked robots think here. */
 export function tickRobot(game: Game, p: Pawn): void {
+  if (p.hackedAt !== undefined && (p.health.downed || game.tick - p.hackedAt > HACK_HOURS * game.ticksPerHour)) unhack(game, p);
+  if (p.faction === "colony" && (game.tick + p.id) % 15 === 0 && game.reg.content.creatures[p.creature].id === "guard_bot") guardTick(game, p);
   if (p.job?.kind === "charge" && p.job.stage === 2) return;
   const before = p.charge ?? 1;
   p.charge = Math.max(0, before - DRAIN_PER_DAY / game.ticksPerDay);
@@ -66,7 +87,7 @@ export function tickRobot(game: Game, p: Pawn): void {
 function freeBay(game: Game, p: Pawn): Thing | null {
   const used = new Set([...game.pawns.values()].filter((o) => o.id !== p.id && o.job?.kind === "charge").map((o) => o.job!.targetId));
   const bays = [...game.things.values()]
-    .filter((t) => game.reg.things.list[t.def].robotBay && isPowered(game, t) && !used.has(t.id) && !isReserved(game, `bay:${t.id}`, p))
+    .filter((t) => game.reg.things.list[t.def].robotBay && (isPowered(game, t) || (t.bank ?? 0) > 0) && !used.has(t.id) && !isReserved(game, `bay:${t.id}`, p))
     .sort((a, b) => (a.x - p.x) ** 2 + (a.y - p.y) ** 2 - ((b.x - p.x) ** 2 + (b.y - p.y) ** 2));
   return bays.find((b) => game.path.canReach(p, b)) ?? null;
 }
@@ -94,16 +115,72 @@ registerJob("charge", (game, p, job) => {
     if (!atGoal(p)) return "run";
     job.stage = 2;
   }
-  if (!isPowered(game, bay)) return "fail";
   const perTick = 1 / game.ticksPerHour;
-  p.charge = Math.min(1, (p.charge ?? 0) + CHARGE_PER_HOUR * perTick);
+  // Charge comes out of the bay's battery; an empty bay only repairs (wait for the network to fill it).
+  const gain = Math.min(1 - (p.charge ?? 0), CHARGE_PER_HOUR * perTick, (bay.bank ?? 0) / ROBOT_WH);
+  if (gain > 0) {
+    p.charge = (p.charge ?? 0) + gain;
+    bay.bank = (bay.bank ?? 0) - gain * ROBOT_WH;
+  } else if (!isPowered(game, bay) && (p.charge ?? 0) < 0.98) return "fail";
   for (const i of p.health.injuries) i.dmg = Math.max(0, i.dmg - REPAIR_PER_HOUR * perTick);
   p.health.injuries = p.health.injuries.filter((i) => i.dmg > 0.01);
-  return p.charge >= 0.98 && p.health.injuries.length === 0 ? "done" : "run";
+  return (p.charge ?? 0) >= 0.98 && p.health.injuries.length === 0 ? "done" : "run";
 });
 
 /** Number of robots of a kind in the colony (the "stock" for robot bills). */
 export function robotCount(game: Game, kind: string): number {
   const idx = game.reg.content.creatures.findIndex((c) => c.id === kind);
   return [...game.pawns.values()].filter((p) => p.faction === "colony" && p.robot && p.creature === idx).length;
+}
+
+// ---------------------------------------------------------------- guards and hacking (Beta B6)
+
+/** A guard robot drafts itself when a hostile comes near, and stands down when none is left. */
+function guardTick(game: Game, p: Pawn): void {
+  if (p.health.downed || (p.charge ?? 1) <= 0) return;
+  // The player drafted it by hand: leave it alone.
+  if (p.drafted && !p.guarding) return;
+  let best: Pawn | null = null, bestD = GUARD_RANGE;
+  for (const o of game.pawns.values()) {
+    if (o.layer !== p.layer || o.health.downed || !hostile(p, o)) continue;
+    const d = Math.hypot(o.x - p.x, o.y - p.y);
+    if (d < bestD) {
+      bestD = d;
+      best = o;
+    }
+  }
+  if (best) {
+    if (p.job) endJob(game, p, false);
+    p.drafted = true;
+    p.guarding = true;
+    p.order = { kind: "attack", target: best.id };
+  } else if (p.guarding) {
+    p.drafted = false;
+    p.guarding = false;
+    p.order = null;
+  }
+}
+
+/** Raiders take over one colony robot (not drones): it fights for them until the hack wears off. */
+export function hackRobot(game: Game, group: number): Pawn | null {
+  const bots = [...game.pawns.values()].filter((o) => o.faction === "colony" && o.robot && !o.health.downed && game.reg.content.creatures[o.creature].id !== "hauler_drone");
+  if (!bots.length) return null;
+  const bot = game.aiRng.pick(bots);
+  if (bot.job) endJob(game, bot, false);
+  bot.drafted = false;
+  bot.guarding = false;
+  bot.order = null;
+  bot.faction = "raiders";
+  bot.group = group;
+  bot.hackedAt = game.tick;
+  game.message("msg.robot_hacked", { name: bot.nick }, "bad", bot);
+  return bot;
+}
+
+function unhack(game: Game, p: Pawn): void {
+  delete p.hackedAt;
+  p.faction = "colony";
+  p.group = null;
+  p.path = null;
+  game.message("msg.robot_unhacked", { name: p.nick }, "info", p);
 }

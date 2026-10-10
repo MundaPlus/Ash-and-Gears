@@ -237,7 +237,7 @@ export function tickTemperature(game: Game): void {
   const heat = new Map<number, number>();
   for (const t of game.things.values()) {
     const d = game.reg.things.list[t.def];
-    if (!d.heat) continue;
+    if (!d.heat || (d.burns && !(t.fuel ?? 0)) || (d.power?.use && !t.powered)) continue;
     const r = game.map.layers[t.layer].room[game.map.layers[t.layer].i(t.x, t.y)];
     if (r !== -1) heat.set(r, (heat.get(r) ?? 0) + d.heat);
   }

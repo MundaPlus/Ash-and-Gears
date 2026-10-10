@@ -212,3 +212,72 @@ body.cinematic #ui { display: none; }
 .trademenu .neg, .worldmenu .neg { color: #ff8a70; }
 .worldmenu .pos { color: #9fd14a; }
 .caravanbanner { position: fixed; left: 50%; transform: translateX(-50%); bottom: 64px; background: rgba(27, 23, 20, 0.92); border: 1px solid #e3c25a; padding: 6px 10px; display: flex; gap: 10px; align-items: center; z-index: 5; max-width: calc(100vw - 32px); }
+
+/* Tile actions in the inspect panel (F = default) */
+.tileactions { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.tileactions button { display: inline-flex; gap: 6px; align-items: center; }
+.tileactions kbd { font: 600 11px monospace; border: 1px solid currentColor; border-bottom-width: 2px; padding: 0 4px; }
+
+/* Alerts and clickable messages */
+.goals .alerts { display: grid; gap: 4px; margin-top: 8px; }
+.goals .alert { text-align: left; font-size: 12px; padding: 3px 6px; background: rgba(217, 116, 46, 0.18); border: 1px solid #d9742e; color: inherit; }
+.goals .alert.bad { background: rgba(255, 74, 58, 0.2); border-color: #ff4a3a; }
+.goals .alert:disabled { cursor: default; opacity: 1; }
+.toast.jump { cursor: pointer; text-align: left; font: inherit; color: inherit; width: 100%; }
+
+/* Story (Beta) */
+.goals .story { border-bottom: 1px solid #3d3128; padding-bottom: 6px; margin-bottom: 6px; }
+.goals .story b { display: block; color: #e3c25a; margin: 2px 0 4px; }
+.ending { position: fixed; inset: 0; background: rgba(20, 17, 15, 0.82); display: grid; place-items: center; z-index: 50; padding: 16px; }
+.ending-card { max-width: 560px; width: 100%; background: #241e19; border: 1px solid #d9742e; padding: 24px; }
+.ending-card h2 { margin: 6px 0 10px; font-size: 32px; }
+.ending-card .kicker { letter-spacing: 0.16em; text-transform: uppercase; color: #d9742e; font-size: 12px; margin: 0; }
+.ending-card .slide { background: #1b1714; border-left: 3px solid #e3c25a; padding: 12px 14px; margin: 14px 0; }
+.ending-card .slide h3 { margin: 0 0 6px; }
+.ending-buttons { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+
+/* Mods (B7) */
+.modlist { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 6px; }
+.modlist > li { border: 1px solid var(--line, #5c4636); padding: 6px 8px; display: grid; gap: 4px; }
+.modlist > li.off { opacity: 0.55; }
+.modlist .desc { color: var(--muted, #b0834e); }
+.modbtns { display: flex; gap: 6px; justify-content: flex-end; }
+.moderr { color: #d9742e; font-size: 0.85em; margin: 0; padding-left: 16px; }
+.modadd { display: grid; gap: 4px; margin: 8px 0; }
+
+/* Loose items not stored yet: a muted "+N" after the stored count. */
+.res .loose { margin-left: 3px; color: #84603f; font-size: 0.85em; }
+.goals h3.fold { cursor: pointer; user-select: none; }
+
+/* Story chapter banner (B9): fades in, stays, fades out over 6 s. */
+.banner { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 20; pointer-events: none; text-align: center;
+  background: rgba(27, 23, 20, 0.88); border: 1px solid #84603f; border-left: 0; border-right: 0; padding: 10px 48px 12px; animation: banner 6s ease-in-out both; }
+.banner small { display: block; color: #d6ab6b; letter-spacing: 0.2em; text-transform: uppercase; font-size: 11px; }
+.banner b { display: block; color: #efd8a4; font-size: 22px; margin-top: 2px; }
+@keyframes banner { 0% { opacity: 0; transform: translate(-50%, -8px); } 10%, 85% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; } }
+@media (max-width: 600px) { .banner { padding: 8px 16px; max-width: calc(100vw - 32px); } .banner b { font-size: 17px; } }
+
+/* Work menu tabs and the schedule grid (B9). */
+.workgrid .tabs { display: flex; gap: 4px; margin-bottom: 6px; }
+.schedule .slotpick { display: flex; gap: 4px; flex-wrap: wrap; margin: 6px 0; }
+.schedule table { border-collapse: collapse; user-select: none; }
+.schedule th { font-size: 10px; padding: 0 2px; font-weight: normal; }
+.schedule td.cell { width: 16px; height: 18px; border: 1px solid #1b1714; cursor: pointer; padding: 0; }
+.schedule .c-any { background: #5c4636; }
+.schedule .c-work { background: #a8481a; }
+.schedule .c-sleep { background: #3d4a52; }
+.schedule .c-joy { background: #7a8a4e; }
+.schedule .slot { border-left: 8px solid transparent; }
+.schedule .slot.s-any { border-left-color: #5c4636; }
+.schedule .slot.s-work { border-left-color: #a8481a; }
+.schedule .slot.s-sleep { border-left-color: #3d4a52; }
+.schedule .slot.s-joy { border-left-color: #7a8a4e; }
+.schedule .slot.picked { outline: 2px solid #efd8a4; color: #efd8a4; }
+.prio-row { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; margin-bottom: 6px; }
+.prio-row span { margin-right: 4px; color: #b0834e; }
+
+/* Robot chips in the colonist bar: name and charge only. */
+.colonist.robot { grid-template-columns: 1fr; min-width: 0; padding-inline: 6px; font-size: 11px; }
+.colonist.robot .nick { font-weight: 600; }
+/* Mod list checkboxes in the game's rust tone. */
+.mods input[type="checkbox"] { accent-color: #d9742e; }

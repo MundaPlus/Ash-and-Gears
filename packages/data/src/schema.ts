@@ -81,8 +81,12 @@ export const ThingDef = z.object({
   bed: z.object({ efficiency: z.number().positive(), thought: id }).optional(),
   /** Heat output in degrees per in-game hour into its room. Negative cools. */
   heat: z.number().default(0),
+  /** Burns fuel without power (campfire): no fuel, no heat, light or cooking. Survivors refuel it. */
+  burns: z.object({ item: id, perHour: z.number().positive(), capacity: z.number().int().positive(), whileWorking: z.boolean().default(false) }).optional(),
   /** Light radius in tiles. */
   light: z.number().min(0).default(0),
+  /** Recreation (B9): fun per in-game hour and how many can relax here at once. */
+  joy: z.object({ fun: z.number().positive(), seats: z.number().int().positive() }).optional(),
   /** Seats and tables raise comfort while eating (M4). */
   seat: z.boolean().default(false),
   table: z.boolean().default(false),
@@ -113,6 +117,8 @@ export const ThingDef = z.object({
       produce: z.number().min(0).default(0),
       use: z.number().min(0).default(0),
       store: z.number().min(0).default(0),
+      /** Consumers: own backup battery (Wh). It fills from the network only and feeds only its machine. Absent = half an hour of use. */
+      bank: z.number().min(0).optional(),
       fuel: z.object({ item: id, perHour: z.number().positive(), capacity: z.number().int().positive() }).optional(),
       /** Output follows the sun (day, weather) or the wind (A3). */
       source: z.enum(["solar", "wind"]).optional(),
@@ -154,6 +160,8 @@ export const ThingDef = z.object({
     .optional(),
   /** Storage chest: holds up to this many items of any kind. Belts and arms fill and empty it. */
   chest: z.number().int().positive().optional(),
+  /** A grave (B9): holds one corpse. Haulers bring corpses here; stockpiles and chests never take them. */
+  grave: z.boolean().default(false),
   /** Auto-crafter: runs a recipe without a survivor while powered. */
   autoCrafter: z.boolean().default(false),
   /** Robot bay: robots charge and get repaired here while it has power (A7). */
@@ -178,7 +186,7 @@ export const ItemDef = z.object({
   color,
   glyph: z.string().max(2).default("?"),
   stack: z.number().int().positive().default(75),
-  category: z.enum(["resource", "food", "water", "medicine", "weapon", "apparel", "blueprint", "misc"]),
+  category: z.enum(["resource", "food", "water", "medicine", "weapon", "apparel", "blueprint", "misc", "corpse"]),
   /** Nutrition per unit (food). */
   nutrition: z.number().min(0).default(0),
   /** Trade value per unit (A9). */
@@ -307,6 +315,42 @@ export const BackstoryDef = z.object({
 });
 export type BackstoryDef = z.infer<typeof BackstoryDef>;
 
+/** Story (Beta B1): a condition that a beat's goal needs. */
+export const StoryCondition = z.object({
+  type: z.enum(["days", "beat_days", "research", "items", "built", "visited", "outpost", "flag", "people", "calm"]),
+  id: z.string().optional(),
+  n: z.number().optional(),
+});
+export type StoryCondition = z.infer<typeof StoryCondition>;
+
+/** Story: something a beat does when it starts or ends. */
+export const StoryEffect = z.object({
+  type: z.enum(["message", "site", "robot", "items", "take", "flag", "raid", "goodwill", "win"]),
+  id: z.string().optional(),
+  key: z.string().optional(),
+  level: z.enum(["info", "warn", "bad"]).optional(),
+  kind: z.string().optional(),
+  name: z.string().optional(),
+  n: z.number().optional(),
+  danger: z.number().optional(),
+  dist: z.tuple([z.number(), z.number()]).optional(),
+  items: z.record(id, z.number().int().positive()).optional(),
+});
+export type StoryEffect = z.infer<typeof StoryEffect>;
+
+export const StoryDef = z.object({
+  id,
+  beats: z.array(
+    z.object({
+      id,
+      start: z.array(StoryEffect).default([]),
+      until: z.array(StoryCondition).min(1),
+      done: z.array(StoryEffect).default([]),
+    }),
+  ),
+});
+export type StoryDef = z.infer<typeof StoryDef>;
+
 /** A faction of the wasteland (A9). */
 export const FactionDef = z.object({
   id,
@@ -353,6 +397,7 @@ export const Content = z.object({
   traits: z.array(TraitDef),
   backstories: z.array(BackstoryDef),
   factions: z.array(FactionDef),
+  story: z.array(StoryDef),
   thoughts: z.array(ThoughtDef),
   names: NameLists,
   /** Loot table for salvage rolls: item id -> [min, max]. */

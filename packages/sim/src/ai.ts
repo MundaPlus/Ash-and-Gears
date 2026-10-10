@@ -11,7 +11,9 @@ import { isRoofed } from "./rooms.ts";
 import type { Pos } from "./path.ts";
 import { addMemory, addRad, hasTraitFlag, traitMult, type Job, type Pawn } from "./pawn.ts";
 import { isContaminatedThing } from "./weather.ts";
-import { workOrder } from "./worktypes.ts";
+import { workOrder, workPriority } from "./worktypes.ts";
+import { haulJob } from "./hauling.ts";
+import { relaxJob, slotNow } from "./recreation.ts";
 import { moving, tickHealthHourly } from "./health.ts";
 import { draftedTick, fleeFrom, hostileTick, selfDefense, updateGroups } from "./hostile.ts";
 import { equipJob, inBed, rushToDowned } from "./medical.ts";
@@ -212,6 +214,7 @@ export function think(game: Game, p: Pawn): void {
     const r = robotJob(game, p);
     if (r === "idle") return;
     if (r && startJob(game, p, r)) return;
+    if (workPriority(p, "haul") > 0 && startJob(game, p, haulJob(game, p, true))) return;
     for (const w of workOrder(p)) for (const g of workGivers) if (g.workType === w && startJob(game, p, g.give(game, p))) return;
     if ((p.charge ?? 1) < 0.9) {
       const rest = robotJob(game, { ...p, charge: 0.1 } as Pawn);
@@ -231,6 +234,7 @@ export function think(game: Game, p: Pawn): void {
   if (n.hunger < 0.2 && startJob(game, p, eatJob(game, p, true))) return;
   if (n.rest < 0.12 && startJob(game, p, sleepJob(game, p))) return;
   if (radDanger(game) && !sheltered(game, p) && startJob(game, p, shelterJob(game, p))) return;
+  const slot = slotNow(game, p);
   if (isSleepTime(game, p) && n.rest < 0.9) {
     // Eat and drink before bed, so nobody wakes up starving.
     if (n.thirst < 0.65 && startJob(game, p, drinkJob(game, p, false))) return;
@@ -240,6 +244,13 @@ export function think(game: Game, p: Pawn): void {
   if (n.thirst < 0.45 && startJob(game, p, drinkJob(game, p, false))) return;
   if (n.hunger < 0.4 && startJob(game, p, eatJob(game, p, false))) return;
   if (p.weapon === null && startJob(game, p, equipJob(game, p))) return;
+  // Recreation: in joy hours until fun is full; in "any" hours when bored; in work hours only when joyless.
+  // Never while hungry or thirsty: then food and water work comes first.
+  const needy = n.hunger < 0.3 || n.thirst < 0.3;
+  const wantFun = !needy && (slot === "joy" ? n.fun < 0.95 : slot === "work" ? n.fun < 0.05 : n.fun < 0.3);
+  if (wantFun && startJob(game, p, relaxJob(game, p))) return;
+  // "Haul now" stacks come before all other work for anyone who hauls.
+  if (workPriority(p, "haul") > 0 && startJob(game, p, haulJob(game, p, true))) return;
   for (const w of workOrder(p))
     for (const g of workGivers) if (g.workType === w && startJob(game, p, g.give(game, p))) return;
   startJob(game, p, wanderJob(game, p, false));
@@ -257,7 +268,7 @@ export function findItem(
   extra?: (s: ItemStack) => boolean,
 ): number | null {
   const cands = [...game.items.values()].filter(
-    (s) => s.layer >= 0 && match(s.def, !!s.contaminated) && !isReserved(game, `item:${s.id}`, p) && (!extra || extra(s)),
+    (s) => s.layer >= 0 && !s.forbidden && match(s.def, !!s.contaminated) && !isReserved(game, `item:${s.id}`, p) && (!extra || extra(s)),
   );
   cands.sort((a, b) => dist2(p, a) - dist2(p, b));
   for (const s of cands.slice(0, 12)) if (game.path.canReach(p, s)) return s.id;
@@ -472,7 +483,10 @@ registerJob("sleep", (game, p, job) => {
     job.stage = 2;
   }
   const wake = p.needs.rest >= 0.99 || (p.needs.rest > 0.7 && !isSleepTime(game, p));
-  const urgent = p.needs.thirst < 0.2 || p.needs.hunger < 0.2;
+  // Wake for hunger only when there is food to eat: else a starving, exhausted survivor wakes,
+  // finds nothing, falls asleep again at once, and never rests or works (they would starve next to ripe crops).
+  const hungry = p.needs.hunger < 0.2 && (game.tick + p.id) % 30 === 0 && findItem(game, p, (d) => game.reg.items.list[d].category === "food") !== null;
+  const urgent = p.needs.thirst < 0.2 || hungry;
   if (!wake && !urgent) return "run";
   addMemory(game, p, (job.data?.thought as string) ?? "slept_on_ground");
   if (!isRoofed(game, p.layer, p.x, p.y)) addMemory(game, p, "slept_outside");

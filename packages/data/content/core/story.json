@@ -1,0 +1,555 @@
+[
+ {
+  "id": "reactor",
+  "beats": [
+   {
+    "id": "badge",
+    "start": [
+     {
+      "type": "message",
+      "key": "story.reactor.badge.start",
+      "level": "info"
+     },
+     {
+      "type": "robot",
+      "kind": "robot",
+      "name": "HAL-PH"
+     },
+     {
+      "type": "site",
+      "id": "plant",
+      "kind": "bunker",
+      "dist": [
+       5,
+       8
+      ],
+      "danger": 0.25,
+      "items": {
+       "reactor_manual": 1,
+       "reactor_part": 1
+      }
+     }
+    ],
+    "until": [
+     {
+      "type": "visited",
+      "id": "plant"
+     }
+    ],
+    "done": [
+     {
+      "type": "message",
+      "key": "story.reactor.badge.done",
+      "level": "info"
+     }
+    ]
+   },
+   {
+    "id": "parts",
+    "start": [
+     {
+      "type": "message",
+      "key": "story.reactor.parts.start",
+      "level": "info"
+     },
+     {
+      "type": "site",
+      "id": "cooling_tower",
+      "kind": "crater_rim",
+      "dist": [
+       6,
+       10
+      ],
+      "danger": 0.4,
+      "items": {
+       "reactor_part": 1
+      }
+     },
+     {
+      "type": "site",
+      "id": "switchyard",
+      "kind": "wreck_field",
+      "dist": [
+       4,
+       9
+      ],
+      "danger": 0.3,
+      "items": {
+       "reactor_part": 1
+      }
+     },
+     {
+      "type": "goodwill",
+      "id": "glow_cult",
+      "n": -20
+     }
+    ],
+    "until": [
+     {
+      "type": "items",
+      "id": "reactor_part",
+      "n": 3
+     }
+    ],
+    "done": [
+     {
+      "type": "message",
+      "key": "story.reactor.parts.done",
+      "level": "info"
+     }
+    ]
+   },
+   {
+    "id": "console",
+    "start": [
+     {
+      "type": "message",
+      "key": "story.reactor.console.start",
+      "level": "bad"
+     },
+     {
+      "type": "raid",
+      "id": "glow_cult",
+      "n": 3
+     }
+    ],
+    "until": [
+     {
+      "type": "research",
+      "id": "reactor_control"
+     },
+     {
+      "type": "built",
+      "id": "reactor_console"
+     }
+    ],
+    "done": [
+     {
+      "type": "message",
+      "key": "story.reactor.console.done",
+      "level": "info"
+     }
+    ]
+   },
+   {
+    "id": "restart",
+    "start": [
+     {
+      "type": "message",
+      "key": "story.reactor.restart.start",
+      "level": "info"
+     }
+    ],
+    "until": [
+     {
+      "type": "items",
+      "id": "reactor_spark",
+      "n": 1
+     }
+    ],
+    "done": [
+     {
+      "type": "message",
+      "key": "story.reactor.restart.done",
+      "level": "info"
+     },
+     {
+      "type": "raid",
+      "id": "glow_cult",
+      "n": 5
+     }
+    ]
+   },
+   {
+    "id": "hold",
+    "start": [
+     {
+      "type": "message",
+      "key": "story.reactor.hold.start",
+      "level": "bad"
+     }
+    ],
+    "until": [
+     {
+      "type": "beat_days",
+      "n": 2
+     },
+     {
+      "type": "calm"
+     }
+    ],
+    "done": [
+     {
+      "type": "win",
+      "id": "reactor"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "bus",
+  "beats": [
+   {
+    "id": "ad",
+    "start": [
+     {
+      "type": "message",
+      "key": "story.bus.ad.start",
+      "level": "info"
+     },
+     {
+      "type": "site",
+      "id": "depot",
+      "kind": "wreck_field",
+      "dist": [
+       4,
+       7
+      ],
+      "danger": 0.2,
+      "items": {
+       "bus_manual": 1,
+       "engine_parts": 1
+      }
+     }
+    ],
+    "until": [
+     {
+      "type": "visited",
+      "id": "depot"
+     }
+    ],
+    "done": [
+     {
+      "type": "message",
+      "key": "story.bus.ad.done",
+      "level": "info"
+     }
+    ]
+   },
+   {
+    "id": "restore",
+    "start": [
+     {
+      "type": "message",
+      "key": "story.bus.restore.start",
+      "level": "info"
+     }
+    ],
+    "until": [
+     {
+      "type": "research",
+      "id": "vehicle_repair"
+     },
+     {
+      "type": "built",
+      "id": "school_bus"
+     }
+    ],
+    "done": [
+     {
+      "type": "message",
+      "key": "story.bus.restore.done",
+      "level": "info"
+     }
+    ]
+   },
+   {
+    "id": "upgrades",
+    "start": [
+     {
+      "type": "message",
+      "key": "story.bus.upgrades.start",
+      "level": "info"
+     },
+     {
+      "type": "site",
+      "id": "armory",
+      "kind": "bunker",
+      "dist": [
+       6,
+       10
+      ],
+      "danger": 0.4,
+      "items": {
+       "armor_plates": 2
+      }
+     },
+     {
+      "type": "site",
+      "id": "truck_stop",
+      "kind": "dead_town",
+      "dist": [
+       5,
+       9
+      ],
+      "danger": 0.3,
+      "items": {
+       "engine_parts": 1
+      }
+     }
+    ],
+    "until": [
+     {
+      "type": "items",
+      "id": "bus_ready",
+      "n": 1
+     }
+    ],
+    "done": [
+     {
+      "type": "message",
+      "key": "story.bus.upgrades.done",
+      "level": "info"
+     }
+    ]
+   },
+   {
+    "id": "supplies",
+    "start": [
+     {
+      "type": "message",
+      "key": "story.bus.supplies.start",
+      "level": "info"
+     }
+    ],
+    "until": [
+     {
+      "type": "items",
+      "id": "canned_food",
+      "n": 40
+     },
+     {
+      "type": "items",
+      "id": "clean_water",
+      "n": 40
+     }
+    ],
+    "done": [
+     {
+      "type": "message",
+      "key": "story.bus.supplies.done",
+      "level": "info"
+     },
+     {
+      "type": "site",
+      "id": "haven",
+      "kind": "dead_town",
+      "dist": [
+       11,
+       14
+      ],
+      "danger": 0.5,
+      "items": {}
+     }
+    ]
+   },
+   {
+    "id": "journey",
+    "start": [
+     {
+      "type": "message",
+      "key": "story.bus.journey.start",
+      "level": "info"
+     }
+    ],
+    "until": [
+     {
+      "type": "visited",
+      "id": "haven"
+     }
+    ],
+    "done": [
+     {
+      "type": "win",
+      "id": "bus"
+     }
+    ]
+   }
+  ]
+ },
+ {
+  "id": "orbit",
+  "beats": [
+   {
+    "id": "voices",
+    "start": [
+     {
+      "type": "message",
+      "key": "story.orbit.voices.start",
+      "level": "info"
+     }
+    ],
+    "until": [
+     {
+      "type": "research",
+      "id": "radio_tech"
+     }
+    ],
+    "done": [
+     {
+      "type": "message",
+      "key": "story.orbit.voices.done",
+      "level": "info"
+     }
+    ]
+   },
+   {
+    "id": "relays",
+    "start": [
+     {
+      "type": "message",
+      "key": "story.orbit.relays.start",
+      "level": "info"
+     },
+     {
+      "type": "site",
+      "id": "relay_north",
+      "kind": "ruins",
+      "dist": [
+       5,
+       9
+      ],
+      "danger": 0.25,
+      "items": {
+       "relay_code": 1
+      }
+     },
+     {
+      "type": "site",
+      "id": "relay_east",
+      "kind": "wreck_field",
+      "dist": [
+       6,
+       10
+      ],
+      "danger": 0.3,
+      "items": {
+       "relay_code": 1
+      }
+     },
+     {
+      "type": "site",
+      "id": "relay_south",
+      "kind": "crater_rim",
+      "dist": [
+       7,
+       11
+      ],
+      "danger": 0.4,
+      "items": {
+       "relay_code": 1
+      }
+     }
+    ],
+    "until": [
+     {
+      "type": "outpost",
+      "id": "relay_north"
+     },
+     {
+      "type": "outpost",
+      "id": "relay_east"
+     },
+     {
+      "type": "outpost",
+      "id": "relay_south"
+     }
+    ],
+    "done": [
+     {
+      "type": "message",
+      "key": "story.orbit.relays.done",
+      "level": "info"
+     }
+    ]
+   },
+   {
+    "id": "dish",
+    "start": [
+     {
+      "type": "message",
+      "key": "story.orbit.dish.start",
+      "level": "info"
+     }
+    ],
+    "until": [
+     {
+      "type": "research",
+      "id": "dish_design"
+     },
+     {
+      "type": "built",
+      "id": "satellite_dish"
+     }
+    ],
+    "done": [
+     {
+      "type": "message",
+      "key": "story.orbit.dish.done",
+      "level": "info"
+     }
+    ]
+   },
+   {
+    "id": "bargain",
+    "start": [
+     {
+      "type": "message",
+      "key": "story.orbit.bargain.start",
+      "level": "info"
+     }
+    ],
+    "until": [
+     {
+      "type": "items",
+      "id": "bandage",
+      "n": 20
+     },
+     {
+      "type": "items",
+      "id": "electronics",
+      "n": 10
+     }
+    ],
+    "done": [
+     {
+      "type": "take",
+      "items": {
+       "bandage": 20,
+       "electronics": 10
+      }
+     },
+     {
+      "type": "message",
+      "key": "story.orbit.bargain.done",
+      "level": "info"
+     }
+    ]
+   },
+   {
+    "id": "broadcast",
+    "start": [
+     {
+      "type": "message",
+      "key": "story.orbit.broadcast.start",
+      "level": "info"
+     }
+    ],
+    "until": [
+     {
+      "type": "items",
+      "id": "signal_log",
+      "n": 1
+     }
+    ],
+    "done": [
+     {
+      "type": "win",
+      "id": "orbit"
+     }
+    ]
+   }
+  ]
+ }
+]

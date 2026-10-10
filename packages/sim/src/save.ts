@@ -5,6 +5,7 @@
  */
 import type { Expedition, WorldMap } from "./world.ts";
 import type { Caravan } from "./factions.ts";
+import type { Plot } from "./plot.ts";
 import type { Content } from "@wc/data";
 import { Game, type GameOptions } from "./game.ts";
 import type { Blueprint, ItemStack, Thing, Zone } from "./map.ts";
@@ -50,6 +51,7 @@ export interface SaveFile {
   opinions?: [string, number][];
   world?: WorldMap | null;
   goodwill?: Record<string, number>;
+  plot?: Plot;
   caravan?: Caravan | null;
   expeditions?: (Omit<Expedition, "pawns"> & { pawns: SavedPawn[] })[];
   bonds?: [string, string][];
@@ -135,6 +137,7 @@ export function saveGame(game: Game): SaveFile {
     opinions: [...game.opinions],
     world: game.world,
     goodwill: { ...game.goodwill },
+    plot: game.plot,
     caravan: game.caravan,
     expeditions: game.expeditions.map((e) => ({ ...e, pawns: e.pawns.map((p) => pawnOut(game, p)) })),
     bonds: [...game.bonds],
@@ -242,6 +245,7 @@ export function loadGame(content: Content, raw: SaveFile): Game {
   for (const [k, v] of data.opinions ?? []) game.opinions.set(k, v);
   game.world = data.world ?? null;
   game.goodwill = { ...(data.goodwill ?? {}) };
+  if (data.plot) game.plot = data.plot;
   game.caravan = data.caravan ?? null;
   game.expeditions = (data.expeditions ?? []).map((e) => ({ ...e, pawns: e.pawns.map((sp) => pawnIn(game, sp)) }));
   for (const [k, v] of data.bonds ?? []) game.bonds.set(k, v as "family" | "lover");
@@ -311,6 +315,8 @@ export function pawnIn(game: Game, sp: SavedPawn): Pawn {
     backstory: sp.backstory && sp.backstory.every((b) => reg.backstories.has(b)) ? [reg.backstories.idx(sp.backstory[0]), reg.backstories.idx(sp.backstory[1])] : undefined,
     memories: sp.memories.filter((m) => reg.thoughts.has(m.thought)).map((m) => ({ thought: reg.thoughts.idx(m.thought), expires: m.expires })),
     situational: [],
+    // Saves from before recreation (B9) have no fun need.
+    needs: { ...sp.needs, fun: sp.needs.fun ?? 0.7 },
     creature: Math.max(0, reg.content.creatures.findIndex((c) => c.id === sp.creature)),
     weapon: sp.weapon && reg.items.has(sp.weapon) ? reg.items.idx(sp.weapon) : null,
     carrying: null,

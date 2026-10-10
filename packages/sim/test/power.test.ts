@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadCoreContent } from "@wc/data";
-import { Game, isPowered, NO_THING, setSwitch, WORK_TYPES } from "../src/index.ts";
+import { bankSize, Game, isPowered, makeRobot, NO_THING, setSwitch, WORK_TYPES } from "../src/index.ts";
 
 const content = loadCoreContent();
 const run = (g: Game, hours: number) => {
@@ -34,6 +34,8 @@ describe("power grid (A3)", () => {
     run(g, 0.5);
     expect(isPowered(g, lamp)).toBe(true);
     setSwitch(g, sw, false);
+    // The lamp's own backup battery is empty, so it goes dark at once.
+    lamp.bank = 0;
     run(g, 0.5);
     expect(isPowered(g, lamp)).toBe(false);
     setSwitch(g, sw, true);
@@ -72,7 +74,7 @@ describe("power grid (A3)", () => {
     const panel = g.spawnThing("solar_panel", 0, x0, y0);
     const lamp = g.spawnThing("lamp", 0, x0 + 2, y0);
     const turbine = g.spawnThing("wind_turbine", 0, x0 + 6, y0);
-    const lamp2 = g.spawnThing("lamp", 0, x0 + 7, y0);
+    const lamp2 = g.spawnThing("lamp", 0, x0 + 8, y0);
     g.weather.kind = "clear";
     // Run to noon, then to midnight.
     while (Math.abs(g.hourOfDay - 12) > 0.2) g.step();
@@ -84,5 +86,43 @@ describe("power grid (A3)", () => {
     expect(isPowered(g, lamp2)).toBe(true);
     void panel;
     void turbine;
+  });
+});
+
+describe("backup batteries", () => {
+  it("a machine keeps running on its own backup battery for a while after the power goes", () => {
+    const { g, x0, y0 } = setup("backup");
+    const gen = g.spawnThing("scrap_generator", 0, x0, y0);
+    gen.fuel = 30;
+    const lamp = g.spawnThing("lamp", 0, x0 + 2, y0);
+    run(g, 5);
+    expect(lamp.bank).toBeCloseTo(bankSize(g, lamp), 1);
+    gen.fuel = 0;
+    run(g, 0.2);
+    expect(isPowered(g, lamp)).toBe(true);
+    expect(lamp.bank!).toBeLessThan(bankSize(g, lamp));
+    run(g, 1);
+    expect(isPowered(g, lamp)).toBe(false);
+  });
+
+  it("the robot bay stores twice a battery, fills from the network and charges robots from it", () => {
+    const { g, x0, y0 } = setup("bay");
+    g.research.done.add("robotics");
+    const gen = g.spawnThing("scrap_generator", 0, x0, y0);
+    gen.fuel = 60;
+    const bay = g.spawnThing("robot_bay", 0, x0 + 2, y0);
+    const battery = content.things.find((t) => t.id === "battery")!;
+    expect(bankSize(g, bay)).toBe(2 * battery.power!.store);
+    run(g, 2);
+    const filled = bay.bank ?? 0;
+    expect(filled).toBeGreaterThan(0);
+    // Unplug the bay: a low robot still charges from what the bay holds.
+    g.removeThing(gen.id);
+    const bot = makeRobot(g, "robot", 0, x0 + 2, y0 + 3);
+    bot.charge = 0.1;
+    g.pawns.set(bot.id, bot);
+    run(g, 2);
+    expect(bot.charge).toBeGreaterThan(0.2);
+    expect(bay.bank!).toBeLessThan(filled);
   });
 });

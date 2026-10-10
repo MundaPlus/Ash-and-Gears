@@ -120,6 +120,21 @@ export class WorldRenderer {
         s.position.set((x - c.cx * CHUNK) * TILE, (y - c.cy * CHUNK) * TILE);
         s.width = s.height = TILE;
         c.root.addChild(s);
+        // Soft borders: a neighbor ground of a higher layer spills a dithered edge onto this tile.
+        if (!fl) {
+          const here = this.tex.terrainLayers[L.terrain[i]];
+          [[0, -1], [1, 0], [0, 1], [-1, 0]].forEach(([dx, dy], dir) => {
+            const nx = x + dx, ny = y + dy;
+            if (!L.inBounds(nx, ny)) return;
+            const ni = L.i(nx, ny);
+            const nt = L.terrain[ni];
+            if (nt === L.terrain[i] || L.floor[ni] || this.tex.terrainLayers[nt] <= here) return;
+            const e = new Sprite(this.tex.terrainEdges[nt][dir]);
+            e.position.copyFrom(s.position);
+            e.width = e.height = TILE;
+            c.root.addChild(e);
+          });
+        }
         const z = L.zone[i];
         if (z !== NO_THING) {
           const zs = new Sprite(Texture.WHITE);
@@ -169,6 +184,26 @@ export class WorldRenderer {
           t.position.set(s.x + TILE * 0.075, s.y + TILE * 0.1);
           if (st.contaminated) t.tint = 0xb8ff6a;
           items.push(t);
+          // Forbidden stacks: a small red cross in the corner.
+          // Spoiling food and bodies: a few dull green-brown spots.
+          if ((st.rot ?? 0) >= 0.5) {
+            const sp = new Sprite(this.tex.rot);
+            sp.width = sp.height = TILE;
+            sp.position.set(s.x, s.y);
+            marks.push(sp);
+          }
+          if (st.forbidden) {
+            const fx = new Sprite(this.tex.forbid);
+            fx.width = fx.height = TILE / 2;
+            fx.position.set(s.x + TILE / 2, s.y);
+            marks.push(fx);
+          }
+          if (st.haulNow) {
+            const hx = new Sprite(this.tex.haul);
+            hx.width = hx.height = TILE / 2;
+            hx.position.set(s.x, s.y);
+            marks.push(hx);
+          }
         }
         const th = L.thing[i];
         // A big thing draws once, from its top-left tile.

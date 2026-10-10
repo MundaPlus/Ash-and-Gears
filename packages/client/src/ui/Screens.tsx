@@ -8,9 +8,14 @@ import { useEffect, useState } from "preact/hooks";
 import { ART_SIZES } from "../render/textures.ts";
 import { listSlots, type SlotInfo } from "../storage.ts";
 import { actions, useStore } from "./store.ts";
+import { Mods } from "./Mods.tsx";
+import { installedMods } from "../mods.ts";
 
 export interface NewGameOptions {
   storyteller: "sheriff" | "grandma" | "chaos";
+  /** Storyline id, or "" for the sandbox. */
+  line: string;
+  scenario: string;
   raid: number;
   mutant: number;
   rad: number;
@@ -20,7 +25,7 @@ export interface NewGameOptions {
 }
 
 export function startNewGame(o: NewGameOptions) {
-  const q = new URLSearchParams({ seed: o.seed || Math.random().toString(36).slice(2, 8), story: o.storyteller, raid: String(o.raid), mutant: String(o.mutant), rad: String(o.rad), size: String(o.size), day: String(o.day) });
+  const q = new URLSearchParams({ seed: o.seed || Math.random().toString(36).slice(2, 8), story: o.storyteller, raid: String(o.raid), mutant: String(o.mutant), rad: String(o.rad), size: String(o.size), day: String(o.day), line: o.line, scen: o.scenario });
   location.search = q.toString();
 }
 
@@ -54,8 +59,16 @@ function Slots({ onPick }: { onPick: (s: SlotInfo) => void }) {
   );
 }
 
+/** Storyline ids from enabled mods. */
+function modLines(): string[] {
+  return installedMods()
+    .filter((m) => m.enabled)
+    .flatMap((m) => ((m.pack as { story?: { id?: unknown }[] }).story ?? []).map((s) => s.id))
+    .filter((id): id is string => typeof id === "string" && !["reactor", "bus", "orbit"].includes(id));
+}
+
 function NewGame({ onBack }: { onBack: () => void }) {
-  const [o, setO] = useState<NewGameOptions>({ storyteller: "sheriff", raid: 1, mutant: 1, rad: 1, size: 200, day: 360, seed: "" });
+  const [o, setO] = useState<NewGameOptions>({ storyteller: "sheriff", line: "reactor", scenario: "standard", raid: 1, mutant: 1, rad: 1, size: 200, day: 360, seed: "" });
   const slider = (key: "raid" | "mutant" | "rad") => (
     <label class="slider">
       <span>{t(`newgame.${key}`)}</span>
@@ -66,6 +79,24 @@ function NewGame({ onBack }: { onBack: () => void }) {
   return (
     <div class="screen-body" data-testid="new-game">
       <h2>{t("newgame.title")}</h2>
+      <h3>{t("newgame.storyline")}</h3>
+      <div class="choices">
+        {["reactor", "bus", "orbit", ...modLines(), ""].map((l) => (
+          <button key={l || "sandbox"} data-testid={`line-${l || "sandbox"}`} class={o.line === l ? "on" : ""} onClick={() => setO({ ...o, line: l })}>
+            <b>{t(`line.${l || "sandbox"}`)}</b>
+            <small>{t(`line.${l || "sandbox"}.desc`)}</small>
+          </button>
+        ))}
+      </div>
+      <h3>{t("newgame.scenario")}</h3>
+      <div class="choices">
+        {["standard", "lone", "mall", "bunker", "rad_season"].map((sc) => (
+          <button key={sc} data-testid={`scen-${sc}`} class={o.scenario === sc ? "on" : ""} onClick={() => setO({ ...o, scenario: sc })}>
+            <b>{t(`scen.${sc}`)}</b>
+            <small>{t(`scen.${sc}.desc`)}</small>
+          </button>
+        ))}
+      </div>
       <h3>{t("newgame.storyteller")}</h3>
       <div class="choices">
         {(["grandma", "sheriff", "chaos"] as const).map((s) => (
@@ -110,7 +141,7 @@ function NewGame({ onBack }: { onBack: () => void }) {
 }
 
 export function TitleScreen({ hasAutosave }: { hasAutosave: boolean }) {
-  const [view, setView] = useState<"main" | "new" | "load">("main");
+  const [view, setView] = useState<"main" | "new" | "load" | "mods">("main");
   return (
     <div class="screen title" data-testid="title-screen">
       <div class="titlebox">
@@ -128,6 +159,16 @@ export function TitleScreen({ hasAutosave }: { hasAutosave: boolean }) {
               {t("title.new")}
             </button>
             <button onClick={() => setView("load")}>{t("title.load")}</button>
+            <button data-testid="mods-btn" onClick={() => setView("mods")}>
+              {t("title.mods")}
+            </button>
+          </div>
+        )}
+        {view === "mods" && (
+          <div class="screen-body">
+            <h2>{t("mods.title")}</h2>
+            <Mods />
+            <button onClick={() => setView("main")}>{t("menu.back")}</button>
           </div>
         )}
         {view === "new" && <NewGame onBack={() => setView("main")} />}
@@ -220,6 +261,8 @@ export function GameMenu() {
                 </button>
               ))}
             </div>
+            <h3>{t("mods.title")}</h3>
+            <Mods />
           </div>
         )}
         {tab === "new" && <NewGame onBack={() => setTab("save")} />}

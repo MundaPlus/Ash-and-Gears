@@ -3,6 +3,7 @@
  * after a threat comes a calm spell. Sliders scale raids, mutants and radiation clouds.
  * Grandma Grit waits longer between threats; Doctor Chaos ignores the calm spells.
  */
+import { hackRobot } from "./robots.ts";
 import type { FactionDef } from "@wc/data";
 import { equipRaider, raidingFaction, relationOf, sendCaravan } from "./factions.ts";
 import type { Game } from "./game.ts";
@@ -53,7 +54,8 @@ function weight(game: Game, kind: EventKind): number {
       return 0.9 * o.mutantScale;
     case "rad_cloud": {
       // At most one cloud per 8 days.
-      const recent = game.tick - game.weather.lastRadCloud < 8 * game.ticksPerDay && game.weather.lastRadCloud > 0;
+      const gap = game.opts.scenario === "rad_season" ? 5 : 8;
+      const recent = game.tick - game.weather.lastRadCloud < gap * game.ticksPerDay && game.weather.lastRadCloud > 0;
       return game.weather.next || game.weather.kind === "rad_cloud" || recent ? 0 : 0.4 * o.radCloudScale;
     }
   }
@@ -71,7 +73,7 @@ export function edgeSpawn(game: Game): { x: number; y: number } {
   return { x: 1, y: 1 };
 }
 
-function spawnGroup(game: Game, kind: "raid" | "rad_rats" | "glow_hounds", size: number, faction?: FactionDef) {
+function spawnGroup(game: Game, kind: "raid" | "rad_rats" | "glow_hounds", size: number, faction?: FactionDef): { layer: number; x: number; y: number } {
   const id = game.newId();
   game.groups.set(id, { id, kind, size, fleeing: false, arrived: game.tick });
   const at = edgeSpawn(game);
@@ -99,6 +101,9 @@ function spawnGroup(game: Game, kind: "raid" | "rad_rats" | "glow_hounds", size:
     }
     game.pawns.set(p.id, p);
   }
+  // Later raiders carry hacking gear: a third of raids take over one colony robot (B6).
+  if (kind === "raid" && day >= 20 && game.aiRng.next() < 0.33) hackRobot(game, id);
+  return { layer: 0, x: at.x, y: at.y };
 }
 
 export function fireEvent(game: Game, kind: EventKind): void {
@@ -114,22 +119,22 @@ export function fireEvent(game: Game, kind: EventKind): void {
       const f = raidingFaction(game);
       const base = first ? 2 : Math.max(2, Math.min(7, cap, 2 + Math.floor((s.points - 6) / 4)));
       const size = first || !f ? base : Math.max(2, Math.min(8, Math.round(base * f.raidSize)));
-      spawnGroup(game, "raid", size, f ?? undefined);
-      if (f) game.message("msg.raid_faction", { n: size, faction: f.id }, "bad");
-      else game.message("msg.raid", { n: size }, "bad");
+      const at = spawnGroup(game, "raid", size, f ?? undefined);
+      if (f) game.message("msg.raid_faction", { n: size, faction: f.id }, "bad", at);
+      else game.message("msg.raid", { n: size }, "bad", at);
       break;
     }
     case "rad_rats": {
       const size = Math.min(8, 3 + Math.floor(s.points / 2));
-      spawnGroup(game, "rad_rats", size);
-      game.message("msg.rad_rats", { n: size }, "bad");
+      const at = spawnGroup(game, "rad_rats", size);
+      game.message("msg.rad_rats", { n: size }, "bad", at);
       break;
     }
     case "glow_hounds": {
       const colonists = [...game.pawns.values()].filter((p) => p.faction === "colony" && !p.robot).length;
       const size = Math.max(2, Math.min(3, colonists, Math.floor(s.points / 3)));
-      spawnGroup(game, "glow_hounds", size);
-      game.message("msg.glow_hounds", { n: size }, "bad");
+      const at = spawnGroup(game, "glow_hounds", size);
+      game.message("msg.glow_hounds", { n: size }, "bad", at);
       break;
     }
     case "rad_cloud":
@@ -148,7 +153,7 @@ function goodEvent(game: Game) {
     const p = makeSurvivor(game, 0, at.x, at.y, new Set(colonists.flatMap((c) => [c.first, c.nick])));
     game.pawns.set(p.id, p);
     for (const c of game.pawns.values()) if (c.faction === "colony") addMemory(game, c, "wanderer_joined");
-    game.message("msg.wanderer", { name: p.nick }, "info");
+    game.message("msg.wanderer", { name: p.nick }, "info", p);
     s.log.push({ tick: game.tick, event: "wanderer" });
   } else {
     const loot: [string, number][] = [["canned_food", 15], ["clean_water", 15], ["scrap", 40], ["components", 3], ["bandage", 6], ["cloth", 15]];
@@ -196,4 +201,16 @@ export function tickStoryteller(game: Game): void {
   fireEvent(game, pick);
   s.points -= cost(game, pick);
   s.lastThreat = game.tick;
+}
+
+/** A raid by a named faction, now (story events). */
+export function spawnRaid(game: Game, f: FactionDef, size: number): void {
+  const at = spawnGroup(game, "raid", size, f);
+  game.message("msg.raid_faction", { n: size, faction: f.id }, "bad", at);
+}
+
+/** A pack of creatures arriving now (scenarios). */
+export function spawnPack(game: Game, kind: "rad_rats" | "glow_hounds", size: number): void {
+  const at = spawnGroup(game, kind, size);
+  game.message(`msg.${kind}`, { n: size }, "bad", at);
 }

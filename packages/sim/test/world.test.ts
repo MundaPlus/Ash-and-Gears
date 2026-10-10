@@ -62,6 +62,8 @@ describe("world map and expeditions (A8)", () => {
     expect(site.outpost).toBeDefined();
     run(g, travelHours(g, site) + 14 + 48);
     expect(Object.values(site.outpost!.stock).reduce((a, b) => a + b, 0)).toBeGreaterThan(0);
+    // Three days passed: the colony needs fresh water for the second team.
+    dropItems(g, "clean_water", 20, 0, g.home.x + 5, g.home.y - 3);
     expect(launchExpedition(g, site.id, [q.id])).not.toBeNull();
     run(g, travelHours(g, site) + 1);
     expect(Object.values(site.outpost!.stock).reduce((a, b) => a + b, 0)).toBe(0);

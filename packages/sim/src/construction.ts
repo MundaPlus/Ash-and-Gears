@@ -3,6 +3,7 @@
  * The player places a blueprint. Survivors bring the materials (several blueprints per trip when
  * they are close together), then one survivor builds it.
  */
+import { addStat } from "./pawn.ts";
 import { atGoal, findItem, goTo, isReserved, reserve } from "./ai.ts";
 import { registerJob, registerWorkGiver } from "./jobs.ts";
 import type { Game } from "./game.ts";
@@ -168,7 +169,10 @@ registerTask("build", {
     const bp = game.blueprints.get(job.targetId!);
     return !!bp && !needsMaterials(bp) && !blocked(game, bp);
   },
-  complete: (game, _p, job) => completeBlueprint(game, game.blueprints.get(job.targetId!)!),
+  complete: (game, p, job) => {
+    addStat(p, "built");
+    completeBlueprint(game, game.blueprints.get(job.targetId!)!);
+  },
 });
 
 // ---------------------------------------------------------------- work giver

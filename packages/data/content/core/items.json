@@ -237,7 +237,7 @@
   "id": "corpse",
   "color": "#5c4636",
   "glyph": "x",
-  "category": "misc",
+  "category": "corpse",
   "stack": 1,
   "rotDays": 3,
   "value": 0
@@ -273,5 +273,77 @@
   "category": "blueprint",
   "stack": 1,
   "value": 150
+ },
+ {
+  "id": "reactor_part",
+  "color": "#9fd14a",
+  "glyph": "*",
+  "category": "misc",
+  "stack": 1,
+  "value": 200
+ },
+ {
+  "id": "reactor_manual",
+  "color": "#e3c25a",
+  "glyph": "*",
+  "category": "blueprint",
+  "stack": 1,
+  "value": 150
+ },
+ {
+  "id": "reactor_spark",
+  "color": "#c6ff3a",
+  "glyph": "*",
+  "category": "misc",
+  "stack": 1,
+  "value": 0
+ },
+ {
+  "id": "bus_manual",
+  "color": "#d9742e",
+  "glyph": "*",
+  "category": "blueprint",
+  "stack": 1,
+  "value": 150
+ },
+ {
+  "id": "armor_plates",
+  "color": "#6f8088",
+  "glyph": "*",
+  "category": "misc",
+  "stack": 5,
+  "value": 40
+ },
+ {
+  "id": "engine_parts",
+  "color": "#56616d",
+  "glyph": "*",
+  "category": "misc",
+  "stack": 5,
+  "value": 60
+ },
+ {
+  "id": "bus_ready",
+  "color": "#e3c25a",
+  "glyph": "*",
+  "category": "misc",
+  "stack": 1,
+  "value": 0
+ },
+ {
+  "id": "relay_code",
+  "color": "#9fd14a",
+  "glyph": "*",
+  "category": "misc",
+  "stack": 5,
+  "value": 80
+ },
+ {
+  "id": "signal_log",
+  "color": "#7f9fd1",
+  "glyph": "*",
+  "category": "misc",
+  "stack": 1,
+  "value": 0
  }
 ]

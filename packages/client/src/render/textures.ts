@@ -7,7 +7,7 @@
  * characters in "hybrid" and "32".
  */
 import { Texture } from "pixi.js";
-import { CREATURES, FLOORS, ITEMS, PALETTES, parseGrid, scale2x, SHIRTS, terrainGrid, TERRAIN_VARIANTS, THINGS, lineVariant, rotateGrid, thingGrid, TURN_IN_LINE, wallVariant } from "@wc/data";
+import { CREATURES, FLOORS, HAIRS, ITEMS, PALETTES, parseGrid, scale2x, SHIRTS, terrainEdge, terrainGrid, terrainLayer, TERRAIN_VARIANTS, THINGS, lineVariant, rotateGrid, thingGrid, TURN_IN_LINE, wallVariant } from "@wc/data";
 import type { Registry } from "@wc/sim";
 import { aiTexture, aiWallTextures, type AiArt } from "./aiArt.ts";
 
@@ -25,6 +25,10 @@ export interface ArtSettings {
 export interface TextureSet {
   /** [terrain index][variant] */
   terrain: Texture[][];
+  /** [terrain index][side 0 N, 1 E, 2 S, 3 W]: its dithered border to lay over a lower neighbor. */
+  terrainEdges: Texture[][];
+  /** Border layer per terrain index (higher spills over lower). */
+  terrainLayers: number[];
   things: Texture[];
   /** Joined wall looks by neighbor mask (see wallVariant), or null for things that are not walls. */
   walls: (Texture[] | null)[];
@@ -46,6 +50,12 @@ export interface TextureSet {
   raiders: Texture[];
   creatures: Record<string, Texture>;
   shadow: Texture;
+  /** Red cross for forbidden item stacks. */
+  forbid: Texture;
+  /** Rust-orange arrow for "haul now" stacks. */
+  haul: Texture;
+  /** Dull green-brown spots on spoiling food and bodies. */
+  rot: Texture;
 }
 
 function gridTexture(grid: number[][], colors: string[], remap?: Record<number, number>): Texture {
@@ -106,6 +116,8 @@ export function makeTextures(reg: Registry, art: ArtSettings, ai: AiArt = new Ma
   const prepDetail = (rows: string[]) => (art.size === "16" ? parseGrid(rows) : scale2x(parseGrid(rows)));
 
   const terrain = reg.terrain.list.map((d) => Array.from({ length: TERRAIN_VARIANTS }, (_, v) => gridTexture(prepGrid(terrainGrid(d.id, v)), colors)));
+  const terrainEdges = reg.terrain.list.map((d) => [0, 1, 2, 3].map((dir) => gridTexture(prepGrid(terrainEdge(d.id, 0, dir)), colors)));
+  const terrainLayers = reg.terrain.list.map((d) => terrainLayer(d.id));
   const things = reg.things.list.map((d) => {
     const look = aiWorld(d.id)?.[0];
     if (look && !d.wall && !d.conduit && !d.pipe) return aiTexture(look, palette);
@@ -142,11 +154,16 @@ export function makeTextures(reg: Registry, art: ArtSettings, ai: AiArt = new Ma
   const aiPeople = aiDetail("survivor");
   const survivors = aiPeople?.length
     ? aiPeople.map((c) => aiTexture(c, palette))
-    : SHIRTS.map(([a, b, c]) => gridTexture(survivorGrid, colors, { 8: a, 9: b, 10: c }));
+    : // Twelve looks: each shirt with a hair color (survivor k wears shirt k % 6, like the UI swatch).
+      Array.from({ length: SHIRTS.length * 2 }, (_, k) => {
+        const [a, b, c] = SHIRTS[k % SHIRTS.length];
+        const [h1, h2] = HAIRS[(k * 3) % HAIRS.length];
+        return gridTexture(survivorGrid, colors, { 8: a, 9: b, 10: c, 3: h1, 4: h2 });
+      });
   const aiRaiders = aiDetail("raider");
   const raiders = aiRaiders?.length ? aiRaiders.map((c) => aiTexture(c, palette)) : [gridTexture(prepDetail(CREATURES.raider), colors)];
   const creatures: Record<string, Texture> = {};
-  for (const id of ["rad_rat", "glow_hound", "robot", "hauler_drone"]) {
+  for (const id of ["rad_rat", "glow_hound", "robot", "hauler_drone", "builder_bot", "miner_bot", "farmer_bot", "guard_bot"]) {
     const look = aiDetail(id)?.[0];
     creatures[id] = look ? aiTexture(look, palette) : gridTexture(prepDetail(CREATURES[id]), colors);
   }
@@ -172,7 +189,44 @@ export function makeTextures(reg: Registry, art: ArtSettings, ai: AiArt = new Ma
     g.ellipse(16, 29, 9, 3, 0, 0, Math.PI * 2);
     g.fill();
   });
-  return { terrain, things, walls, lines, stubs, turned, thingsTurned, items, floors, desig, survivors, raiders, creatures, shadow };
+  const forbid = drawn(16, (g) => {
+    g.strokeStyle = "#1b1714";
+    g.lineWidth = 5;
+    g.beginPath();
+    g.moveTo(3, 3);
+    g.lineTo(13, 13);
+    g.moveTo(13, 3);
+    g.lineTo(3, 13);
+    g.stroke();
+    g.strokeStyle = "#ff4a3a";
+    g.lineWidth = 2.5;
+    g.stroke();
+  });
+  // An up arrow in a dark outline: "pick this up now".
+  const haul = drawn(16, (g) => {
+    g.beginPath();
+    g.moveTo(8, 2);
+    g.lineTo(14, 9);
+    g.lineTo(10, 9);
+    g.lineTo(10, 14);
+    g.lineTo(6, 14);
+    g.lineTo(6, 9);
+    g.lineTo(2, 9);
+    g.closePath();
+    g.fillStyle = "#d9742e";
+    g.fill();
+    g.strokeStyle = "#1b1714";
+    g.lineWidth = 1.5;
+    g.stroke();
+  });
+  const rot = drawn(16, (g) => {
+    g.fillStyle = "#4a5a3a";
+    for (const [x, y] of [[5, 6], [10, 9], [6, 11], [11, 5], [8, 8]]) g.fillRect(x, y, 1, 1);
+    g.fillStyle = "#1b1714";
+    g.fillRect(8, 3, 1, 1);
+    g.fillRect(3, 9, 1, 1);
+  });
+  return { forbid, haul, rot, terrain, terrainEdges, terrainLayers, things, walls, lines, stubs, turned, thingsTurned, items, floors, desig, survivors, raiders, creatures, shadow };
 }
 
 /** Stable variant per tile so the ground does not repeat. */
