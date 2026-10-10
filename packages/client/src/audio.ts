@@ -22,6 +22,9 @@ const POOLS: Record<string, string[]> = {
   combat: ["combat", "combat_2"],
 };
 
+/** Sound effect names. */
+export type Sfx = "shot" | "turret" | "hit" | "melee" | "build" | "salvage" | "mine" | "chop" | "rustle" | "click" | "alert" | "bad" | "geiger" | "done";
+
 export class Audio {
   private ctx: AudioContext | null = null;
   private music!: GainNode;
@@ -318,7 +321,7 @@ export class Audio {
   // ---------------------------------------------------------------- sound effects
 
   /** Play a sound effect; `pan` -1..1, `vol` 0..1 (distance falloff is done by the caller). */
-  play(name: "shot" | "turret" | "hit" | "melee" | "hammer" | "pick" | "click" | "alert" | "bad" | "geiger" | "done", vol = 1, pan = 0): void {
+  play(name: Sfx, vol = 1, pan = 0): void {
     const c = this.ctx;
     if (!c || c.state !== "running" || vol <= 0.02) return;
     // Do not stack the same sound many times in one moment.
@@ -371,13 +374,32 @@ export class Audio {
       case "melee":
         noise("bandpass", 900, 0.09, 0.4);
         break;
-      case "hammer":
-        tone("triangle", 900, 400, 0.06, 0.18);
-        noise("highpass", 3000, 0.04, 0.12);
+      // Work sounds: low, soft and round (no high clicks), one per kind of work.
+      case "build":
+        // A wooden knock.
+        tone("sine", 210, 140, 0.14, 0.3);
+        noise("lowpass", 500, 0.07, 0.16);
         break;
-      case "pick":
-        tone("square", 1300, 1100, 0.05, 0.1);
-        noise("bandpass", 2500, 0.05, 0.2);
+      case "salvage":
+        // A dull metal clank with a short, low ring.
+        tone("sine", 160, 110, 0.12, 0.26);
+        tone("triangle", 330, 320, 0.28, 0.06, 0.01);
+        tone("triangle", 494, 480, 0.22, 0.04, 0.01);
+        noise("lowpass", 900, 0.06, 0.12);
+        break;
+      case "mine":
+        // A muffled stone chip.
+        tone("sine", 140, 90, 0.12, 0.28);
+        noise("lowpass", 1100, 0.08, 0.18);
+        break;
+      case "chop":
+        // A dull chop into wood.
+        tone("sine", 180, 100, 0.1, 0.26);
+        noise("bandpass", 650, 0.09, 0.2);
+        break;
+      case "rustle":
+        // Leaves and soil.
+        noise("bandpass", 1400, 0.18, 0.08);
         break;
       case "click":
         tone("sine", 1200, 900, 0.04, 0.12);
