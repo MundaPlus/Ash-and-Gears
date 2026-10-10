@@ -7,6 +7,9 @@ import { Print, type Ink, type Pt } from "./kit.ts";
 
 export type Facing = "S" | "N" | "E" | "W";
 
+/** People reach above their tile (heads, crests): draw them with this much headroom, in tiles. */
+export const PERSON_HEADROOM = 0.3;
+
 export interface Look {
   coat: Ink;
   coatDark: Ink;
@@ -109,7 +112,11 @@ export function person(p: Print, facing: Facing, frame: number, look: Look) {
   // Head.
   const hx = side ? mx(33) : C;
   if (facing === "N") {
-    p.shape(Print.ellipse(hx, 16, 10, 10), { fill: look.hair, line: true });
+    p.shape(Print.ellipse(hx, 16, 10, 10), { fill: look.raider ? "skin" : look.hair, line: true });
+    if (look.raider) {
+      p.line([[22.5, 18], [41.5, 18]], "soot", 2.2); // mask strap
+      p.shape([[27, 10], [26.5, -6], [29.5, -1], [30.5, -12], [32, -3], [33.5, -12], [34.5, -1], [37.5, -6], [37, 10]], { fill: look.hair, tone: { ink: "rustDark", amount: 0.3, cell: 2.5 }, line: 1.8 });
+    }
     if (look.cap) p.shape([[hx - 10, 15], [hx - 8, 7], [hx, 4], [hx + 8, 7], [hx + 10, 15]], { fill: look.cap, line: 2.2 });
   } else {
     p.shape(Print.ellipse(hx, 17, 10, 10), { fill: "skin", line: true });
@@ -117,11 +124,33 @@ export function person(p: Print, facing: Facing, frame: number, look: Look) {
     p.tone(side ? Print.ellipse(hx - dir * 5, 19, 4.5, 7) : Print.ellipse(hx + 6, 19, 3.5, 7), "skinDark", 0.22, 2.5);
     if (side) p.shape(P([[42, 16], [45.5, 19], [42, 21]]), { fill: "skin", line: 1.6 }); // nose
     if (look.raider) {
-      // Gas mask: a round snout and two filter dots.
-      const sx = side ? mx(39) : C;
-      p.shape(Print.ellipse(sx, 21, 6, 5), { fill: "slate", line: 2 });
-      p.dot(sx - 2, 21, 1.3, "soot").dot(sx + 2, 21, 1.3, "soot");
-      p.shape(side ? P([[30, 6], [34, 1], [36, 7], [40, 2], [41, 9]]) : [[26, 8], [29, 1], [32, 7], [35, 1], [38, 8]], { fill: look.hair, line: 1.8 }); // mohawk
+      // Mohawk: a tall crest of narrow spikes along the middle of the head.
+      if (side) {
+        // Swept back: each spike leans toward the back of the head.
+        const crest: Pt[] = [[25, 12], [16, -2], [26, 6], [21, -9], [31, 5], [28, -12], [36, 6], [35, -9], [41, 10]];
+        p.shape(P(crest), { fill: look.hair, tone: { ink: "rustDark", amount: 0.3, cell: 2.5 }, line: 1.8 });
+      } else {
+        p.shape([[27, 10], [26.5, -6], [29.5, -1], [30.5, -12], [32, -3], [33.5, -12], [34.5, -1], [37.5, -6], [37, 10]], { fill: look.hair, tone: { ink: "rustDark", amount: 0.3, cell: 2.5 }, line: 1.8 });
+      }
+      // Respirator: a half mask over nose and mouth with one filter canister below, a strap to the ears,
+      // and round goggles with dark lenses.
+      if (side) {
+        p.line(P([[33, 19], [25, 16]]), "soot", 2.2);
+        p.shape(P([[35, 15], [43, 15], [46, 21], [42, 25], [35, 24]]), { fill: "slate", tone: { ink: "slateDark", amount: 0.35, cell: 2.5 }, line: 1.8 });
+        p.shape(P(Print.capsule([44, 23], [48.5, 28.5], 3.4)), { fill: "slateDark", line: 1.8 });
+        p.line(P([[45.5, 25], [48, 28]]), "soot", 1.2);
+        p.shape(P(Print.ellipse(38.5, 12.5, 3.6, 3.4)), { fill: "slateDark", line: 1.6 });
+        p.dot(mx(38), 12, 1.3, "rustDark");
+      } else {
+        p.line([[22.5, 18], [41.5, 18]], "soot", 2.2);
+        p.shape([[25, 16], [39, 16], [38, 24], [32, 27], [26, 24]], { fill: "slate", tone: { ink: "slateDark", amount: 0.35, cell: 2.5 }, line: 1.8 });
+        p.shape(Print.rect(28, 25, 8, 6, 2.5), { fill: "slateDark", line: 1.8 });
+        for (const gx of [30.5, 33.5]) p.line([[gx, 26.5], [gx, 29.5]], "soot", 1.1);
+        p.shape(Print.ellipse(27.5, 12.5, 3.6, 3.4), { fill: "slateDark", line: 1.6 });
+        p.shape(Print.ellipse(36.5, 12.5, 3.6, 3.4), { fill: "slateDark", line: 1.6 });
+        p.dot(27, 12, 1.1, "rustDark").dot(36, 12, 1.1, "rustDark");
+        p.line([[31, 12.5], [33, 12.5]], "soot", 1.4);
+      }
     } else {
       // Eyes, and goggles pushed up on the cap: the survivor signature.
       if (side) p.dot(mx(38), 16, 1.3, "soot");

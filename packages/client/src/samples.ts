@@ -3,7 +3,7 @@
  * Shows a small scene in the three ink sets, people in four facings and walking, and single things.
  */
 import { INK_SETS, Print, type Ink } from "./render/print/kit.ts";
-import { battery, bed, bench, conveyor, person, RAIDER, SURVIVOR, terrain, wall, type Facing, type Look } from "./render/print/sprites.ts";
+import { battery, bed, bench, conveyor, person, PERSON_HEADROOM, RAIDER, SURVIVOR, terrain, wall, type Facing, type Look } from "./render/print/sprites.ts";
 
 const root = document.getElementById("samples")!;
 
@@ -77,13 +77,13 @@ const inks = INK_SETS.rust;
 const ppl = section("People", "Four facings, then two walking steps. Survivors wear goggles pushed up on the cap and carry a pack with a rolled blanket; raiders have spiked shoulder pads, a gas mask and a mohawk.");
 for (const [look, name] of [[SURVIVOR, "Survivor"], [RAIDER, "Raider"]] as [Look, string][])
   for (const f of ["S", "E", "N", "W"] as Facing[]) {
-    const [cv, ctx] = canvas(1, 1, 160);
-    at(ctx, inks, 160, 0, 0, 9, (p) => person(p, f, 0, look));
+    const [cv, ctx] = canvas(1, 1 + PERSON_HEADROOM, 160);
+    at(ctx, inks, 160, 0, PERSON_HEADROOM, 9, (p) => person(p, f, 0, look));
     figure(ppl, cv, `${name} · ${f}`);
   }
 for (const fr of [1, 2]) {
-  const [cv, ctx] = canvas(1, 1, 160);
-  at(ctx, inks, 160, 0, 0, 9, (p) => person(p, "E", fr, SURVIVOR));
+  const [cv, ctx] = canvas(1, 1 + PERSON_HEADROOM, 160);
+  at(ctx, inks, 160, 0, PERSON_HEADROOM, 9, (p) => person(p, "E", fr, SURVIVOR));
   figure(ppl, cv, `Walking · step ${fr}`);
 }
 
