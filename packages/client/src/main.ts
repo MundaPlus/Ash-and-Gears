@@ -519,6 +519,8 @@ async function boot() {
         };
       researchLink = !!def.bench || !!def.research;
       if (def.grave && thing.filled) lines.push(t("inspect.grave_filled"));
+      // Belts: what rides on this piece right now.
+      if (def.belt) lines.push(thing.cargo ? t("inspect.belt_cargo", { count: thing.cargo.count, item: t(`item.${game.reg.items.list[thing.cargo.def].id}`) }) : t("inspect.belt_empty"));
       if (def.burns) {
         lines.push(t("inspect.fuel", { v: Math.round(thing.fuel ?? 0), max: def.burns.capacity, item: t(`item.${def.burns.item}`) }));
         if (!thing.fuel) lines.push(t("inspect.fire_out"));

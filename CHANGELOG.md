@@ -1,6 +1,7 @@
 # Changelog
 
 ## 2026-10-11
+- The inspect panel shows what rides on a belt piece ("On the belt: 3 × Scrap") or that it is empty; it updates live (`packages/client/src/main.ts`; i18n) — user report.
 - Fix: the showcase cleared its yard and removed the surface stairs down in some seeds, leaving the cave stairs up with nothing above. It now keeps stairs (`packages/sim/src/showcase.ts`) — user report.
 - Showcase: a way down to the old bunker: dug stairs in the caves next to the stairs from the surface, and a tunnel on the bunker layer around the bunker to its outer door (`packages/sim/src/showcase.ts` `wayToBunker`; test in `packages/sim/test/deep.test.ts`) — user question "how do I get to the bunker?".
 - Stairs (Salvage Print) are easy to spot: a light frame round a dark pit, pale steps and a big rust arrow (`packages/client/src/render/print/things.ts`).
