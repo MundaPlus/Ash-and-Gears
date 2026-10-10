@@ -155,8 +155,9 @@ export class WorldRenderer {
           bs.position.copyFrom(s.position);
           bs.width = bw * TILE;
           bs.height = bh * TILE;
-          bs.tint = 0xa8d0ff;
-          bs.alpha = Object.values(bp.need).some((n) => n > 0) ? 0.55 : 0.8;
+          // Blueprint teal, see-through until the materials are in.
+          bs.tint = 0x8fd6e8;
+          bs.alpha = Object.values(bp.need).some((n) => n > 0) ? 0.6 : 0.85;
           overlays.push(bs);
         }
         // A room that waits for its roof: a faint hatch, until a survivor builds it.

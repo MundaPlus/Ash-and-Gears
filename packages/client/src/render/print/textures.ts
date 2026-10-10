@@ -6,7 +6,7 @@
 import { Texture } from "pixi.js";
 import type { Registry } from "@wc/sim";
 import { INK_SETS, Print, type Ink } from "./kit.ts";
-import { doorTile, floorTile, terrainEdgeTile, terrainTile, wallTile } from "./ground.ts";
+import { floorTile, terrainEdgeTile, terrainTile, wallTile } from "./ground.ts";
 import { person, PERSON_HEADROOM, RAIDER, type Facing, type Look } from "./sprites.ts";
 import { lineTile, PRINT_THINGS } from "./things.ts";
 import { creatureTile, itemTile } from "./items.ts";
@@ -85,7 +85,8 @@ export function applyPrint(set: TextureSet, reg: Registry, palette: string): Tex
     return ok ? masks : set.walls[i];
   });
   const things = reg.things.list.map((d, i) => {
-    if (d.door) return tex(1, 1, inks, i, (p) => doorTile(p, d.id));
+    // Doors are drawn live by the overlay (they open and turn upright in north-south walls).
+    if (d.door) return tex(1, 1, inks, i, () => undefined);
     const draw = THINGS[d.id];
     return draw ? tex(d.footprint[0], d.footprint[1], inks, i, draw) : set.things[i];
   });

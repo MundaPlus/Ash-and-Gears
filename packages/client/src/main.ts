@@ -155,11 +155,18 @@ async function boot() {
   const printInks = () => {
     if (art.style !== "print") return null;
     const inks = INK_SETS[art.palette] ?? INK_SETS.rust;
-    return { glow: parseInt(inks.glow.slice(1), 16), dark: parseInt(inks.slateDark.slice(1), 16) };
+    const n = (hex: string) => parseInt(hex.slice(1), 16);
+    return { glow: n(inks.glow), dark: n(inks.slateDark), soot: n(inks.soot), leaf: n(inks.rustDark), leafBunker: n(inks.slate), jamb: n(inks.slate), jambBunker: n(inks.slateDark), handle: n(inks.ochre) };
   };
   dyn.print = printInks();
   world.addChild(dyn.gfx);
   const tools = new ToolController(game, world);
+  // The build tool shows a ghost of the building, in the current art and rotation.
+  tools.ghostTexture = (defKind, id, rot) => {
+    if (defKind === "floor") return tex.floors[game.reg.floors.idx(id)] ?? null;
+    const i = game.reg.things.idx(id);
+    return (rot ? tex.thingsRot[rot]?.[i] : null) ?? tex.things[i] ?? null;
+  };
   const pawnsR = new PawnRenderer(game, tex);
   world.addChild(pawnsR.root);
   const fx = new FxRenderer(game);
@@ -477,8 +484,12 @@ async function boot() {
     const bp = L.blueprint[i] !== NO_THING ? game.blueprints.get(L.blueprint[i]) : undefined;
     if (bp) lines.push(t("inspect.blueprint", { name: t(bp.kind === "floor" ? `floor.${game.reg.floors.list[bp.def].id}` : `thing.${game.reg.things.list[bp.def].id}`) }));
     if (bp) {
-      const need = Object.entries(bp.need).filter(([, n]) => n > 0).map(([k, n]) => `${n} × ${t(`item.${game.reg.items.list[Number(k)].id}`)}`);
-      if (need.length) lines.push(t("inspect.needs", { list: need.join(", ") }));
+      // Materials delivered of the total, who works on it, and what the map is short of.
+      const st = sim.blueprintStatus(game, bp);
+      lines.push(t("inspect.materials", { list: st.materials.map((m) => `${t(`item.${m.item}`)} ${m.have}/${m.total}`).join(" · ") }));
+      if (st.workers.length) for (const w of st.workers) lines.push(w.doing === "build" ? t("inspect.bp_building", { name: w.name, pct: Math.round(st.progress * 100) }) : t("inspect.bp_bringing", { name: w.name, item: t(`item.${w.item}`) }));
+      else lines.push(t(st.materials.every((m) => m.have >= m.total) ? "inspect.bp_wait_builder" : "inspect.bp_nobody"));
+      if (st.short.length) lines.push(t("inspect.bp_short", { list: st.short.map((i) => t(`item.${i}`)).join(", ") }));
     }
     if (L.desig[i]) lines.push(t("inspect.order", { name: t(`order.${DESIG_KINDS[L.desig[i] - 1]}`) }));
     let title = L.floor[i] ? t(`floor.${game.reg.floors.list[L.floor[i] - 1].id}`) : t(`terrain.${td.id}`);

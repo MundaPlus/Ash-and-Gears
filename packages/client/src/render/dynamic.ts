@@ -3,7 +3,7 @@
  * Drawn with one Graphics object over the chunk layer.
  */
 import { Graphics } from "pixi.js";
-import { bankSize, crafterRecipe, DIRS4, isLit, jobProgress, isPowered, poleLinks, sourceFactor, type Game, type Thing } from "@wc/sim";
+import { bankSize, blueprintStatus, crafterRecipe, DIRS4, isLit, jobProgress, isPowered, poleLinks, sourceFactor, type Game, type Thing } from "@wc/sim";
 import { TILE } from "./textures.ts";
 import { BATTERY_CELLS } from "./print/things.ts";
 
@@ -18,7 +18,9 @@ export class DynamicRenderer {
   /** Power overlay: each network in its own color, machines without power outlined red. */
   powerOverlay = false;
   /** Salvage Print style: machines draw their own direction arrows; batteries light cells (glow color, dark cell color). */
-  print: { glow: number; dark: number } | null = null;
+  print: { glow: number; dark: number; soot: number; leaf: number; leafBunker: number; jamb: number; jambBunker: number; handle: number } | null = null;
+  /** Doors: last time (anim clock) someone stood in or entered the doorway. */
+  private doorSeen = new Map<number, number>();
 
   constructor(private game: Game) {
     this.lights.blendMode = "add";
@@ -48,6 +50,34 @@ export class DynamicRenderer {
       const prog = jobProgress(game, p);
       if (prog && prog.at.layer === this.layer) progressBar(g, prog.at.x * TILE + 4, prog.at.y * TILE - 3, TILE - 8, prog.k);
     }
+    // Blueprints: a dashed frame, a bar of delivered materials, and a badge while someone works on it.
+    for (const bp of game.blueprints.values()) {
+      if (bp.layer !== this.layer) continue;
+      const bx = bp.x * TILE, by = bp.y * TILE;
+      if (bx < view.x - TILE * 4 || by < view.y - TILE * 4 || bx > view.x + view.w + TILE * 4 || by > view.y + view.h + TILE * 4) continue;
+      const [fw, fh] = bp.kind === "thing" ? (bp.rot && bp.rot % 2 ? [...game.reg.things.list[bp.def].footprint].reverse() : game.reg.things.list[bp.def].footprint) : [1, 1];
+      const w = fw * TILE, h = fh * TILE;
+      for (let x = 2; x < w - 2; x += 6) {
+        const seg = Math.min(3, w - 2 - x);
+        g.moveTo(bx + x, by + 1.5).lineTo(bx + x + seg, by + 1.5).moveTo(bx + x, by + h - 1.5).lineTo(bx + x + seg, by + h - 1.5);
+      }
+      for (let y = 2; y < h - 2; y += 6) {
+        const seg = Math.min(3, h - 2 - y);
+        g.moveTo(bx + 1.5, by + y).lineTo(bx + 1.5, by + y + seg).moveTo(bx + w - 1.5, by + y).lineTo(bx + w - 1.5, by + y + seg);
+      }
+      g.stroke({ width: 1.5, color: 0x8fd6e8, alpha: 0.95 });
+      const st = blueprintStatus(game, bp);
+      const total = st.materials.reduce((n, m) => n + m.total, 0), have = st.materials.reduce((n, m) => n + m.have, 0);
+      if (total > 0 && have < total) {
+        g.rect(bx + 3, by + h - 6, w - 6, 3.5).fill({ color: 0x1b1714, alpha: 0.85 });
+        if (have > 0) g.rect(bx + 3.5, by + h - 5.5, (w - 7) * (have / total), 2.5).fill(0x8fd6e8);
+      }
+      if (st.workers.length) {
+        const pulse = 0.6 + 0.4 * Math.sin(timeSec * 4);
+        g.circle(bx + w - 5, by + 5, 3.4).fill({ color: 0x1b1714, alpha: 0.9 });
+        g.circle(bx + w - 5, by + 5, 2.2).fill({ color: st.workers.some((x) => x.doing === "build") ? 0xe3c25a : 0x8fd6e8, alpha: pulse });
+      }
+    }
     for (const t of game.things.values()) {
       if (t.layer !== this.layer) continue;
       const px = t.x * TILE, py = t.y * TILE;
@@ -66,15 +96,19 @@ export class DynamicRenderer {
       const [fw, fh] = t.rot && t.rot % 2 ? [d.footprint[1], d.footprint[0]] : d.footprint;
       const cx = px + (fw * TILE) / 2, cy = py + (fh * TILE) / 2;
       const seed = t.id * 0.37;
-      // Doors slide open while someone passes, then close again.
+      // Doors slide open while someone passes, stay open a moment, then close more slowly.
       if (d.door) {
-        const want = walked.has(`${t.x},${t.y}`) ? 1 : 0;
-        const o = (this.doorOpen.get(t.id) ?? 0) + (want - (this.doorOpen.get(t.id) ?? 0)) * Math.min(1, dt * 10);
+        if (walked.has(`${t.x},${t.y}`)) this.doorSeen.set(t.id, timeSec);
+        const want = timeSec - (this.doorSeen.get(t.id) ?? -9) < 0.45 ? 1 : 0;
+        const o0 = this.doorOpen.get(t.id) ?? 0;
+        const o = o0 + (want - o0) * Math.min(1, dt * (want ? 9 : 4.5));
         this.doorOpen.set(t.id, o);
-        if (o > 0.02) {
+        const e = o * o * (3 - 2 * o);
+        if (this.print) this.printDoor(g, t, d.id === "bunker_door", e);
+        else if (e > 0.02) {
           const col = parseInt(d.color.slice(1), 16);
-          g.rect(px + 3, py + 3, TILE - 6, TILE - 6).fill({ color: 0x1b1714, alpha: 0.9 * o });
-          const w = ((TILE - 6) / 2) * (1 - o);
+          g.rect(px + 3, py + 3, TILE - 6, TILE - 6).fill({ color: 0x1b1714, alpha: 0.9 * e });
+          const w = ((TILE - 6) / 2) * (1 - e);
           g.rect(px + 3, py + 3, w, TILE - 6).fill(col).rect(px + TILE - 3 - w, py + 3, w, TILE - 6).fill(col);
         }
       }
@@ -211,6 +245,44 @@ export class DynamicRenderer {
       const [x0, y0] = local(t, fp[0], fp[1], u, v);
       const [x1, y1] = local(t, fp[0], fp[1], u + w, v + h);
       g.rect(Math.min(x0, x1) + 0.8, Math.min(y0, y1) + 0.8, Math.abs(x1 - x0) - 1.6, Math.abs(y1 - y0) - 1.6).fill(this.print!.glow);
+    }
+  }
+
+  /**
+   * A Salvage Print door, drawn live: two jambs and two leaves that slide into them (`open` 0..1, eased).
+   * The door stands upright when the walls run north and south of it.
+   */
+  private printDoor(g: Graphics, t: Thing, bunker: boolean, open: number) {
+    const ink = this.print!;
+    const L = this.game.map.layers[t.layer];
+    const wallAt = (x: number, y: number) => {
+      if (!L.inBounds(x, y)) return false;
+      const o = L.thing[L.i(x, y)];
+      return o !== -1 && !!this.game.reg.things.list[this.game.things.get(o)!.def].wall;
+    };
+    const upright = (wallAt(t.x, t.y - 1) || wallAt(t.x, t.y + 1)) && !(wallAt(t.x - 1, t.y) || wallAt(t.x + 1, t.y));
+    const s = TILE / 64;
+    // Rectangles in local units across the door (u along the opening, v across it), turned when upright.
+    const rect = (u: number, v: number, w: number, h: number) => {
+      const [x, y, rw, rh] = upright ? [32 - (v + h - 32), u, h, w] : [u, v, w, h];
+      return [t.x * TILE + x * s, t.y * TILE + y * s, rw * s, rh * s] as const;
+    };
+    const line = { width: 1.2, color: ink.soot };
+    // Leaves: each covers half the opening when closed and slides into its jamb.
+    const leafW = 23 * (1 - open);
+    if (leafW > 0.5) {
+      for (const u of [9, 55 - leafW]) {
+        const [x, y, w, h] = rect(u, 16, leafW, 32);
+        g.rect(x, y, w, h).fill(bunker ? ink.leafBunker : ink.leaf).stroke(line);
+      }
+      if (open < 0.1) {
+        const [hx, hy] = rect(29, 32, 0, 0);
+        g.circle(hx, hy, 1.3).fill(ink.handle);
+      }
+    }
+    for (const u of [0, 55]) {
+      const [x, y, w, h] = rect(u, 10, 9, 44);
+      g.roundRect(x, y, w, h, 1).fill(bunker ? ink.jambBunker : ink.jamb).stroke({ width: 1.4, color: ink.soot });
     }
   }
 
