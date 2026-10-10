@@ -183,6 +183,8 @@ export interface UiState {
   pawn: PawnDetail | null;
   /** Drafted survivors selected together ("Select all"); 0 = none. */
   groupCount: number;
+  /** Menu of actions on another character (right-click, or tap on phones); screen position in UI pixels. */
+  pawnMenu: { x: number; y: number; title: string; options: string[] } | null;
   toasts: Toast[];
   /** Story chapter banner (B9): shown at the top until `until` (UI clock seconds). */
   banner: { kicker: string; title: string; until: number } | null;
@@ -245,6 +247,7 @@ class Store {
     colonists: [],
     pawn: null,
     groupCount: 0,
+    pawnMenu: null,
     toasts: [],
     banner: null,
     resources: [],
@@ -329,6 +332,8 @@ export const actions = {
   draftAll: () => {},
   /** Select every drafted survivor (drafting all first if nobody is drafted). */
   selectAllDrafted: () => {},
+  /** Pick an option of the character menu (or null to close it). */
+  pawnMenuPick: (_option: string | null) => {},
   openMenu: (m: UiState["menu"]) => store.set({ menu: store.state.menu === m ? null : m }),
   closeInspect: () => {
     store.set({ inspect: null });

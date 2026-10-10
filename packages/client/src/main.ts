@@ -203,7 +203,44 @@ async function boot() {
   writeMark({ url: location.search, ...(mark?.camera && resumed ? { camera: mark.camera } : {}) });
   camera.onRightClick = (wx, wy) => {
     if (tools.spec) return actions.setTool(null);
+    if (openPawnMenu(wx, wy, false)) return;
     orderAt(wx, wy);
+  };
+
+  /** Who the character menu is for. */
+  let menuFor: { actor: number; target: number } | null = null;
+
+  /**
+   * The character menu: a survivor is selected and the player points at another character. The options
+   * depend on who that is (attack, put down, capture, rescue, tend, feed). On phones a tap opens it, with
+   * "Select" as the first option. True when a menu opened.
+   */
+  function openPawnMenu(wx: number, wy: number, touch: boolean): boolean {
+    const actor = selected !== null ? game.pawns.get(selected) : undefined;
+    const target = pawnsR.pick(wx, wy);
+    if (!actor || !target || actor.faction !== "colony" || target.id === actor.id) return false;
+    const opts: string[] = sim.pawnActions(game, actor, target);
+    if (!opts.length) return false;
+    if (touch) opts.unshift("select");
+    const r = app.canvas.getBoundingClientRect();
+    const ui = store.state.uiScale || 1;
+    const sx = (r.left + (wx - camera.x) * camera.zoom + camera.viewW / 2) / ui;
+    const sy = (r.top + (wy - camera.y) * camera.zoom + camera.viewH / 2) / ui;
+    const title = target.faction === "wild" ? t(`creature.${game.reg.content.creatures[target.creature].id}`) : target.nick;
+    menuFor = { actor: actor.id, target: target.id };
+    store.set({ pawnMenu: { x: sx, y: sy, title, options: opts } });
+    return true;
+  }
+  actions.pawnMenuPick = (opt) => {
+    const m = menuFor;
+    menuFor = null;
+    store.set({ pawnMenu: null });
+    if (!m || !opt) return;
+    const actor = game.pawns.get(m.actor), target = game.pawns.get(m.target);
+    if (!actor || !target) return;
+    if (opt === "select") return actions.selectPawn(target.id);
+    sim.doPawnAction(game, actor, target, opt as sim.PawnAction);
+    if (selected === actor.id) store.set({ pawn: pawnDetail(actor) });
   };
 
   /** Free walkable tiles around a point, nearest first (by walking out from it), for a group to stand on. */
@@ -551,7 +588,9 @@ async function boot() {
     store.set({ pawn: p ? pawnDetail(p) : null, inspect: null });
   };
 
-  camera.onTap = (wx, wy) => {
+  camera.onTap = (wx, wy, touch) => {
+    if (store.state.pawnMenu) return actions.pawnMenuPick(null);
+    if (touch && openPawnMenu(wx, wy, true)) return;
     if (orderAt(wx, wy)) return;
     const p = pawnsR.pick(wx, wy);
     if (p) return actions.selectPawn(p.id);
@@ -977,6 +1016,7 @@ async function boot() {
     else if (e.key === "PageDown") actions.stepLayer(-1);
     else if (e.key === "Escape") {
       if (tools.spec) actions.setTool(null);
+      else if (store.state.pawnMenu) actions.pawnMenuPick(null);
       else if (group.length) setGroup([]);
       else if (store.state.menu) actions.openMenu(null);
       else actions.closeInspect();

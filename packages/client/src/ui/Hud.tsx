@@ -101,6 +101,19 @@ export function Hud() {
       )}
       <PawnPanel />
       <Ending />
+      {s.pawnMenu && (
+        <div class="pawnmenu" data-testid="pawn-menu" style={{ left: `${s.pawnMenu.x}px`, top: `${s.pawnMenu.y}px` }}>
+          <b>{s.pawnMenu.title}</b>
+          {s.pawnMenu.options.map((o) => (
+            <button key={o} data-testid={`pawn-menu-${o}`} onClick={() => actions.pawnMenuPick(o)}>
+              {t(`pawnmenu.${o}`)}
+            </button>
+          ))}
+          <button class="dim" onClick={() => actions.pawnMenuPick(null)}>
+            {t("pawnmenu.close")}
+          </button>
+        </div>
+      )}
       <header class="topbar">
         {/* The tool hint takes the top center while a tool is active; the song name steps aside. */}
         {s.song && !s.toolLabel && (
