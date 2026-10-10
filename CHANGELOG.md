@@ -1,6 +1,8 @@
 # Changelog
 
 ## 2026-10-10
+- Smaller early raids: at most survivors − 1 raiders before day 20, as many as survivors until day 40, then one more (`packages/sim/src/storyteller.ts`) — P1 "smaller early raids".
+- Better scripted player: a potato farm after day 3 and a third farm at five survivors, sandbags in front of the door, and in an attack everyone gathers behind the sandbags (`tools/playtest/autoplay.ts`) — P1 "better autoplay fighter". With all P1 combat changes, 12 seeds × 22 days: deaths 29 → 13, 9 seeds without deaths.
 - Rescue alarm: when a survivor is downed outside a bed, or downed and thirsty, hungry or bleeding, the nearest free doctor drops their work (not eating or drinking) and runs over, unless enemies are within 10 tiles of the patient. Sulking survivors answer the alarm too (`packages/sim/src/medical.ts` `rushToDowned`, `ai.ts`; test in `packages/sim/test/combat.test.ts`) — P1 "doctors rush to the downed".
 - Downed survivors lose hunger and thirst at half speed (`packages/sim/src/needs.ts`) — they died of thirst before anyone could get up.
 - Attackers leave one hour after the last survivor goes down, with a message (`packages/sim/src/hostile.ts`, `game.ts`, `packages/data/i18n/en.json`) — raiders stayed up to 18 hours over a downed colony. Headless runs on 12 seeds (22 days): deaths fell from 29 to 16. Most of the rest is starvation from the scripted player's small farms.

@@ -97,10 +97,12 @@ export function fireEvent(game: Game, kind: EventKind): void {
   s.log.push({ tick: game.tick, event: kind });
   switch (kind) {
     case "raid": {
-      // Never more raiders than survivors + 1: a small colony gets a small raid.
+      // A small colony gets a small raid: fewer raiders than survivors until day 20, as many until day 40, then one more.
       const colonists = [...game.pawns.values()].filter((p) => p.faction === "colony").length;
       const first = !s.log.some((e) => e.event === "raid" && e.tick < game.tick);
-      const size = first ? 2 : Math.max(2, Math.min(7, colonists + 1, 2 + Math.floor((s.points - 6) / 4)));
+      const day = game.tick / game.ticksPerDay;
+      const cap = colonists + (day < 20 ? -1 : day < 40 ? 0 : 1);
+      const size = first ? 2 : Math.max(2, Math.min(7, cap, 2 + Math.floor((s.points - 6) / 4)));
       spawnGroup(game, "raid", size);
       game.message("msg.raid", { n: size }, "bad");
       break;
