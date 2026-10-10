@@ -62,6 +62,8 @@ export const ThingDef = z.object({
   blocks: z.boolean().default(false),
   /** Counts as a wall for rooms. */
   wall: z.boolean().default(false),
+  /** A locked old door (N1): blocks like a wall until survivors pry it open. */
+  sealed: z.boolean().default(false),
   /** Items gained from salvage / deconstruct / harvest. */
   yield: z.record(id, z.number().int().positive()).optional(),
   /** Chance (0..1) of a loot roll when salvaged. */
@@ -276,7 +278,8 @@ export const CreatureDef = z.object({
   size: z.number().positive().default(1),
   /** Body hit points multiplier. */
   hp: z.number().positive().default(1),
-  speed: z.number().positive().default(1),
+  /** Walking speed; 0 = cannot move (an old sentry gun). */
+  speed: z.number().min(0).default(1),
   /** Natural attack (bite, claws). Humans use weapons or fists. */
   attack: z.object({ dmg: z.number(), cooldown: z.number().int(), range: z.number(), accuracy: z.number().default(0), kind: z.string() }),
   behavior: z.enum(["human", "food_swarm", "hunter", "machine"]),

@@ -2,6 +2,7 @@
  * Fighting behavior: drafted survivors (player orders), self-defense, fleeing,
  * and enemies (raiders, rad-rats, glow-hounds). See spec 06.
  */
+import { lairTick } from "./lairs.ts";
 import { atGoal, endJob, goTo } from "./ai.ts";
 import { sharedEvent } from "./social.ts";
 import { attack, attackOf, dist, hostile, inAttackRange, isMelee, nearestHostile } from "./combat.ts";
@@ -152,6 +153,11 @@ function nearestColonist(game: Game, p: Pawn): Pawn | null {
 export function updateGroups(game: Game): void {
   const defended = [...game.pawns.values()].some((p) => p.faction === "colony" && !p.health.downed);
   for (const g of game.groups.values()) {
+    // Lairs never flee or give up; they end when nobody is left (N1).
+    if (g.kind === "lair") {
+      if (![...game.pawns.values()].some((p) => p.group === g.id)) game.groups.delete(g.id);
+      continue;
+    }
     // Nobody left standing: the attackers take what they want and go.
     if (defended) g.beatenAt = undefined;
     else if (g.beatenAt === undefined) {
@@ -179,6 +185,8 @@ export function updateGroups(game: Game): void {
 }
 
 export function hostileTick(game: Game, p: Pawn): void {
+  // Lair enemies (N1) guard their room and never leave.
+  if (lairTick(game, p)) return;
   const creature = game.reg.content.creatures[p.creature];
   const group = p.group !== null ? game.groups.get(p.group) : undefined;
   // Hounds hunt at night and leave at dawn.

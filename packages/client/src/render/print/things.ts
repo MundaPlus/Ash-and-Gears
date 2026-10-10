@@ -451,7 +451,18 @@ const power_switch: Draw = (p) => {
 };
 
 /** Every thing with a print drawing, by id. */
+/** A sealed door (N1): a steel slab across the opening, welded shut, with a hazard band and a padlock. */
+const sealed_door: Draw = (p) => {
+  p.shape(Print.rect(4, 14, 56, 36, 3), { fill: "slateDark", tone: { ink: "soot", amount: 0.3 }, line: true });
+  p.shape(Print.rect(8, 28, 48, 8, 1), { fill: "ochre", line: 1.4 });
+  for (const x of [12, 24, 36, 48]) p.shape([[x, 28], [x + 6, 28], [x + 2, 36], [x - 4, 36]], { fill: "soot", line: false, shift: 0 });
+  for (const x of [8, 56]) for (const y of [18, 46]) p.dot(x, y, 1.6, "slate");
+  p.shape(Print.rect(28, 38, 9, 8, 2), { fill: "rust", line: 1.4 });
+  p.line([[29.5, 38], [29.5, 34], [35.5, 34], [35.5, 38]], "slate", 1.6);
+};
+
 export const PRINT_THINGS: Partial<Record<string, Draw>> = {
+  sealed_door,
   car_wreck, scrap_pile, loot_crate, dead_tree, mutant_shrub,
   stairs_down: stairs(true), stairs_up: stairs(false), dug_stairs: stairs(true, true),
   bunker_locker, old_safe, bedroll, table, chair, campfire, stove,

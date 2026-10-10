@@ -111,7 +111,7 @@ describe("fights", () => {
       const r = makeHostile(g, "rad_rat", "wild", 0, x + 8, y - 3 + i * 2, group, null);
       g.pawns.set(r.id, r);
     }
-    const rats = () => [...g.pawns.values()].filter((p) => p.faction === "wild");
+    const rats = () => [...g.pawns.values()].filter((p) => p.group === group);
     for (const c of colonists(g)) {
       c.weapon = g.reg.items.idx("pipe_pistol");
       orderAttack(g, c, rats()[0]);
@@ -137,7 +137,7 @@ describe("fights", () => {
     const mid = raiders().length ? Math.min(...raiders().map((r) => Math.hypot(r.x - x, r.y - y))) : 0;
     expect(mid).toBeLessThan(start);
     run(g, 24);
-    expect(g.groups.size).toBe(0);
+    expect([...g.groups.values()].filter((gr) => gr.kind !== "lair").length).toBe(0);
     expect(raiders().filter((r) => !r.health.downed).length).toBe(0);
   });
 

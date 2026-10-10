@@ -124,5 +124,11 @@
    "steel": 1,
    "scrap": 1
   }
+ },
+ {
+  "id": "open_air",
+  "color": "#14100d",
+  "walkCost": 0,
+  "buildable": false
  }
 ]

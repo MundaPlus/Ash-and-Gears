@@ -11,17 +11,20 @@ const things = (g: Game, id: string) => [...g.things.values()].filter((t) => g.r
 describe("tech tiers and the old bunker (A4)", () => {
   it("layer 2 holds a sealed bunker with lockers", () => {
     const g = Game.create(content, { seed: "bunker", mapSize: 120, storyteller: "none" });
-    expect(g.map.layers.length).toBe(3);
+    // Surface, caves, deep; then two tower floors (N1).
+    expect(g.map.layers.map((L) => L.level)).toEqual([0, -1, -2, 1, 2]);
     expect(things(g, "bunker_wall").filter((t) => t.layer === 2).length).toBeGreaterThan(40);
     expect(things(g, "bunker_locker").length).toBeGreaterThanOrEqual(8);
-    expect(things(g, "bunker_door").length).toBe(8);
+    // Two of the six rooms are sealed lairs (N1): their four doors are sealed doors.
+    expect(things(g, "bunker_door").length).toBe(4);
+    expect(things(g, "sealed_door").filter((t) => t.layer === 2).length).toBe(4);
   });
 
   it("salvage can turn up a blueprint the colony still needs, but not one it has", () => {
     const g = Game.create(content, { seed: "blueprint", mapSize: 96, storyteller: "none" });
     g.reg.things.get("loot_crate").blueprintChance = 1;
     for (const id of ["factory_manual", "plastics_manual", "electronics_manual"]) dropItems(g, id, 1, 0, g.home.x + 2, g.home.y + 2);
-    const crate = things(g, "loot_crate").sort((a, b) => Math.hypot(a.x - g.home.x, a.y - g.home.y) - Math.hypot(b.x - g.home.x, b.y - g.home.y))[0];
+    const crate = things(g, "loot_crate").filter((t) => t.layer === 0).sort((a, b) => Math.hypot(a.x - g.home.x, a.y - g.home.y) - Math.hypot(b.x - g.home.x, b.y - g.home.y))[0];
     designate(g, "salvage", 0, crate.x, crate.y);
     run(g, 12);
     expect(g.things.has(crate.id)).toBe(false);

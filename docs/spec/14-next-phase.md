@@ -79,6 +79,8 @@ Installable web app (manifest, service worker, offline cache of the build), touc
 
 ### N1 — Surface buildings with upper floors, and sealed rooms with enemies
 
+Status: done (2026-10-10), see "Build plan" below. Not done yet: hostile robots outside lairs, multi-story towers the player builds.
+
 User: "add structures with the same number of stories to the surface so we can go up the same number of floors; rooms with closed doors that have enemies, like rats, dogs, hostile bots, turrets."
 
 | Area | Decision (proposal) |
@@ -89,6 +91,16 @@ User: "add structures with the same number of stories to the surface so we can g
 | Reward | Rooms hold better loot (manuals, components, weapons), so opening them is a choice |
 | UI | Layer buttons show "Floor 2/3" above the surface; the layer bar lists all layers |
 | Bunker | The deep bunker gets the same sealed rooms and enemies |
+
+Build plan (2026-10-10, after a code survey of every layer assumption):
+
+- **Levels.** `Layer.level`: 0 surface, -1/-2 underground, +1/+2 tower floors. Tower floors are appended after the old layers (indices 3, 4), so old indices and saves stay valid. `GameOptions.upper` (default 2). `GameMap.linked/above/below/layerAt`. Stairs link by level (`stairs` > 0 = one level down). Checks that meant "underground" use `Layer.underground`; checks that meant "the sky" accept tower floors.
+- **Air.** Tower floors are `open_air` (not walkable, not buildable) outside the towers. A tile is roofed when the layer above has a floor there, so the ground floor and middle floors are roofed and the top floor is open to the sky.
+- **Towers** (`towers.ts`): 1–2 per map, 12x10, 2–3 stories, ruin walls with doorways, `stairs_up` on the ground floor, stairs pairs between floors, loot crates; one sealed room on an upper floor.
+- **Sealed rooms.** `sealed_door` blocks like a wall. New order "Pry open" (construction work) turns it into a `rusted_door` and wakes the room. Lairs: rad-rats, glow-hounds, `rogue_bot` (melee machine) and `old_sentry` (a machine that cannot move and shoots). Lair enemies sleep (`group.dormant`) until the door opens, one of them is hurt, or a survivor comes within 5 tiles in sight. They never leave. Dormant lairs do not count as a threat (music, alerts). Rewards: lockers, a safe, a weapon or armor piece.
+- **Bunker.** Two of the six bunker rooms are sealed lairs (new games).
+- **Old saves.** On load, a save without tower floors gets them, and towers go on free surface ground (no player buildings, zones, floors or plans).
+- **UI.** Layer names by level ("Surface", "Floor 2", "Floor 3", "Underground", "Old bunker"); the up/down buttons and PageUp/PageDown go by level.
 
 ### N2 — Weapon and armor tiers through research
 

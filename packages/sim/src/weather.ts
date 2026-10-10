@@ -74,7 +74,7 @@ export function tickWeather(game: Game): void {
   // Hourly effects.
   if (w.kind === "rad_cloud" || w.kind === "toxic_rain") {
     const dose = w.kind === "rad_cloud" ? CLOUD_DOSE_PER_HOUR : TOXIC_RAIN_DOSE_PER_HOUR;
-    for (const p of game.pawns.values()) if (p.layer === 0 && !isRoofed(game, 0, p.x, p.y)) addRad(game, p, dose);
+    for (const p of game.pawns.values()) if (!game.map.layers[p.layer].underground && !isRoofed(game, p.layer, p.x, p.y)) addRad(game, p, dose);
   }
   // Toxic ground (glowing pools) gives a small dose to anyone standing on it.
   for (const p of game.pawns.values()) {

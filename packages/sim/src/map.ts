@@ -1,6 +1,8 @@
 /**
  * The home map: same-size layers stacked vertically.
- * Layer 0 is the surface. Layer 1 is the first underground layer, and so on.
+ * Layer 0 is the surface. Layers 1, 2, ... go down (underground). Tower floors above the surface (N1)
+ * come after them in the list. Each layer knows its `level`: 0 surface, -1 and lower underground,
+ * +1 and higher above the surface. Stairs link layers by level, never by list position.
  * Per-tile data lives in flat typed arrays (index = y * w + x).
  */
 
@@ -82,9 +84,9 @@ export interface ItemStack {
 }
 
 /** Player orders on tiles. */
-export const Desig = { none: 0, salvage: 1, mine: 2, clear: 3, cut: 4, deconstruct: 5, unfloor: 6 } as const;
+export const Desig = { none: 0, salvage: 1, mine: 2, clear: 3, cut: 4, deconstruct: 5, unfloor: 6, pry: 7 } as const;
 export type DesigKind = Exclude<keyof typeof Desig, "none">;
-export const DESIG_KINDS: DesigKind[] = ["salvage", "mine", "clear", "cut", "deconstruct", "unfloor"];
+export const DESIG_KINDS: DesigKind[] = ["salvage", "mine", "clear", "cut", "deconstruct", "unfloor", "pry"];
 
 export interface Blueprint {
   id: number;
@@ -144,6 +146,8 @@ export class Layer {
     readonly index: number,
     readonly w: number,
     readonly h: number,
+    /** Height: 0 surface, below 0 underground, above 0 tower floors. */
+    readonly level = index ? -index : 0,
   ) {
     this.terrain = new Uint8Array(w * h);
     this.thing = new Int32Array(w * h).fill(NO_THING);
@@ -157,6 +161,11 @@ export class Layer {
     this.desig = new Uint8Array(w * h);
     this.chunksX = Math.ceil(w / CHUNK);
     this.chunkVersion = new Uint32Array(this.chunksX * Math.ceil(h / CHUNK));
+  }
+
+  /** Rock above: no sky, no weather, no daylight. */
+  get underground(): boolean {
+    return this.level < 0;
   }
 
   /** Mark the chunk of (x, y) as changed. */
@@ -175,12 +184,36 @@ export class Layer {
 
 export class GameMap {
   readonly layers: Layer[];
+  private byLevel = new Map<number, number>();
 
+  /** `layerCount` layers from the surface down, then `upper` tower floors above the surface. */
   constructor(
     readonly w: number,
     readonly h: number,
     layerCount: number,
+    upper = 0,
   ) {
     this.layers = Array.from({ length: layerCount }, (_, i) => new Layer(i, w, h));
+    for (let k = 1; k <= upper; k++) this.layers.push(new Layer(this.layers.length, w, h, k));
+    for (const L of this.layers) this.byLevel.set(L.level, L.index);
+  }
+
+  /** The layer index at a level, or -1. */
+  layerAt(level: number): number {
+    return this.byLevel.get(level) ?? -1;
+  }
+
+  /** Where stairs lead: `stairs` > 0 goes one level down, < 0 one level up. -1 if there is no such layer. */
+  linked(layer: number, stairs: number): number {
+    return this.layerAt(this.layers[layer].level - Math.sign(stairs));
+  }
+
+  /** The layer one level above or below (-1 if none). */
+  above(layer: number): number {
+    return this.layerAt(this.layers[layer].level + 1);
+  }
+
+  below(layer: number): number {
+    return this.layerAt(this.layers[layer].level - 1);
   }
 }

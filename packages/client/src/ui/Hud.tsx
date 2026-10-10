@@ -30,7 +30,10 @@ export function Hud() {
     }
   };
   const s = useStore();
-  const layerName = s.layer <= 2 ? t(`layer.${s.layer}`) : t("layer.n", { n: s.layer });
+  // Names by level: tower floors count from the ground floor ("Floor 2"), underground as before.
+  const level = s.layerLevels[s.layer] ?? 0;
+  const layerName = level > 0 ? t("layer.floor", { n: level + 1 }) : -level <= 2 ? t(`layer.${-level}`) : t("layer.n", { n: -level });
+  const hasLevel = (lv: number) => s.layerLevels.includes(lv);
   return (
     <>
       <div class="topleft">
@@ -132,14 +135,14 @@ export function Hud() {
       </header>
 
       <div class="layerbox">
-        <button data-testid="layer-up" disabled={s.layer === 0} onClick={() => actions.setLayer(s.layer - 1)} title={t("layer.up")} aria-label={t("layer.up")}>
+        <button data-testid="layer-up" disabled={!hasLevel(level + 1)} onClick={() => actions.stepLayer(1)} title={t("layer.up")} aria-label={t("layer.up")}>
           ▲
         </button>
         <span data-testid="layer-name">{layerName}</span>
         <button
           data-testid="layer-down"
-          disabled={s.layer >= s.layerCount - 1}
-          onClick={() => actions.setLayer(s.layer + 1)}
+          disabled={!hasLevel(level - 1)}
+          onClick={() => actions.stepLayer(-1)}
           title={t("layer.down")}
           aria-label={t("layer.down")}
         >

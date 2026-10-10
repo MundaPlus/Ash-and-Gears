@@ -43,6 +43,7 @@ test("a raid pauses the game, survivors draft and fight", async ({ page }, info)
 
   // A full in-game day later the raid is over one way or another.
   await page.evaluate(() => (window as any).__game.runTicks((window as any).__game.game.ticksPerDay));
-  expect(await page.evaluate(() => (window as any).__game.game.groups.size)).toBe(0);
+  // Lairs (N1) stay on the map; only the raid must be over.
+  expect(await page.evaluate(() => [...(window as any).__game.game.groups.values()].filter((g: { kind: string }) => g.kind !== "lair").length)).toBe(0);
   expect(errors).toEqual([]);
 });

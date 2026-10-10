@@ -168,6 +168,8 @@ export interface UiState {
   paused: boolean;
   layer: number;
   layerCount: number;
+  /** Level of each layer (0 surface, below 0 underground, above 0 tower floors). */
+  layerLevels: number[];
   clock: string;
   /** The song playing now (music id), or null between songs. */
   song: string | null;
@@ -223,6 +225,7 @@ class Store {
     paused: false,
     layer: 0,
     layerCount: 1,
+    layerLevels: [0],
     world: null,
     alerts: [],
     story: null,
@@ -280,6 +283,8 @@ export const store = new Store();
 export const actions = {
   setSpeed: (_s: number) => {},
   togglePause: () => {},
+  /** One level up (+1) or down (-1), if there is a layer there. */
+  stepLayer: (_d: number) => {},
   setLayer: (_l: number) => {},
   togglePowerOverlay: () => {},
   setCapture: (_pawn: number, _on: boolean) => {},

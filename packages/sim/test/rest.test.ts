@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadCoreContent } from "@wc/data";
-import { dropItems, Game, inBed, NO_THING, pain, untendedInjuries, workPriority, WORK_TYPES } from "../src/index.ts";
+import { designate, dropItems, Game, inBed, NO_THING, pain, untendedInjuries, workOrder, workPriority, WORK_TYPES } from "../src/index.ts";
 
 const content = loadCoreContent();
 const run = (g: Game, hours: number) => {
@@ -24,7 +24,7 @@ describe("bed rest for the badly hurt", () => {
     const patient = colony[0];
     // Everyone else may doctor (some backstories cannot).
     for (const p of colony) {
-      p.work = Object.fromEntries(WORK_TYPES.map((w) => [w, w === "doctor" && p !== patient ? 1 : 0]));
+      p.work = Object.fromEntries(WORK_TYPES.map((w) => [w, (w === "doctor" && p !== patient) || (w === "patient" && p === patient) ? 1 : 0]));
       delete p.noWork;
     }
     // Hurt but still standing: big cuts on the arms and a leg.
@@ -39,5 +39,49 @@ describe("bed rest for the badly hurt", () => {
     expect(rested).toBe(true);
     run(g, 3);
     expect(untendedInjuries(patient).length).toBe(0);
+  });
+});
+
+describe("work priorities decide every choice", () => {
+  it("order: best number first, then the columns (firefight, doctor, patient, warden, ... haul)", () => {
+    const g = Game.create(content, { seed: "order", mapSize: 96, storyteller: "none" });
+    const [p] = [...g.pawns.values()].filter((q) => q.faction === "colony");
+    delete p.noWork;
+    p.work = Object.fromEntries(WORK_TYPES.map((w) => [w, 3]));
+    p.work.haul = 1;
+    p.work.salvage = 1;
+    expect(workOrder(p).slice(0, 5)).toEqual(["salvage", "haul", "firefight", "doctor", "patient"]);
+  });
+
+  it("a doctor drops salvage at once when a friend needs tending (same priority, doctor column first)", () => {
+    const g = Game.create(content, { seed: "preempt", mapSize: 96, storyteller: "none" });
+    const { x, y } = g.home;
+    const L = g.map.layers[0];
+    for (let ty = y - 6; ty <= y + 6; ty++)
+      for (let tx = x - 6; tx <= x + 12; tx++) {
+        const t = L.thing[L.i(tx, ty)];
+        if (t !== NO_THING) g.removeThing(t);
+        g.setTerrain(0, tx, ty, "dirt");
+      }
+    const [doc, hurt] = [...g.pawns.values()].filter((q) => q.faction === "colony");
+    for (const q of g.pawns.values()) {
+      delete q.noWork;
+      q.work = Object.fromEntries(WORK_TYPES.map((w) => [w, 0]));
+    }
+    doc.work = { ...doc.work, salvage: 1, doctor: 1 };
+    for (let k = 0; k < 6; k++) {
+      g.spawnThing("car_wreck", 0, x + 6 + k, y + 4);
+      designate(g, "salvage", 0, x + 6 + k, y + 4);
+    }
+    run(g, 0.3);
+    expect(doc.job?.workType).toBe("salvage");
+    hurt.health.injuries.push({ part: "l_arm", kind: "cut", dmg: 6, tended: 0 });
+    // The doctor checks for more important work every few seconds, so this happens within minutes.
+    let switched = false;
+    for (let i = 0; i < 150 && !switched; i++) {
+      g.step();
+      switched = doc.job?.kind === "tend" || untendedInjuries(hurt).length === 0;
+    }
+    expect(switched).toBe(true);
   });
 });

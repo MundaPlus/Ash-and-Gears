@@ -3,7 +3,8 @@
  * A room is a 4-connected area bounded by walls, doors or solid rock.
  * On the surface, an area that touches the map edge (or is huge) is "outdoors".
  * Enclosed surface rooms need a roof. Survivors build it tile by tile (construction work).
- * Underground counts as roofed everywhere.
+ * Underground counts as roofed everywhere. Above ground, a floor on the level above also roofs a tile
+ * (tower floors, N1); the top floor of a tower is open to the sky.
  * A room is "sealed" when no door opens straight to the outside. Two doors in a row
  * (an airlock) or a door into a closed hall keep radiation out.
  */
@@ -30,7 +31,9 @@ const UNDERGROUND_TEMP = 13;
 const SEASON_BASE = [12, 24, 10, -4];
 
 export function outdoorTemp(game: Game, layer: number): number {
-  if (layer > 0) return UNDERGROUND_TEMP - (layer - 1) * 2;
+  const lv = game.map.layers[layer].level;
+  // Deeper is a little colder; tower floors share the surface weather.
+  if (lv < 0) return UNDERGROUND_TEMP - (-lv - 1) * 2;
   const season = Math.floor((game.tick / game.ticksPerDay) / game.opts.seasonDays) % 4;
   const daily = 6 * Math.sin(((game.hourOfDay - 9) * Math.PI) / 12);
   return SEASON_BASE[season] + daily + game.weatherTempOffset;
@@ -97,7 +100,7 @@ export function ensureRooms(game: Game): void {
           stack[top++] = nb;
         }
       }
-      const outdoor = L.index === 0 && (touchesEdge || size > MAX_ROOM);
+      const outdoor = !L.underground && (touchesEdge || size > MAX_ROOM);
       const prev = old.get(oldRoom[start]);
       fresh.set(id, {
         id,
@@ -140,17 +143,20 @@ export function ensureRooms(game: Game): void {
     const enclosed = (r: number) => r !== -1 && !fresh.get(r)!.outdoor;
     for (let i = 0; i < n; i++) {
       let want: boolean;
-      if (L.index > 0) want = true;
+      if (L.underground) want = true;
+      else if (L.level > 0 || coveredAbove(game, L.index, i % w, Math.floor(i / w))) want = false;
       else if (L.room[i] !== -1) want = enclosed(L.room[i]);
       else {
         const x = i % w;
         want = (x > 0 && enclosed(L.room[i - 1])) || (x < w - 1 && enclosed(L.room[i + 1])) || (i >= w && enclosed(L.room[i - w])) || (i + w < n && enclosed(L.room[i + w]));
       }
       L.roofWant[i] = want ? 1 : 0;
-      if (L.index > 0) {
+      if (L.underground) {
         if (!L.roof[i]) L.roof[i] = 1;
         continue;
       }
+      // Tower floors get no built roofs (the floor above covers them, see isRoofed).
+      if (L.level > 0) continue;
       // A roof falls in when its room opens up.
       if (!want && L.roof[i]) {
         L.roof[i] = 0;
@@ -209,13 +215,13 @@ export function completeRoofs(game: Game): void {
 export type Exposure = "open" | "leaky" | "sealed";
 
 export function exposureAt(game: Game, layer: number, x: number, y: number): Exposure {
-  if (layer > 0) return "sealed";
-  const L = game.map.layers[0];
+  const L = game.map.layers[layer];
+  if (L.underground) return "sealed";
   const i = L.i(x, y);
-  if (!L.roof[i]) return "open";
+  if (!isRoofed(game, layer, x, y)) return "open";
   const r = game.rooms.get(L.room[i]);
   if (!r || r.outdoor || !r.sealed) return "leaky";
-  return roomFullyRoofed(game, r) ? "sealed" : "leaky";
+  return layer !== 0 || roomFullyRoofed(game, r) ? "sealed" : "leaky";
 }
 
 /** True if no tile of the room still waits for its roof. */
@@ -227,7 +233,15 @@ function roomFullyRoofed(game: Game, r: Room): boolean {
 
 export function isRoofed(game: Game, layer: number, x: number, y: number): boolean {
   const L = game.map.layers[layer];
-  return L.inBounds(x, y) && L.roof[L.i(x, y)] === 1;
+  return L.inBounds(x, y) && (L.roof[L.i(x, y)] === 1 || coveredAbove(game, layer, x, y));
+}
+
+/** A floor on the level above (a tower floor) covers this tile. */
+export function coveredAbove(game: Game, layer: number, x: number, y: number): boolean {
+  const up = game.map.above(layer);
+  if (up < 0 || !game.reg.terrain.has("open_air")) return false;
+  const U = game.map.layers[up];
+  return U.inBounds(x, y) && U.terrain[U.i(x, y)] !== game.reg.terrain.idx("open_air");
 }
 
 /** Move room temperatures toward the outside and add heat from heaters. */

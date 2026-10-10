@@ -320,6 +320,18 @@ Object.assign(CREATURES, {
     p.shape(Print.ellipse(32, 0, 3, 3), { fill: "glow", line: 1.2 });
     p.shape(Print.rect(46, 30, 10, 12, 2), { fill: "tealDark", line: 1.6 });
   }),
+  rogue_bot: robot("rust", (p) => {
+    p.shape([[46, 28], [60, 22], [56, 34], [46, 38]], { fill: "slateDark", line: 1.8 });
+    p.dot(30, 15, 1.8, "rust").dot(35, 15, 1.8, "rust");
+  }),
+  old_sentry: (p: Print) => {
+    p.tone(Print.ellipse(32, 57, 18, 5), "soot", 0.5, 3);
+    for (const [x0, x1] of [[32, 14], [32, 50], [32, 32]] as const) p.line([[x0, 38], [x1, 56]], "slateDark", 3);
+    p.shape(Print.rect(18, 22, 28, 18, 4), { fill: "slate", tone: { ink: "slateDark", amount: 0.35 }, line: true });
+    p.shape(Print.rect(44, 27, 16, 6, 2), { fill: "soot", line: 1.6 });
+    p.shape(Print.ellipse(28, 30, 4, 4), { fill: "rust", line: 1.4 });
+    p.dot(28, 30, 1.4, "glow");
+  },
   guard_bot: robot("rustDark", (p) => {
     p.shape(Print.rect(44, 30, 16, 6, 2), { fill: "soot", line: 1.6 });
     p.shape(Print.rect(26, 12, 12, 6, 2), { fill: "rust", line: 1.2 });

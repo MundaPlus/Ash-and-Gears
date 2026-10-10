@@ -32,7 +32,7 @@ function lights(game: Game) {
 }
 
 export function isLitAt(game: Game, layer: number, x: number, y: number): boolean {
-  if (layer === 0 && isDaylight(game)) return true;
+  if (!game.map.layers[layer].underground && isDaylight(game)) return true;
   return lights(game).some((l) => l.layer === layer && (l.x - x) ** 2 + (l.y - y) ** 2 <= l.r2);
 }
 

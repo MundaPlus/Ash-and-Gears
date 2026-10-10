@@ -3,7 +3,7 @@
  * (or bare hands). Also: survivors without a weapon pick one up.
  */
 import { tapHasWater } from "./fluids.ts";
-import { atGoal, findItem, goTo, interrupt, isReserved, reserve } from "./ai.ts";
+import { atGoal, bedRestJob, findItem, goTo, interrupt, isReserved, needsBedRest, reserve } from "./ai.ts";
 import { nearestHostile } from "./combat.ts";
 import { workPriority } from "./worktypes.ts";
 import { registerJob, registerWorkGiver } from "./jobs.ts";
@@ -233,6 +233,11 @@ registerJob("tend", (game, p, job) => {
   game.message("msg.tended", { doctor: p.nick, name: patient.nick });
   return "done";
 });
+
+// ---------------------------------------------------------------- patient
+
+/** Patient work (user request): a badly hurt survivor lies in bed. Where it ranks follows the work priorities. */
+registerWorkGiver({ workType: "patient", give: (game, p) => (needsBedRest(game, p) ? bedRestJob(game, p) : null) });
 
 // ---------------------------------------------------------------- equip weapons and armor
 

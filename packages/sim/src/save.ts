@@ -3,6 +3,7 @@
  * (so content order and mods can change), typed arrays are base64. Running jobs and reservations
  * are dropped on load; survivors simply think again. Each format change adds a migration step.
  */
+import { fillAir, generateTowers, populateLairs } from "./towers.ts";
 import { ensureLinks } from "./links.ts";
 import type { Expedition, WorldMap } from "./world.ts";
 import type { Caravan } from "./factions.ts";
@@ -253,6 +254,12 @@ export function loadGame(content: Content, raw: SaveFile): Game {
   for (const [k, v] of data.bonds ?? []) game.bonds.set(k, v as "family" | "lover");
   game.story.raidsSurvived ??= 0;
 
+  // Saves from before towers (N1): the new floors are open air, and towers go on free ground.
+  if (data.layers.length < game.map.layers.length) {
+    fillAir(game);
+    generateTowers(game, game.rng.fork("towers-late"), true);
+    populateLairs(game);
+  }
   // Rebuild derived state, then give rooms their saved temperatures.
   game.pathVersion++;
   game.wallVersion++;

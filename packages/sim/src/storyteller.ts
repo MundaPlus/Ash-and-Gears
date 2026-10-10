@@ -196,7 +196,8 @@ export function tickStoryteller(game: Game): void {
   if (game.aiRng.chance(style.goodChance / checksPerDay) && game.tick - s.lastGood > tpd * 2) goodEvent(game);
 
   if (game.tick - s.lastThreat < style.calmDays * tpd) return;
-  if (game.groups.size > 0) return;
+  // One threat at a time. Lairs (N1) stay on the map for good and do not count.
+  if ([...game.groups.values()].some((gr) => gr.kind !== "lair")) return;
   // Pick an affordable threat by weight. Saving up is fine: bigger raids later.
   const kinds: EventKind[] = ["raid", "rad_rats", "glow_hounds", "rad_cloud"];
   // No raids before day 10: the first days are for mutants and weather.

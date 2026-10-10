@@ -143,6 +143,8 @@ export function nearestHostile(game: Game, p: { layer: number; x: number; y: num
   let best: Pawn | null = null, bestD = range;
   for (const o of game.pawns.values()) {
     if (o.faction === faction || o.faction === "prisoner" || o.faction === "visitor" || o.faction === "trader" || o.layer !== p.layer || o.health.downed) continue;
+    // Sleeping lair enemies (N1) are no target until they wake.
+    if (o.group !== null && game.groups.get(o.group)?.dormant) continue;
     const d = dist(p, o);
     if (d <= bestD && canSee(game, p.layer, p, o)) {
       bestD = d;

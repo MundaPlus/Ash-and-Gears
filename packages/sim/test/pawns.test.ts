@@ -49,8 +49,9 @@ describe("pathfinding", () => {
 describe("survivors", () => {
   it("start with three named survivors and supplies", () => {
     const g = smallGame("start");
-    expect(g.pawns.size).toBe(3);
-    const nicks = new Set([...g.pawns.values()].map((p) => p.nick));
+    const colony = [...g.pawns.values()].filter((p) => p.faction === "colony");
+    expect(colony.length).toBe(3);
+    const nicks = new Set(colony.map((p) => p.nick));
     expect(nicks.size).toBe(3);
     expect(countItems(g, "canned_food")).toBe(36);
   });
@@ -109,7 +110,7 @@ describe("survivors", () => {
     }
     dropItems(g, "clean_water", 60, 0, g.home.x + 2, g.home.y + 2);
     run(g, 3);
-    const ps: Pawn[] = [...g.pawns.values()];
+    const ps: Pawn[] = [...g.pawns.values()].filter((p) => p.faction === "colony");
     expect(ps.every((p) => p.needs.hunger === 0)).toBe(true);
     expect(ps.every((p) => p.mood < 45)).toBe(true);
     expect(g.messages.some((m) => m.key === "msg.break_sulk")).toBe(true);

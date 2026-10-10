@@ -29,7 +29,8 @@ export function recipeWorkType(r: RecipeDef): WorkType {
 export function billTarget(game: Game, bench: Thing, r: RecipeDef): number {
   const own = game.billTargets.get(`${bench.id}:${r.id}`);
   if (own !== undefined) return own;
-  return r.target * (r.perColonist ? Math.max(1, game.pawns.size) : 1);
+  const people = [...game.pawns.values()].filter((p) => (p.faction === "colony" && !p.robot) || p.faction === "prisoner").length;
+  return r.target * (r.perColonist ? Math.max(1, people) : 1);
 }
 
 export function setBillTarget(game: Game, benchId: number, recipeId: string, n: number): void {
@@ -152,6 +153,7 @@ for (const wt of ["cook", "craft", "haul"] as WorkType[]) registerWorkGiver({ wo
 export function urgentBillJob(game: Game, p: Pawn): Job | null {
   return billJob(game, p, "haul", true);
 }
+registerWorkGiver({ workType: "haul", give: urgentBillJob }, true);
 
 /** Inputs still missing for the current input slot. */
 function missingNow(r: RecipeDef, job: Job): number {

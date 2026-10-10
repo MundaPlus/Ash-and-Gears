@@ -100,6 +100,8 @@ const GROUND: Record<string, Ground> = {
       for (let k = 0; k < 3; k++) p.shape(Print.ellipse(12 + r() * 40, 12 + r() * 40, 2 + r() * 2.5, 1.6 + r() * 1.5), { fill: "bone", line: 1.1 });
     },
   },
+  // Open air on tower floors (N1): a dark drop.
+  open_air: { base: "soot", tone: "slateDark", amount: 0.12, cell: 5 },
   rock: { base: "slateDark", tone: "soot", amount: 0.38, cell: 3, marks: cracks("soot", 2) },
   coal_seam: { base: "soot", tone: "slateDark", amount: 0.25, cell: 3, marks: pebbles(["slateDark", "slate"], 4) },
   scrap_vein: {

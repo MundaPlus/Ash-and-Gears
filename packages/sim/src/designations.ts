@@ -2,6 +2,7 @@
  * Player orders on tiles (spec 03, "Orders"): salvage / deconstruct, mine, clear rubble, cut plants.
  * The player marks tiles. Work givers find the nearest marked tile and make a work job.
  */
+import { wakeLairs } from "./lairs.ts";
 import { isReserved } from "./ai.ts";
 import { registerWorkGiver } from "./jobs.ts";
 import type { Game } from "./game.ts";
@@ -25,10 +26,12 @@ export function canDesignate(game: Game, kind: DesigKind, layer: number, x: numb
       return !!td.clearTo && !thing;
     case "cut":
       return thing?.kind === "plant";
+    case "pry":
+      return !!thing?.sealed;
     case "salvage":
       // Every old structure (ruins, wrecks, junk, the bunker). A drag over the base never takes it apart.
       // Only things that span several floors stay (stairs; later the floors of towers).
-      return !!thing && thing.kind !== "plant" && !spansFloors(thing) && !thing.build && !!thing.yield;
+      return !!thing && thing.kind !== "plant" && !spansFloors(thing) && !thing.sealed && !thing.build && !!thing.yield;
     case "deconstruct":
       // Player-built things, with a separate order.
       return !!thing && !spansFloors(thing) && !!thing.build;
@@ -259,6 +262,22 @@ registerTask("deconstruct", {
   },
 });
 
+registerTask("pry", {
+  skill: "construction",
+  xp: 0.4,
+  total: (game, job) => Math.ceil((game.thingDefAt(job.target!.layer, job.target!.x, job.target!.y)?.work ?? 300) / 2),
+  valid: (game, job) => desigAt(game, job) === Desig.pry && !!game.thingDefAt(job.target!.layer, job.target!.x, job.target!.y)?.sealed,
+  complete: (game, _p, job) => {
+    const t = job.target!;
+    const L = game.map.layers[t.layer];
+    undesignate(game, t.layer, t.x, t.y);
+    // The sealed door gives way: a rusted door stays in the frame, and whatever waits inside wakes up.
+    game.removeThing(L.thing[L.i(t.x, t.y)]);
+    game.spawnThing("rusted_door", t.layer, t.x, t.y);
+    wakeLairs(game, t.layer, t.x, t.y);
+  },
+});
+
 // ---------------------------------------------------------------- work givers
 
 const GIVERS: [WorkType, DesigKind][] = [
@@ -268,6 +287,7 @@ const GIVERS: [WorkType, DesigKind][] = [
   ["grow", "cut"],
   ["construct", "deconstruct"],
   ["construct", "unfloor"],
+  ["construct", "pry"],
 ];
 
 /** The nearest order of a kind. Orders survivors gave themselves are only for idle survivors (`own`). */
