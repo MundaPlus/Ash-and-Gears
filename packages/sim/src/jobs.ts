@@ -4,6 +4,7 @@
  */
 import type { Game } from "./game.ts";
 import type { Job, Pawn } from "./pawn.ts";
+import { WORK_TYPES } from "./worktypes.ts";
 
 export type JobResult = "run" | "done" | "fail";
 export type JobDriver = (game: Game, p: Pawn, job: Job) => JobResult;
@@ -33,6 +34,8 @@ export function registerWorkGiver(g: WorkGiver, first = false): void {
 
 /** Work types that have at least one giver (the ones that matter right now). */
 export function activeWorkTypes(): string[] {
-  return [...new Set(workGivers.map((g) => g.workType))];
+  // In the order the AI uses for equal priorities (the Work menu columns, left to right).
+  const used = new Set(workGivers.map((g) => g.workType));
+  return (WORK_TYPES as readonly string[]).filter((w) => used.has(w));
 }
 

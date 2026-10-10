@@ -183,7 +183,7 @@ registerTask("salvage", {
     // A blueprint the colony still needs: not researched yet and not in stock.
     if (def.blueprintChance > 0 && game.aiRng.chance(def.blueprintChance)) {
       const wanted = game.reg.content.research
-        .filter((r) => r.blueprint && !storyItems(game).has(r.blueprint) && !game.research.done.has(r.id) && countItems(game, r.blueprint) < 1)
+        .filter((r) => r.blueprint && !storyItems(game).has(r.blueprint) && !game.research.done.has(r.id) && !game.research.studied.has(r.blueprint) && countItems(game, r.blueprint) < 1)
         .map((r) => r.blueprint!);
       if (wanted.length) {
         const item = game.aiRng.pick(wanted);
