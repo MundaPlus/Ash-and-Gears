@@ -1,6 +1,7 @@
 # Changelog
 
 ## 2026-10-11
+- Progress bars (own pick): a thin cream bar shows how far work is at its spot — building, mining, salvage, cutting, bills at benches, and auto-crafters (`packages/sim/src/work.ts` `jobProgress`; `packages/client/src/render/dynamic.ts` `progressBar`).
 - Haul list: the sim keeps a list of loose stacks that have a storage place, with their distance to the nearest stockpile or chest. Haulers take the closest-to-storage stacks first; far stacks wait. Not shown to players (`packages/sim/src/hauling.ts` `haulList`, `haulJob`) — user request.
 - "Haul now" tile action on loose stacks: the stack goes to the top of the haul list and anyone who hauls takes it before other work. An orange arrow marks it (`hauling.ts` `haulNow`, `canHaul`; `tileactions.ts`; `ai.ts`; `packages/client/src/render/textures.ts`, `world.ts`) — user request.
 - The campfire burns wood (0.25 per hour, holds 15). Without wood it gives no heat or light and cannot cook. Haulers refuel it like a generator. Fuel bars (red, yellow, green) on generators and fires; the inspect panel says when the fire is out (`packages/data/src/schema.ts` `burns`; `content/core/things.json`; `packages/sim/src/power.ts` `fuelOf`, `isLit`; `rooms.ts`; `bills.ts`; `packages/client/src/render/dynamic.ts`, `main.ts`) — user question "does the campfire use wood?".

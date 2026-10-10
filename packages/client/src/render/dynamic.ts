@@ -3,7 +3,7 @@
  * Drawn with one Graphics object over the chunk layer.
  */
 import { Graphics } from "pixi.js";
-import { bankSize, DIRS4, isLit, isPowered, poleLinks, sourceFactor, type Game } from "@wc/sim";
+import { bankSize, crafterRecipe, DIRS4, isLit, jobProgress, isPowered, poleLinks, sourceFactor, type Game } from "@wc/sim";
 import { TILE } from "./textures.ts";
 
 /** Overlay colors for power networks. */
@@ -41,6 +41,9 @@ export class DynamicRenderer {
       if (next && next.layer === p.layer && p.moveT > 0.4) walked.add(`${next.x},${next.y}`);
       const j = p.job;
       if (j?.targetId !== undefined && ((j.kind === "bill" && j.stage === 2) || (j.kind === "research" && j.stage >= 1))) inUse.add(j.targetId);
+      // Work in progress (building, mining, cutting, crafting): a thin cream bar over the spot.
+      const prog = jobProgress(game, p);
+      if (prog && prog.at.layer === this.layer) progressBar(g, prog.at.x * TILE + 4, prog.at.y * TILE - 3, TILE - 8, prog.k);
     }
     for (const t of game.things.values()) {
       if (t.layer !== this.layer) continue;
@@ -83,6 +86,10 @@ export class DynamicRenderer {
       // Machines that run on their own.
       if (d.power?.fuel && (t.fuel ?? 0) > 0) this.puffs(g, px + fw * TILE - 6, py + 2, timeSec, seed, 0x56616d);
       if (d.autoCrafter && isPowered(game, t) && (t.work ?? 0) > 0) this.gear(g, cx, cy, timeSec * (d.crafterSpeed ?? 1) * 4);
+      if (d.autoCrafter && (t.work ?? 0) > 0) {
+        const r = crafterRecipe(game, t);
+        if (r) progressBar(g, px + 4, py - 3, fw * TILE - 8, (t.work ?? 0) / r.work);
+      }
       if (d.fluid?.role === "pump" && isPowered(game, t)) this.drops(g, cx, cy, timeSec, seed);
       if (d.robotBay && isPowered(game, t)) {
         const charging = [...game.pawns.values()].some((p) => p.job?.kind === "charge" && p.job.targetId === t.id && p.job.stage === 2);
@@ -189,6 +196,13 @@ export class DynamicRenderer {
 /** Charge color: red when low, yellow in the middle, green when full (palette tones). */
 export function chargeColor(k: number): number {
   return k < 0.25 ? 0xd9472e : k < 0.6 ? 0xe3c25a : 0x9fd14a;
+}
+
+/** A work progress bar: cream on a dark frame; `k` is 0..1. */
+export function progressBar(g: Graphics, x: number, y: number, w: number, k: number): void {
+  k = Math.max(0, Math.min(1, k));
+  g.rect(x, y, w, 4).fill({ color: 0x1b1714, alpha: 0.85 });
+  if (k > 0) g.rect(x + 1, y + 1, Math.max(1, (w - 2) * k), 2).fill(0xefd8a4);
 }
 
 /** A charge bar with a dark frame; `k` is 0..1. */
