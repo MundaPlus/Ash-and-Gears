@@ -1,4 +1,5 @@
 import { t } from "@wc/data";
+import { useState } from "preact/hooks";
 import { ColonistBar } from "./ColonistBar.tsx";
 import { Ending } from "./Ending.tsx";
 import { PawnPanel } from "./PawnPanel.tsx";
@@ -11,6 +12,22 @@ import { GameMenu } from "./Screens.tsx";
 const STOCK_CATEGORIES = ["resource", "food", "water", "medicine", "weapon", "apparel", "blueprint", "misc"];
 
 export function Hud() {
+  const [folded, setFolded] = useState<Record<string, boolean>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem("wc-fold") ?? "{}");
+    } catch {
+      return {};
+    }
+  });
+  const toggleFold = (k: string) => {
+    const next = { ...folded, [k]: !folded[k] };
+    setFolded(next);
+    try {
+      localStorage.setItem("wc-fold", JSON.stringify(next));
+    } catch {
+      // no storage: the fold lasts for this page only
+    }
+  };
   const s = useStore();
   const layerName = s.layer <= 2 ? t(`layer.${s.layer}`) : t("layer.n", { n: s.layer });
   return (
@@ -18,8 +35,9 @@ export function Hud() {
       <div class="topleft">
         <div class="resources" data-testid="resources">
           {s.resources.map((r) => (
-            <span key={r.id} class="res">
+            <span key={r.id} class="res" title={r.loose > 0 ? t("res.loose", { n: r.loose }) : undefined}>
               {t(`res.${r.id}`)} <b>{r.count}</b>
+              {r.loose > 0 && <small class="loose">+{r.loose}</small>}
             </span>
           ))}
         </div>
@@ -32,9 +50,11 @@ export function Hud() {
         <aside class="goals" data-testid="goals">
           {s.story && (
             <div class="story" data-testid="story">
-              <h3>{t(`line.${s.story.line}`)}</h3>
+              <h3 class="fold" onClick={() => toggleFold("story")}>
+                {folded.story ? "▸" : "▾"} {t(`line.${s.story.line}`)}
+              </h3>
               <b>{t(`story.${s.story.line}.${s.story.beat}`)}</b>
-              {s.story.goals.map((g, i) => (
+              {!folded.story && s.story.goals.map((g, i) => (
                 <p key={i} class={g.met ? "done" : ""}>
                   {g.met ? "✔" : "○"} {t(g.key, g.params)}
                 </p>
@@ -43,13 +63,15 @@ export function Hud() {
           )}
           {s.goals.length > 0 && !s.goals.every((g) => g.done) && (
             <>
-              <h3>{t("goal.title")}</h3>
-              {s.goals.map((g) => (
+              <h3 class="fold" onClick={() => toggleFold("goals")}>
+                {folded.goals ? "▸" : "▾"} {t("goal.title")}
+              </h3>
+              {!folded.goals && s.goals.map((g) => (
                 <p key={g.id} class={g.done ? "done" : ""}>
                   {g.done ? "✔" : "○"} {t(`goal.${g.id}`)}
                 </p>
               ))}
-              {s.goalHint && (
+              {s.goalHint && !folded.goals && (
                 <p class="hint" data-testid="goal-hint">
                   {t(s.goalHint)}
                 </p>
@@ -66,6 +88,12 @@ export function Hud() {
             </div>
           )}
         </aside>
+      )}
+      {s.banner && (
+        <div class="banner" key={s.banner.title} data-testid="banner">
+          <small>{s.banner.kicker}</small>
+          <b>{s.banner.title}</b>
+        </div>
       )}
       <PawnPanel />
       <Ending />

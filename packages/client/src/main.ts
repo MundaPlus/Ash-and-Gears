@@ -660,9 +660,18 @@ async function boot() {
     let toasts = store.state.toasts.filter((x) => x.until > now);
     for (const m of fresh) {
       if (AUTO_PAUSE.has(m.key) && !capturing) paused = true;
-      if (m.key === "msg.research_done" || m.key.startsWith("goal.")) audio.play("done");
+      // Story moments get their storyline's music cue (B9).
+      if (m.key === "msg.story_beat") audio.cue("beat", game.plot.line);
+      else if (m.key === "msg.story_site") audio.cue("site", game.plot.line);
+      else if (m.key === "msg.story_won") audio.cue("won", game.plot.line);
+      else if (m.key === "msg.colony_lost") audio.cue("lost", game.plot.line);
+      else if (m.key === "msg.robot_hacked") audio.cue("hacked");
+      else if (m.key === "msg.research_done" || m.key.startsWith("goal.")) audio.play("done");
       else if (m.level === "bad") audio.play("bad");
       else if (m.level === "warn") audio.play("alert", 0.7);
+      // A new story chapter: its title fades in at the top (B9).
+      if (m.key === "msg.story_beat" && typeof m.params.beat === "string" && game.plot.line)
+        store.set({ banner: { kicker: t(`line.${game.plot.line}`), title: t(m.params.beat), until: now + 6 } });
       const params = { ...m.params };
       if (m.key === "msg.skill_up") params.skill = t(`skill.${params.skill}`);
       if (typeof params.item === "string") params.item = t(`item.${params.item}`);
@@ -678,6 +687,7 @@ async function boot() {
     }
     toasts = toasts.slice(-4);
     if (fresh.length || toasts.length !== store.state.toasts.length) store.set({ toasts });
+    if (store.state.banner && store.state.banner.until < now) store.set({ banner: null });
   }
 
   window.addEventListener("keydown", (e) => {
@@ -702,6 +712,10 @@ async function boot() {
   });
 
   let fpsFrames = 0, fpsTime = 0, uiTime = 0, clock = 0, lastFxTick = game.tick;
+  // A new story game opens with the storyline and its first chapter.
+  const firstBeat = sim.currentBeat(game);
+  if (firstBeat && game.plot.line && game.plot.beat === 0 && game.tick - game.plot.beatStart < game.ticksPerHour * 2)
+    store.set({ banner: { kicker: t(`line.${game.plot.line}`), title: t(`story.${game.plot.line}.${firstBeat.id}`), until: 7 } });
   /** Animation time: runs only while the game runs (a little faster at higher speeds), so pause freezes everything. */
   let anim = 0;
   /** One frame: sim ticks for the elapsed time, camera, renderers, audio, UI. */
@@ -805,16 +819,21 @@ async function boot() {
         ...(store.state.menu === "research" ? { research: researchRows() } : {}),
         ...(store.state.menu === "build" ? { buildOptions: buildRows() } : {}),
         pawn: sel ? pawnDetail(sel) : null,
-        // Only what is stored counts: loose items on the map are not in the colony's hands yet.
-        resources: [
-          { id: "meals", count: sim.storedCount(game, "simple_meal") },
-          { id: "food", count: sim.storedCount(game, "canned_food") },
-          { id: "raw", count: game.reg.items.list.filter((d) => d.raw).reduce((n, d) => n + sim.storedCount(game, d.id), 0) },
-          { id: "water", count: sim.storedCount(game, "clean_water") + sim.storedCount(game, "dirty_water") },
-          { id: "scrap", count: sim.storedCount(game, "scrap") },
-          { id: "wood", count: sim.storedCount(game, "wood") },
-          { id: "stone", count: sim.storedCount(game, "stone") },
-        ],
+        // Only what is stored counts: loose items on the map are not in the colony's hands yet (shown as "+N").
+        resources: (
+          [
+            ["meals", ["simple_meal"]],
+            ["food", ["canned_food"]],
+            ["raw", game.reg.items.list.filter((d) => d.raw).map((d) => d.id)],
+            ["water", ["clean_water", "dirty_water"]],
+            ["scrap", ["scrap"]],
+            ["wood", ["wood"]],
+            ["stone", ["stone"]],
+          ] as [string, string[]][]
+        ).map(([id, items]) => {
+          const count = items.reduce((n, i) => n + sim.storedCount(game, i), 0);
+          return { id, count, loose: items.reduce((n, i) => n + sim.countItems(game, i), 0) - count };
+        }),
       });
       drainMessages(clock);
       if (fpsTime > 1) fpsFrames = fpsTime = 0;

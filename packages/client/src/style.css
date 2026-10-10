@@ -244,3 +244,15 @@ body.cinematic #ui { display: none; }
 .modbtns { display: flex; gap: 6px; justify-content: flex-end; }
 .moderr { color: #d9742e; font-size: 0.85em; margin: 0; padding-left: 16px; }
 .modadd { display: grid; gap: 4px; margin: 8px 0; }
+
+/* Loose items not stored yet: a muted "+N" after the stored count. */
+.res .loose { margin-left: 3px; color: #84603f; font-size: 0.85em; }
+.goals h3.fold { cursor: pointer; user-select: none; }
+
+/* Story chapter banner (B9): fades in, stays, fades out over 6 s. */
+.banner { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 20; pointer-events: none; text-align: center;
+  background: rgba(27, 23, 20, 0.88); border: 1px solid #84603f; border-left: 0; border-right: 0; padding: 10px 48px 12px; animation: banner 6s ease-in-out both; }
+.banner small { display: block; color: #d6ab6b; letter-spacing: 0.2em; text-transform: uppercase; font-size: 11px; }
+.banner b { display: block; color: #efd8a4; font-size: 22px; margin-top: 2px; }
+@keyframes banner { 0% { opacity: 0; transform: translate(-50%, -8px); } 10%, 85% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; } }
+@media (max-width: 600px) { .banner { padding: 8px 16px; max-width: calc(100vw - 32px); } .banner b { font-size: 17px; } }

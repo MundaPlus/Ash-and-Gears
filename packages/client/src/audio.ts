@@ -400,4 +400,85 @@ export class Audio {
         break;
     }
   }
+
+  // ---------------------------------------------------------------- story cues (Beta B9)
+
+  /**
+   * A short melodic cue for a story moment. Each storyline has its own motif and sound:
+   * the reactor hums in low square pulses, the bus plucks like a dusty guitar, the orbit shimmers
+   * in high sines. The music ducks while a cue plays.
+   */
+  cue(kind: "beat" | "site" | "won" | "lost" | "hacked", line: string | null = null): void {
+    const c = this.ctx;
+    if (!c || c.state !== "running") return;
+    const t = c.currentTime + 0.05;
+    const motif = STORY_MOTIFS[line ?? ""] ?? STORY_MOTIFS[""];
+    const out = c.createGain();
+    out.gain.value = 0.9;
+    out.connect(this.sfx);
+    const note = (f: number, at: number, dur: number, peak: number, type: OscillatorType = motif.wave) => {
+      const o = c.createOscillator();
+      o.type = type;
+      o.frequency.setValueAtTime(f, t + at);
+      const g = c.createGain();
+      g.gain.setValueAtTime(0.0001, t + at);
+      g.gain.exponentialRampToValueAtTime(peak, t + at + (motif.wave === "triangle" ? 0.004 : 0.03));
+      g.gain.exponentialRampToValueAtTime(0.0001, t + at + dur);
+      const f2 = c.createBiquadFilter();
+      f2.type = "lowpass";
+      f2.frequency.value = motif.wave === "square" ? 1400 : 5000;
+      o.connect(f2).connect(g).connect(out);
+      o.start(t + at);
+      o.stop(t + at + dur + 0.05);
+    };
+    let len = 1.5;
+    switch (kind) {
+      case "beat":
+        // The storyline's motif, then a held root a fifth below.
+        motif.notes.forEach((f, i) => note(f, i * 0.22, 0.5, 0.16));
+        note(motif.notes[0] / 1.5, motif.notes.length * 0.22, 1.6, 0.12, "sine");
+        len = motif.notes.length * 0.22 + 1.6;
+        break;
+      case "site":
+        // A radio blip, then the motif's first two notes.
+        note(1760, 0, 0.06, 0.08, "square");
+        note(1760, 0.12, 0.06, 0.08, "square");
+        note(motif.notes[0], 0.35, 0.5, 0.14);
+        note(motif.notes[1], 0.6, 0.8, 0.14);
+        len = 1.5;
+        break;
+      case "won":
+        // The motif twice, the second time an octave up, over a major chord.
+        motif.notes.forEach((f, i) => note(f, i * 0.3, 0.6, 0.15));
+        motif.notes.forEach((f, i) => note(f * 2, 1.4 + i * 0.3, 0.7, 0.12));
+        for (const r of [1, 1.25, 1.5, 2]) note(motif.notes[0] * r, 2.8, 3.2, 0.07, "sine");
+        len = 6;
+        break;
+      case "lost":
+        // The motif slow and falling, in sines.
+        [...motif.notes].reverse().forEach((f, i) => note(f / 2, i * 0.7, 1.2, 0.13, "sine"));
+        note(motif.notes[0] / 4, motif.notes.length * 0.7, 3, 0.1, "sine");
+        len = motif.notes.length * 0.7 + 3;
+        break;
+      case "hacked":
+        // A broken arpeggio: fast square notes that slip out of tune.
+        for (let i = 0; i < 8; i++) note(440 * 2 ** ((i % 4) / 4) * (1 + i * 0.03), i * 0.07, 0.08, 0.07, "square");
+        len = 1;
+        break;
+    }
+    // Duck the music under the cue.
+    const m = this.music.gain;
+    const full = this.volume.music * 0.5;
+    m.cancelScheduledValues(c.currentTime);
+    m.setTargetAtTime(full * 0.3, c.currentTime, 0.08);
+    m.setTargetAtTime(full, t + len, 0.6);
+  }
 }
+
+/** Story motifs (B9): notes in Hz and the sound of each storyline. "" is the default. */
+const STORY_MOTIFS: Record<string, { notes: number[]; wave: OscillatorType }> = {
+  "": { notes: [220, 261.63, 329.63, 392], wave: "triangle" },
+  reactor: { notes: [110, 164.81, 146.83, 220], wave: "square" },
+  bus: { notes: [196, 220, 261.63, 293.66, 329.63], wave: "triangle" },
+  orbit: { notes: [523.25, 659.25, 783.99, 1046.5], wave: "sine" },
+};
