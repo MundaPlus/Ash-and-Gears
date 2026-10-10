@@ -32,7 +32,7 @@ export function ResearchPanel() {
                     : r.state === "locked"
                       ? t("research.locked", { needs: r.prereqs.map((p) => t(`research.${p}`)).join(", ") })
                       : r.state === "needs_blueprint"
-                        ? t("research.needs_blueprint", { item: t(`item.${r.blueprint}`) })
+                        ? t(r.manualHere ? "research.study_manual" : "research.needs_blueprint", { item: t(`item.${r.blueprint}`) })
                         : `${Math.round(r.progress * 100)}% · ${r.cost}`}
                 </small>
                 {r.blueprint && r.state !== "done" && <small class="where">{t(`where.${r.blueprint}`)}</small>}

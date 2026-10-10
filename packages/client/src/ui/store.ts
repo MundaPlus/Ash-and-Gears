@@ -124,6 +124,8 @@ export interface ResearchRow {
   cost: number;
   prereqs: string[];
   blueprint?: string;
+  /** The manual lies somewhere on the map, waiting to be studied at a desk. */
+  manualHere?: boolean;
   current: boolean;
 }
 

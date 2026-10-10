@@ -39,7 +39,7 @@ export interface SaveFile {
   home: Game["home"];
   progress: [string, number][];
   billTargets: [string, number][];
-  research: { done: string[]; current: string | null; progress: [string, number][] };
+  research: { done: string[]; current: string | null; progress: [string, number][]; studied?: string[] };
   weather: Game["weather"];
   weatherTempOffset: number;
   openWaterContamUntil: number;
@@ -121,7 +121,7 @@ export function saveGame(game: Game): SaveFile {
     home: { ...game.home },
     progress: [...game.progress],
     billTargets: [...game.billTargets],
-    research: { done: [...game.research.done], current: game.research.current, progress: [...game.research.progress] },
+    research: { done: [...game.research.done], current: game.research.current, progress: [...game.research.progress], studied: [...game.research.studied] },
     weather: { ...game.weather, next: game.weather.next ? { ...game.weather.next } : null },
     weatherTempOffset: game.weatherTempOffset,
     openWaterContamUntil: game.openWaterContamUntil,
@@ -236,6 +236,11 @@ export function loadGame(content: Content, raw: SaveFile): Game {
   for (const r of data.research.done) game.research.done.add(r);
   game.research.current = data.research.current;
   for (const [k, v] of data.research.progress) game.research.progress.set(k, v);
+  for (const s of data.research.studied ?? []) game.research.studied.add(s);
+  // Saves from before studying: a manual project already started counts as studied.
+  if (!data.research.studied)
+    for (const r of game.reg.content.research)
+      if (r.blueprint && (game.research.progress.has(r.id) || game.research.current === r.id)) game.research.studied.add(r.blueprint);
   game.weather = { ...data.weather };
   game.weatherTempOffset = data.weatherTempOffset;
   game.openWaterContamUntil = data.openWaterContamUntil;

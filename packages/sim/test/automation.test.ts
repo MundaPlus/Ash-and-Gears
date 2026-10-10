@@ -44,12 +44,20 @@ describe("research", () => {
     expect(g.research.done.has("rain_catchers")).toBe(true);
   });
 
-  it("blueprint projects wait for the blueprint item", () => {
+  it("blueprint projects open once a researcher studies the manual at a desk (the manual stays)", () => {
     const g = newGame("bp");
     for (const r of ["scrap_power", "powered_tools", "conveyors", "smelting"]) g.research.done.add(r);
     expect(researchState(g, "auto_crafting")).toBe("needs_blueprint");
-    dropItems(g, "factory_manual", 1, 0, g.home.x + 3, g.home.y);
+    const { x, y } = g.home;
+    clearArea(g, x - 5, y - 5, 2);
+    dropItems(g, "factory_manual", 1, 0, x + 3, y);
+    // Found is not enough: it must be studied.
+    expect(researchState(g, "auto_crafting")).toBe("needs_blueprint");
+    g.spawnThing("research_desk", 0, x - 5, y - 5);
+    run(g, 6);
+    expect(g.research.studied.has("factory_manual")).toBe(true);
     expect(researchState(g, "auto_crafting")).toBe("available");
+    expect(countItems(g, "factory_manual")).toBe(1);
   });
 
   it("the map has an old safe that holds the factory manual", () => {

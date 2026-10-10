@@ -415,6 +415,7 @@ async function boot() {
       cost: r.cost,
       prereqs: r.prereqs,
       blueprint: r.blueprint,
+      manualHere: !!r.blueprint && sim.manualFound(game, r.blueprint),
       current: game.research.current === r.id,
     }));
   }
@@ -631,7 +632,10 @@ async function boot() {
       }
       // A manual: which research it opens.
       const opens = game.reg.content.research.filter((r) => r.blueprint === game.reg.items.list[st.def].id);
-      if (opens.length) lines.push(t("inspect.unlocks", { project: opens.map((r) => t(`research.${r.id}`)).join(", ") }));
+      if (opens.length) {
+        lines.push(t("inspect.unlocks", { project: opens.map((r) => t(`research.${r.id}`)).join(", ") }));
+        lines.push(t(game.research.studied.has(game.reg.items.list[st.def].id) ? "inspect.manual_studied" : "inspect.manual_unstudied"));
+      }
       // Food and bodies: how long until it rots, here and at this temperature.
       if (game.reg.items.list[st.def].rotDays) {
         const d = sim.daysToRot(game, st);

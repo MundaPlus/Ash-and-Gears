@@ -140,7 +140,8 @@ export class Game {
   /** Turret cooldowns by thing id. */
   readonly turretCooldown = new Map<number, number>();
   /** Research state (M6 fills in projects). */
-  readonly research = { done: new Set<string>(), current: null as string | null, progress: new Map<string, number>() };
+  /** Research; `studied`: manuals (item ids) a researcher has studied at a desk, which opens their projects. */
+  readonly research = { done: new Set<string>(), current: null as string | null, progress: new Map<string, number>(), studied: new Set<string>() };
   /** Player bill targets: "thingId:recipeId" -> keep this many in stock. */
   readonly billTargets = new Map<string, number>();
   /** Work left per task target, so interrupted work resumes. Key: "task:layer,x,y". */
