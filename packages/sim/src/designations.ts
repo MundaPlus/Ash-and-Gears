@@ -330,6 +330,11 @@ function nearestDesignated(game: Game, p: Pawn, kind: DesigKind, own = false): J
     const i = n - layer * w * h;
     if (game.map.layers[layer].desig[i] !== code) continue;
     const x = i % w, y = Math.floor(i / w);
+    // An order whose target is gone (the creature died, the door is open, the ruin is down) goes away.
+    if (!canDesignate(game, kind, layer, x, y)) {
+      undesignate(game, layer, x, y);
+      continue;
+    }
     if (isReserved(game, `tile:${layer},${x},${y}`, p)) continue;
     // Self-chosen orders never compete with real work: the normal search skips them.
     if (game.autoDesig.has(n) !== own) continue;

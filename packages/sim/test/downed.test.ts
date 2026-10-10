@@ -50,3 +50,20 @@ describe("downed creatures", () => {
     expect(countItems(g, "mutant_meat")).toBeGreaterThan(meat);
   });
 });
+
+describe("stale orders", () => {
+  it("a Put down order on a creature that already died goes away, and the warden does other work", () => {
+    const g = Game.create(content, { seed: "stale", mapSize: 96, storyteller: "none" });
+    const h = legless(g);
+    expect(designate(g, "put_down", 0, h.x, h.y)).toBe(true);
+    // The creature dies by itself before anyone comes.
+    g.pawns.delete(h.id);
+    const [w] = [...g.pawns.values()].filter((p) => p.faction === "colony");
+    delete w.noWork;
+    w.work = Object.fromEntries(WORK_TYPES.map((k) => [k, k === "warden" ? 1 : k === "haul" ? 2 : 0]));
+    run(g, 1);
+    const L = g.map.layers[0];
+    expect(L.desig[L.i(h.x, h.y)]).toBe(0);
+    expect(w.thinkCooldown).toBe(0);
+  });
+});

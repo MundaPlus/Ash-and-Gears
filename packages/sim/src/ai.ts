@@ -228,6 +228,7 @@ export function tickPawns(game: Game): void {
 registerJob("flee", (game, p, job) => (atGoal(p) && game.tick >= job.until! ? "done" : "run"));
 
 export function endJob(game: Game, p: Pawn, failed: boolean): void {
+  if (p.job?.workType) noteWorkResult(game, p, p.job.workType, failed);
   if (p.job) cleanups.get(p.job.kind)?.(game, p, p.job);
   releaseAll(game, p);
   if (p.carrying) {
@@ -258,8 +259,38 @@ function startIdle(game: Game, p: Pawn, job: Job | null): boolean {
   return startJob(game, p, job);
 }
 
+/**
+ * Safety net: work of one type that fails again and again (a bad order, an unreachable target) must not
+ * block every lower-ranked work. After 3 failures in a row a survivor skips that work type for a while.
+ */
+const FAILS_TO_SKIP = 3;
+const SKIP_TICKS = 600;
+const workFails = new WeakMap<Game, Map<string, { n: number; until: number }>>();
+
+function noteWorkResult(game: Game, p: Pawn, w: string, failed: boolean) {
+  const m = workFails.get(game) ?? new Map<string, { n: number; until: number }>();
+  workFails.set(game, m);
+  const k = `${p.id}:${w}`;
+  if (!failed) {
+    m.delete(k);
+    return;
+  }
+  const f = m.get(k) ?? { n: 0, until: 0 };
+  f.n++;
+  if (f.n >= FAILS_TO_SKIP) {
+    f.until = game.tick + SKIP_TICKS;
+    f.n = 0;
+  }
+  m.set(k, f);
+}
+
+function skipping(game: Game, p: Pawn, w: string): boolean {
+  return (workFails.get(game)?.get(`${p.id}:${w}`)?.until ?? 0) > game.tick;
+}
+
 /** Take the first job any giver of this work type offers. The job remembers its work type. */
 function startWork(game: Game, p: Pawn, w: string): boolean {
+  if (skipping(game, p, w)) return false;
   for (const g of workGivers) {
     if (g.workType !== w) continue;
     const job = g.give(game, p);
@@ -285,7 +316,7 @@ function preemptWork(game: Game, p: Pawn): boolean {
   const order = workOrder(p);
   const rank = cur === "idle" ? order.length : order.indexOf(cur as WorkType);
   for (const w of order.slice(0, Math.max(0, rank))) {
-    if (!workGivers.some((g) => g.workType === w && g.give(game, p))) {
+    if (skipping(game, p, w) || !workGivers.some((g) => g.workType === w && g.give(game, p))) {
       continue;
     }
     // Found: drop the old job (its reservations go too), then take the new one fresh.
