@@ -52,6 +52,8 @@ export interface TextureSet {
   shadow: Texture;
   /** Red cross for forbidden item stacks. */
   forbid: Texture;
+  /** Rust-orange arrow for "haul now" stacks. */
+  haul: Texture;
 }
 
 function gridTexture(grid: number[][], colors: string[], remap?: Record<number, number>): Texture {
@@ -198,7 +200,24 @@ export function makeTextures(reg: Registry, art: ArtSettings, ai: AiArt = new Ma
     g.lineWidth = 2.5;
     g.stroke();
   });
-  return { forbid, terrain, terrainEdges, terrainLayers, things, walls, lines, stubs, turned, thingsTurned, items, floors, desig, survivors, raiders, creatures, shadow };
+  // An up arrow in a dark outline: "pick this up now".
+  const haul = drawn(16, (g) => {
+    g.beginPath();
+    g.moveTo(8, 2);
+    g.lineTo(14, 9);
+    g.lineTo(10, 9);
+    g.lineTo(10, 14);
+    g.lineTo(6, 14);
+    g.lineTo(6, 9);
+    g.lineTo(2, 9);
+    g.closePath();
+    g.fillStyle = "#d9742e";
+    g.fill();
+    g.strokeStyle = "#1b1714";
+    g.lineWidth = 1.5;
+    g.stroke();
+  });
+  return { forbid, haul, terrain, terrainEdges, terrainLayers, things, walls, lines, stubs, turned, thingsTurned, items, floors, desig, survivors, raiders, creatures, shadow };
 }
 
 /** Stable variant per tile so the ground does not repeat. */

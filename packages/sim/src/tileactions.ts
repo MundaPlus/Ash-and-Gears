@@ -6,10 +6,10 @@
 import { cancelBlueprint } from "./construction.ts";
 import { canDesignate, designate, undesignate } from "./designations.ts";
 import type { Game } from "./game.ts";
-import { removeZoneTiles } from "./hauling.ts";
+import { canHaul, haulNow, removeZoneTiles } from "./hauling.ts";
 import { NO_THING, type DesigKind } from "./map.ts";
 
-export type TileAction = DesigKind | "cancel_plan" | "cancel_order" | "remove_zone" | "forbid" | "allow";
+export type TileAction = DesigKind | "cancel_plan" | "cancel_order" | "remove_zone" | "forbid" | "allow" | "haul";
 
 /** Actions possible on a tile, the default one first (or none is default when `first` is null). */
 export function tileActions(game: Game, layer: number, x: number, y: number): { actions: TileAction[]; first: TileAction | null } {
@@ -21,6 +21,7 @@ export function tileActions(game: Game, layer: number, x: number, y: number): { 
   if (L.desig[i]) actions.push("cancel_order");
   else for (const k of ["mine", "salvage", "cut", "clear", "deconstruct"] as DesigKind[]) if (canDesignate(game, k, layer, x, y)) actions.push(k);
   const stack = L.item[i] !== NO_THING ? game.items.get(L.item[i]) : undefined;
+  if (stack && canHaul(game, stack.id)) actions.push("haul");
   if (stack) actions.push(stack.forbidden ? "allow" : "forbid");
   if (L.zone[i] !== NO_THING) actions.push("remove_zone");
   const first = actions.find((a) => a !== "deconstruct" && a !== "remove_zone") ?? null;
@@ -51,6 +52,11 @@ export function doTileAction(game: Game, layer: number, x: number, y: number, a:
       game.mapVersion++;
       return true;
     }
+    case "haul":
+      if (L.item[i] === NO_THING || !haulNow(game, L.item[i])) return false;
+      L.touch(x, y);
+      game.mapVersion++;
+      return true;
     case "remove_zone":
       if (L.zone[i] === NO_THING) return false;
       removeZoneTiles(game, layer, [{ x, y }]);

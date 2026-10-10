@@ -125,6 +125,11 @@ export function tickPower(game: Game): void {
   ensureNets(game);
   if (game.tick % POWER_EVERY !== 0) return;
   const dtH = POWER_EVERY / game.ticksPerHour;
+  // Fires burn their fuel all the time.
+  for (const t of game.things.values()) {
+    const b = game.reg.things.list[t.def].burns;
+    if (b && (t.fuel ?? 0) > 0) t.fuel = Math.max(0, t.fuel! - b.perHour * dtH);
+  }
   for (const net of game.nets) {
     let produce = 0, use = 0, stored = 0, capacity = 0;
     const gens: Thing[] = [], batteries: Thing[] = [], users: Thing[] = [];
@@ -206,6 +211,17 @@ export function tickPower(game: Game): void {
   }
 }
 
+/** Fuel a thing takes: a generator's or a fire's (`burns`). */
+export function fuelOf(game: Game, t: Thing) {
+  const d = game.reg.things.list[t.def];
+  return d.power?.fuel ?? d.burns;
+}
+
+/** Fires burn while they have fuel; things that burn nothing are always "lit". */
+export function isLit(game: Game, t: Thing): boolean {
+  return !game.reg.things.list[t.def].burns || (t.fuel ?? 0) > 0;
+}
+
 export function isPowered(game: Game, t: Thing): boolean {
   const p = game.reg.things.list[t.def].power;
   return !p?.use || !!t.powered;
@@ -220,7 +236,7 @@ registerWorkGiver({
   workType: "haul",
   give(game, p) {
     for (const t of game.things.values()) {
-      const f = game.reg.things.list[t.def].power?.fuel;
+      const f = fuelOf(game, t);
       if (!f || (t.fuel ?? 0) > f.capacity * 0.5 || isReserved(game, `thing:${t.id}`, p)) continue;
       if (!game.path.canReachAdjacent(p, t)) continue;
       const fuelDef = game.reg.items.idx(f.item);
@@ -240,7 +256,7 @@ registerWorkGiver({
 registerJob("refuel", (game, p, job) => {
   const gen = game.things.get(job.targetId!);
   if (!gen) return "fail";
-  const f = game.reg.things.list[gen.def].power!.fuel!;
+  const f = fuelOf(game, gen)!;
   if (job.stage === 0) {
     const s = game.items.get(job.data!.src as number);
     if (!s || !goTo(game, p, s)) return "fail";

@@ -975,5 +975,7 @@
   "mods.up": "Load earlier",
   "mods.restart": "Changes take effect with the next new game or load.",
   "mods.err_json": "{file} is not valid JSON.",
-  "mods.err_id": "{file} needs an \"id\" and a \"name\"."
+  "mods.err_id": "{file} needs an \"id\" and a \"name\".",
+  "action.haul": "Haul now",
+  "inspect.fire_out": "The fire is out. A hauler brings wood."
 }

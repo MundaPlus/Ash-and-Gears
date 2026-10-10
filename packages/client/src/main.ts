@@ -8,7 +8,6 @@ import {
   recipesFor,
   setBillTarget,
   stockOf,
-  countItems,
   DESIG_KINDS,
   Game,
   moodTarget,
@@ -420,6 +419,10 @@ async function boot() {
       if ((thing.contamUntil ?? 0) > game.tick) lines.push(t("inspect.contaminated"));
       if (def.bench)
         bills = recipesFor(game, def.id).map((r) => ({ benchId: thing.id, recipe: r.id, target: billTarget(game, thing, r), stock: stockOf(game, r) }));
+      if (def.burns) {
+        lines.push(t("inspect.fuel", { v: Math.round(thing.fuel ?? 0), max: def.burns.capacity, item: t(`item.${def.burns.item}`) }));
+        if (!thing.fuel) lines.push(t("inspect.fire_out"));
+      }
       if (def.power) {
         const p = def.power;
         if (p.fuel) lines.push(t("inspect.fuel", { v: Math.round(thing.fuel ?? 0), max: p.fuel.capacity, item: t(`item.${p.fuel.item}`) }));
@@ -802,14 +805,15 @@ async function boot() {
         ...(store.state.menu === "research" ? { research: researchRows() } : {}),
         ...(store.state.menu === "build" ? { buildOptions: buildRows() } : {}),
         pawn: sel ? pawnDetail(sel) : null,
+        // Only what is stored counts: loose items on the map are not in the colony's hands yet.
         resources: [
-          { id: "meals", count: countItems(game, "simple_meal") },
-          { id: "food", count: countItems(game, "canned_food") },
-          { id: "raw", count: game.reg.items.list.filter((d) => d.raw).reduce((n, d) => n + countItems(game, d.id), 0) },
-          { id: "water", count: countItems(game, "clean_water") + countItems(game, "dirty_water") },
-          { id: "scrap", count: countItems(game, "scrap") },
-          { id: "wood", count: countItems(game, "wood") },
-          { id: "stone", count: countItems(game, "stone") },
+          { id: "meals", count: sim.storedCount(game, "simple_meal") },
+          { id: "food", count: sim.storedCount(game, "canned_food") },
+          { id: "raw", count: game.reg.items.list.filter((d) => d.raw).reduce((n, d) => n + sim.storedCount(game, d.id), 0) },
+          { id: "water", count: sim.storedCount(game, "clean_water") + sim.storedCount(game, "dirty_water") },
+          { id: "scrap", count: sim.storedCount(game, "scrap") },
+          { id: "wood", count: sim.storedCount(game, "wood") },
+          { id: "stone", count: sim.storedCount(game, "stone") },
         ],
       });
       drainMessages(clock);

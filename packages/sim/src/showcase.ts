@@ -49,7 +49,8 @@ export function buildShowcase(game: Game): void {
   put("table", rx + 4, ry + 4);
   put("chair", rx + 3, ry + 4);
   put("chair", rx + 6, ry + 4);
-  put("campfire", rx + 8, ry + 5);
+  const fire = put("campfire", rx + 8, ry + 5);
+  if (fire) fire.fuel = 15;
   put("well", rx + 9, ry + 1);
   put("research_desk", rx + 1, ry + 5);
 

@@ -11,7 +11,8 @@ import { isRoofed } from "./rooms.ts";
 import type { Pos } from "./path.ts";
 import { addMemory, addRad, hasTraitFlag, traitMult, type Job, type Pawn } from "./pawn.ts";
 import { isContaminatedThing } from "./weather.ts";
-import { workOrder } from "./worktypes.ts";
+import { workOrder, workPriority } from "./worktypes.ts";
+import { haulJob } from "./hauling.ts";
 import { moving, tickHealthHourly } from "./health.ts";
 import { draftedTick, fleeFrom, hostileTick, selfDefense, updateGroups } from "./hostile.ts";
 import { equipJob, inBed, rushToDowned } from "./medical.ts";
@@ -212,6 +213,7 @@ export function think(game: Game, p: Pawn): void {
     const r = robotJob(game, p);
     if (r === "idle") return;
     if (r && startJob(game, p, r)) return;
+    if (workPriority(p, "haul") > 0 && startJob(game, p, haulJob(game, p, true))) return;
     for (const w of workOrder(p)) for (const g of workGivers) if (g.workType === w && startJob(game, p, g.give(game, p))) return;
     if ((p.charge ?? 1) < 0.9) {
       const rest = robotJob(game, { ...p, charge: 0.1 } as Pawn);
@@ -240,6 +242,8 @@ export function think(game: Game, p: Pawn): void {
   if (n.thirst < 0.45 && startJob(game, p, drinkJob(game, p, false))) return;
   if (n.hunger < 0.4 && startJob(game, p, eatJob(game, p, false))) return;
   if (p.weapon === null && startJob(game, p, equipJob(game, p))) return;
+  // "Haul now" stacks come before all other work for anyone who hauls.
+  if (workPriority(p, "haul") > 0 && startJob(game, p, haulJob(game, p, true))) return;
   for (const w of workOrder(p))
     for (const g of workGivers) if (g.workType === w && startJob(game, p, g.give(game, p))) return;
   startJob(game, p, wanderJob(game, p, false));

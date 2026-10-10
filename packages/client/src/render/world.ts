@@ -191,6 +191,12 @@ export class WorldRenderer {
             fx.position.set(s.x + TILE / 2, s.y);
             marks.push(fx);
           }
+          if (st.haulNow) {
+            const hx = new Sprite(this.tex.haul);
+            hx.width = hx.height = TILE / 2;
+            hx.position.set(s.x, s.y);
+            marks.push(hx);
+          }
         }
         const th = L.thing[i];
         // A big thing draws once, from its top-left tile.

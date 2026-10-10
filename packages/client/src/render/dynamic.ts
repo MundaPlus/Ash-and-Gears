@@ -3,7 +3,7 @@
  * Drawn with one Graphics object over the chunk layer.
  */
 import { Graphics } from "pixi.js";
-import { bankSize, DIRS4, isPowered, poleLinks, sourceFactor, type Game } from "@wc/sim";
+import { bankSize, DIRS4, isLit, isPowered, poleLinks, sourceFactor, type Game } from "@wc/sim";
 import { TILE } from "./textures.ts";
 
 /** Overlay colors for power networks. */
@@ -88,6 +88,9 @@ export class DynamicRenderer {
         const charging = [...game.pawns.values()].some((p) => p.job?.kind === "charge" && p.job.targetId === t.id && p.job.stage === 2);
         if (charging && Math.sin(timeSec * 5) > 0) g.rect(px + 4, py + 4, 4, 4).fill(0x9fd14a);
       }
+      // Fuel bars for generators and fires.
+      const fuel = d.power?.fuel ?? d.burns;
+      if (fuel) chargeBar(g, px + 4, py + 2, fw * TILE - 8, 4, (t.fuel ?? 0) / fuel.capacity);
       // Charge bars: batteries, the robot bay and every machine's backup battery, red to yellow to green.
       if (d.power?.store) chargeBar(g, px + 4, py + fh * TILE - 7, fw * TILE - 8, 4, (t.charge ?? 0) / d.power.store);
       const bank = bankSize(game, t);
@@ -140,7 +143,7 @@ export class DynamicRenderer {
         g.poly([cx + 4, cy, cx, cy + 7, cx + 3, cy + 7, cx + 1, cy + 13, cx + 7, cy + 5, cx + 4, cy + 5]).fill(0xff4a3a);
       }
       // Light: lamps when powered, fires always. Only drawn at night.
-      if (d.light && darkness > 0.05 && isPowered(game, t)) {
+      if (d.light && darkness > 0.05 && isPowered(game, t) && isLit(game, t)) {
         const s = toScreen((t.x + 0.5) * TILE, (t.y + 0.5) * TILE);
         const r = d.light * TILE * zoom;
         const flick = d.id === "campfire" ? 0.9 + 0.1 * Math.sin(timeSec * 9 + t.id) : 1;

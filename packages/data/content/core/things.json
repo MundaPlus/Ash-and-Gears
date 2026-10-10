@@ -346,7 +346,12 @@
    "work": 50,
    "menu": "furniture"
   },
-  "bench": true
+  "bench": true,
+  "burns": {
+   "item": "wood",
+   "perHour": 0.25,
+   "capacity": 15
+  }
  },
  {
   "id": "scrap_bench",

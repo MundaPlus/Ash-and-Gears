@@ -61,8 +61,9 @@ function benchWorkSpeed(game: Game, p: Pawn, r: RecipeDef, bench: Thing): number
 
 /** Benches that need power only work while powered. */
 function benchReady(game: Game, bench: Thing): boolean {
-  const p = game.reg.things.list[bench.def].power;
-  return !p?.use || !!bench.powered;
+  const d = game.reg.things.list[bench.def];
+  if (d.burns && !(bench.fuel ?? 0)) return false;
+  return !d.power?.use || !!bench.powered;
 }
 
 /** Give a bill job of this work type, if any bench needs one done. */
