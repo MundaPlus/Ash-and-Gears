@@ -20,6 +20,8 @@ import { nearestHostile } from "./combat.ts";
 
 /** Drafted survivors break off for a drink or a meal below this need level. */
 const DRAFTED_CRITICAL = 0.15;
+/** Speed of a robot with no charge left. */
+const ROBOT_CRAWL = 0.2;
 import { equipJob, inBed, rushToDowned } from "./medical.ts";
 import { fluidNetOf, LITERS_PER_DRINK, netDraw, tapHasWater } from "./fluids.ts";
 import { prisonerTick } from "./prison.ts";
@@ -78,6 +80,8 @@ export function moveSpeed(game: Game, p: Pawn): number {
   let s = WALK_SPEED * game.reg.content.creatures[p.creature].speed * moving(game, p);
   if (p.needs.rest < 0.05) s *= 0.7;
   if (p.carrying) s *= 0.9;
+  // A robot out of charge crawls on its last reserve, at a fifth of its speed.
+  if (p.robot && (p.charge ?? 1) <= 0) s *= ROBOT_CRAWL;
   return s * traitMult(game, p, (t) => t.moveSpeed);
 }
 
@@ -174,7 +178,7 @@ export function tickPawns(game: Game): void {
       const k = p.job.kind;
       const needJob = k === "eat" || k === "drink" || k === "sleep";
       const urgent = p.needs.hunger < 0.1 || p.needs.thirst < 0.1;
-      const longOk = k === "sleep" || k === "shelter" || k === "research";
+      const longOk = k === "sleep" || k === "shelter" || k === "research" || k === "charge";
       if ((urgent && !needJob) || (!longOk && game.tick - p.job.started > game.ticksPerHour * 6)) {
         endJob(game, p, false);
         think(game, p);

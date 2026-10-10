@@ -108,3 +108,33 @@ describe("tier 4 robots (B6)", () => {
     expect(bot.hackedAt).toBeUndefined();
   });
 });
+
+describe("robots out of charge", () => {
+  it("a robot with no charge crawls to a bay without power and charges once the bay gets power", () => {
+    const g = Game.create(content, { seed: "crawl", mapSize: 96, storyteller: "none" });
+    const x0 = g.home.x - 14, y0 = g.home.y - 8;
+    const L = g.map.layers[0];
+    for (let y = y0 - 2; y <= y0 + 4; y++)
+      for (let x = x0 - 2; x <= x0 + 12; x++) {
+        const t = L.thing[L.i(x, y)];
+        if (t !== NO_THING) g.removeThing(t);
+        g.setTerrain(0, x, y, "dirt");
+      }
+    const bay = g.spawnThing("robot_bay", 0, x0, y0);
+    const bot = makeRobot(g, "robot", 0, x0 + 10, y0 + 2);
+    bot.charge = 0;
+    g.pawns.set(bot.id, bot);
+    const start = Math.hypot(bot.x - bay.x, bot.y - bay.y);
+    run(g, 1);
+    expect(bot.job?.kind).toBe("charge");
+    const after1h = Math.hypot(bot.x - bay.x, bot.y - bay.y);
+    expect(after1h).toBeLessThan(start);
+    run(g, 12);
+    expect(Math.hypot(bot.x - bay.x, bot.y - bay.y)).toBeLessThan(2.5);
+    expect(bot.charge).toBe(0);
+    const gen = g.spawnThing("scrap_generator", 0, x0 + 2, y0);
+    gen.fuel = 60;
+    run(g, 6);
+    expect(bot.charge!).toBeGreaterThan(0.2);
+  });
+});

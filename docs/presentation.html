@@ -144,10 +144,10 @@ footer .wrap { display: flex; gap: 20px; justify-content: space-between; flex-wr
     <h1>Ash &amp; <span>Gears</span></h1>
     <p class="lede">Three survivors. One ruined town. Salvage the old world, keep everyone fed and sane, and slowly let the machines do the work.</p>
     <div class="ctas">
-      <a class="btn" id="play" href="/">Play the beta</a>
-      <a class="btn ghost" id="showcase" href="/?showcase=1">See a grown colony</a>
+      <a class="btn" id="play" href="../">Play the beta</a>
+      <a class="btn ghost" id="showcase" href="../?showcase=1">See a grown colony</a>
     </div>
-    <p class="note" id="lan">Runs in the browser on PC and phone. Same Wi-Fi: <span id="lanurl">http://192.168.31.215:4173/</span></p>
+    <p class="note" id="lan">Runs in the browser on PC and phone: <span id="lanurl">http://192.168.31.215:4173/</span></p>
   </div>
   <div class="walkers" aria-hidden="true">
     <div class="walker" style="animation-duration:26s"><img class="px" src="img/survivor.png" alt=""></div>
@@ -415,22 +415,23 @@ footer .wrap { display: flex; gap: 20px; justify-content: space-between; flex-wr
 <footer>
   <div class="wrap">
     <span>Ash &amp; Gears · beta build · TypeScript, PixiJS, Web Audio · art hand-pixeled, music generated with YuE2 in ComfyUI</span>
-    <a href="/">Play the beta →</a>
+    <a href="../">Play the beta →</a>
   </div>
 </footer>
 
 <script>
-// Play links: relative when served by the game server; the LAN address when this page is opened elsewhere.
+// Play links: relative when this page is served with the game (LAN server or GitHub Pages, at <game>/site/);
+// the LAN address when it is opened anywhere else (for example as a shared page).
 (function () {
   var LAN = "http://192.168.31.215:4173/";
-  var local = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(location.hostname);
-  if (!local) {
+  var withGame = /\/site\/(index\.html)?$/.test(location.pathname);
+  if (!withGame) {
     document.getElementById("play").href = LAN;
     document.getElementById("showcase").href = LAN + "?showcase=1";
     document.querySelectorAll('footer a').forEach(function (a) { a.href = LAN; });
-  } else if (!/^(localhost|127\.)/.test(location.hostname)) {
-    // Opened over the network: show the address actually in use.
-    document.getElementById("lanurl").textContent = location.protocol + "//" + location.host + "/";
+  } else {
+    // Show the game's address as it is reached right now.
+    document.getElementById("lanurl").textContent = new URL("../", location.href).href;
   }
 })();
 

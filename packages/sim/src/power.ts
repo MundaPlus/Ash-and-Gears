@@ -185,10 +185,12 @@ export function tickPower(game: Game): void {
     }
     // Cut machines run on their own backup battery while it lasts.
     for (const u of users) {
+      u.onBank = false;
       if (!cut.has(u.id)) continue;
       const need = game.reg.things.list[u.def].power!.use * dtH;
       if ((u.bank ?? 0) >= need) {
         u.bank! -= need;
+        u.onBank = true;
         cut.delete(u.id);
       }
     }

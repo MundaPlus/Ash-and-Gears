@@ -1013,5 +1013,15 @@
   "stockpile.prio_2": "Normal",
   "stockpile.prio_3": "High",
   "stockpile.prio_4": "Critical",
-  "alert.drafted_needs": "{name} is drafted and needs food or water. Release them, or they only take a quick bite when it gets critical."
+  "alert.drafted_needs": "{name} is drafted and needs food or water. Release them, or they only take a quick bite when it gets critical.",
+  "menu.download": "Download save file",
+  "menu.download_hint": "Saves stay in this browser. Download a file to keep a backup or to play on another device.",
+  "menu.load_file": "Load from a save file (.aag)",
+  "menu.load_file_bad": "That file is not an Ash & Gears save.",
+  "inspect.backup": "Backup battery: {pct}% ({v}/{max} Wh), {state}",
+  "inspect.store": "Stored for robots: {pct}% ({v}/{max} Wh), {state}",
+  "inspect.bank_charging": "charging",
+  "inspect.bank_full": "full",
+  "inspect.bank_on_bank": "running on it now (no power from the network)",
+  "inspect.bank_empty": "empty and not charging"
 }

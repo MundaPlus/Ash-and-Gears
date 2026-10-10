@@ -23,7 +23,7 @@ import {
 import { ToolController } from "./input/tools.ts";
 import * as sim from "@wc/sim";
 import { Audio } from "./audio.ts";
-import { listSlots, readSlot, writeSlot } from "./storage.ts";
+import { downloadBytes, listSlots, readSlot, writeSlot } from "./storage.ts";
 import { TitleScreen } from "./ui/Screens.tsx";
 import { Camera } from "./input/camera.ts";
 import { PawnRenderer } from "./render/pawns.ts";
@@ -253,6 +253,10 @@ async function boot() {
     await writeSlot(slotInfo(`save-${Date.now()}`, label), await sim.packSave(sim.saveGame(game)));
     return label;
   };
+  actions.downloadSave = async () => {
+    const bytes = await sim.packSave(sim.saveGame(game));
+    downloadBytes(bytes, `ash-and-gears-day${game.time.day}-${game.opts.seed}.aag`);
+  };
   let autosaving = false;
   async function autosave() {
     if (autosaving) return;
@@ -449,6 +453,13 @@ async function boot() {
         if (p.fuel) lines.push(t("inspect.fuel", { v: Math.round(thing.fuel ?? 0), max: p.fuel.capacity, item: t(`item.${p.fuel.item}`) }));
         if (p.store) lines.push(t("inspect.charge", { v: Math.round(thing.charge ?? 0), max: p.store }));
         if (p.use) lines.push(sim.isPowered(game, thing) ? t("inspect.powered", { w: p.use }) : t("inspect.unpowered", { w: p.use }));
+        // Its own battery: how full, and whether it charges, is full, or keeps the machine running now.
+        const bank = sim.bankSize(game, thing);
+        if (bank > 0) {
+          const v = thing.bank ?? 0;
+          const state = thing.onBank ? "on_bank" : v >= bank - 0.5 ? "full" : sim.isPowered(game, thing) ? "charging" : "empty";
+          lines.push(t(p.bank ? "inspect.store" : "inspect.backup", { v: Math.round(v), max: Math.round(bank), pct: Math.round((v / bank) * 100), state: t(`inspect.bank_${state}`) }));
+        }
         if (p.produce && p.source) lines.push(t("inspect.output", { w: Math.round(p.produce * sim.sourceFactor(game, thing, p.source)) }));
         if (p.use) power = { thingId: thing.id, priority: sim.priorityOf(game, thing) };
         const net = game.nets[game.netOf.get(thing.id) ?? -1];

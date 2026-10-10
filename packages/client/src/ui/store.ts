@@ -268,6 +268,7 @@ export const actions = {
   togglePowerOverlay: () => {},
   setCapture: (_pawn: number, _on: boolean) => {},
   tileAction: (_action: string) => {},
+  downloadSave: async () => {},
   setZonePriority: (_zone: number, _priority: number) => {},
   setZoneAllow: (_zone: number, _category: string, _on: boolean) => {},
   jumpTo: (_at: { layer: number; x: number; y: number }) => {},

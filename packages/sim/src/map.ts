@@ -30,6 +30,8 @@ export interface Thing {
   charge?: number;
   /** Consumers: charge in the machine's own backup battery (Wh). */
   bank?: number;
+  /** Consumers: running on the backup battery right now (the network could not supply it). */
+  onBank?: boolean;
   /** Belt cargo moving across this tile. */
   cargo?: { def: number; count: number; progress: number; contaminated?: boolean } | null;
   /** Auto-crafter: chosen recipe, input buffer (item index -> count), work progress. */
