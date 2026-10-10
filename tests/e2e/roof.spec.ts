@@ -86,6 +86,11 @@ test("a closed room gets a roof from the survivors, and an airlock seals it", as
   await page.mouse.click(inside.x, inside.y);
   await expect(page.getByText("Sealed: roof and airlock", { exact: false })).toBeVisible();
   await page.screenshot({ path: `artifacts/screens/${info.project.name}-roof-sealed.png` });
-  expect(walls.todo).toBeGreaterThan(0);
+  // The roof may already be done by the time the last wall stands; what counts is that it is there.
+  const roofed = await page.evaluate(({ x, y }) => {
+    const L = (window as any).__game.game.map.layers[0];
+    return L.roof[L.i(x, y)] > 0;
+  }, { x: area.x0 + 2, y: area.y0 + 2 });
+  expect(roofed).toBe(true);
   expect(errors).toEqual([]);
 });

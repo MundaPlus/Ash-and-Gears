@@ -3,6 +3,7 @@
  * and enemies (raiders, rad-rats, glow-hounds). See spec 06.
  */
 import { atGoal, endJob, goTo } from "./ai.ts";
+import { sharedEvent } from "./social.ts";
 import { attack, attackOf, dist, hostile, inAttackRange, isMelee, nearestHostile } from "./combat.ts";
 import type { Game } from "./game.ts";
 import { pain } from "./health.ts";
@@ -171,6 +172,7 @@ export function updateGroups(game: Game): void {
       if (g.kind === "raid" && [...game.pawns.values()].some((p) => p.faction === "colony")) {
         game.story.raidsSurvived++;
         for (const p of game.pawns.values()) if (p.faction === "colony") addMemory(game, p, "survived_raid");
+        sharedEvent(game, 4);
       }
     }
   }

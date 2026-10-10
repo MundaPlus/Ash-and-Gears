@@ -10,7 +10,8 @@ import type { Game } from "./game.ts";
 import { untendedInjuries } from "./health.ts";
 import { takeFromStack } from "./items.ts";
 import { NO_THING } from "./map.ts";
-import { learn, skillLevel, type Job, type Pawn } from "./pawn.ts";
+import { addMemory, learn, skillLevel, type Job, type Pawn } from "./pawn.ts";
+import { changeOpinion } from "./social.ts";
 import { pickUp } from "./hauling.ts";
 
 const TEND_WORK = 90;
@@ -120,6 +121,9 @@ registerJob("rescue", (game, p, job) => {
   patient.x = p.x;
   patient.y = p.y;
   if (!atGoal(p)) return "run";
+  // Being carried to safety is not forgotten.
+  changeOpinion(game, patient, p, 12);
+  addMemory(game, patient, "rescued");
   return "done";
 });
 

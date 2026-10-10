@@ -28,13 +28,15 @@ export function WorkGrid() {
                   <i class="swatch" style={{ background: r.color }} /> {r.nick}
                 </th>
                 {s.workTypes.map((w) => {
-                  const v = r.work[w] ?? 3;
+                  const banned = r.noWork.includes(w);
+                  const v = banned ? 0 : (r.work[w] ?? 3);
                   const skill = SKILL_FOR[w];
                   return (
                     <td key={w}>
                       <button
-                        class={`prio p${v}`}
+                        class={`prio p${v}${banned ? " banned" : ""}`}
                         data-testid={`work-${r.id}-${w}`}
+                        disabled={banned}
                         onClick={() => actions.setWork(r.id, w, next(v))}
                         title={skill ? `${t(`skill.${skill}`)} ${r.skills[skill] ?? 0}` : ""}
                       >

@@ -1,7 +1,7 @@
 /**
  * A simple scripted player for headless playtests. It does what a new player would do in the first
  * days: a stockpile, a farm, a walled room with beds and a campfire, salvage and wood cutting,
- * a research desk, power and a lamp once researched, more farms as the colony grows, sandbags
+ * a chest for food, a research desk, power and a lamp once researched, more farms as the colony grows, sandbags
  * in front of the door, and in an attack everyone drafts and gathers behind the sandbags.
  */
 import {
@@ -126,6 +126,8 @@ export function makeAutoplayer(game: Game) {
       for (let i = 0; i < 3; i++) placeBlueprint(game, "thing", "bedroll", 0, x0 + 1 + i * 2, y0 + 1);
       // A well inside the room stays clean when a radiation cloud passes.
       placeBlueprint(game, "thing", "well", 0, x0 + 5, y0 + 5);
+      // A chest in the room keeps food away from rats.
+      placeBlueprint(game, "thing", "scrap_chest", 0, x0 + 1, y0 + 5);
       plan.stage = 2;
       return;
     }

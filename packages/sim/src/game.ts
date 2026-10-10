@@ -22,6 +22,7 @@ import { tickFire } from "./fire.ts";
 import { ensureNets, tickPower, type PowerNet } from "./power.ts";
 import { tickLogistics } from "./logistics.ts";
 import { ensureFluidNets, tickFluids, type FluidNet } from "./fluids.ts";
+import { tickSocial, type Bond } from "./social.ts";
 import { tickGoals } from "./goals.ts";
 
 /** Sim ticks per real second at 1x speed. */
@@ -87,6 +88,10 @@ export class Game {
   openWaterContamUntil = 0;
   soilContamUntil = 0;
   /** Pawns that died: for messages, stats and tests. */
+  /** Opinions "a>b" -> what a thinks of b (A5). */
+  readonly opinions = new Map<string, number>();
+  /** Bonds "a:b" (smaller id first) -> family or lover (A5). */
+  readonly bonds = new Map<string, Bond>();
   readonly deaths: { id: number; name: string; faction: string; tick: number; cause: string }[] = [];
   /** Visual effects for the renderer (shots, hits). Old entries are dropped. */
   readonly fx: { kind: "shot" | "melee" | "turret"; layer: number; from: { x: number; y: number }; to: { x: number; y: number }; hit: boolean; tick: number }[] = [];
@@ -331,6 +336,7 @@ export class Game {
     tickLogistics(this);
     tickFluids(this);
     tickPawns(this);
+    tickSocial(this);
     tickTurrets(this);
     tickGoals(this);
   }

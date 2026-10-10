@@ -4,7 +4,8 @@
  */
 import type { Game } from "./game.ts";
 import { dropItems } from "./items.ts";
-import { addMemory, pawnName, type Pawn } from "./pawn.ts";
+import { addMemory, pawnName, traitMult, type Pawn } from "./pawn.ts";
+import { onDeath } from "./social.ts";
 
 export const PARTS = ["head", "torso", "l_arm", "r_arm", "l_leg", "r_leg"] as const;
 export type PartId = (typeof PARTS)[number];
@@ -62,7 +63,7 @@ export function partDamage(p: Pawn, part: PartId): number {
 export function pain(game: Game, p: Pawn): number {
   let s = 0;
   for (const i of p.health.injuries) s += i.dmg * (KIND[i.kind]?.pain ?? 1);
-  return Math.min(1, s / (90 * game.reg.content.creatures[p.creature].hp));
+  return Math.min(1, (s * traitMult(game, p, (t) => t.painMult)) / (90 * game.reg.content.creatures[p.creature].hp));
 }
 
 /** Hours until an untended wound stops bleeding on its own. */
@@ -175,6 +176,7 @@ export function kill(game: Game, p: Pawn, cause: string): void {
   if (p.faction === "colony") {
     game.message("msg.died", { name: pawnName(p), cause }, "bad");
     for (const o of game.pawns.values()) if (o.faction === "colony") addMemory(game, o, "colonist_died");
+    onDeath(game, p);
   }
   game.deaths.push({ id: p.id, name: p.nick, faction: p.faction, tick: game.tick, cause });
 }

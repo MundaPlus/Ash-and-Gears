@@ -9,7 +9,7 @@ import { NO_THING, type ItemStack } from "./map.ts";
 import { isSleepTime, tickNeeds } from "./needs.ts";
 import { isRoofed } from "./rooms.ts";
 import type { Pos } from "./path.ts";
-import { addMemory, addRad, hasTraitFlag, type Job, type Pawn } from "./pawn.ts";
+import { addMemory, addRad, hasTraitFlag, traitMult, type Job, type Pawn } from "./pawn.ts";
 import { isContaminatedThing } from "./weather.ts";
 import { workOrder } from "./worktypes.ts";
 import { moving, tickHealthHourly } from "./health.ts";
@@ -69,7 +69,7 @@ export function moveSpeed(game: Game, p: Pawn): number {
   let s = WALK_SPEED * game.reg.content.creatures[p.creature].speed * moving(game, p);
   if (p.needs.rest < 0.05) s *= 0.7;
   if (p.carrying) s *= 0.9;
-  return s;
+  return s * traitMult(game, p, (t) => t.moveSpeed);
 }
 
 /** Advance along the path. Plans again if the next tile became blocked. */

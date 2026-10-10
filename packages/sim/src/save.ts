@@ -45,11 +45,14 @@ export interface SaveFile {
   rooms: { cells: number[]; temp: number }[];
   deaths: Game["deaths"];
   goals: Record<string, boolean>;
+  opinions?: [string, number][];
+  bonds?: [string, string][];
 }
 
-type SavedPawn = Omit<Pawn, "skills" | "traits" | "memories" | "situational" | "creature" | "weapon" | "job" | "path" | "goal" | "carrying"> & {
+type SavedPawn = Omit<Pawn, "skills" | "traits" | "backstory" | "memories" | "situational" | "creature" | "weapon" | "job" | "path" | "goal" | "carrying"> & {
   skills: Record<string, { level: number; xp: number; passion: number }>;
   traits: string[];
+  backstory?: [string, string];
   memories: { thought: string; expires: number }[];
   creature: string;
   weapon: string | null;
@@ -104,6 +107,7 @@ export function saveGame(game: Game): SaveFile {
       situational: undefined,
       skills: Object.fromEntries(reg.skills.list.map((s, i) => [s.id, { ...p.skills[i] }])),
       traits: p.traits.map((t) => reg.traits.list[t].id),
+      backstory: p.backstory ? [reg.backstories.list[p.backstory[0]].id, reg.backstories.list[p.backstory[1]].id] : undefined,
       memories: p.memories.map((m) => ({ thought: reg.thoughts.list[m.thought].id, expires: m.expires })),
       creature: reg.content.creatures[p.creature].id,
       weapon: p.weapon !== null ? reg.items.list[p.weapon].id : null,
@@ -135,6 +139,8 @@ export function saveGame(game: Game): SaveFile {
     }),
     deaths: [...game.deaths],
     goals: { ...game.goals },
+    opinions: [...game.opinions],
+    bonds: [...game.bonds],
   };
 }
 
@@ -199,6 +205,7 @@ export function loadGame(content: Content, raw: SaveFile): Game {
       ...(sp as unknown as Pawn),
       skills: reg.skills.list.map((s) => (sp.skills[s.id] ? { ...sp.skills[s.id] } : { level: 0, xp: 0, passion: 0 }) as Pawn["skills"][number]),
       traits: sp.traits.filter((t) => reg.traits.has(t)).map((t) => reg.traits.idx(t)),
+      backstory: sp.backstory && sp.backstory.every((b) => reg.backstories.has(b)) ? [reg.backstories.idx(sp.backstory[0]), reg.backstories.idx(sp.backstory[1])] : undefined,
       memories: sp.memories.filter((m) => reg.thoughts.has(m.thought)).map((m) => ({ thought: reg.thoughts.idx(m.thought), expires: m.expires })),
       situational: [],
       creature: Math.max(0, content.creatures.findIndex((c) => c.id === sp.creature)),
@@ -250,6 +257,8 @@ export function loadGame(content: Content, raw: SaveFile): Game {
   for (const [k, v] of data.fires) game.fires.set(k, v);
   game.deaths.push(...data.deaths);
   game.goals = { ...(data.goals ?? {}) };
+  for (const [k, v] of data.opinions ?? []) game.opinions.set(k, v);
+  for (const [k, v] of data.bonds ?? []) game.bonds.set(k, v as "family" | "lover");
   game.story.raidsSurvived ??= 0;
 
   // Rebuild derived state, then give rooms their saved temperatures.

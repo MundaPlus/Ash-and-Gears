@@ -7,6 +7,8 @@ export type WorkType = (typeof WORK_TYPES)[number];
 export const DEFAULT_PRIORITY = 3;
 
 export function workPriority(p: Pawn, w: WorkType): number {
+  // Work the backstory rules out never happens.
+  if (p.noWork?.includes(w)) return 0;
   return p.work[w] ?? DEFAULT_PRIORITY;
 }
 

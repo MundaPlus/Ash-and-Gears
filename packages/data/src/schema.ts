@@ -278,8 +278,28 @@ export const TraitDef = z.object({
   /** Free-form behavior flags that systems check, e.g. "night_owl". */
   flags: z.array(z.string()).default([]),
   conflicts: z.array(id).default([]),
+  /** Walking speed multiplier (A5). */
+  moveSpeed: z.number().positive().default(1),
+  /** How fast hunger, thirst and rest go down (A5). */
+  needMult: z.object({ hunger: z.number().positive().default(1), thirst: z.number().positive().default(1), rest: z.number().positive().default(1) }).default({ hunger: 1, thirst: 1, rest: 1 }),
+  /** Pain multiplier: below 1 shrugs off wounds (A5). */
+  painMult: z.number().min(0).default(1),
+  /** How much good talks raise this survivor's opinions (A5). */
+  opinionGain: z.number().min(0).default(1),
+  /** How much others warm to this survivor in talks (A5). */
+  likability: z.number().min(0).default(1),
 });
 export type TraitDef = z.infer<typeof TraitDef>;
+
+/** Backstory (A5): one from before the war (childhood) and one from after (adulthood). */
+export const BackstoryDef = z.object({
+  id,
+  stage: z.enum(["childhood", "adulthood"]),
+  skillBonus: z.record(id, z.number().int()).default({}),
+  /** Work types this survivor will not do. */
+  workDisabled: z.array(z.string()).default([]),
+});
+export type BackstoryDef = z.infer<typeof BackstoryDef>;
 
 export const ThoughtDef = z.object({
   id,
@@ -308,6 +328,7 @@ export const Content = z.object({
   research: z.array(ResearchDef),
   skills: z.array(SkillDef),
   traits: z.array(TraitDef),
+  backstories: z.array(BackstoryDef),
   thoughts: z.array(ThoughtDef),
   names: NameLists,
   /** Loot table for salvage rolls: item id -> [min, max]. */

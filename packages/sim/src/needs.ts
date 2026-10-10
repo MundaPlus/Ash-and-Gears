@@ -2,7 +2,8 @@
  * Needs, mood and mental breaks (spec 01). Called once per tick per pawn.
  */
 import type { Game } from "./game.ts";
-import { addMemory, hasTraitFlag, NEED_DECAY, type Pawn } from "./pawn.ts";
+import { addMemory, hasTraitFlag, NEED_DECAY, traitMult, type Pawn } from "./pawn.ts";
+import { socialThoughts } from "./social.ts";
 import { isRoofed, tempAt } from "./rooms.ts";
 
 /** Comfortable temperature range without clothes (spec 01 says 16-26 with clothes widening it). */
@@ -20,13 +21,13 @@ export const BREAK_THRESHOLD = 35;
 export function tickNeeds(game: Game, p: Pawn): void {
   // Downed survivors lie still: hunger and thirst go down at half speed, so friends have time to help.
   const perTick = (p.health.downed ? 0.5 : 1) / game.ticksPerDay;
-  p.needs.hunger = Math.max(0, p.needs.hunger - NEED_DECAY.hunger * perTick);
-  p.needs.thirst = Math.max(0, p.needs.thirst - NEED_DECAY.thirst * perTick);
+  p.needs.hunger = Math.max(0, p.needs.hunger - NEED_DECAY.hunger * perTick * traitMult(game, p, (t) => t.needMult.hunger));
+  p.needs.thirst = Math.max(0, p.needs.thirst - NEED_DECAY.thirst * perTick * traitMult(game, p, (t) => t.needMult.thirst));
   if (p.asleep) {
     const eff = typeof p.job?.data?.efficiency === "number" ? p.job.data.efficiency : GROUND_SLEEP_EFFICIENCY;
     p.needs.rest = Math.min(1, p.needs.rest + eff / (SLEEP_HOURS * game.ticksPerHour));
   } else {
-    p.needs.rest = Math.max(0, p.needs.rest - NEED_DECAY.rest * perTick);
+    p.needs.rest = Math.max(0, p.needs.rest - NEED_DECAY.rest * perTick * traitMult(game, p, (t) => t.needMult.rest));
   }
 
   if ((game.tick + p.id) % MOOD_EVERY === 0) updateMood(game, p);
@@ -49,6 +50,7 @@ function situational(game: Game, p: Pawn): string[] {
   else if (temp < COMFORT_MIN) out.push("cold");
   else if (temp > COMFORT_MAX + 10) out.push("sweltering");
   else if (temp > COMFORT_MAX) out.push("hot");
+  if (p.faction === "colony") out.push(...socialThoughts(game, p));
   return out;
 }
 

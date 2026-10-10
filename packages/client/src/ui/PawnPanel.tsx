@@ -76,6 +76,34 @@ export function PawnPanel() {
           </li>
         ))}
       </ul>
+      {p.backstory.length > 0 && (
+        <>
+          <h3>{t("backstory.title")}</h3>
+          <ul class="traits">
+            {p.backstory.map((b) => (
+              <li key={b} title={t(`backstory.${b}.desc`)}>
+                {t(`backstory.${b}`)}
+              </li>
+            ))}
+          </ul>
+          {p.noWork.length > 0 && <p class="hint">{t("backstory.no_work", { list: p.noWork.map((w) => t(`work.${w}`)).join(", ") })}</p>}
+        </>
+      )}
+      {p.relations.length > 0 && (
+        <>
+          <h3>{t("rel.title")}</h3>
+          <ul class="thoughts" data-testid="relations">
+            {p.relations.map((r) => (
+              <li key={r.nick}>
+                <span>
+                  {r.nick} · {t(`rel.${r.label}`)}
+                </span>
+                <b class={r.opinion >= 0 ? "pos" : "neg"}>{r.opinion > 0 ? `+${r.opinion}` : r.opinion}</b>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
       <h3>{t("pawn.thoughts")}</h3>
       <ul class="thoughts">
         {p.thoughts.map((th, i) => (

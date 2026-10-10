@@ -43,6 +43,10 @@ export interface PawnDetail {
   missing: string[];
   skills: { id: string; level: number; passion: number }[];
   traits: string[];
+  /** [childhood, adulthood] backstory ids. */
+  backstory: string[];
+  noWork: string[];
+  relations: { nick: string; opinion: number; label: string }[];
   thoughts: { id: string; mood: number }[];
 }
 
@@ -80,6 +84,8 @@ export interface WorkRow {
   color: string;
   work: Record<string, number>;
   skills: Record<string, number>;
+  /** Work types the backstory rules out. */
+  noWork: string[];
 }
 
 export interface UiState {

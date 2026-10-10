@@ -301,7 +301,7 @@ async function boot() {
   };
   actions.setWork = (id, work, value) => {
     const p = game.pawns.get(id);
-    if (p) p.work[work] = value;
+    if (p && !p.noWork?.includes(work)) p.work[work] = value;
     store.set({ workRows: workRows() });
   };
 
@@ -457,7 +457,8 @@ async function boot() {
       nick: p.nick,
       color: hex(PawnRenderer.colorOf(p)),
       work: { ...p.work },
-      skills: Object.fromEntries(game.reg.skills.list.map((s, i) => [s.id, p.skills[i].level])),
+      skills: Object.fromEntries(game.reg.skills.list.map((s) => [s.id, sim.skillLevel(game, p, s.id)])),
+      noWork: p.noWork ?? [],
     }));
   }
 
@@ -494,8 +495,15 @@ async function boot() {
       pain: sim.pain(game, p),
       injuries: p.health.injuries.map((i) => ({ part: i.part, kind: i.kind, dmg: Math.round(i.dmg), tended: i.tended > 0 })),
       missing: [...p.health.missing],
-      skills: game.reg.skills.list.map((s, i) => ({ id: s.id, level: p.skills[i].level, passion: p.skills[i].passion })),
+      // Shown levels include trait and backstory bonuses.
+      skills: game.reg.skills.list.map((s, i) => ({ id: s.id, level: sim.skillLevel(game, p, s.id), passion: p.skills[i].passion })),
       traits: p.traits.map((ti) => game.reg.traits.list[ti].id),
+      backstory: (p.backstory ?? []).map((b) => game.reg.backstories.list[b].id),
+      noWork: p.noWork ?? [],
+      relations: [...game.pawns.values()]
+        .filter((o) => o.faction === "colony" && o.id !== p.id)
+        .map((o) => ({ nick: o.nick, opinion: Math.round(sim.opinion(game, p, o)), label: sim.relationLabel(game, p, o) }))
+        .sort((a, b) => b.opinion - a.opinion),
       thoughts: thoughts.filter((th) => !th.id.startsWith("trait_")),
     };
   }

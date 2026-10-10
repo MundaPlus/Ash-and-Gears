@@ -2,6 +2,7 @@
  * Survivors ("pawns"): identity, skills, traits, needs and mood thoughts.
  * See docs/spec/01-colonists.md.
  */
+import type { TraitDef } from "@wc/data";
 import type { Game } from "./game.ts";
 import type { ItemStack } from "./map.ts";
 import type { Pos } from "./path.ts";
@@ -77,6 +78,10 @@ export interface Pawn {
   skills: Skill[];
   /** Indexes into Registry.traits. */
   traits: number[];
+  /** Backstory: [childhood, adulthood] indexes into Registry.backstories (A5). */
+  backstory?: [number, number];
+  /** Work types this survivor will not do (from the backstory). */
+  noWork?: string[];
   job: Job | null;
   /** Ticks to wait before the next job search after a failed one. */
   thinkCooldown: number;
@@ -116,6 +121,7 @@ export function skillLevel(game: Game, p: Pawn, skillId: string): number {
   const si = game.reg.skills.idx(skillId);
   let lvl = p.skills[si].level;
   for (const t of p.traits) lvl += game.reg.traits.list[t].skillBonus[skillId] ?? 0;
+  for (const b of p.backstory ?? []) lvl += game.reg.backstories.list[b].skillBonus[skillId] ?? 0;
   return Math.max(0, Math.min(20, lvl));
 }
 
@@ -196,6 +202,12 @@ export function makeSurvivor(game: Game, layer: number, x: number, y: number, us
     traits.push(ti);
   }
 
+  // Backstory: one from before the war, one from after.
+  const kids = game.reg.backstories.list.map((b, i) => [b, i] as const).filter(([b]) => b.stage === "childhood");
+  const adults = game.reg.backstories.list.map((b, i) => [b, i] as const).filter(([b]) => b.stage === "adulthood");
+  const backstory: [number, number] | undefined = kids.length && adults.length ? [rng.pick(kids)[1], rng.pick(adults)[1]] : undefined;
+  const noWork = backstory ? [...new Set(backstory.flatMap((b) => game.reg.backstories.list[b].workDisabled))] : [];
+
   return {
     id: game.newId(),
     first,
@@ -216,6 +228,8 @@ export function makeSurvivor(game: Game, layer: number, x: number, y: number, us
     mentalBreak: null,
     skills,
     traits,
+    ...(backstory ? { backstory } : {}),
+    ...(noWork.length ? { noWork } : {}),
     job: null,
     thinkCooldown: 0,
     asleep: false,
@@ -243,6 +257,8 @@ export function makeHostile(game: Game, creatureId: string, faction: Faction, la
   p.group = group;
   p.weapon = weapon ? game.reg.items.idx(weapon) : null;
   p.traits = [];
+  delete p.backstory;
+  delete p.noWork;
   p.memories = [];
   p.needs = { hunger: 1, thirst: 1, rest: 1 };
   if (creatureId !== "human") {
@@ -251,4 +267,11 @@ export function makeHostile(game: Game, creatureId: string, faction: Faction, la
     p.nick = creatureId;
   }
   return p;
+}
+
+/** Product of a numeric trait field over the survivor's traits (1 when none set it). */
+export function traitMult(game: Game, p: Pawn, pick: (t: TraitDef) => number): number {
+  let m = 1;
+  for (const t of p.traits) m *= pick(game.reg.traits.list[t]);
+  return m;
 }
