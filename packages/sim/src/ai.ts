@@ -13,6 +13,7 @@ import { addMemory, addRad, hasTraitFlag, traitMult, type Job, type Pawn } from 
 import { isContaminatedThing } from "./weather.ts";
 import { workOrder, workPriority } from "./worktypes.ts";
 import { haulJob } from "./hauling.ts";
+import { relaxJob, slotNow } from "./recreation.ts";
 import { moving, tickHealthHourly } from "./health.ts";
 import { draftedTick, fleeFrom, hostileTick, selfDefense, updateGroups } from "./hostile.ts";
 import { equipJob, inBed, rushToDowned } from "./medical.ts";
@@ -233,6 +234,7 @@ export function think(game: Game, p: Pawn): void {
   if (n.hunger < 0.2 && startJob(game, p, eatJob(game, p, true))) return;
   if (n.rest < 0.12 && startJob(game, p, sleepJob(game, p))) return;
   if (radDanger(game) && !sheltered(game, p) && startJob(game, p, shelterJob(game, p))) return;
+  const slot = slotNow(game, p);
   if (isSleepTime(game, p) && n.rest < 0.9) {
     // Eat and drink before bed, so nobody wakes up starving.
     if (n.thirst < 0.65 && startJob(game, p, drinkJob(game, p, false))) return;
@@ -242,6 +244,9 @@ export function think(game: Game, p: Pawn): void {
   if (n.thirst < 0.45 && startJob(game, p, drinkJob(game, p, false))) return;
   if (n.hunger < 0.4 && startJob(game, p, eatJob(game, p, false))) return;
   if (p.weapon === null && startJob(game, p, equipJob(game, p))) return;
+  // Recreation: in joy hours until fun is full; in "any" hours when bored; in work hours only when joyless.
+  const wantFun = slot === "joy" ? n.fun < 0.95 : slot === "work" ? n.fun < 0.05 : n.fun < 0.3;
+  if (wantFun && startJob(game, p, relaxJob(game, p))) return;
   // "Haul now" stacks come before all other work for anyone who hauls.
   if (workPriority(p, "haul") > 0 && startJob(game, p, haulJob(game, p, true))) return;
   for (const w of workOrder(p))

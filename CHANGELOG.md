@@ -1,6 +1,10 @@
 # Changelog
 
 ## 2026-10-11
+- Recreation: a new fun need drops while awake. Survivors relax at a lit campfire (4 seats), a new card table (2 seats) or a new horseshoe pit (2 seats); with none free they take a walk. "Had fun" lifts the mood; "bored" and "nothing to enjoy" lower it. Old saves get fun 0.7 (`packages/sim/src/recreation.ts`, `needs.ts`, `ai.ts`, `pawn.ts`, `save.ts`; `packages/data/src/schema.ts` `joy`; content things and thoughts; 16 px art; `i18n/en.json`; test `packages/sim/test/recreation.test.ts`) — user request.
+- Schedules: each survivor has 24 hourly slots: anything, work, sleep or recreation. The default is sleep 22-6 (night owls 10-18). Sleep hours send survivors to bed; work hours allow no free time unless joyless; recreation hours mean relax until fun is full. A Schedule tab in the Work menu: pick a slot type, then click or drag over the hours. Robots are not listed (`recreation.ts` `scheduleOf`, `setSchedule`; `packages/client/src/ui/WorkGrid.tsx`, `store.ts`, `main.ts`, `style.css`) — user request.
+- Fix: the work list showed every pawn on the map, raiders and animals too. It now shows only the colony (`packages/client/src/main.ts` `workRows`) — user report.
+- A left click on the map while a menu is open (Build, Orders, Zones, Work, Research, World) closes the menu and does nothing else (`packages/client/src/main.ts`) — user request.
 - B9 story music cues: short motifs for a new story chapter, a new story site, a win, a lost colony and a hacked robot. Each storyline has its own motif and sound (reactor: low square pulses, bus: plucked folk notes, orbit: high sines). The music ducks under a cue (`packages/client/src/audio.ts` `cue`, `main.ts`).
 - B9 chapter banner: the storyline name and chapter title fade in at the top for 6 seconds when a game starts and at each new chapter (`packages/client/src/ui/Hud.tsx`, `store.ts`, `main.ts`, `style.css`).
 - B9 resource bar: a muted "+N" shows loose items that are not in a stockpile yet, with a tooltip, so a new colony does not look empty (`packages/client/src/main.ts`, `ui/Hud.tsx`, `style.css`; `i18n/en.json`).

@@ -351,6 +351,10 @@
    "item": "wood",
    "perHour": 0.25,
    "capacity": 15
+  },
+  "joy": {
+   "fun": 0.35,
+   "seats": 4
   }
  },
  {
@@ -1273,6 +1277,46 @@
    "work": 1800,
    "menu": "production",
    "research": "dish_design"
+  }
+ },
+ {
+  "id": "card_table",
+  "kind": "furniture",
+  "color": "#84603f",
+  "glyph": "T",
+  "hp": 80,
+  "blocks": true,
+  "flammable": true,
+  "joy": {
+   "fun": 0.6,
+   "seats": 2
+  },
+  "build": {
+   "cost": {
+    "wood": 25
+   },
+   "work": 200,
+   "menu": "furniture"
+  }
+ },
+ {
+  "id": "horseshoe_pit",
+  "kind": "furniture",
+  "color": "#b0834e",
+  "glyph": "h",
+  "hp": 60,
+  "blocks": false,
+  "joy": {
+   "fun": 0.5,
+   "seats": 2
+  },
+  "build": {
+   "cost": {
+    "scrap": 10,
+    "wood": 5
+   },
+   "work": 120,
+   "menu": "furniture"
   }
  }
 ]

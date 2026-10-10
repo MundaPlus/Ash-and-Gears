@@ -315,6 +315,8 @@ export function pawnIn(game: Game, sp: SavedPawn): Pawn {
     backstory: sp.backstory && sp.backstory.every((b) => reg.backstories.has(b)) ? [reg.backstories.idx(sp.backstory[0]), reg.backstories.idx(sp.backstory[1])] : undefined,
     memories: sp.memories.filter((m) => reg.thoughts.has(m.thought)).map((m) => ({ thought: reg.thoughts.idx(m.thought), expires: m.expires })),
     situational: [],
+    // Saves from before recreation (B9) have no fun need.
+    needs: { ...sp.needs, fun: sp.needs.fun ?? 0.7 },
     creature: Math.max(0, reg.content.creatures.findIndex((c) => c.id === sp.creature)),
     weapon: sp.weapon && reg.items.has(sp.weapon) ? reg.items.idx(sp.weapon) : null,
     carrying: null,

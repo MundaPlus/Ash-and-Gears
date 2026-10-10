@@ -1,8 +1,9 @@
 /**
  * Needs, mood and mental breaks (spec 01). Called once per tick per pawn.
  */
+import { slotNow } from "./recreation.ts";
 import type { Game } from "./game.ts";
-import { addMemory, hasTraitFlag, NEED_DECAY, traitMult, type Pawn } from "./pawn.ts";
+import { addMemory, NEED_DECAY, traitMult, type Pawn } from "./pawn.ts";
 import { socialThoughts } from "./social.ts";
 import { isRoofed, tempAt } from "./rooms.ts";
 
@@ -28,6 +29,8 @@ export function tickNeeds(game: Game, p: Pawn): void {
     p.needs.rest = Math.min(1, p.needs.rest + eff / (SLEEP_HOURS * game.ticksPerHour));
   } else {
     p.needs.rest = Math.max(0, p.needs.rest - NEED_DECAY.rest * perTick * traitMult(game, p, (t) => t.needMult.rest));
+    // Fun drops while awake, and not while relaxing.
+    if (p.faction === "colony" && p.job?.kind !== "relax") p.needs.fun = Math.max(0, (p.needs.fun ?? 0.7) - NEED_DECAY.fun * perTick);
   }
 
   if ((game.tick + p.id) % MOOD_EVERY === 0) updateMood(game, p);
@@ -43,6 +46,8 @@ function situational(game: Game, p: Pawn): string[] {
   else if (thirst < 0.25) out.push("thirsty");
   if (rest < 0.05) out.push("exhausted");
   else if (rest < 0.25) out.push("tired");
+  if (p.needs.fun < 0.05) out.push("joyless");
+  else if (p.needs.fun < 0.25) out.push("bored");
   if (p.rad >= 0.3) out.push("rad_sick");
   if (game.weather.kind === "rad_cloud" && p.layer === 0 && !isRoofed(game, 0, p.x, p.y)) out.push("in_rad_cloud");
   const temp = tempAt(game, p.layer, p.x, p.y);
@@ -87,8 +92,7 @@ function checkBreak(game: Game, p: Pawn): void {
 }
 
 /** True when the pawn's schedule says sleep. Night owls sleep during the day. */
+/** Sleep hours come from the pawn's schedule (B9). */
 export function isSleepTime(game: Game, p: Pawn): boolean {
-  const h = game.hourOfDay;
-  if (hasTraitFlag(game, p, "night_owl")) return h >= 10 && h < 18;
-  return h >= 22 || h < 6;
+  return slotNow(game, p) === "sleep";
 }

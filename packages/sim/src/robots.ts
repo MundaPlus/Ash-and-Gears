@@ -69,7 +69,7 @@ export function makeRobot(game: Game, kind: string, layer: number, x: number, y:
   p.noWork = WORK_TYPES.filter((w) => !(ALLOWED[kind] ?? []).includes(w));
   p.skills = game.reg.skills.list.map((s) => ({ level: SKILLS[kind]?.[s.id] ?? 0, xp: 0, passion: 0 }));
   p.memories = [];
-  p.needs = { hunger: 1, thirst: 1, rest: 1 };
+  p.needs = { hunger: 1, thirst: 1, rest: 1, fun: 1 };
   p.mood = 50;
   return p;
 }

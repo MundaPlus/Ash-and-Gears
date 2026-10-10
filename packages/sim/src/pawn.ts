@@ -13,11 +13,11 @@ export type Faction = "colony" | "raiders" | "wild" | "prisoner" | "visitor" | "
 /** Player orders for drafted survivors. */
 export type Order = { kind: "move"; pos: Pos } | { kind: "attack"; target: number };
 
-export const NEEDS = ["hunger", "thirst", "rest"] as const;
+export const NEEDS = ["hunger", "thirst", "rest", "fun"] as const;
 export type NeedId = (typeof NEEDS)[number];
 
 /** Need drop per in-game day (1 = full bar). Rest drops only while awake. */
-export const NEED_DECAY: Record<NeedId, number> = { hunger: 0.9, thirst: 1.2, rest: 1.5 };
+export const NEED_DECAY: Record<NeedId, number> = { hunger: 0.9, thirst: 1.2, rest: 1.5, fun: 0.6 };
 
 export type Passion = 0 | 1 | 2;
 export interface Skill {
@@ -109,6 +109,8 @@ export interface Pawn {
   lastAttacker?: number;
   /** Colony robot or drone (A7): no needs, mood or social life. */
   robot?: boolean;
+  /** Daily schedule (B9): 24 slots "any" | "work" | "sleep" | "joy". Absent = the default day. */
+  schedule?: ("any" | "work" | "sleep" | "joy")[];
   /** Robot charge 0..1. */
   charge?: number;
   /** A guard robot that drafted itself (B6); the player's own drafting is left alone. */
@@ -239,7 +241,7 @@ export function makeSurvivor(game: Game, layer: number, x: number, y: number, us
     goal: null,
     moveT: 0,
     facing: 1,
-    needs: { hunger: 0.8 + rng.next() * 0.2, thirst: 0.8 + rng.next() * 0.2, rest: 0.8 + rng.next() * 0.2 },
+    needs: { hunger: 0.8 + rng.next() * 0.2, thirst: 0.8 + rng.next() * 0.2, rest: 0.8 + rng.next() * 0.2, fun: 0.7 + rng.next() * 0.2 },
     memories: [],
     situational: [],
     mood: 50,
@@ -278,7 +280,7 @@ export function makeHostile(game: Game, creatureId: string, faction: Faction, la
   delete p.backstory;
   delete p.noWork;
   p.memories = [];
-  p.needs = { hunger: 1, thirst: 1, rest: 1 };
+  p.needs = { hunger: 1, thirst: 1, rest: 1, fun: 1 };
   if (creatureId !== "human") {
     p.first = "";
     p.last = "";

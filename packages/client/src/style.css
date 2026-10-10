@@ -256,3 +256,20 @@ body.cinematic #ui { display: none; }
 .banner b { display: block; color: #efd8a4; font-size: 22px; margin-top: 2px; }
 @keyframes banner { 0% { opacity: 0; transform: translate(-50%, -8px); } 10%, 85% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; } }
 @media (max-width: 600px) { .banner { padding: 8px 16px; max-width: calc(100vw - 32px); } .banner b { font-size: 17px; } }
+
+/* Work menu tabs and the schedule grid (B9). */
+.workgrid .tabs { display: flex; gap: 4px; margin-bottom: 6px; }
+.schedule .slotpick { display: flex; gap: 4px; flex-wrap: wrap; margin: 6px 0; }
+.schedule table { border-collapse: collapse; user-select: none; }
+.schedule th { font-size: 10px; padding: 0 2px; font-weight: normal; }
+.schedule td.cell { width: 16px; height: 18px; border: 1px solid #1b1714; cursor: pointer; padding: 0; }
+.schedule .c-any { background: #5c4636; }
+.schedule .c-work { background: #a8481a; }
+.schedule .c-sleep { background: #3d4a52; }
+.schedule .c-joy { background: #7a8a4e; }
+.schedule .slot { border-left: 8px solid transparent; }
+.schedule .slot.s-any { border-left-color: #5c4636; }
+.schedule .slot.s-work { border-left-color: #a8481a; }
+.schedule .slot.s-sleep { border-left-color: #3d4a52; }
+.schedule .slot.s-joy { border-left-color: #7a8a4e; }
+.schedule .slot.picked { outline: 2px solid #efd8a4; color: #efd8a4; }

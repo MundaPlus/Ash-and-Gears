@@ -53,7 +53,7 @@ export function makePrisoner(game: Game, p: Pawn, bed: Thing): void {
   p.bedId = bed.id;
   p.resistance ??= 8 + game.aiRng.int(0, 17);
   p.lastTalk = game.tick;
-  p.needs = { hunger: Math.min(p.needs.hunger, 0.6), thirst: Math.min(p.needs.thirst, 0.6), rest: p.needs.rest };
+  p.needs = { hunger: Math.min(p.needs.hunger, 0.6), thirst: Math.min(p.needs.thirst, 0.6), rest: p.needs.rest, fun: p.needs.fun };
   game.message("msg.captured", { name: p.nick }, "info", p);
   if (p.origin) changeGoodwill(game, p.origin, -5);
 }

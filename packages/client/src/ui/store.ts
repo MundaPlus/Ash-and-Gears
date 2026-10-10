@@ -142,6 +142,10 @@ export interface WorkRow {
   skills: Record<string, number>;
   /** Work types the backstory rules out. */
   noWork: string[];
+  /** 24 hourly slots: any, work, sleep, joy (B9). */
+  schedule: string[];
+  /** Robots have no schedule (they do not sleep or relax). */
+  robot: boolean;
 }
 
 export interface UiState {
@@ -274,6 +278,7 @@ export const actions = {
   selectPawn: (_id: number | null, _center = false) => {},
   setTool: (_spec: import("../input/tools.ts").ToolSpec | null) => {},
   setWork: (_pawn: number, _work: string, _value: number) => {},
+  setSchedule: (_pawn: number, _hour: number, _slot: string) => {},
   setBillTarget: (_bench: number, _recipe: string, _n: number) => {},
   toggleDraft: (_id: number) => {},
   setResearch: (_id: string | null) => {},

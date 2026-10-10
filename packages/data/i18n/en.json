@@ -978,5 +978,22 @@
   "mods.err_id": "{file} needs an \"id\" and a \"name\".",
   "action.haul": "Haul now",
   "inspect.fire_out": "The fire is out. A hauler brings wood.",
-  "res.loose": "{n} more lying around, not in a stockpile yet"
+  "res.loose": "{n} more lying around, not in a stockpile yet",
+  "need.fun": "Fun",
+  "thing.card_table": "Card table",
+  "thing.card_table.desc": "Two survivors play cards here. Good fun.",
+  "thing.horseshoe_pit": "Horseshoe pit",
+  "thing.horseshoe_pit.desc": "Throw horseshoes at a stake. Two can play.",
+  "thought.had_fun": "Had some fun",
+  "thought.bored": "Bored",
+  "thought.joyless": "Nothing to enjoy",
+  "job.relax": "Relaxing",
+  "sched.title": "Schedule",
+  "sched.hint": "Pick a slot type, then click or drag over the hours. Sleep: go to bed. Work: no free time unless miserable. Recreation: relax until fun is full. Anything: free choice.",
+  "sched.any": "Anything",
+  "sched.work": "Work",
+  "sched.sleep": "Sleep",
+  "sched.joy": "Recreation",
+  "work.tab_priorities": "Priorities",
+  "work.tab_schedule": "Schedule"
 }

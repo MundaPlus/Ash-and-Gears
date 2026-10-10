@@ -145,6 +145,16 @@ async function boot() {
   /** Rain drops in screen space: x, y, speed. */
   const drops = Array.from({ length: 140 }, () => [Math.random(), Math.random(), 0.6 + Math.random() * 0.6]);
 
+  // A left click on the map while a menu is open only closes the menu (it does not select or build).
+  app.canvas.addEventListener(
+    "pointerdown",
+    (e) => {
+      if (e.button !== 0 || !store.state.menu) return;
+      store.set({ menu: null });
+      e.stopImmediatePropagation();
+    },
+    { capture: true },
+  );
   const camera = new Camera(app.canvas, world, { w: game.map.w * TILE, h: game.map.h * TILE });
   camera.centerOn((game.home.x + 0.5) * TILE, (game.home.y + 0.5) * TILE);
   camera.zoom = 1.5;
@@ -335,6 +345,12 @@ async function boot() {
   actions.setWork = (id, work, value) => {
     const p = game.pawns.get(id);
     if (p && !p.noWork?.includes(work)) p.work[work] = value;
+    store.set({ workRows: workRows() });
+  };
+
+  actions.setSchedule = (id, hour, slot) => {
+    const p = game.pawns.get(id);
+    if (p && (sim.SLOTS as string[]).includes(slot)) sim.setSchedule(game, p, hour, slot as sim.Slot);
     store.set({ workRows: workRows() });
   };
 
@@ -582,13 +598,15 @@ async function boot() {
     store.set({ world: worldUi() });
   };
   function workRows(): WorkRow[] {
-    return [...game.pawns.values()].map((p) => ({
+    return [...game.pawns.values()].filter((p) => p.faction === "colony").map((p) => ({
       id: p.id,
       nick: p.nick,
       color: hex(PawnRenderer.colorOf(p)),
       work: { ...p.work },
       skills: Object.fromEntries(game.reg.skills.list.map((s) => [s.id, sim.skillLevel(game, p, s.id)])),
       noWork: p.noWork ?? [],
+      schedule: sim.scheduleOf(game, p),
+      robot: !!p.robot,
     }));
   }
 

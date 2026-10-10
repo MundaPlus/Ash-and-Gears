@@ -85,6 +85,8 @@ export const ThingDef = z.object({
   burns: z.object({ item: id, perHour: z.number().positive(), capacity: z.number().int().positive(), whileWorking: z.boolean().default(false) }).optional(),
   /** Light radius in tiles. */
   light: z.number().min(0).default(0),
+  /** Recreation (B9): fun per in-game hour and how many can relax here at once. */
+  joy: z.object({ fun: z.number().positive(), seats: z.number().int().positive() }).optional(),
   /** Seats and tables raise comfort while eating (M4). */
   seat: z.boolean().default(false),
   table: z.boolean().default(false),
