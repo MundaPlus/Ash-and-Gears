@@ -1,6 +1,9 @@
 # Changelog
 
 ## 2026-10-10
+- AI walls and floors at "32": walls get 16 joined looks from one texture (outline on open sides, shaded front face when no wall is below); floors use the AI texture (`packages/client/src/render/aiArt.ts` `aiWallTextures`, `render/textures.ts`). Scrap wall uses try 2 (`tools/art/ai/picks.json`).
+- AI textures get seamless edges: `clean.py` blends a half-shifted copy in near the border (`tools/art/ai/clean.py`).
+- AI sprite list covers all things, items and the glow hound, plus wood/stone/ruin walls and three floors; more tries for survivors (12) and raiders (10) (`tools/art/ai/sprites.json`).
 - AI sprites in the game: the "32" art size uses the chosen AI tries for things; "hybrid" and "32" use them for items and characters. Each survivor and raider gets one of several looks. Other palettes shift the AI colors by palette role (`packages/client/src/render/aiArt.ts`, `render/textures.ts`, `render/pawns.ts`, `main.ts`) — the user picked AI art at 32 px per tile.
 - AI pick list and publish step: `tools/art/ai/picks.json` (id → chosen try or list of tries) and `tools/art/ai/publish.py` copy the picks to `packages/client/src/assets/ai/<id>.<k>.png` — one place to change a chosen sprite.
 - The scrap bed is a 2×2 double bed, with a new 32×32 hand-made grid for the 16 px art (`packages/data/content/core/things.json`, `packages/data/src/art/index.ts`) — the user asked for a double bed.

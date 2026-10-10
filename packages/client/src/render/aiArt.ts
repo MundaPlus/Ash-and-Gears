@@ -5,7 +5,7 @@
  * rust color, so the AI detail stays and the mood follows the palette.
  */
 import { Texture } from "pixi.js";
-import { PALETTES } from "@wc/data";
+import { PALETTES, WALL_E, WALL_N, WALL_S, WALL_W } from "@wc/data";
 
 const URLS = import.meta.glob("../assets/ai/*.png", { eager: true, query: "?url", import: "default" }) as Record<string, string>;
 
@@ -43,6 +43,16 @@ const rgb = (hex: string) => [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(
 
 /** A texture from an AI sprite in the given palette, turned 90 degrees clockwise if asked. */
 export function aiTexture(src: HTMLCanvasElement, palette: string, turn = false): Texture {
+  return nearestTexture(aiCanvas(src, palette, turn));
+}
+
+function nearestTexture(c: HTMLCanvasElement): Texture {
+  const t = Texture.from(c);
+  t.source.scaleMode = "nearest";
+  return t;
+}
+
+function aiCanvas(src: HTMLCanvasElement, palette: string, turn: boolean): HTMLCanvasElement {
   const c = document.createElement("canvas");
   c.width = turn ? src.height : src.width;
   c.height = turn ? src.width : src.height;
@@ -54,9 +64,7 @@ export function aiTexture(src: HTMLCanvasElement, palette: string, turn = false)
   g.drawImage(src, 0, 0);
   g.setTransform(1, 0, 0, 1, 0, 0);
   if (palette !== "rust" && PALETTES[palette]) grade(g, c.width, c.height, palette);
-  const t = Texture.from(c);
-  t.source.scaleMode = "nearest";
-  return t;
+  return c;
 }
 
 function grade(g: CanvasRenderingContext2D, w: number, h: number, palette: string) {
@@ -81,4 +89,33 @@ function grade(g: CanvasRenderingContext2D, w: number, h: number, palette: strin
     for (let ch = 0; ch < 3; ch++) d[o + ch] = Math.max(0, Math.min(255, d[o + ch] + to[k][ch] - base[k][ch]));
   }
   g.putImageData(img, 0, 0);
+}
+
+/**
+ * The 16 joined looks of an AI wall texture (mask of WALL_* bits, as wallVariant).
+ * Sides without a wall get a dark outline. With no wall below, the lower quarter is the shaded front face.
+ */
+export function aiWallTextures(src: HTMLCanvasElement, palette: string): Texture[] {
+  const base = aiCanvas(src, palette, false);
+  const w = base.width, h = base.height;
+  const face = Math.round(h * 0.25);
+  return Array.from({ length: 16 }, (_, m) => {
+    const c = document.createElement("canvas");
+    c.width = w;
+    c.height = h;
+    const g = c.getContext("2d")!;
+    g.drawImage(base, 0, 0);
+    g.fillStyle = "#1c1612";
+    if (!(m & WALL_S)) {
+      g.fillStyle = "rgba(20,14,10,.45)";
+      g.fillRect(0, h - face, w, face);
+      g.fillStyle = "#1c1612";
+      g.fillRect(0, h - face - 1, w, 1);
+      g.fillRect(0, h - 1, w, 1);
+    }
+    if (!(m & WALL_N)) g.fillRect(0, 0, w, 1);
+    if (!(m & WALL_E)) g.fillRect(w - 1, 0, 1, h);
+    if (!(m & WALL_W)) g.fillRect(0, 0, 1, h);
+    return nearestTexture(c);
+  });
 }

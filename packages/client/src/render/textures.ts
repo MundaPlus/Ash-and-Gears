@@ -9,7 +9,7 @@
 import { Texture } from "pixi.js";
 import { CREATURES, FLOORS, ITEMS, PALETTES, parseGrid, scale2x, SHIRTS, terrainGrid, TERRAIN_VARIANTS, THINGS, lineVariant, rotateGrid, thingGrid, TURN_IN_LINE, wallVariant } from "@wc/data";
 import type { Registry } from "@wc/sim";
-import { aiTexture, type AiArt } from "./aiArt.ts";
+import { aiTexture, aiWallTextures, type AiArt } from "./aiArt.ts";
 
 /** World units per tile. Sprites are drawn to this size whatever their pixel size. */
 export const TILE = 32;
@@ -97,7 +97,7 @@ function fallback(color: string, glyph: string): Texture {
 export function makeTextures(reg: Registry, art: ArtSettings, ai: AiArt = new Map()): TextureSet {
   const colors = PALETTES[art.palette] ?? PALETTES.rust;
   const palette = PALETTES[art.palette] ? art.palette : "rust";
-  /** AI looks for an id: things only at "32", details (items, characters) at "hybrid" and "32". */
+  /** AI looks for an id: things and floors only at "32", details (items, characters) at "hybrid" and "32". */
   const aiWorld = (id: string) => (art.size === "32" ? ai.get(id) : undefined);
   const aiDetail = (id: string) => (art.size !== "16" ? ai.get(id) : undefined);
   // World art (ground, floors, structures) and detail art (items, characters) can differ in size.
@@ -112,9 +112,11 @@ export function makeTextures(reg: Registry, art: ArtSettings, ai: AiArt = new Ma
     const grid = thingGrid(d.id, ...d.footprint);
     return grid ? gridTexture(prepGrid(grid), colors) : fallback(d.color, d.glyph);
   });
-  const walls = reg.things.list.map((d) =>
-    d.wall && !d.door && THINGS[d.id] ? Array.from({ length: 16 }, (_, m) => gridTexture(prepGrid(wallVariant(parseGrid(THINGS[d.id]), m)), colors)) : null,
-  );
+  const walls = reg.things.list.map((d) => {
+    const look = aiWorld(d.id)?.[0];
+    if (look && d.wall && !d.door) return aiWallTextures(look, palette);
+    return d.wall && !d.door && THINGS[d.id] ? Array.from({ length: 16 }, (_, m) => gridTexture(prepGrid(wallVariant(parseGrid(THINGS[d.id]), m)), colors)) : null;
+  });
   const lines = reg.things.list.map((d) =>
     d.conduit && THINGS[d.id] ? Array.from({ length: 16 }, (_, m) => gridTexture(prepGrid(lineVariant(parseGrid(THINGS[d.id]), m)), colors)) : null,
   );
@@ -131,7 +133,11 @@ export function makeTextures(reg: Registry, art: ArtSettings, ai: AiArt = new Ma
     if (look) return aiTexture(look, palette);
     return ITEMS[d.id] ? gridTexture(prepDetail(ITEMS[d.id]), colors) : fallback(d.color, d.glyph);
   });
-  const floors = reg.floors.list.map((d) => (FLOORS[d.id] ? gridTexture(prep(FLOORS[d.id]), colors) : fallback(d.color, "=")));
+  const floors = reg.floors.list.map((d) => {
+    const look = aiWorld(d.id)?.[0];
+    if (look) return aiTexture(look, palette);
+    return FLOORS[d.id] ? gridTexture(prep(FLOORS[d.id]), colors) : fallback(d.color, "=");
+  });
   const survivorGrid = prepDetail(CREATURES.survivor);
   const aiPeople = aiDetail("survivor");
   const survivors = aiPeople?.length

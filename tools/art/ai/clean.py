@@ -1,5 +1,5 @@
 """Method B cleanup: crop, shrink by averaging, own 16-color palette, dark outline.
-The background is a flood fill from the border, so light parts inside the object (labels) stay.
+Textures get seamless edges. The background is a flood fill from the border, so light parts inside the object (labels) stay.
 Usage: clean.py in.png W H out.png [texture]. Env HOLE_DIST / HOLE_AREA = hole color distance and minimum share of the picture, NC = color count (default 15), QM = median|octree|maxcov.
 """
 import os
@@ -12,6 +12,13 @@ texture = len(sys.argv) > 5 and sys.argv[5] == "texture"
 HOLE_DIST = float(os.environ.get("HOLE_DIST", "12")); HOLE_AREA = float(os.environ.get("HOLE_AREA", "0.002"))
 NC = int(os.environ.get("NC", "15")); QM = os.environ.get("QM", "median")
 im = Image.open(src).convert("RGB"); a = np.array(im, float)
+if texture:
+    # Seamless edges: near the border, blend in a copy shifted by half, whose edges wrap cleanly.
+    hh, ww = a.shape[:2]
+    win = lambda n: np.clip(np.minimum(np.arange(n), n - 1 - np.arange(n)) / (n * 0.18), 0, 1)
+    k = np.minimum.outer(win(hh), win(ww))[:, :, None]
+    a = a * k + np.roll(a, (hh // 2, ww // 2), (0, 1)) * (1 - k)
+    im = Image.fromarray(a.astype("uint8"))
 corner = np.array([a[0, 0], a[0, -1], a[-1, 0], a[-1, -1]]).mean(0)
 
 def background(a: np.ndarray) -> np.ndarray:
