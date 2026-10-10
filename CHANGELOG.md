@@ -1,6 +1,7 @@
 # Changelog
 
 ## 2026-10-11
+- New order "Remove floor" (Orders menu, F marker, tile action): a builder takes up a built floor in half its build work and gets 75% of the materials back (`packages/sim/src/designations.ts` task `unfloor`, `map.ts` `Desig.unfloor`, `tileactions.ts`; `packages/client/src/ui/Toolbar.tsx`, `render/textures.ts`; i18n; test in `packages/sim/test/build.test.ts`) — user request.
 - Grow and shrink zones: the inspect panel of any zone tile has "Grow zone" (the zone tool for that kind and crop; drag next to the zone and the new tiles join it) and "Shrink zone" (the remove tool) (`packages/client/src/ui/Hud.tsx`, `store.ts`, `main.ts`; i18n) — user request.
 - The inspect panel shows what rides on a belt piece ("On the belt: 3 × Scrap") or that it is empty; it updates live (`packages/client/src/main.ts`; i18n) — user report.
 - Fix: the showcase cleared its yard and removed the surface stairs down in some seeds, leaving the cave stairs up with nothing above. It now keeps stairs (`packages/sim/src/showcase.ts`) — user report.

@@ -160,3 +160,21 @@ describe("orders", () => {
     expect(stored.length).toBeGreaterThanOrEqual(4);
   });
 });
+
+describe("remove floor order", () => {
+  it("takes up a built floor and gives back 75% of its materials", () => {
+    const g = smallGame("unfloor");
+    const { x: hx, y: hy } = g.home;
+    clearArea(g, hx - 10, hy - 10, 3);
+    const L = g.map.layers[0];
+    const wood = g.reg.floors.idx("wood_floor") + 1;
+    for (const x of [hx - 10, hx - 9]) L.floor[L.i(x, hy - 10)] = wood;
+    g.pathVersion++;
+    const wood0 = countItems(g, "wood");
+    for (const x of [hx - 10, hx - 9]) expect(designate(g, "unfloor", 0, x, hy - 10)).toBe(true);
+    expect(designate(g, "unfloor", 0, hx - 8, hy - 10)).toBe(false);
+    run(g, 6);
+    for (const x of [hx - 10, hx - 9]) expect(L.floor[L.i(x, hy - 10)]).toBe(0);
+    expect(countItems(g, "wood") - wood0).toBe(4);
+  });
+});

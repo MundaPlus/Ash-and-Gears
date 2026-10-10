@@ -1084,5 +1084,8 @@
   "zone.grow_btn": "Grow zone",
   "zone.shrink_btn": "Shrink zone",
   "zone.grow_hint": "Drag next to the zone: new tiles join it.",
-  "zone.shrink_hint": "Drag over zone tiles to take them out."
+  "zone.shrink_hint": "Drag over zone tiles to take them out.",
+  "order.unfloor": "Remove floor",
+  "order.unfloor.desc": "Take up a built floor. Gives back 75% of the materials.",
+  "action.unfloor": "Remove floor"
 }

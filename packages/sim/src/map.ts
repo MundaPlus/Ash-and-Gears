@@ -82,9 +82,9 @@ export interface ItemStack {
 }
 
 /** Player orders on tiles. */
-export const Desig = { none: 0, salvage: 1, mine: 2, clear: 3, cut: 4, deconstruct: 5 } as const;
+export const Desig = { none: 0, salvage: 1, mine: 2, clear: 3, cut: 4, deconstruct: 5, unfloor: 6 } as const;
 export type DesigKind = Exclude<keyof typeof Desig, "none">;
-export const DESIG_KINDS: DesigKind[] = ["salvage", "mine", "clear", "cut", "deconstruct"];
+export const DESIG_KINDS: DesigKind[] = ["salvage", "mine", "clear", "cut", "deconstruct", "unfloor"];
 
 export interface Blueprint {
   id: number;
