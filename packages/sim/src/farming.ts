@@ -26,6 +26,22 @@ export function fertilityAt(game: Game, layer: number, x: number, y: number): nu
   return game.reg.terrain.list[L.terrain[i]].fertility;
 }
 
+/** Sow or harvest on this one grow-zone tile now (the player's menu), or null when there is nothing to do. */
+export function forceFarmTask(game: Game, layer: number, x: number, y: number): { task: "sow" | "harvest"; crop: string } | null {
+  const L = game.map.layers[layer];
+  if (!L.inBounds(x, y)) return null;
+  const i = L.i(x, y);
+  const z = game.zones.get(L.zone[i]);
+  if (!z || z.kind !== "grow" || !z.crop) return null;
+  const th = L.thing[i];
+  if (th !== NO_THING) {
+    const t = game.things.get(th)!;
+    return game.reg.things.list[t.def].crop && (t.growth ?? 0) >= RIPE ? { task: "harvest", crop: z.crop } : null;
+  }
+  if (L.blueprint[i] !== NO_THING || L.item[i] !== NO_THING) return null;
+  return tempAt(game, layer, x, y) >= game.reg.things.get(z.crop).crop!.minTemp ? { task: "sow", crop: z.crop } : null;
+}
+
 /** Wild shrubs that sprout per day on open fertile ground away from home (wood grows back). */
 const WILD_PER_DAY = 3;
 

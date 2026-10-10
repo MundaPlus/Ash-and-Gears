@@ -10,10 +10,92 @@ import { orderAttack, setDrafted } from "./hostile.ts";
 import { careJob, freeBed, inBed } from "./medical.ts";
 import type { Pawn } from "./pawn.ts";
 import { freePrisonBed, setCapture } from "./prison.ts";
-import { registerTask, workJob } from "./work.ts";
+import { registerTask, workJob, type WorkType } from "./work.ts";
+import { canDesignate, designate } from "./designations.ts";
+import { Desig, NO_THING, type DesigKind } from "./map.ts";
+import { canHaul, haulStackJob } from "./hauling.ts";
+import { forceBuildJob } from "./construction.ts";
+import { forceFarmTask } from "./farming.ts";
+import type { Job } from "./pawn.ts";
 import { reserve } from "./ai.ts";
 
 export type PawnAction = "attack" | "put_down" | "capture" | "rescue" | "tend" | "feed";
+
+/** Things a survivor can be told to do on a tile right now (the player's menu, "force"). */
+export type TileForce = "mine" | "salvage" | "cut" | "clear" | "deconstruct" | "unfloor" | "pry" | "haul" | "harvest" | "sow" | "build";
+
+/** Order kinds and the work type they belong to (a backstory that rules the work out still says no). */
+const ORDER_WORK: Partial<Record<DesigKind, WorkType>> = {
+  mine: "mine", salvage: "salvage", cut: "grow", clear: "construct", deconstruct: "construct", unfloor: "construct", pry: "construct",
+};
+
+function can(actor: Pawn, w: WorkType): boolean {
+  return !actor.noWork?.includes(w);
+}
+
+/** What the selected survivor could do on this tile now. */
+export function tileForceActions(game: Game, actor: Pawn, layer: number, x: number, y: number): TileForce[] {
+  if (actor.faction !== "colony" || actor.health.downed) return [];
+  const L = game.map.layers[layer];
+  if (!L.inBounds(x, y)) return [];
+  const i = L.i(x, y);
+  const out: TileForce[] = [];
+  for (const [kind, w] of Object.entries(ORDER_WORK) as [DesigKind, WorkType][]) {
+    const marked = L.desig[i] === Desig[kind];
+    if ((marked || canDesignate(game, kind, layer, x, y)) && can(actor, w)) out.push(kind as TileForce);
+  }
+  const bp = game.blueprints.get(L.blueprint[i]);
+  if (bp && can(actor, "construct")) out.push("build");
+  const farm = forceFarmTask(game, layer, x, y);
+  if (farm && can(actor, "grow")) out.push(farm.task);
+  if (L.item[i] !== NO_THING && can(actor, "haul") && canHaul(game, L.item[i])) out.push("haul");
+  return out;
+}
+
+/** Whoever works this tile (by its reservation) lets go, so the forced survivor can take it. */
+function takeOver(game: Game, actor: Pawn, key: string) {
+  const other = game.reservations.get(key);
+  if (other === undefined || other === actor.id) return;
+  const o = game.pawns.get(other);
+  if (o) interrupt(game, o);
+  game.reservations.delete(key);
+}
+
+/** Do it now: the survivor drops its job (and the draft) and goes. False (with a message) when it cannot. */
+export function doTileForce(game: Game, actor: Pawn, layer: number, x: number, y: number, a: TileForce): boolean {
+  if (!tileForceActions(game, actor, layer, x, y).includes(a)) return false;
+  if (actor.drafted) setDrafted(game, actor, false);
+  interrupt(game, actor);
+  const L = game.map.layers[layer];
+  const i = L.i(x, y);
+  const pos = { layer, x, y };
+  let job: Job | null;
+  if (a === "haul") {
+    takeOver(game, actor, `item:${L.item[i]}`);
+    job = haulStackJob(game, actor, L.item[i]);
+  } else if (a === "build") {
+    const bp = game.blueprints.get(L.blueprint[i])!;
+    takeOver(game, actor, `tile:${layer},${x},${y}`);
+    job = forceBuildJob(game, actor, bp);
+  } else if (a === "sow" || a === "harvest") {
+    const farm = forceFarmTask(game, layer, x, y)!;
+    takeOver(game, actor, `tile:${layer},${x},${y}`);
+    job = workJob(game, actor, a, pos);
+    if (job && a === "sow") job.data!.crop = farm.crop;
+  } else {
+    // An order kind: mark the tile (if it is not yet), then take it.
+    if (L.desig[i] !== Desig[a]) designate(game, a, layer, x, y);
+    takeOver(game, actor, `tile:${layer},${x},${y}`);
+    const th = L.thing[i];
+    job = workJob(game, actor, a, pos, th === NO_THING ? undefined : th);
+  }
+  if (!job) {
+    game.message("msg.order_failed", { name: actor.nick }, "warn", actor);
+    return false;
+  }
+  actor.job = job;
+  return true;
+}
 
 /** What a survivor can do to another character now. */
 export function pawnActions(game: Game, actor: Pawn, target: Pawn): PawnAction[] {

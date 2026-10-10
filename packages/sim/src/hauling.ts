@@ -305,6 +305,17 @@ export function haulJob(game: Game, p: Pawn, urgentOnly: boolean): Job | null {
   return null;
 }
 
+/** Haul this one stack to storage now (the player's menu). Null when there is no storage for it or no way. */
+export function haulStackJob(game: Game, p: Pawn, stackId: number): Job | null {
+  const s = game.items.get(stackId);
+  if (!s || !isLoose(game, s) || !game.path.canReach(p, s)) return null;
+  const dest = findStorage(game, p, s, s.def, !!s.contaminated, storedPriority(game, s));
+  if (!dest) return null;
+  game.reservations.delete(`item:${s.id}`);
+  if (!reserve(game, `item:${s.id}`, p) || !reserve(game, `tile:${dest.layer},${dest.x},${dest.y}`, p)) return null;
+  return { kind: "haul", stage: 0, targetId: s.id, target: dest };
+}
+
 // ---------------------------------------------------------------- haul job
 
 registerWorkGiver({
