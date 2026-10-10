@@ -2,6 +2,7 @@
  * Health (spec 01 "Health", demo subset): hit points per body region, injuries that bleed and hurt,
  * blood loss, downed state and death. Starvation, dehydration and radiation also damage the body.
  */
+import { armorReduction } from "./gear.ts";
 import type { Game } from "./game.ts";
 import { dropItems } from "./items.ts";
 import { addMemory, addStat, pawnName, traitMult, type Pawn } from "./pawn.ts";
@@ -124,7 +125,8 @@ function pickPart(game: Game, p: Pawn): PartId {
 /** Hurt a pawn. Returns the part hit. */
 export function damage(game: Game, p: Pawn, dmg: number, kind: string, part?: PartId): PartId {
   const where = part ?? pickPart(game, p);
-  const amount = dmg * (0.75 + game.aiRng.next() * 0.5);
+  // Armor on that part stops a share of the hit (N2).
+  const amount = dmg * (0.75 + game.aiRng.next() * 0.5) * (1 - armorReduction(game, p, where, kind));
   // Small wounds of the same kind on the same part merge (starvation, radiation, burns).
   const same = kind === "starvation" || kind === "dehydration" || kind === "radiation" ? p.health.injuries.find((i) => i.part === where && i.kind === kind) : undefined;
   if (same) same.dmg += amount;
@@ -177,6 +179,7 @@ export function kill(game: Game, p: Pawn, cause: string): void {
   else if (creature.behavior === "machine") dropItems(game, "scrap", 8, p.layer, p.x, p.y);
   else if (creature.meat > 0) dropItems(game, "mutant_meat", creature.meat, p.layer, p.x, p.y);
   if (p.weapon !== null) dropItems(game, p.weapon, 1, p.layer, p.x, p.y);
+  for (const a of p.armor) dropItems(game, a, 1, p.layer, p.x, p.y);
   if (p.carrying) dropItems(game, p.carrying.def, p.carrying.count, p.layer, p.x, p.y);
   // The one who struck last gets the kill.
   const killer = p.lastAttacker !== undefined ? game.pawns.get(p.lastAttacker) : undefined;

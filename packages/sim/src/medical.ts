@@ -9,7 +9,8 @@ import { workPriority } from "./worktypes.ts";
 import { registerJob, registerWorkGiver } from "./jobs.ts";
 import type { Game } from "./game.ts";
 import { untendedInjuries } from "./health.ts";
-import { takeFromStack } from "./items.ts";
+import { dropItems, takeFromStack } from "./items.ts";
+import { armorScore, UPGRADE_MARGIN, weaponScore, wornIn } from "./gear.ts";
 import { NO_THING } from "./map.ts";
 import { addMemory, addStat, learn, skillLevel, type Job, type Pawn } from "./pawn.ts";
 import { changeOpinion } from "./social.ts";
@@ -230,16 +231,42 @@ registerJob("tend", (game, p, job) => {
   return "done";
 });
 
-// ---------------------------------------------------------------- equip weapons
+// ---------------------------------------------------------------- equip weapons and armor
 
+/** Ticks between two looks for better gear by the same survivor (the search walks every stack). */
+const GEAR_EVERY = 600;
+const gearChecked = new WeakMap<Game, Map<number, number>>();
+
+/**
+ * Gear (N2): a survivor without a weapon takes one (ranged first). Every few hours each survivor also
+ * looks for clearly better gear in reach: a better weapon, or better armor for the body or head.
+ */
 export function equipJob(game: Game, p: Pawn): Job | null {
-  if (p.weapon !== null || p.faction !== "colony" || p.robot) return null;
-  const ranged = findItem(game, p, (d) => (game.reg.items.list[d].weapon?.range ?? 0) > 1.5);
-  const w = ranged ?? findItem(game, p, (d) => !!game.reg.items.list[d].weapon);
-  if (w === null || !reserve(game, `item:${w}`, p)) return null;
-  return { kind: "equip", stage: 0, targetId: w };
+  if (p.faction !== "colony" || p.robot) return null;
+  const list = game.reg.items.list;
+  if (p.weapon === null) {
+    const ranged = findItem(game, p, (d) => (list[d].weapon?.range ?? 0) > 1.5);
+    const w = ranged ?? findItem(game, p, (d) => !!list[d].weapon);
+    if (w !== null && reserve(game, `item:${w}`, p)) return { kind: "equip", stage: 0, targetId: w };
+  }
+  const seen = gearChecked.get(game) ?? new Map<number, number>();
+  gearChecked.set(game, seen);
+  if (game.tick - (seen.get(p.id) ?? -1e9) < GEAR_EVERY) return null;
+  seen.set(p.id, game.tick);
+  // A better weapon of the same reach (a melee fighter keeps melee if no gun is better).
+  if (p.weapon !== null) {
+    const now = weaponScore(list[p.weapon]);
+    const w = findItem(game, p, (d) => !!list[d].weapon && weaponScore(list[d]) > now * UPGRADE_MARGIN);
+    if (w !== null && reserve(game, `item:${w}`, p)) return { kind: "equip", stage: 0, targetId: w };
+  }
+  for (const slot of ["body", "head"] as const) {
+    const worn = wornIn(game, p, slot);
+    const now = worn === undefined ? 0 : armorScore(list[worn]);
+    const a = findItem(game, p, (d) => list[d].armor?.slot === slot && armorScore(list[d]) > Math.max(0.01, now * UPGRADE_MARGIN));
+    if (a !== null && reserve(game, `item:${a}`, p)) return { kind: "equip", stage: 0, targetId: a };
+  }
+  return null;
 }
-
 
 registerJob("equip", (game, p, job) => {
   const s = game.items.get(job.targetId!);
@@ -249,8 +276,21 @@ registerJob("equip", (game, p, job) => {
     job.stage = 1;
   }
   if (!atGoal(p)) return "run";
-  if (p.weapon !== null) return "done";
   const def = s.def;
-  if (takeFromStack(game, s.id, 1) === 1) p.weapon = def;
+  const d = game.reg.items.list[def];
+  if (takeFromStack(game, s.id, 1) !== 1) return "fail";
+  // The old piece stays on the floor here; haulers bring it to storage.
+  if (d.weapon) {
+    if (p.weapon !== null) dropItems(game, p.weapon, 1, p.layer, p.x, p.y);
+    p.weapon = def;
+  } else if (d.armor) {
+    const old = wornIn(game, p, d.armor.slot);
+    if (old !== undefined) {
+      p.armor = p.armor.filter((a) => a !== old);
+      dropItems(game, old, 1, p.layer, p.x, p.y);
+    }
+    p.armor.push(def);
+  }
+  game.message("msg.equipped", { name: p.nick, item: d.id }, "info", p);
   return "done";
 });

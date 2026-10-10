@@ -101,8 +101,11 @@ function benchReady(game: Game, bench: Thing): boolean {
   return !d.power?.use || !!bench.powered;
 }
 
-/** Give a bill job of this work type, if any bench needs one done. */
-function billJob(game: Game, p: Pawn, workType: WorkType): Job | null {
+/**
+ * Give a bill job of this work type, if any bench needs one done. `urgentOnly`: only make orders, and
+ * bills whose stock is below half the target (water at the well while the colony runs dry).
+ */
+function billJob(game: Game, p: Pawn, workType: WorkType, urgentOnly = false): Job | null {
   const benches = [...game.things.values()]
     .filter((t) => game.reg.things.list[t.def].bench && benchReady(game, t))
     .sort((a, b) => (a.x - p.x) ** 2 + (a.y - p.y) ** 2 - ((b.x - p.x) ** 2 + (b.y - p.y) ** 2));
@@ -115,6 +118,7 @@ function billJob(game: Game, p: Pawn, workType: WorkType): Job | null {
     for (const [r, isOrder] of cands) {
       if (recipeWorkType(r) !== workType) continue;
       if (!isOrder && stockOf(game, r) >= billTarget(game, bench, r)) continue;
+      if (urgentOnly && !isOrder && stockOf(game, r) >= billTarget(game, bench, r) / 2) continue;
       if (!game.path.canReachAdjacent(p, bench)) continue;
       // All inputs must exist somewhere before starting.
       const enough = r.inputs.every((inp) => {
@@ -139,6 +143,15 @@ function billJob(game: Game, p: Pawn, workType: WorkType): Job | null {
 // Haul-type bills (water from the well) come before plain hauling, or a big salvage pile keeps
 // everyone carrying junk while the colony goes thirsty.
 for (const wt of ["cook", "craft", "haul"] as WorkType[]) registerWorkGiver({ workType: wt, give: (game, p) => billJob(game, p, wt) }, wt === "haul");
+
+/**
+ * Urgent haul-type bills (user report: "the well is not producing water"). Hauling comes last in the
+ * work order, so a busy colony (sowing, mining, salvage) never filled the well's jugs. Make orders
+ * there, and water below half its target, come before all other work for anyone who hauls.
+ */
+export function urgentBillJob(game: Game, p: Pawn): Job | null {
+  return billJob(game, p, "haul", true);
+}
 
 /** Inputs still missing for the current input slot. */
 function missingNow(r: RecipeDef, job: Job): number {

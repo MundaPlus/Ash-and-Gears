@@ -139,8 +139,7 @@
   },
   "work": 600,
   "skill": "crafting",
-  "target": 0,
-  "research": "gunsmithing"
+  "target": 0
  },
  {
   "id": "smelt_steel",
@@ -501,5 +500,372 @@
   "skill": "crafting",
   "target": 0,
   "research": "advanced_medicine"
+ },
+ {
+  "id": "make_pipe",
+  "benches": [
+   "scrap_bench",
+   "powered_bench"
+  ],
+  "inputs": [
+   {
+    "item": "scrap",
+    "count": 8
+   }
+  ],
+  "output": {
+   "pipe": 1
+  },
+  "work": 250,
+  "skill": "crafting",
+  "target": 0
+ },
+ {
+  "id": "make_scrap_shotgun",
+  "benches": [
+   "scrap_bench",
+   "powered_bench"
+  ],
+  "inputs": [
+   {
+    "item": "scrap",
+    "count": 35
+   },
+   {
+    "item": "components",
+    "count": 2
+   }
+  ],
+  "output": {
+   "scrap_shotgun": 1
+  },
+  "work": 900,
+  "skill": "crafting",
+  "target": 0,
+  "research": "gunsmithing"
+ },
+ {
+  "id": "make_hunting_rifle",
+  "benches": [
+   "powered_bench"
+  ],
+  "inputs": [
+   {
+    "item": "steel",
+    "count": 10
+   },
+   {
+    "item": "wood",
+    "count": 10
+   },
+   {
+    "item": "components",
+    "count": 3
+   }
+  ],
+  "output": {
+   "hunting_rifle": 1
+  },
+  "work": 1400,
+  "skill": "crafting",
+  "target": 0,
+  "research": "rifling"
+ },
+ {
+  "id": "make_nail_gun",
+  "benches": [
+   "powered_bench"
+  ],
+  "inputs": [
+   {
+    "item": "steel",
+    "count": 8
+   },
+   {
+    "item": "components",
+    "count": 4
+   }
+  ],
+  "output": {
+   "nail_gun": 1
+  },
+  "work": 1200,
+  "skill": "crafting",
+  "target": 0,
+  "research": "rifling"
+ },
+ {
+  "id": "make_assault_rifle",
+  "benches": [
+   "powered_bench"
+  ],
+  "inputs": [
+   {
+    "item": "steel",
+    "count": 15
+   },
+   {
+    "item": "plastic",
+    "count": 6
+   },
+   {
+    "item": "components",
+    "count": 6
+   }
+  ],
+  "output": {
+   "assault_rifle": 1
+  },
+  "work": 2200,
+  "skill": "crafting",
+  "target": 0,
+  "research": "advanced_weapons"
+ },
+ {
+  "id": "make_flamer",
+  "benches": [
+   "powered_bench"
+  ],
+  "inputs": [
+   {
+    "item": "steel",
+    "count": 10
+   },
+   {
+    "item": "plastic",
+    "count": 4
+   },
+   {
+    "item": "components",
+    "count": 4
+   }
+  ],
+  "output": {
+   "flamer": 1
+  },
+  "work": 1800,
+  "skill": "crafting",
+  "target": 0,
+  "research": "advanced_weapons"
+ },
+ {
+  "id": "make_energy_rifle",
+  "benches": [
+   "powered_bench"
+  ],
+  "inputs": [
+   {
+    "item": "steel",
+    "count": 10
+   },
+   {
+    "item": "plastic",
+    "count": 8
+   },
+   {
+    "item": "electronics",
+    "count": 4
+   }
+  ],
+  "output": {
+   "energy_rifle": 1
+  },
+  "work": 3000,
+  "skill": "crafting",
+  "target": 0,
+  "research": "energy_weapons"
+ },
+ {
+  "id": "make_rag_armor",
+  "benches": [
+   "scrap_bench",
+   "powered_bench"
+  ],
+  "inputs": [
+   {
+    "item": "cloth",
+    "count": 6
+   }
+  ],
+  "output": {
+   "rag_armor": 1
+  },
+  "work": 400,
+  "skill": "crafting",
+  "target": 0
+ },
+ {
+  "id": "make_scrap_vest",
+  "benches": [
+   "scrap_bench",
+   "powered_bench"
+  ],
+  "inputs": [
+   {
+    "item": "scrap",
+    "count": 30
+   },
+   {
+    "item": "cloth",
+    "count": 4
+   }
+  ],
+  "output": {
+   "scrap_vest": 1
+  },
+  "work": 900,
+  "skill": "crafting",
+  "target": 0,
+  "research": "scrap_armor"
+ },
+ {
+  "id": "make_plate_vest",
+  "benches": [
+   "powered_bench"
+  ],
+  "inputs": [
+   {
+    "item": "steel",
+    "count": 15
+   },
+   {
+    "item": "cloth",
+    "count": 4
+   }
+  ],
+  "output": {
+   "plate_vest": 1
+  },
+  "work": 1500,
+  "skill": "crafting",
+  "target": 0,
+  "research": "plate_armor"
+ },
+ {
+  "id": "make_plate_helmet",
+  "benches": [
+   "powered_bench"
+  ],
+  "inputs": [
+   {
+    "item": "steel",
+    "count": 6
+   }
+  ],
+  "output": {
+   "plate_helmet": 1
+  },
+  "work": 800,
+  "skill": "crafting",
+  "target": 0,
+  "research": "plate_armor"
+ },
+ {
+  "id": "make_combat_armor",
+  "benches": [
+   "powered_bench"
+  ],
+  "inputs": [
+   {
+    "item": "plastic",
+    "count": 10
+   },
+   {
+    "item": "steel",
+    "count": 8
+   },
+   {
+    "item": "cloth",
+    "count": 6
+   }
+  ],
+  "output": {
+   "combat_armor": 1
+  },
+  "work": 2400,
+  "skill": "crafting",
+  "target": 0,
+  "research": "composite_armor"
+ },
+ {
+  "id": "make_combat_helmet",
+  "benches": [
+   "powered_bench"
+  ],
+  "inputs": [
+   {
+    "item": "plastic",
+    "count": 4
+   },
+   {
+    "item": "steel",
+    "count": 4
+   }
+  ],
+  "output": {
+   "combat_helmet": 1
+  },
+  "work": 1200,
+  "skill": "crafting",
+  "target": 0,
+  "research": "composite_armor"
+ },
+ {
+  "id": "make_power_armor",
+  "benches": [
+   "powered_bench"
+  ],
+  "inputs": [
+   {
+    "item": "steel",
+    "count": 20
+   },
+   {
+    "item": "plastic",
+    "count": 10
+   },
+   {
+    "item": "electronics",
+    "count": 6
+   },
+   {
+    "item": "components",
+    "count": 8
+   }
+  ],
+  "output": {
+   "power_armor": 1
+  },
+  "work": 4000,
+  "skill": "crafting",
+  "target": 0,
+  "research": "power_armor"
+ },
+ {
+  "id": "make_power_helmet",
+  "benches": [
+   "powered_bench"
+  ],
+  "inputs": [
+   {
+    "item": "steel",
+    "count": 6
+   },
+   {
+    "item": "plastic",
+    "count": 4
+   },
+   {
+    "item": "electronics",
+    "count": 2
+   }
+  ],
+  "output": {
+   "power_helmet": 1
+  },
+  "work": 1800,
+  "skill": "crafting",
+  "target": 0,
+  "research": "power_armor"
  }
 ]

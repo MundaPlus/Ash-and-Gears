@@ -7,7 +7,7 @@ import { Texture } from "pixi.js";
 import type { Registry } from "@wc/sim";
 import { INK_SETS, Print, type Ink } from "./kit.ts";
 import { floorTile, terrainEdgeTile, terrainTile, wallTile } from "./ground.ts";
-import { person, PERSON_HEADROOM, RAIDER, type Facing, type Look } from "./sprites.ts";
+import { ARMOR_LOOKS, armorOverlay, person, PERSON_HEADROOM, RAIDER, type Facing, type Look } from "./sprites.ts";
 import { lineTile, PRINT_THINGS } from "./things.ts";
 import { creatureTile, itemTile } from "./items.ts";
 import type { TextureSet } from "../textures.ts";
@@ -35,6 +35,8 @@ export interface PrintPeople {
   raiders: Texture[][][];
   /** Extra height above the tile, in tiles (heads and crests). */
   headroom: number;
+  /** Armor drawn over people (N2), by item id: one texture per facing. */
+  armor: Record<string, Texture[]>;
 }
 
 function tex(w: number, h: number, inks: Record<Ink, string>, seed: number, draw: (p: Print) => void, offsetY = 0): Texture {
@@ -106,6 +108,7 @@ export function applyPrint(set: TextureSet, reg: Registry, palette: string): Tex
     survivors: set.survivors.map((_, k) => frames(survivorLook(k), 100 + k)),
     raiders: RAIDER_LOOKS.map((l, k) => frames(l, 200 + k)),
     headroom: PERSON_HEADROOM,
+    armor: Object.fromEntries(Object.keys(ARMOR_LOOKS).map((id, k) => [id, FACINGS.map((f) => tex(1, 1 + PERSON_HEADROOM, inks, 300 + k, (p) => armorOverlay(p, f, id), PERSON_HEADROOM))])),
   };
   const items = reg.items.list.map((d, i) => {
     let ok = false;

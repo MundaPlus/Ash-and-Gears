@@ -263,7 +263,23 @@ export class DynamicRenderer {
       const bp = this.game.blueprints.get(L.blueprint[L.i(x, y)]);
       return bp?.kind === "thing" && !!this.game.reg.things.list[bp.def].wall;
     };
-    const upright = (wallAt(t.x, t.y - 1) || wallAt(t.x, t.y + 1)) && !(wallAt(t.x - 1, t.y) || wallAt(t.x + 1, t.y));
+    // Follow the line through neighboring doors (double doors) to the first wall on each side.
+    const doorAt = (x: number, y: number) => {
+      if (!L.inBounds(x, y)) return false;
+      const o = L.thing[L.i(x, y)];
+      return o !== -1 && !!this.game.reg.things.list[this.game.things.get(o)!.def].door;
+    };
+    const reach = (dx: number, dy: number) => {
+      let x = t.x + dx, y = t.y + dy;
+      for (let k = 0; k < 4 && doorAt(x, y); k++) {
+        x += dx;
+        y += dy;
+      }
+      return wallAt(x, y);
+    };
+    const n = reach(0, -1), sth = reach(0, 1), e = reach(1, 0), w = reach(-1, 0);
+    // Walls on both ends of one line decide; else any wall north or south with none east or west.
+    const upright = n && sth && !(e && w) ? true : e && w ? false : (n || sth) && !(e || w);
     const s = TILE / 64;
     // Rectangles in local units across the door (u along the opening, v across it), turned when upright.
     const rect = (u: number, v: number, w: number, h: number) => {

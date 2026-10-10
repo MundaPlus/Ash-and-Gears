@@ -56,6 +56,8 @@ export interface PawnDetail {
   drafted: boolean;
   downed: boolean;
   weapon: string | null;
+  /** Worn armor item ids (body, head). */
+  armor: string[];
   bloodLoss: number;
   pain: number;
   injuries: { part: string; kind: string; dmg: number; tended: boolean }[];

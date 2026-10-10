@@ -167,6 +167,46 @@ export function person(p: Print, facing: Facing, frame: number, look: Look) {
   }
 }
 
+/** How each armor piece looks on a person (N2). */
+export const ARMOR_LOOKS: Record<string, { kind: "vest" | "helmet"; fill: Ink; trim: Ink; plated: boolean }> = {
+  rag_armor: { kind: "vest", fill: "ochre", trim: "ochreDark", plated: false },
+  scrap_vest: { kind: "vest", fill: "rustDark", trim: "slate", plated: true },
+  plate_vest: { kind: "vest", fill: "slate", trim: "slateDark", plated: true },
+  combat_armor: { kind: "vest", fill: "tealDark", trim: "soot", plated: true },
+  power_armor: { kind: "vest", fill: "slateDark", trim: "glow", plated: true },
+  plate_helmet: { kind: "helmet", fill: "slate", trim: "slateDark", plated: true },
+  combat_helmet: { kind: "helmet", fill: "tealDark", trim: "soot", plated: true },
+  power_helmet: { kind: "helmet", fill: "slateDark", trim: "glow", plated: true },
+};
+
+/**
+ * Armor drawn over a person (same frame and size as `person`): a vest over the coat, or a helmet over
+ * the head. The coat and head do not move between walking frames, so one drawing per facing does.
+ */
+export function armorOverlay(p: Print, facing: Facing, id: string) {
+  const look = ARMOR_LOOKS[id];
+  if (!look) return;
+  const side = facing === "E" || facing === "W";
+  const mx = (x: number) => (facing === "W" ? 64 - x : x);
+  const P = (pts: Pt[]) => pts.map(([x, y]) => [mx(x), y] as Pt);
+  if (look.kind === "vest") {
+    const body: Pt[] = side ? P([[25, 26], [39, 26], [41, 44], [23, 44]]) : [[21, 26], [43, 26], [45, 44], [19, 44]];
+    p.shape(body, { fill: look.fill, tone: { ink: "soot", amount: 0.2 }, line: 2 });
+    if (look.plated) {
+      if (side) p.shape(P(Print.rect(30, 29, 9, 12, 2)), { fill: look.trim, line: 1.4 });
+      else for (const x of [23, 34]) p.shape(Print.rect(x, 29, 8, 12, 2), { fill: look.trim, line: 1.4 });
+    } else for (const y of [31, 37]) p.line(side ? P([[25, y], [40, y]]) : [[21, y], [44, y]], look.trim, 1.2);
+    // Shoulder plates on the front view.
+    if (!side && look.plated) for (const sx of [19, 45]) p.shape(Print.ellipse(sx, 28, 5, 3.4), { fill: look.fill, line: 1.6 });
+    return;
+  }
+  const hx = side ? mx(33) : C;
+  const dome: Pt[] = [[hx - 11, 16], [hx - 10, 8], [hx - 5, 3], [hx + 5, 3], [hx + 10, 8], [hx + 11, 16]];
+  p.shape(dome, { fill: look.fill, tone: { ink: "soot", amount: 0.25 }, line: 2 });
+  // Visor band: across the face from the front, on the face side from the side.
+  if (facing !== "N") p.shape(side ? P(Print.rect(33, 11, 11, 4, 1.5)) : Print.rect(hx - 8, 11, 16, 4, 1.5), { fill: look.trim, line: 1.2 });
+}
+
 /** A wall tile, top-down: a concrete slab that joins its neighbors (n, e, s, w); the open south side shows its face. */
 export function wall(p: Print, n: boolean, e: boolean, s: boolean, w: boolean) {
   const x0 = w ? 0 : 6, x1 = e ? 64 : 58, y0 = n ? 0 : 6, y1 = s ? 64 : 50;

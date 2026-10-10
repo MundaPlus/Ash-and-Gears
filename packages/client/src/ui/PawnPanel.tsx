@@ -36,6 +36,7 @@ export function PawnPanel() {
         )}
       </p>
       <p class="sub">{t("pawn.weapon", { weapon: p.weapon ? t(`item.${p.weapon}`) : t("pawn.fists") })}</p>
+      <p class="sub" data-testid="pawn-armor">{p.armor.length ? t("pawn.armor", { list: p.armor.map((a) => t(`item.${a}`)).join(", ") }) : t("pawn.no_armor")}</p>
       {p.faction === "colony" && !p.downed && (
         <button class={`draft ${p.drafted ? "on" : ""}`} data-testid="draft" onClick={() => actions.toggleDraft(p.id)}>
           {p.drafted ? t("pawn.undraft") : t("pawn.draft")}
