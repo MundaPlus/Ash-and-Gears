@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadCoreContent } from "@wc/data";
-import { createZone, dropItems, Game, haulList, NO_THING, WORK_TYPES } from "../src/index.ts";
+import { createZone, dropItems, Game, haulList, isLitAt, lightWorkFactor, NO_THING, WORK_TYPES } from "../src/index.ts";
 
 const content = loadCoreContent();
 const run = (g: Game, hours: number) => {
@@ -66,5 +66,26 @@ describe("wood grows back (B9)", () => {
     run(g, 3);
     const wood = [...g.items.values()].filter((s) => g.reg.items.list[s.def].id === "wood" && Math.abs(s.x - (x0 + 3)) <= 2 && Math.abs(s.y - (y0 + 1)) <= 2).reduce((n, s) => n + s.count, 0);
     expect(wood).toBeGreaterThan(5);
+  });
+});
+
+describe("light (B9)", () => {
+  it("the surface is lit by day; at night only a powered lamp lights its area, and work in the dark is slower", () => {
+    const { g, x0, y0, pawns } = setup("light");
+    const [p] = pawns;
+    p.x = x0 + 8;
+    p.y = y0 + 2;
+    expect(isLitAt(g, 0, p.x, p.y)).toBe(true);
+    while (g.hourOfDay < 22) g.step();
+    expect(isLitAt(g, 0, p.x, p.y)).toBe(false);
+    expect(lightWorkFactor(g, p)).toBeLessThan(1);
+    const gen = g.spawnThing("scrap_generator", 0, x0, y0);
+    gen.fuel = 30;
+    g.spawnThing("lamp", 0, x0 + 2, y0);
+    run(g, 0.1);
+    expect(isLitAt(g, 0, x0 + 8, y0 + 2)).toBe(true);
+    p.x = x0 + 8;
+    p.y = y0 + 2;
+    expect(lightWorkFactor(g, p)).toBe(1);
   });
 });

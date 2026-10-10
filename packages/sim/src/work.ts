@@ -5,6 +5,7 @@
  */
 import { atGoal, goTo, reserve } from "./ai.ts";
 import { registerJob } from "./jobs.ts";
+import { lightWorkFactor } from "./light.ts";
 import type { Game } from "./game.ts";
 import type { Pos } from "./path.ts";
 import { learn, skillLevel, workSpeed, type Job, type Pawn } from "./pawn.ts";
@@ -13,7 +14,7 @@ export * from "./worktypes.ts";
 
 /** Work ticks done per sim tick: 0.4 at skill 0, 1.0 at skill 10, 1.6 at skill 20. */
 export function workRate(game: Game, p: Pawn, skill: string): number {
-  return workSpeed(game, p) * (0.4 + 0.06 * skillLevel(game, p, skill));
+  return workSpeed(game, p) * (0.4 + 0.06 * skillLevel(game, p, skill)) * lightWorkFactor(game, p);
 }
 
 export interface Task {

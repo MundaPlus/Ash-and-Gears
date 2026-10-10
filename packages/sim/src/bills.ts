@@ -4,6 +4,7 @@
  * time, carries them to the bench, works, and drops the product next to the bench.
  * The auto-crafter in M6 uses the same recipes without a survivor.
  */
+import { lightWorkFactor } from "./light.ts";
 import type { RecipeDef } from "@wc/data";
 import { atGoal, findItem, goTo, reserve } from "./ai.ts";
 import { registerCleanup, registerJob, registerWorkGiver } from "./jobs.ts";
@@ -56,7 +57,7 @@ export function matchesInput(game: Game, input: RecipeDef["inputs"][number], def
 
 function benchWorkSpeed(game: Game, p: Pawn, r: RecipeDef, bench: Thing): number {
   const base = r.skill ? workSpeed(game, p) * (0.4 + 0.06 * skillLevel(game, p, r.skill)) : workSpeed(game, p);
-  return base * game.reg.things.list[bench.def].benchSpeed;
+  return base * game.reg.things.list[bench.def].benchSpeed * lightWorkFactor(game, p);
 }
 
 /** Benches that need power only work while powered. */

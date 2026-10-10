@@ -10,6 +10,7 @@ export * from "./needs.ts";
 export * from "./ai.ts";
 export * from "./work.ts";
 export * from "./recreation.ts";
+export * from "./light.ts";
 export * from "./designations.ts";
 export * from "./construction.ts";
 export * from "./hauling.ts";

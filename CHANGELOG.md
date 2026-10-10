@@ -1,6 +1,7 @@
 # Changelog
 
 ## 2026-10-11
+- Light matters (own pick): the surface is lit by day; at night and underground only powered lamps and burning fires light their radius. Work in the dark (building, mining, cutting, bills) is 20% slower; robots see in the dark. A mood thought for the dark was tried and cut: the 12-seed playtest went from 3 to 16 deaths (`packages/sim/src/light.ts`, `work.ts`, `bills.ts`; test in `packages/sim/test/nature.test.ts`).
 - Wood grows back (own pick, since fires and stoves now burn wood): a few wild shrubs sprout each dawn on open fertile ground at least 15 tiles from home. New crop "ash willow" for grow zones: about 9 days, 14 wood (`packages/sim/src/farming.ts` `sproutWild`; content, art, `ui/Toolbar.tsx`, i18n).
 - Graves (own pick): bodies are a new item category that stockpiles and chests never take. Dig a grave (no material); haulers bury one body in each, and a filled grave shows a mound and a cross. A body within 8 tiles gives "a body lies nearby" (-3), and a rotting one gives -7 (`packages/sim/src/hauling.ts`, `needs.ts`; `packages/data/src/schema.ts` `grave`, category `corpse`; content, art; `packages/client/src/render/dynamic.ts`, `main.ts`).
 - Spoilage shows (own pick): half-rotten food and bodies get small dark spots on the map; the inspect panel says how long until a stack spoils where it lies, or that it is frozen (`packages/sim/src/rot.ts` `daysToRot`; `packages/client/src/render/world.ts`, `textures.ts`, `main.ts`).
