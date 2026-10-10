@@ -3,8 +3,9 @@
  * Drawn with one Graphics object over the chunk layer.
  */
 import { Graphics } from "pixi.js";
-import { bankSize, crafterRecipe, DIRS4, isLit, jobProgress, isPowered, poleLinks, sourceFactor, type Game } from "@wc/sim";
+import { bankSize, crafterRecipe, DIRS4, isLit, jobProgress, isPowered, poleLinks, sourceFactor, type Game, type Thing } from "@wc/sim";
 import { TILE } from "./textures.ts";
+import { BATTERY_CELLS } from "./print/things.ts";
 
 /** Overlay colors for power networks. */
 const NET_COLORS = [0x4fc3f7, 0xffd54f, 0x81c784, 0xba68c8, 0xff8a65, 0x4db6ac, 0xf06292, 0xaed581];
@@ -16,6 +17,8 @@ export class DynamicRenderer {
   layer = 0;
   /** Power overlay: each network in its own color, machines without power outlined red. */
   powerOverlay = false;
+  /** Salvage Print style: machines draw their own direction arrows; batteries light cells (glow color, dark cell color). */
+  print: { glow: number; dark: number } | null = null;
 
   constructor(private game: Game) {
     this.lights.blendMode = "add";
@@ -106,7 +109,9 @@ export class DynamicRenderer {
       const fuel = d.power?.fuel ?? d.burns;
       if (fuel) chargeBar(g, px + 4, py + 2, fw * TILE - 8, 4, (t.fuel ?? 0) / fuel.capacity);
       // Charge bars: batteries, the robot bay and every machine's backup battery, red to yellow to green.
-      if (d.power?.store) chargeBar(g, px + 4, py + fh * TILE - 7, fw * TILE - 8, 4, (t.charge ?? 0) / d.power.store);
+      const cells = this.print && d.power?.store ? BATTERY_CELLS[d.id] : undefined;
+      if (cells) this.batteryCells(g, t, d.footprint, cells, (t.charge ?? 0) / d.power!.store, timeSec);
+      else if (d.power?.store) chargeBar(g, px + 4, py + fh * TILE - 7, fw * TILE - 8, 4, (t.charge ?? 0) / d.power.store);
       const bank = bankSize(game, t);
       if (bank > 0) {
         // Big banks (the robot bay) get a full bar; a small backup battery gets a thin one in the corner.
@@ -134,8 +139,9 @@ export class DynamicRenderer {
           g.moveTo(cxr - dy * 8, cyr - dx * 8).lineTo(cxr + dy * 8, cyr + dx * 8).stroke({ width: 2, color: 0x1b1714, alpha: 0.5 });
         }
       }
-      // Loaders and arms: a small pointer at the front edge, in the palette's rust brown.
-      if (d.rotatable && !d.belt) {
+      // Loaders and arms: a small pointer at the front edge, in the palette's rust brown (pixel style only:
+      // the print drawings carry their own arrow).
+      if (d.rotatable && !d.belt && !this.print) {
         const [dx, dy] = DIRS4[t.rot ?? 0];
         const fx = px + TILE / 2 + dx * 13, fy = py + TILE / 2 + dy * 13;
         g.poly([fx + dx * 3, fy + dy * 3, fx - dx * 2 - dy * 4, fy - dy * 2 + dx * 4, fx - dx * 2 + dy * 4, fy - dy * 2 - dx * 4])
@@ -190,6 +196,24 @@ export class DynamicRenderer {
     g.rect(x - 1, y - 10 + ph * 8, 2, 3).fill({ color: 0x9ec9e8, alpha: 1 - ph });
   }
 
+  /**
+   * Battery cells (print style): each cell is an equal share of the charge, so a full battery lights
+   * them all. The cell in use blinks while the network draws on the batteries.
+   */
+  private batteryCells(g: Graphics, t: Thing, fp: [number, number], cells: [number, number, number, number][], k: number, timeSec: number) {
+    const lit = Math.min(cells.length, Math.ceil(Math.max(0, k) * cells.length - 1e-6));
+    const netId = this.game.netOf.get(t.id);
+    const net = netId !== undefined ? this.game.nets[netId] : undefined;
+    const draining = !!net && net.use > net.produce && net.stored > 0;
+    for (let i = 0; i < lit; i++) {
+      if (i === lit - 1 && draining && Math.sin(timeSec * 6) < 0) continue;
+      const [u, v, w, h] = cells[i];
+      const [x0, y0] = local(t, fp[0], fp[1], u, v);
+      const [x1, y1] = local(t, fp[0], fp[1], u + w, v + h);
+      g.rect(Math.min(x0, x1) + 0.8, Math.min(y0, y1) + 0.8, Math.abs(x1 - x0) - 1.6, Math.abs(y1 - y0) - 1.6).fill(this.print!.glow);
+    }
+  }
+
   /** A turning gear mark for machines at work. */
   private gear(g: Graphics, x: number, y: number, a: number) {
     for (let k = 0; k < 4; k++) {
@@ -203,6 +227,13 @@ export class DynamicRenderer {
 /** Charge color: red when low, yellow in the middle, green when full (palette tones). */
 export function chargeColor(k: number): number {
   return k < 0.25 ? 0xd9472e : k < 0.6 ? 0xe3c25a : 0x9fd14a;
+}
+
+/** Map a point in a thing's unturned local units (64 per tile) to world units, for its rotation. */
+function local(t: { x: number; y: number; rot?: number }, w: number, h: number, u: number, v: number): [number, number] {
+  const W = w * 64, H = h * 64, r = t.rot ?? 0;
+  const [x, y] = r === 1 ? [H - v, u] : r === 2 ? [W - u, H - v] : r === 3 ? [v, W - u] : [u, v];
+  return [t.x * TILE + (x * TILE) / 64, t.y * TILE + (y * TILE) / 64];
 }
 
 /** A work progress bar: cream on a dark frame; `k` is 0..1. */

@@ -8,6 +8,15 @@ import { battery, bed, bench, conveyor } from "./sprites.ts";
 
 type Draw = (p: Print) => void;
 
+/**
+ * Battery cells in local units (unturned footprint), in the order they fill: each is an equal share of
+ * the charge (a full battery lights all of them). The texture draws them dark; the overlay lights them.
+ */
+export const BATTERY_CELLS: Record<string, [number, number, number, number][]> = {
+  battery: [3, 2, 1, 0].map((k) => [16, 18 + k * 22, 32, 16]),
+  large_battery: [2, 3, 0, 1].map((k) => [16 + (k % 2) * 52, 18 + Math.floor(k / 2) * 46, 44, 38]),
+};
+
 // ---------------------------------------------------------------- helpers
 
 /** A halftone cast shadow, down and to the right of a box. */
@@ -405,7 +414,7 @@ const electric_cooler: Draw = (p) => {
 const large_battery: Draw = (p) => {
   shadow(p, 6, 6, 116, 116, 6);
   p.shape(Print.rect(6, 6, 116, 116, 6), { fill: "slate", tone: { ink: "slateDark", amount: 0.35 }, line: true });
-  for (let k = 0; k < 4; k++) p.shape(Print.rect(16 + (k % 2) * 52, 18 + Math.floor(k / 2) * 46, 44, 38, 4), { fill: "glow", tone: { ink: "teal", amount: 0.3 }, line: 1.8 });
+  for (const [x, y, w, h] of BATTERY_CELLS.large_battery) p.shape(Print.rect(x, y, w, h, 4), { fill: "slateDark", line: 1.8 });
   p.shape(Print.rect(6, 108, 116, 10, 0), { fill: "rust", line: 1.6 });
 };
 const power_pole: Draw = (p) => {
@@ -437,7 +446,7 @@ export const PRINT_THINGS: Partial<Record<string, Draw>> = {
   reactor_console, school_bus, satellite_dish,
   card_table, horseshoe_pit, grave, electric_heater, electric_cooler, large_battery,
   power_pole, power_switch,
-  scrap_bed: (p) => bed(p), scrap_bench: (p) => bench(p), battery: (p) => battery(p, 0.75), conveyor: (p) => conveyor(p, 0),
+  scrap_bed: (p) => bed(p), scrap_bench: (p) => bench(p), battery: (p) => battery(p, 0), conveyor: (p) => conveyor(p, 0),
 };
 
 /** Wires and pipes, joined to their neighbors (mask: 1 N, 2 E, 4 S, 8 W). A lone piece draws a short bar. */

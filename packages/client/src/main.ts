@@ -28,6 +28,7 @@ import { downloadBytes, listSlots, readSlot, writeSlot } from "./storage.ts";
 import { TitleScreen } from "./ui/Screens.tsx";
 import { Camera } from "./input/camera.ts";
 import { PawnRenderer } from "./render/pawns.ts";
+import { INK_SETS } from "./render/print/kit.ts";
 import { FxRenderer } from "./render/fx.ts";
 import { DynamicRenderer } from "./render/dynamic.ts";
 import { loadAiArt } from "./render/aiArt.ts";
@@ -147,6 +148,13 @@ async function boot() {
   const renderer = new WorldRenderer(game, tex);
   world.addChild(renderer.root);
   const dyn = new DynamicRenderer(game);
+  // The overlay needs to know the style: print machines carry their own arrows, print batteries light cells.
+  const printInks = () => {
+    if (art.style !== "print") return null;
+    const inks = INK_SETS[art.palette] ?? INK_SETS.rust;
+    return { glow: parseInt(inks.glow.slice(1), 16), dark: parseInt(inks.slateDark.slice(1), 16) };
+  };
+  dyn.print = printInks();
   world.addChild(dyn.gfx);
   const tools = new ToolController(game, world);
   const pawnsR = new PawnRenderer(game, tex);
@@ -227,6 +235,7 @@ async function boot() {
     }
     tex = makeTextures(game.reg, art, ai);
     renderer.setTextures(tex);
+    dyn.print = printInks();
     pawnsR.setTextures(tex);
     store.set({ art: { ...art } });
   };
