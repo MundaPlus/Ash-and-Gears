@@ -124,6 +124,23 @@ describe("belt logistics (A1)", () => {
     expect(inside(g, chest).simple_meal ?? 0).toBeLessThan(3);
   });
 
+  it("an arm feeds a workbench from its input side and products go to a chest on its output side", () => {
+    const { g, x0, y0 } = setup("bench");
+    // Workbench 2x1, not turned: input side north, output side south.
+    const bench = g.spawnThing("scrap_bench", 0, x0 + 3, y0);
+    const feed = chestWith(g, x0 + 3, y0 - 2, { scrap: 36 });
+    g.spawnThing("robot_arm", 0, x0 + 3, y0 - 1, 1);
+    const out = chestWith(g, x0 + 3, y0 + 1, {});
+    const [crafter] = [...g.pawns.values()].filter((p) => p.faction === "colony");
+    crafter.work = Object.fromEntries(WORK_TYPES.map((w) => [w, w === "craft" ? 1 : 0]));
+    run(g, 2);
+    // The arm filled the bench buffer (two batches of 12 scrap).
+    expect(inside(g, feed).scrap ?? 0).toBeLessThan(36);
+    run(g, 18);
+    expect(inside(g, out).components ?? 0).toBeGreaterThan(0);
+    expect(bench.out?.[g.reg.items.idx("components")] ?? 0).toBe(0);
+  });
+
   it("chests, filters and crafter outputs survive a save", () => {
     const { g, x0, y0 } = setup("save");
     chestWith(g, x0, y0, { stone: 7 });

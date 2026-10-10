@@ -9,7 +9,7 @@
  */
 import type { RecipeDef } from "@wc/data";
 import { atGoal, findItem, goTo, isReserved, reserve } from "./ai.ts";
-import { matchesInput, recipesFor } from "./bills.ts";
+import { billTarget, matchesInput, recipesFor, stockOf } from "./bills.ts";
 import type { Game } from "./game.ts";
 import { chestStacks, dropItems, putInChest, takeFromStack } from "./items.ts";
 import { registerJob, registerWorkGiver } from "./jobs.ts";
@@ -64,6 +64,37 @@ export function crafterWants(game: Game, t: Thing, def: number): number {
 
 const total = (r?: Record<number, number>) => Object.values(r ?? {}).reduce((a, b) => a + b, 0);
 
+/**
+ * Bench sides (big machines): the output side faces south when not turned, the input side north.
+ * Both turn with the bench. Returns the outside tiles along that side.
+ */
+export function benchSide(game: Game, t: Thing, side: "in" | "out"): { x: number; y: number }[] {
+  const [dx, dy] = DIRS4[((t.rot ?? 0) + (side === "out" ? 1 : 3)) % 4];
+  const cover = game.footprint(t.def, t.x, t.y, t.rot);
+  const inside = new Set(cover.map((f) => `${f.x},${f.y}`));
+  return cover.map((f) => ({ x: f.x + dx, y: f.y + dy })).filter((n) => !inside.has(`${n.x},${n.y}`));
+}
+
+/** True if a belt, chest, loader or arm sits on the bench's output side (products then go out there). */
+export function benchFeedsOut(game: Game, t: Thing): boolean {
+  return benchSide(game, t, "out").some((pos) => {
+    const o = thingAt(game, t.layer, pos.x, pos.y);
+    const d = o ? game.reg.things.list[o.def] : null;
+    return !!d && (!!d.belt || !!d.chest || d.loader || d.arm);
+  });
+}
+
+/** How many of item `def` a bench takes into its input buffer: two batches for any bill that is still short. */
+export function benchWants(game: Game, t: Thing, def: number): number {
+  const benchId = game.reg.things.list[t.def].id;
+  let want = 0;
+  for (const r of recipesFor(game, benchId)) {
+    if (stockOf(game, r) >= billTarget(game, t, r)) continue;
+    for (const inp of r.inputs) if (matchesInput(game, inp, def)) want = Math.max(want, inp.count * 2);
+  }
+  return Math.max(0, want - (t.buffer?.[def] ?? 0));
+}
+
 /** Try to hand items to whatever is on a tile. Returns how many were accepted. */
 export function offer(game: Game, layer: number, x: number, y: number, def: number, count: number, contaminated: boolean): number {
   const t = thingAt(game, layer, x, y);
@@ -87,6 +118,11 @@ export function offer(game: Game, layer: number, x: number, y: number, def: numb
     return n;
   }
   if (t && d?.chest) return putInChest(game, t, def, count, contaminated);
+  if (t && d?.bench && !contaminated) {
+    const n = Math.min(count, benchWants(game, t, def));
+    if (n > 0) t.buffer = { ...(t.buffer ?? {}), [def]: (t.buffer?.[def] ?? 0) + n };
+    return n;
+  }
   // Loaders and arms are machines, not floor space.
   if (t && (d?.blocks || d?.loader || d?.arm)) return 0;
   if (!game.walkable(layer, x, y)) return 0;
@@ -114,7 +150,7 @@ function peek(game: Game, layer: number, x: number, y: number, only?: number): {
     const s = chestStacks(game, t).find((c) => only === undefined || c.def === only);
     return s ? { def: s.def, count: s.count, contaminated: !!s.contaminated, stack: s.id } : null;
   }
-  if (t && d?.autoCrafter) return pick(t.out);
+  if (t && (d?.autoCrafter || d?.bench)) return pick(t.out);
   if (t && (d?.blocks || d?.loader || d?.arm)) return null;
   const L = game.map.layers[layer];
   const sid = L.item[L.i(x, y)];
@@ -134,7 +170,7 @@ function take(game: Game, layer: number, x: number, y: number, def: number, n: n
   if (t && d?.belt && t.cargo) {
     t.cargo.count -= n;
     if (t.cargo.count <= 0) t.cargo = null;
-  } else if (t && d?.autoCrafter && t.out) from(t.out);
+  } else if (t && (d?.autoCrafter || d?.bench) && t.out) from(t.out);
   else if (stack !== undefined) takeFromStack(game, stack, n);
 }
 
@@ -187,6 +223,17 @@ export function tickLogistics(game: Game): void {
     if (d.belt) belts.push(t);
     else if (d.loader || d.arm) loaders.push(t);
     else if (d.autoCrafter) crafters.push(t);
+    else if (d.bench && t.out && game.tick % LOADER_EVERY === 0) {
+      // Bench products go out to belts and chests on the output side (arms also lift them out).
+      for (const pos of benchSide(game, t, "out"))
+        for (const [k, n] of Object.entries(t.out)) {
+          const o = thingAt(game, t.layer, pos.x, pos.y);
+          const od = o ? game.reg.things.list[o.def] : null;
+          if (!od || !(od.belt || od.chest)) continue;
+          const placed = offer(game, t.layer, pos.x, pos.y, Number(k), n, false);
+          if (placed > 0) take(game, t.layer, t.x, t.y, Number(k), placed);
+        }
+    }
   }
   // Belts: move cargo forward.
   for (const b of belts) {

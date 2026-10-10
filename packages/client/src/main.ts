@@ -391,6 +391,13 @@ async function boot() {
         lines.push(`${t("chest.title")} (${sim.chestCount(game, thing)}/${def.chest}): ${contents(inside) || t("chest.empty")}`);
       }
       if (def.autoCrafter && contents(thing.out)) lines.push(`${t("chest.title")}: ${contents(thing.out)}`);
+      if (def.bench) {
+        // Directions: 0 east, 1 south, 2 west, 3 north. Output side is south when not turned.
+        const r = thing.rot ?? 0;
+        lines.push(t("bench.sides", { in: t(`dir.${(r + 3) % 4}`), out: t(`dir.${(r + 1) % 4}`) }));
+        if (contents(thing.buffer)) lines.push(t("bench.buffer", { list: contents(thing.buffer) }));
+        if (contents(thing.out)) lines.push(t("bench.out", { list: contents(thing.out) }));
+      }
       if (def.arm || def.beltKind === "sort")
         filter = {
           thingId: thing.id,
