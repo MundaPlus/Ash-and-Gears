@@ -1007,5 +1007,10 @@
   "thing.electric_heater": "Electric heater",
   "thing.electric_heater.desc": "Warms a closed room while it has power. Uses 150 W.",
   "inspect.rot_days": "Spoils in about {n} here.",
-  "inspect.rot_frozen": "Frozen: it does not spoil here."
+  "inspect.rot_frozen": "Frozen: it does not spoil here.",
+  "stockpile.priority": "Priority",
+  "stockpile.prio_1": "Low",
+  "stockpile.prio_2": "Normal",
+  "stockpile.prio_3": "High",
+  "stockpile.prio_4": "Critical"
 }

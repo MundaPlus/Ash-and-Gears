@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadCoreContent } from "@wc/data";
-import { createZone, doTileAction, dropItems, Game, haulList, isLit, NO_THING, storedCount, tileActions, WORK_TYPES } from "../src/index.ts";
+import { createZone, doTileAction, dropItems, Game, haulList, isLit, NO_THING, setZonePriority, storedCount, tileActions, WORK_TYPES } from "../src/index.ts";
 
 const content = loadCoreContent();
 const run = (g: Game, hours: number) => {
@@ -99,5 +99,24 @@ describe("stored items and fires", () => {
     cook.work = Object.fromEntries(WORK_TYPES.map((w) => [w, w === "cook" ? 1 : 0]));
     run(g, 6);
     expect(stove.fuel!).toBeLessThan(10);
+  });
+});
+
+describe("stockpile priority (B9)", () => {
+  it("items move from a low stockpile to a high one, never back", () => {
+    const { g, x0, y0 } = setup("prio");
+    // The setup stockpile (x0..x0+1) is normal; a high one stands at the far end.
+    const high = createZone(g, "stockpile", 0, [{ x: x0 + 20, y: y0 }, { x: x0 + 21, y: y0 }]);
+    const low = drop(g, "scrap", 5, x0, y0);
+    expect(haulList(g).some((e) => e.id === low)).toBe(false);
+    setZonePriority(g, high.id, 3);
+    expect(haulList(g).some((e) => e.id === low)).toBe(true);
+    const pawns = [...g.pawns.values()].filter((p) => p.faction === "colony");
+    for (const p of pawns) p.work = Object.fromEntries(WORK_TYPES.map((w) => [w, w === "haul" ? 1 : 0]));
+    run(g, 3);
+    const L = g.map.layers[0];
+    const atHigh = [0, 1].map((k) => L.item[L.i(x0 + 20 + k, y0)]).filter((id) => id !== NO_THING).map((id) => g.items.get(id)!.count).reduce((a, b) => a + b, 0);
+    expect(atHigh).toBe(5);
+    expect(haulList(g).length).toBe(0);
   });
 });

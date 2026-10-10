@@ -11,7 +11,7 @@ export interface Inspect {
   /** Things to do on this tile (buttons); `first` is what the F key does. */
   actions?: { list: string[]; first: string | null };
   /** Stockpile under the tile: which item categories it takes. */
-  stockpile?: { zoneId: number; allow: string[] };
+  stockpile?: { zoneId: number; allow: string[]; priority: number };
   /** Beds: for prisoners or not. */
   prisonBed?: { thingId: number; on: boolean };
   /** Power consumers: priority; switches: on or off. */
@@ -266,6 +266,7 @@ export const actions = {
   togglePowerOverlay: () => {},
   setCapture: (_pawn: number, _on: boolean) => {},
   tileAction: (_action: string) => {},
+  setZonePriority: (_zone: number, _priority: number) => {},
   setZoneAllow: (_zone: number, _category: string, _on: boolean) => {},
   jumpTo: (_at: { layer: number; x: number; y: number }) => {},
   closeEnding: () => {},

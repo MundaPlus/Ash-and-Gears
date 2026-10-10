@@ -114,12 +114,31 @@ function findGrave(game: Game, p: Pawn | null, from: Pos): Pos | null {
   return best && (!p || game.path.canReach(from, best)) ? best : null;
 }
 
-/** Nearest stockpile tile or chest with room that can take this item (a grave for a corpse). */
-function findStorage(game: Game, p: Pawn, from: Pos, def: number, contaminated: boolean): Pos | null {
+/** Chests count as normal-priority storage. */
+const CHEST_PRIORITY = 2;
+export const zonePriority = (z: Zone) => z.priority ?? 2;
+
+/** Set a stockpile's priority (1 low .. 4 critical). */
+export function setZonePriority(game: Game, zoneId: number, priority: number): void {
+  const z = game.zones.get(zoneId);
+  if (!z || z.kind !== "stockpile") return;
+  z.priority = Math.max(1, Math.min(4, Math.round(priority)));
+  haulCache.delete(game);
+}
+
+/** Priority of where a stack is stored now: 0 when loose. */
+function storedPriority(game: Game, s: ItemStack): number {
+  if (s.chest !== undefined) return CHEST_PRIORITY;
+  const z = zoneAt(game, s.layer, s.x, s.y);
+  return z && accepts(game, z, s.def, !!s.contaminated) ? zonePriority(z) : 0;
+}
+
+/** Nearest stockpile tile or chest with room that can take this item (a grave for a corpse), better than `above`. */
+function findStorage(game: Game, p: Pawn, from: Pos, def: number, contaminated: boolean, above = 0): Pos | null {
   if (isCorpse(game, def)) return findGrave(game, p, from);
   let best: Pos | null = null, bestD = Infinity;
   // Chests take anything while they have room.
-  for (const t of game.things.values()) {
+  for (const t of above >= CHEST_PRIORITY ? [] : game.things.values()) {
     const cap = game.reg.things.list[t.def].chest;
     if (!cap || chestCount(game, t) >= cap || isReserved(game, `tile:${t.layer},${t.x},${t.y}`, p)) continue;
     const d = (t.x - from.x) ** 2 + (t.y - from.y) ** 2 + (t.layer !== from.layer ? 900 : 0);
@@ -129,7 +148,7 @@ function findStorage(game: Game, p: Pawn, from: Pos, def: number, contaminated: 
     }
   }
   for (const z of game.zones.values()) {
-    if (!accepts(game, z, def, contaminated)) continue;
+    if (!accepts(game, z, def, contaminated) || zonePriority(z) <= above) continue;
     const L = game.map.layers[z.layer];
     for (let i = 0; i < L.zone.length; i++) {
       if (L.zone[i] !== z.id) continue;
@@ -170,9 +189,13 @@ export interface HaulEntry {
 const HAUL_LIST_EVERY = 60;
 const haulCache = new WeakMap<Game, { at: number; list: HaulEntry[] }>();
 
-/** Loose stacks: not in a chest, not on a stockpile that takes them, not forbidden. */
+/** Stacks to haul: loose (not in a chest, not on a stockpile that takes them), or on a stockpile with a better one for them. Not forbidden. */
 function isLoose(game: Game, s: ItemStack): boolean {
-  return s.layer >= 0 && s.chest === undefined && !s.forbidden && !accepts(game, zoneAt(game, s.layer, s.x, s.y), s.def, !!s.contaminated);
+  if (s.layer < 0 || s.chest !== undefined || s.forbidden) return false;
+  const here = storedPriority(game, s);
+  if (here === 0) return true;
+  const cat = game.reg.items.list[s.def].category;
+  return [...game.zones.values()].some((z) => z.kind === "stockpile" && zonePriority(z) > here && z.allow.includes(cat));
 }
 
 /** What needs hauling, best first: urgent stacks, then the ones closest to storage. Internal (not shown to players). */
@@ -185,13 +208,14 @@ export function haulList(game: Game): HaulEntry[] {
     const cap = game.reg.things.list[t.def].chest;
     if (cap && chestCount(game, t) < cap) chests.push({ layer: t.layer, x: t.x, y: t.y });
   }
-  const tilesByCat = new Map<string, Pos[]>();
+  const tilesByCat = new Map<string, (Pos & { pr: number })[]>();
   for (const z of game.zones.values()) {
     if (z.kind !== "stockpile") continue;
     const L = game.map.layers[z.layer];
     const tiles: Pos[] = [];
     for (let i = 0; i < L.zone.length; i++) if (L.zone[i] === z.id) tiles.push({ layer: z.layer, x: i % L.w, y: Math.floor(i / L.w) });
-    for (const cat of z.allow) tilesByCat.set(cat, [...(tilesByCat.get(cat) ?? []), ...tiles]);
+    const pr = zonePriority(z);
+    for (const cat of z.allow) tilesByCat.set(cat, [...(tilesByCat.get(cat) ?? []), ...tiles.map((q) => ({ ...q, pr }))]);
   }
   const list: HaulEntry[] = [];
   if (chests.length || tilesByCat.size)
@@ -204,7 +228,9 @@ export function haulList(game: Game): HaulEntry[] {
         continue;
       }
       let best = Infinity;
-      for (const q of [...chests, ...(tilesByCat.get(game.reg.items.list[s.def].category) ?? [])]) {
+      const here = storedPriority(game, s);
+      for (const q of [...chests.map((c) => ({ ...c, pr: CHEST_PRIORITY })), ...(tilesByCat.get(game.reg.items.list[s.def].category) ?? [])]) {
+        if (q.pr <= here) continue;
         const d = Math.hypot(q.x - s.x, q.y - s.y) + (q.layer !== s.layer ? 30 : 0);
         if (d < best) best = d;
       }
@@ -231,7 +257,9 @@ export function canHaul(game: Game, stackId: number): boolean {
   if (isCorpse(game, s.def)) return !!findGrave(game, null, s);
   // Some chest with room, or some stockpile that takes the category (the haul list may be a few ticks old).
   const cat = game.reg.items.list[s.def].category;
-  if ([...game.zones.values()].some((z) => z.kind === "stockpile" && z.allow.includes(cat))) return true;
+  const here = storedPriority(game, s);
+  if ([...game.zones.values()].some((z) => z.kind === "stockpile" && zonePriority(z) > here && z.allow.includes(cat))) return true;
+  if (here >= CHEST_PRIORITY) return false;
   return [...game.things.values()].some((t) => {
     const cap = game.reg.things.list[t.def].chest;
     return !!cap && chestCount(game, t) < cap;
@@ -248,7 +276,7 @@ export function haulJob(game: Game, p: Pawn, urgentOnly: boolean): Job | null {
     // Among stacks at about the same distance from storage, prefer the ones near the hauler.
     if (tries++ > 12) break;
     if (!game.path.canReach(p, s)) continue;
-    const dest = findStorage(game, p, s, s.def, !!s.contaminated);
+    const dest = findStorage(game, p, s, s.def, !!s.contaminated, storedPriority(game, s));
     if (!dest) continue;
     if (!reserve(game, `item:${s.id}`, p)) continue;
     if (!reserve(game, `tile:${dest.layer},${dest.x},${dest.y}`, p)) {

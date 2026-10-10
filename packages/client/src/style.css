@@ -273,3 +273,5 @@ body.cinematic #ui { display: none; }
 .schedule .slot.s-sleep { border-left-color: #3d4a52; }
 .schedule .slot.s-joy { border-left-color: #7a8a4e; }
 .schedule .slot.picked { outline: 2px solid #efd8a4; color: #efd8a4; }
+.prio-row { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; margin-bottom: 6px; }
+.prio-row span { margin-right: 4px; color: #b0834e; }

@@ -106,6 +106,8 @@ export interface Zone {
   allow: string[];
   /** Crop def id (grow zones, M4). */
   crop?: string;
+  /** Stockpile priority (B9): 1 low, 2 normal (default), 3 high, 4 critical. Items move up to better stockpiles. */
+  priority?: number;
 }
 
 export class Layer {

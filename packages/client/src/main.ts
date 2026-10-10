@@ -270,6 +270,10 @@ async function boot() {
     sim.setResearch(game, id);
     store.set({ research: researchRows() });
   };
+  actions.setZonePriority = (zoneId, priority) => {
+    sim.setZonePriority(game, zoneId, priority);
+    if (inspected) inspectTile(inspected.x, inspected.y);
+  };
   actions.setZoneAllow = (zoneId, category, on) => {
     sim.setZoneAllow(game, zoneId, category, on);
     if (inspected) inspectTile(inspected.x, inspected.y);
@@ -502,7 +506,7 @@ async function boot() {
       }
     }
     const zoneHere = L.zone[i] !== sim.NO_THING ? game.zones.get(L.zone[i]) : undefined;
-    const stockpile = zoneHere?.kind === "stockpile" ? { zoneId: zoneHere.id, allow: [...zoneHere.allow] } : undefined;
+    const stockpile = zoneHere?.kind === "stockpile" ? { zoneId: zoneHere.id, allow: [...zoneHere.allow], priority: sim.zonePriority(zoneHere) } : undefined;
     const ta = sim.tileActions(game, renderer.layer, x, y);
     const actionsUi = ta.actions.length ? { list: ta.actions as string[], first: ta.first } : undefined;
     store.set({ inspect: { title, lines, bills, crafter, filter, power, prisonBed, actions: actionsUi, stockpile } });

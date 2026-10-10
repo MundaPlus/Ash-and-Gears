@@ -201,6 +201,14 @@ export function Hud() {
           {s.inspect.stockpile && (
             <div class="bills" data-testid="stockpile">
               <h3>{t("stockpile.title")}</h3>
+              <div class="prio-row">
+                <span>{t("stockpile.priority")}</span>
+                {[1, 2, 3, 4].map((n) => (
+                  <button key={n} class={s.inspect!.stockpile!.priority === n ? "on" : ""} data-testid={`stock-prio-${n}`} onClick={() => actions.setZonePriority(s.inspect!.stockpile!.zoneId, n)}>
+                    {t(`stockpile.prio_${n}`)}
+                  </button>
+                ))}
+              </div>
               {STOCK_CATEGORIES.map((c) => {
                 const on = s.inspect!.stockpile!.allow.includes(c);
                 return (
