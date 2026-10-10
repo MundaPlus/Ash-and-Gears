@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadCoreContent } from "@wc/data";
-import { dropItems, Game, loadGame, makeRobot, NO_THING, robotCount, saveGame, workPriority, WORK_TYPES } from "../src/index.ts";
+import { dropItems, Game, hackRobot, loadGame, makeHostile, makeRobot, NO_THING, robotCount, saveGame, workPriority, WORK_TYPES } from "../src/index.ts";
 
 const content = loadCoreContent();
 const run = (g: Game, hours: number) => {
@@ -62,5 +62,49 @@ describe("robots (A7)", () => {
     run(g, 6);
     const L = g.map.layers[0];
     expect(L.item[L.i(x0 + 3, y0 + 3)]).toBe(NO_THING);
+  });
+});
+
+describe("tier 4 robots (B6)", () => {
+  it("each specialist does only its own work", () => {
+    const { g, x0, y0 } = setup("t4");
+    const kinds = { builder_bot: "construct", miner_bot: "mine", farmer_bot: "grow", guard_bot: "firefight" } as const;
+    for (const [kind, work] of Object.entries(kinds)) {
+      const bot = makeRobot(g, kind, 0, x0 + 2, y0 + 2);
+      expect(workPriority(bot, work)).toBeGreaterThan(0);
+      expect(workPriority(bot, "cook")).toBe(0);
+      expect(workPriority(bot, "research")).toBe(0);
+    }
+  });
+
+  it("a guard robot drafts itself against a raider and stands down after", () => {
+    const { g, x0, y0 } = setup("guard");
+    const bot = makeRobot(g, "guard_bot", 0, x0 + 2, y0 + 2);
+    g.pawns.set(bot.id, bot);
+    const gid = g.newId();
+    g.groups.set(gid, { id: gid, kind: "raid", size: 1, fleeing: false, arrived: g.tick });
+    const raider = makeHostile(g, "human", "raiders", 0, x0 + 8, y0 + 2, gid, "pipe");
+    g.pawns.set(raider.id, raider);
+    run(g, 0.5);
+    expect(bot.guarding || raider.health.downed || !g.pawns.has(raider.id)).toBe(true);
+    run(g, 6);
+    expect(raider.health.downed || !g.pawns.has(raider.id)).toBe(true);
+    run(g, 0.5);
+    expect(bot.drafted).toBe(false);
+  });
+
+  it("raiders can hack a robot; the hack wears off", () => {
+    const { g, x0, y0 } = setup("hack");
+    const bot = makeRobot(g, "builder_bot", 0, x0 + 2, y0 + 2);
+    g.pawns.set(bot.id, bot);
+    const gid = g.newId();
+    g.groups.set(gid, { id: gid, kind: "raid", size: 1, fleeing: false, arrived: g.tick });
+    expect(hackRobot(g, gid)?.id).toBe(bot.id);
+    expect(bot.faction).toBe("raiders");
+    expect(g.messages.some((m) => m.key === "msg.robot_hacked")).toBe(true);
+    run(g, 13);
+    expect(g.pawns.has(bot.id)).toBe(true);
+    expect(bot.faction).toBe("colony");
+    expect(bot.hackedAt).toBeUndefined();
   });
 });

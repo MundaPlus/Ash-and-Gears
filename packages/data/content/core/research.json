@@ -205,5 +205,13 @@
   "prereqs": [
    "radio_tech"
   ]
+ },
+ {
+  "id": "advanced_robotics",
+  "cost": 7000,
+  "tier": 4,
+  "prereqs": [
+   "robotics"
+  ]
  }
 ]

@@ -111,6 +111,10 @@ export interface Pawn {
   robot?: boolean;
   /** Robot charge 0..1. */
   charge?: number;
+  /** A guard robot that drafted itself (B6); the player's own drafting is left alone. */
+  guarding?: boolean;
+  /** Tick raiders hacked this robot (B6); it fights for them until the hack wears off. */
+  hackedAt?: number;
   /** What this survivor did, for the ending slides (Beta). */
   stats?: { kills?: number; rescues?: number; built?: number; crafted?: number };
   /** Named faction this raider, trader or prisoner belongs to (A9). */

@@ -3,6 +3,7 @@
  * after a threat comes a calm spell. Sliders scale raids, mutants and radiation clouds.
  * Grandma Grit waits longer between threats; Doctor Chaos ignores the calm spells.
  */
+import { hackRobot } from "./robots.ts";
 import type { FactionDef } from "@wc/data";
 import { equipRaider, raidingFaction, relationOf, sendCaravan } from "./factions.ts";
 import type { Game } from "./game.ts";
@@ -100,6 +101,8 @@ function spawnGroup(game: Game, kind: "raid" | "rad_rats" | "glow_hounds", size:
     }
     game.pawns.set(p.id, p);
   }
+  // Later raiders carry hacking gear: a third of raids take over one colony robot (B6).
+  if (kind === "raid" && day >= 20 && game.aiRng.next() < 0.33) hackRobot(game, id);
   return { layer: 0, x: at.x, y: at.y };
 }
 

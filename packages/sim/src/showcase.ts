@@ -133,14 +133,15 @@ export function buildShowcase(game: Game): void {
   put("power_pole", hx - 11, hy - 13);
   put("wire", hx - 11, hy - 12);
 
-  // Robots (A7): a powered robot bay with a robot and a hauler drone.
+  // Robots (A7, B6): a powered robot bay with one robot of each kind.
   put("robot_bay", hx + 12, hy - 8);
   put("solar_panel", hx + 14, hy - 8);
   put("wind_turbine", hx + 14, hy - 6);
   const bat3 = put("battery", hx + 16, hy - 8);
   if (bat3) bat3.charge = 2400;
-  for (const kind of ["robot", "hauler_drone"]) {
-    const bot = makeRobot(game, kind, 0, hx + 11, hy - 5);
+  game.research.done.add("advanced_robotics");
+  for (const [k, kind] of ["robot", "hauler_drone", "builder_bot", "miner_bot", "farmer_bot", "guard_bot"].entries()) {
+    const bot = makeRobot(game, kind, 0, hx + 9 + k, hy - 5);
     game.pawns.set(bot.id, bot);
   }
 

@@ -350,5 +350,109 @@
   "work": 2500,
   "skill": "technology",
   "target": 1
+ },
+ {
+  "id": "build_builder_bot",
+  "benches": [
+   "robot_bay"
+  ],
+  "inputs": [
+   {
+    "item": "steel",
+    "count": 18
+   },
+   {
+    "item": "electronics",
+    "count": 3
+   },
+   {
+    "item": "components",
+    "count": 5
+   }
+  ],
+  "output": {},
+  "spawn": "builder_bot",
+  "work": 1800,
+  "skill": "technology",
+  "target": 0,
+  "research": "advanced_robotics"
+ },
+ {
+  "id": "build_miner_bot",
+  "benches": [
+   "robot_bay"
+  ],
+  "inputs": [
+   {
+    "item": "steel",
+    "count": 22
+   },
+   {
+    "item": "electronics",
+    "count": 3
+   },
+   {
+    "item": "components",
+    "count": 4
+   }
+  ],
+  "output": {},
+  "spawn": "miner_bot",
+  "work": 1800,
+  "skill": "technology",
+  "target": 0,
+  "research": "advanced_robotics"
+ },
+ {
+  "id": "build_farmer_bot",
+  "benches": [
+   "robot_bay"
+  ],
+  "inputs": [
+   {
+    "item": "steel",
+    "count": 12
+   },
+   {
+    "item": "electronics",
+    "count": 3
+   },
+   {
+    "item": "components",
+    "count": 3
+   }
+  ],
+  "output": {},
+  "spawn": "farmer_bot",
+  "work": 1800,
+  "skill": "technology",
+  "target": 0,
+  "research": "advanced_robotics"
+ },
+ {
+  "id": "build_guard_bot",
+  "benches": [
+   "robot_bay"
+  ],
+  "inputs": [
+   {
+    "item": "steel",
+    "count": 25
+   },
+   {
+    "item": "electronics",
+    "count": 5
+   },
+   {
+    "item": "components",
+    "count": 6
+   }
+  ],
+  "output": {},
+  "spawn": "guard_bot",
+  "work": 1800,
+  "skill": "technology",
+  "target": 0,
+  "research": "advanced_robotics"
  }
 ]
