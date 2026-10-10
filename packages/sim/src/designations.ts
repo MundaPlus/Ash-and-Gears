@@ -26,15 +26,30 @@ export function canDesignate(game: Game, kind: DesigKind, layer: number, x: numb
     case "cut":
       return thing?.kind === "plant";
     case "salvage":
-      // Only ruins, wrecks and junk. A drag over the base never takes it apart. Stairs stay.
-      return !!thing && thing.kind !== "plant" && thing.kind !== "stairs" && !thing.build && !!thing.yield;
+      // Every old structure (ruins, wrecks, junk, the bunker). A drag over the base never takes it apart.
+      // Only things that span several floors stay (stairs; later the floors of towers).
+      return !!thing && thing.kind !== "plant" && !spansFloors(thing) && !thing.build && !!thing.yield;
     case "deconstruct":
       // Player-built things, with a separate order.
-      return !!thing && thing.kind !== "stairs" && !!thing.build;
+      return !!thing && !spansFloors(thing) && !!thing.build;
     case "unfloor":
-      // A built floor (not while a new floor plan waits on it).
-      return L.floor[L.i(x, y)] > 0 && L.blueprint[L.i(x, y)] === NO_THING;
+      // A built floor, or an old floor (ruin, bunker, asphalt) with nothing on it. Not while a floor plan waits on it.
+      if (L.blueprint[L.i(x, y)] !== NO_THING) return false;
+      return L.floor[L.i(x, y)] > 0 || (!!td.unfloorTo && !thing);
   }
+}
+
+/** Things that link floors (stairs) never come apart: the layer above or below would lose its way. */
+function spansFloors(def: { kind: string; stairs?: number }): boolean {
+  return def.kind === "stairs" || !!def.stairs;
+}
+
+/** Old floor under a tile that "remove floor" can take up (only when no built floor lies on it). */
+function oldFloor(game: Game, layer: number, x: number, y: number) {
+  const L = game.map.layers[layer];
+  if (L.floor[L.i(x, y)] > 0) return undefined;
+  const td = game.reg.terrain.list[L.terrain[L.i(x, y)]];
+  return td.unfloorTo ? td : undefined;
 }
 
 export function designate(game: Game, kind: DesigKind, layer: number, x: number, y: number): boolean {
@@ -187,17 +202,31 @@ registerTask("unfloor", {
   skill: "construction",
   xp: 0.2,
   total: (game, job) => {
-    const L = game.map.layers[job.target!.layer];
-    const f = L.floor[L.i(job.target!.x, job.target!.y)];
-    return f > 0 ? Math.ceil(game.reg.floors.list[f - 1].build.work / 2) : 1;
+    const t = job.target!;
+    const L = game.map.layers[t.layer];
+    const f = L.floor[L.i(t.x, t.y)];
+    if (f > 0) return Math.ceil(game.reg.floors.list[f - 1].build.work / 2);
+    return Math.ceil((oldFloor(game, t.layer, t.x, t.y)?.work ?? 2) / 2);
   },
-  valid: (game, job) => desigAt(game, job) === Desig.unfloor && game.map.layers[job.target!.layer].floor[game.map.layers[job.target!.layer].i(job.target!.x, job.target!.y)] > 0,
+  valid: (game, job) => {
+    const t = job.target!;
+    const L = game.map.layers[t.layer];
+    return desigAt(game, job) === Desig.unfloor && (L.floor[L.i(t.x, t.y)] > 0 || !!oldFloor(game, t.layer, t.x, t.y));
+  },
   complete: (game, _p, job) => {
     const t = job.target!;
     const L = game.map.layers[t.layer];
     const i = L.i(t.x, t.y);
-    const def = game.reg.floors.list[L.floor[i] - 1];
     undesignate(game, t.layer, t.x, t.y);
+    if (L.floor[i] === 0) {
+      // An old floor: the ground below comes up, with a little stone or scrap.
+      const td = oldFloor(game, t.layer, t.x, t.y);
+      if (!td) return;
+      game.setTerrain(t.layer, t.x, t.y, td.unfloorTo!);
+      dropYield(game, td.unfloorYield, 1, t.layer, t.x, t.y);
+      return;
+    }
+    const def = game.reg.floors.list[L.floor[i] - 1];
     L.floor[i] = 0;
     L.touch(t.x, t.y);
     game.mapVersion++;

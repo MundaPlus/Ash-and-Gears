@@ -25,7 +25,11 @@
  {
   "id": "asphalt",
   "color": "#46403b",
-  "walkCost": 0.8
+  "walkCost": 0.8,
+  "unfloorTo": "dirt",
+  "unfloorYield": {
+   "stone": 1
+  }
  },
  {
   "id": "rubble",
@@ -42,7 +46,12 @@
  {
   "id": "ruin_floor",
   "color": "#9a8e7e",
-  "walkCost": 0.9
+  "walkCost": 0.9,
+  "unfloorTo": "dirt",
+  "unfloorYield": {
+   "stone": 1,
+   "scrap": 1
+  }
  },
  {
   "id": "sludge",
@@ -109,6 +118,11 @@
  {
   "id": "bunker_floor",
   "color": "#6f7a80",
-  "walkCost": 0.8
+  "walkCost": 0.8,
+  "unfloorTo": "rough_floor",
+  "unfloorYield": {
+   "steel": 1,
+   "scrap": 1
+  }
  }
 ]

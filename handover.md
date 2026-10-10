@@ -10,6 +10,15 @@ The user wants a full post-apocalyptic colony + automation game (RimWorld + Fact
   - N3 sim part: `Zone.allowItems`, `zoneTakes`, `setZoneItem`, `setZoneFilter` (`hauling.ts`, `tileactions.ts`, `map.ts`).
 - Checks at the end: 127 unit tests pass, 14 e2e pass, build OK.
 
+## First: restart the running services
+Do this at the start of the new session, before any other work:
+1. `cd /home/marko/git_projects/game && git checkout develop && git pull --ff-only origin develop`
+2. `npm install` (only if `package-lock.json` changed)
+3. `npm run build` (the preview serves `packages/client/dist`)
+4. `systemctl --user restart wasteland-colony` — systemd user service, vite preview on 0.0.0.0:4173 from `packages/client` (unit file `~/.config/systemd/user/wasteland-colony.service`)
+5. Check: `systemctl --user status wasteland-colony --no-pager` shows "active (running)", and `curl -s -o /dev/null -w "%{http_code}" http://192.168.31.215:4173/` gives 200.
+6. GitHub Pages needs no restart: it deploys on every push to GitHub `main`.
+
 ## Current state
 - Working tree clean after the last commit. Preview service at http://192.168.31.215:4173/ (LAN); live on https://mundaplus.github.io/Ash-and-Gears/ (deploys from GitHub `main`).
 - The user's own saved game gets the stairs and bunker route on its next load (ensureLinks in loadGame).
@@ -22,9 +31,10 @@ The user wants a full post-apocalyptic colony + automation game (RimWorld + Fact
 ## Next steps
 1. Add unit tests for `ensureLinks`: (a) a new game: surface stairs reach the bunker door; (b) remove the surface `stairs_down`, save + load → it is back; (c) Mall Rats keeps stairs.
 2. Finish N3 UI: in the stockpile panel (`packages/client/src/ui/Hud.tsx`, inspect `stockpile` from `main.ts`): per-category ▸ that opens item toggles (`setZoneItem`), category state on/partial, "Copy filter" / "Paste filter" (client clipboard → `setZoneFilter`); i18n keys; unit test for `zoneTakes` with `allowItems` (a scrap-only stockpile next to a loader).
-3. N2 weapon and armor tiers, then N1 towers with upper floors and sealed enemy rooms (plans in `docs/spec/14-next-phase.md`).
-4. Phone app (PWA).
-5. Keep finding realism/clarity/QoL gaps unasked (memory "feedback-gameplay-depth").
+3. New user request (not started): let the player remove floors that were not built by the colony (old floors of ancient structures, e.g. `ruin_floor`/`bunker_floor` terrain and ruin floors), and let everything be salvaged except structures that span several floors (stairs and, later, multi-story towers). Today `unfloor` only takes up built floors (`designations.ts` `canDesignate` case "unfloor") and salvage skips `stairs` and player-built things.
+4. N2 weapon and armor tiers, then N1 towers with upper floors and sealed enemy rooms (plans in `docs/spec/14-next-phase.md`).
+5. Phone app (PWA).
+6. Keep finding realism/clarity/QoL gaps unasked (memory "feedback-gameplay-depth").
 
 ## Key files
 - `docs/spec/14-next-phase.md` — plan, progress, N1–N3.

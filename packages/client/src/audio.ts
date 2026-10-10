@@ -1,5 +1,6 @@
 /**
- * Procedural audio with the Web Audio API (spec 09). No files: everything is synthesized.
+ * Audio with the Web Audio API (spec 09). Music: generated songs streamed from `music/*.mp3`, with a
+ * synthesizer when no song files exist. Sound effects are synthesized.
  * Music adapts to the situation (calm, tense, combat, night) and to the tech tier
  * (tier 0-1: dusty western / folk; tier 2+: folk with dark ambient synth pads).
  * Audio starts only after the first click or key press (browser autoplay rules).
@@ -15,12 +16,16 @@ const BEAT = 0.42; // seconds per beat (about 140 bpm in eighths)
 
 /** Generated songs per mood (YuE2 via ComfyUI, `tools/audio/comfy-music.ts`). Missing files are skipped. */
 const POOLS: Record<string, string[]> = {
-  calm: ["calm_western", "calm_folk", "calm_western_2", "calm_folk_2", "calm_desert"],
-  calm_tech: ["calm_tech", "calm_tech_2", "calm_desert"],
-  night: ["night_ambient", "night_ambient_2"],
-  tense: ["tense", "tense_2"],
-  combat: ["combat", "combat_2"],
+  calm: ["calm_western", "calm_folk", "calm_western_2", "calm_folk_2", "calm_desert", "calm_western_3", "calm_folk_3", "calm_harmonica", "calm_desert_2"],
+  calm_tech: ["calm_tech", "calm_tech_2", "calm_desert", "calm_tech_3", "calm_tech_4", "calm_desert_2"],
+  night: ["night_ambient", "night_ambient_2", "night_ambient_3", "night_ambient_4"],
+  tense: ["tense", "tense_2", "tense_3"],
+  combat: ["combat", "combat_2", "combat_3"],
 };
+/** Quiet seconds between two songs (not in combat), so the music does not run on without a break. */
+const GAP_MIN = 12, GAP_MAX = 30;
+/** Seconds of crossfade at the end of a song or when combat cuts in. */
+const FADE = 3.5;
 
 /** Sound effect names. */
 export type Sfx = "shot" | "turret" | "hit" | "melee" | "build" | "salvage" | "mine" | "chop" | "rustle" | "click" | "alert" | "bad" | "geiger" | "done";
@@ -38,9 +43,17 @@ export class Audio {
   tier = 0;
   /** In-game day, to alternate calm tracks. */
   day = 1;
-  /** Generated music tracks (YuE2 via ComfyUI), by id. Missing ones fall back to the synthesizer. */
-  private tracks = new Map<string, AudioBuffer>();
-  private playing: { id: string; src: AudioBufferSourceNode; gain: GainNode; started: number } | null = null;
+  /** Generated songs that exist on the server (YuE2 via ComfyUI). Missing ones fall back to the synthesizer. */
+  private tracks = new Set<string>();
+  /**
+   * The song playing now. Songs stream from their files (an <audio> element each), so only the
+   * playing songs take memory, not every decoded song at once.
+   */
+  private playing: { id: string; el: HTMLAudioElement; node: MediaElementAudioSourceNode; gain: GainNode } | null = null;
+  /** No song before this time (context seconds): the quiet gap after a song. */
+  private gapUntil = 0;
+  /** Called when the song changes (its id, or null in a gap), for the song name in the HUD. */
+  onSong: ((id: string | null) => void) | null = null;
   volume = { music: 0.6, sfx: 0.7 };
   private lastSfx = new Map<string, number>();
 
@@ -69,17 +82,16 @@ export class Audio {
     void this.loadTracks();
   }
 
-  /** Load the generated tracks that exist on the server. */
+  /** Find the generated songs that exist on the server (a HEAD request each; nothing is downloaded yet). */
   private async loadTracks() {
     const ids = [...new Set(Object.values(POOLS).flat())];
     await Promise.all(
       ids.map(async (id) => {
         try {
-          const r = await fetch(`music/${id}.mp3`);
-          if (!r.ok) return;
-          this.tracks.set(id, await this.ctx!.decodeAudioData(await r.arrayBuffer()));
+          const r = await fetch(`music/${id}.mp3`, { method: "HEAD" });
+          if (r.ok && (r.headers.get("content-type") ?? "audio").includes("audio")) this.tracks.add(id);
         } catch {
-          // No file or no decoder: the synthesizer covers this mood.
+          // No file: the synthesizer covers this mood.
         }
       }),
     );
@@ -88,44 +100,90 @@ export class Audio {
   /** Next track index per pool, so each mood rotates through its songs. */
   private poolNext: Record<string, number> = {};
 
-  /** Which generated track fits the moment, or null to use the synthesizer. Keeps the song until it ends. */
-  private pickTrack(): string | null {
-    const pool = this.mood === "calm" ? (this.tier >= 2 ? "calm_tech" : "calm") : this.mood;
+  private poolNow(): string {
+    return this.mood === "calm" ? (this.tier >= 2 ? "calm_tech" : "calm") : this.mood;
+  }
+
+  private songsFor(pool: string): string[] {
     let have = (POOLS[pool] ?? []).filter((id) => this.tracks.has(id));
     // Calm moods can borrow any calm song.
-    if (!have.length && this.mood === "calm") have = [...POOLS.calm, ...POOLS.calm_tech].filter((id) => this.tracks.has(id));
-    if (!have.length) return null;
-    const p = this.playing;
-    const nearEnd = p && this.ctx!.currentTime > p.started + p.src.buffer!.duration - 3.5;
-    if (p && have.includes(p.id) && !nearEnd) return p.id;
-    // The next song of the pool, not the one that just played.
+    if (!have.length && (pool === "calm" || pool === "calm_tech")) have = [...POOLS.calm, ...POOLS.calm_tech].filter((id) => this.tracks.has(id));
+    return have;
+  }
+
+  /** The next song of a pool, not the one that just played. */
+  private nextSong(pool: string, have: string[], last: string | null): string {
     let i = this.poolNext[pool] ?? Math.floor(this.day) % have.length;
-    if (have.length > 1 && have[i % have.length] === p?.id) i++;
+    if (have.length > 1 && have[i % have.length] === last) i++;
     this.poolNext[pool] = i + 1;
     return have[i % have.length];
   }
 
-  /** Crossfade to a generated track (or stop it with null). Tracks loop by crossfading into themselves. */
-  private crossfade(id: string | null) {
+  /** True when the playing song is about to end (or has ended). */
+  private songEnding(): boolean {
+    const el = this.playing?.el;
+    if (!el) return false;
+    return el.ended || (Number.isFinite(el.duration) && el.duration > 0 && el.currentTime > el.duration - FADE);
+  }
+
+  /**
+   * Song choice (user: "they rotate too frequently"). A song plays to its end, even when day turns to
+   * night or danger shows up; then a quiet gap, then the next song for the mood of that moment.
+   * Only combat cuts in at once.
+   * Returns false when no generated songs exist (the synthesizer plays instead).
+   */
+  private updateSongs(): boolean {
     const c = this.ctx!;
+    const pool = this.poolNow();
+    const have = this.songsFor(pool);
+    if (!this.tracks.size) return false;
     const p = this.playing;
-    const nearEnd = p && c.currentTime > p.started + p.src.buffer!.duration - 3.5;
-    if (p?.id === id && !nearEnd) return;
-    if (this.playing) {
-      const old = this.playing;
-      old.gain.gain.setTargetAtTime(0.0001, c.currentTime, 1);
-      old.src.stop(c.currentTime + 4);
-      this.playing = null;
+    const combatCut = pool === "combat" && have.length && p && !POOLS.combat.includes(p.id);
+    if (p && (this.songEnding() || combatCut)) {
+      this.stopSong();
+      // Combat starts at once; other songs leave a quiet moment first.
+      this.gapUntil = combatCut || pool === "combat" ? 0 : c.currentTime + GAP_MIN + Math.random() * (GAP_MAX - GAP_MIN);
+      this.lastId = p.id;
     }
-    if (!id) return;
-    const src = c.createBufferSource();
-    src.buffer = this.tracks.get(id)!;
+    if (!this.playing && c.currentTime >= this.gapUntil && have.length) this.playSong(this.nextSong(pool, have, this.lastId));
+    return true;
+  }
+  private lastId: string | null = null;
+
+  private playSong(id: string) {
+    const c = this.ctx!;
+    const el = new window.Audio(`music/${id}.mp3`);
+    el.preload = "auto";
+    const node = c.createMediaElementSource(el);
     const gain = c.createGain();
     gain.gain.value = 0.0001;
     gain.gain.setTargetAtTime(0.8, c.currentTime, 1);
-    src.connect(gain).connect(this.music);
-    src.start();
-    this.playing = { id, src, gain, started: c.currentTime };
+    node.connect(gain).connect(this.music);
+    void el.play().catch(() => {});
+    // A file that fails to load: forget it, the next update picks another.
+    el.onerror = () => {
+      this.tracks.delete(id);
+      if (this.playing?.el === el) this.stopSong();
+    };
+    this.playing = { id, el, node, gain };
+    this.onSong?.(id);
+  }
+
+  private stopSong() {
+    const c = this.ctx!;
+    const old = this.playing;
+    if (!old) return;
+    this.playing = null;
+    old.gain.gain.setTargetAtTime(0.0001, c.currentTime, 1);
+    setTimeout(() => {
+      old.el.pause();
+      old.node.disconnect();
+      old.gain.disconnect();
+      // Drop the file so the browser frees its buffer.
+      old.el.removeAttribute("src");
+      old.el.load();
+    }, 4500);
+    this.onSong?.(null);
   }
 
   setVolume(kind: "music" | "sfx", v: number): void {
@@ -271,10 +329,8 @@ export class Audio {
   update(): void {
     const c = this.ctx;
     if (!c || c.state !== "running") return;
-    const track = this.pickTrack();
-    this.crossfade(track);
-    if (track) {
-      // A generated track is playing: keep the synthesizer quiet.
+    if (this.updateSongs()) {
+      // Generated songs exist: they play (or a quiet gap runs); keep the synthesizer quiet.
       this.setDrone(false);
       this.nextBeat = c.currentTime + 0.25;
       return;

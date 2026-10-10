@@ -16,8 +16,13 @@ export interface Inspect {
   crafter?: { thingId: number; current: string | null; options: string[]; needs?: Record<string, string> };
   /** Things to do on this tile (buttons); `first` is what the F key does. */
   actions?: { list: string[]; first: string | null };
-  /** Stockpile under the tile: which item categories it takes. */
-  stockpile?: { zoneId: number; allow: string[]; priority: number };
+  /** Stockpile under the tile: which categories and items it takes; `canPaste` = a copied filter waits. */
+  stockpile?: {
+    zoneId: number;
+    priority: number;
+    cats: { id: string; state: "on" | "partial" | "off"; items: { id: string; on: boolean }[] }[];
+    canPaste: boolean;
+  };
   /** Beds: for prisoners or not. */
   prisonBed?: { thingId: number; on: boolean };
   /** Power consumers: priority; switches: on or off. */
@@ -162,6 +167,8 @@ export interface UiState {
   layer: number;
   layerCount: number;
   clock: string;
+  /** The song playing now (music id), or null between songs. */
+  song: string | null;
   season: string;
   seed: string;
   fps: number;
@@ -221,6 +228,7 @@ class Store {
     caravan: null,
     powerOverlay: false,
     clock: "",
+    song: null,
     season: "",
     seed: "",
     fps: 0,
@@ -280,6 +288,9 @@ export const actions = {
   queueUp: (_bench: number, _index: number) => {},
   setZonePriority: (_zone: number, _priority: number) => {},
   setZoneAllow: (_zone: number, _category: string, _on: boolean) => {},
+  setZoneItem: (_zone: number, _item: string, _on: boolean) => {},
+  copyZoneFilter: (_zone: number) => {},
+  pasteZoneFilter: (_zone: number) => {},
   jumpTo: (_at: { layer: number; x: number; y: number }) => {},
   closeEnding: () => {},
   sendExpedition: (_site: number, _pawns: number[], _outpost: boolean) => {},

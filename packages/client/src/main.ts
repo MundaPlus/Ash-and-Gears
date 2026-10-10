@@ -251,6 +251,7 @@ async function boot() {
   };
   // ---------------------------------------------------------------- audio
   const audio = new Audio();
+  audio.onSong = (song) => store.set({ song });
   let prefs: { music?: number; sfx?: number; ui?: number };
   try {
     prefs = JSON.parse(localStorage.getItem("wc-prefs") ?? "{}");
@@ -341,6 +342,21 @@ async function boot() {
   };
   actions.setZoneAllow = (zoneId, category, on) => {
     sim.setZoneAllow(game, zoneId, category, on);
+    if (inspected) inspectTile(inspected.x, inspected.y);
+  };
+  actions.setZoneItem = (zoneId, item, on) => {
+    sim.setZoneItem(game, zoneId, item, on);
+    if (inspected) inspectTile(inspected.x, inspected.y);
+  };
+  actions.copyZoneFilter = (zoneId) => {
+    const z = game.zones.get(zoneId);
+    if (!z) return;
+    zoneClipboard = { allow: [...z.allow], ...(z.allowItems ? { allowItems: [...z.allowItems] } : {}) };
+    if (inspected) inspectTile(inspected.x, inspected.y);
+  };
+  actions.pasteZoneFilter = (zoneId) => {
+    if (!zoneClipboard) return;
+    sim.setZoneFilter(game, zoneId, zoneClipboard);
     if (inspected) inspectTile(inspected.x, inspected.y);
   };
   actions.jumpTo = (at) => {
@@ -605,7 +621,7 @@ async function boot() {
       }
     }
     const zoneHere = L.zone[i] !== sim.NO_THING ? game.zones.get(L.zone[i]) : undefined;
-    const stockpile = zoneHere?.kind === "stockpile" ? { zoneId: zoneHere.id, allow: [...zoneHere.allow], priority: sim.zonePriority(zoneHere) } : undefined;
+    const stockpile = zoneHere?.kind === "stockpile" ? stockpileUi(zoneHere) : undefined;
     const ta = sim.tileActions(game, renderer.layer, x, y);
     const actionsUi = ta.actions.length ? { list: ta.actions as string[], first: ta.first } : undefined;
     // Any zone tile: grow or shrink this zone with the zone tools.
@@ -613,6 +629,18 @@ async function boot() {
     store.set({ inspect: { title, lines, bills, crafter, filter, power, prisonBed, actions: actionsUi, stockpile, make, researchLink, zone } });
   }
   let inspected: { x: number; y: number } | null = null;
+  /** Copied stockpile filter (Copy / Paste filter buttons). */
+  let zoneClipboard: { allow: string[]; allowItems?: string[] } | null = null;
+  /** Stockpile panel data: every category with its items, on, partly on or off. */
+  function stockpileUi(z: sim.Zone) {
+    const cats = sim.ALL_CATEGORIES.map((c) => {
+      const items = game.reg.items.list.flatMap((d, i) => (d.category === c ? [{ id: d.id, on: sim.zoneTakes(game, z, i) }] : []));
+      const n = items.filter((i) => i.on).length;
+      const state: "on" | "partial" | "off" = n === 0 ? "off" : n === items.length ? "on" : "partial";
+      return { id: c, state, items };
+    });
+    return { zoneId: z.id, priority: sim.zonePriority(z), cats, canPaste: zoneClipboard !== null };
+  }
   actions.queueAdd = (benchId, recipe, n) => {
     const b = game.things.get(benchId);
     if (b) sim.queueAdd(game, b, recipe, n);

@@ -9,11 +9,10 @@ import { Toolbar } from "./Toolbar.tsx";
 import { MakeWindow } from "./MakeWindow.tsx";
 import { GameMenu } from "./Screens.tsx";
 
-/** Item categories a stockpile can take (same list as the sim). */
-const STOCK_CATEGORIES = ["resource", "food", "water", "medicine", "weapon", "apparel", "blueprint", "misc"];
-
 export function Hud() {
   const [makeOpen, setMakeOpen] = useState(false);
+  /** Stockpile panel: the category whose item list is open. */
+  const [openCat, setOpenCat] = useState<string | null>(null);
   const [folded, setFolded] = useState<Record<string, boolean>>(() => {
     try {
       return JSON.parse(localStorage.getItem("wc-fold") ?? "{}");
@@ -100,6 +99,11 @@ export function Hud() {
       <PawnPanel />
       <Ending />
       <header class="topbar">
+        {s.song && (
+          <div class="nowplaying" data-testid="song" title={t("music.now_playing")}>
+            <span aria-hidden="true">♪</span> {t(`music.${s.song}`)}
+          </div>
+        )}
         <div class="clock" data-testid="clock">
           <b>{s.clock}</b>
           <span>
@@ -241,14 +245,39 @@ export function Hud() {
                   </button>
                 ))}
               </div>
-              {STOCK_CATEGORIES.map((c) => {
-                const on = s.inspect!.stockpile!.allow.includes(c);
+              {s.inspect.stockpile.cats.map((c) => {
+                const sp = s.inspect!.stockpile!;
                 return (
-                  <button key={c} class={on ? "on" : ""} onClick={() => actions.setZoneAllow(s.inspect!.stockpile!.zoneId, c, !on)}>
-                    {t(`category.${c}`)}
-                  </button>
+                  <div key={c.id} class="stock-cat">
+                    <div class="stock-cat-row">
+                      <button class={c.state === "on" ? "on" : c.state === "partial" ? "partial" : ""} data-testid={`stock-cat-${c.id}`} onClick={() => actions.setZoneAllow(sp.zoneId, c.id, c.state !== "on")}>
+                        {t(`category.${c.id}`)}
+                        {c.state === "partial" && <small> {t("stockpile.partial", { n: c.items.filter((i) => i.on).length, of: c.items.length })}</small>}
+                      </button>
+                      <button class="open" data-testid={`stock-open-${c.id}`} title={t("stockpile.items_hint")} onClick={() => setOpenCat(openCat === c.id ? null : c.id)}>
+                        {openCat === c.id ? "▾" : "▸"}
+                      </button>
+                    </div>
+                    {openCat === c.id && (
+                      <div class="stock-items">
+                        {c.items.map((i) => (
+                          <button key={i.id} class={i.on ? "on" : ""} data-testid={`stock-item-${i.id}`} onClick={() => actions.setZoneItem(sp.zoneId, i.id, !i.on)}>
+                            {t(`item.${i.id}`)}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 );
               })}
+              <div class="benchbtns">
+                <button data-testid="stock-copy" onClick={() => actions.copyZoneFilter(s.inspect!.stockpile!.zoneId)}>
+                  {t("stockpile.copy")}
+                </button>
+                <button data-testid="stock-paste" disabled={!s.inspect.stockpile.canPaste} onClick={() => actions.pasteZoneFilter(s.inspect!.stockpile!.zoneId)}>
+                  {t("stockpile.paste")}
+                </button>
+              </div>
             </div>
           )}
           {s.inspect.prisonBed && (

@@ -255,10 +255,13 @@ export class DynamicRenderer {
   private printDoor(g: Graphics, t: Thing, bunker: boolean, open: number) {
     const ink = this.print!;
     const L = this.game.map.layers[t.layer];
+    // Built walls and wall plans both count: a door finished before its walls already faces the right way.
     const wallAt = (x: number, y: number) => {
       if (!L.inBounds(x, y)) return false;
       const o = L.thing[L.i(x, y)];
-      return o !== -1 && !!this.game.reg.things.list[this.game.things.get(o)!.def].wall;
+      if (o !== -1) return !!this.game.reg.things.list[this.game.things.get(o)!.def].wall;
+      const bp = this.game.blueprints.get(L.blueprint[L.i(x, y)]);
+      return bp?.kind === "thing" && !!this.game.reg.things.list[bp.def].wall;
     };
     const upright = (wallAt(t.x, t.y - 1) || wallAt(t.x, t.y + 1)) && !(wallAt(t.x - 1, t.y) || wallAt(t.x + 1, t.y));
     const s = TILE / 64;
