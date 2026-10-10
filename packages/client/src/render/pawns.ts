@@ -22,6 +22,8 @@ interface View {
   shadow: Sprite;
   /** Salvage Print: facing 0 S, 1 E, 2 N, 3 W (kept while standing). */
   dir: number;
+  /** Ring under a survivor of the selected group. */
+  groupRing: Graphics;
   /** Worn armor drawn over the body (vest, helmet); children of the body so they move and turn with it. */
   gear: Sprite[];
 }
@@ -31,6 +33,8 @@ export class PawnRenderer {
   private views = new Map<number, View>();
   private ring = new Graphics();
   selected: number | null = null;
+  /** Survivors selected together ("Select all"): each gets a ring. */
+  group = new Set<number>();
   layer = 0;
 
   constructor(
@@ -109,12 +113,14 @@ export class PawnRenderer {
     flag.visible = false;
     // Health bar for hostiles and hurt survivors.
     const hp = new Graphics();
+    const groupRing = new Graphics().circle(0, 4, 13).stroke({ width: 2, color: 0xefd8a4, alpha: 0.85 });
+    groupRing.visible = false;
     const gear = [new Sprite(), new Sprite()];
     for (const g of gear) g.visible = false;
     body.addChild(...gear);
-    root.addChild(shadow, body, label, zzz, flag, hp);
+    root.addChild(groupRing, shadow, body, label, zzz, flag, hp);
     this.root.addChild(root);
-    return { root, body, label, zzz, flag, hp, shadow, dir: 0, gear };
+    return { root, body, label, zzz, flag, hp, shadow, dir: 0, gear, groupRing };
   }
 
   update(timeSec: number, zoom: number) {
@@ -205,6 +211,7 @@ export class PawnRenderer {
       }
 
       v.flag.visible = p.drafted;
+      v.groupRing.visible = this.group.has(p.id) && p.drafted;
       // Health bar: shows when hurt.
       const hurt = Math.min(1, p.health.bloodLoss + pain(this.game, p));
       v.hp.clear();

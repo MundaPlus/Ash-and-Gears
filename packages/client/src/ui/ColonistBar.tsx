@@ -57,6 +57,14 @@ export function ColonistBar() {
       >
         {t("pawn.draft_all")}
       </button>
+      <button
+        class={`colonist draftall${s.groupCount > 0 ? " on" : ""}`}
+        data-testid="select-all"
+        onClick={actions.selectAllDrafted}
+        title={t("pawn.select_all_hint")}
+      >
+        {s.groupCount > 0 ? t("pawn.selected_n", { n: s.groupCount }) : t("pawn.select_all")}
+      </button>
     </nav>
   );
 }

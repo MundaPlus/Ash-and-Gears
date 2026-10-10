@@ -206,8 +206,63 @@ async function boot() {
     orderAt(wx, wy);
   };
 
-  /** Drafted survivor selected: tap an enemy to attack it, tap ground to move. Returns true if an order was given. */
+  /** Free walkable tiles around a point, nearest first (by walking out from it), for a group to stand on. */
+  function spreadSpots(layer: number, x: number, y: number, n: number): { layer: number; x: number; y: number }[] {
+    const L = game.map.layers[layer];
+    const taken = new Set([...game.pawns.values()].filter((o) => o.layer === layer && !groupIds().includes(o.id)).map((o) => L.i(o.x, o.y)));
+    const out: { layer: number; x: number; y: number }[] = [];
+    const seen = new Set([L.i(x, y)]);
+    let frontier = [[x, y]];
+    for (let r = 0; r < 12 && out.length < n && frontier.length; r++) {
+      const next: number[][] = [];
+      for (const [fx, fy] of frontier) {
+        if (game.walkable(layer, fx, fy) && !taken.has(L.i(fx, fy))) out.push({ layer, x: fx, y: fy });
+        if (out.length >= n) break;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const nx = fx + dx, ny = fy + dy;
+          if (!L.inBounds(nx, ny) || seen.has(L.i(nx, ny)) || !game.walkable(layer, nx, ny)) continue;
+          seen.add(L.i(nx, ny));
+          next.push([nx, ny]);
+        }
+      }
+      frontier = next;
+    }
+    return out;
+  }
+
+  /** The drafted survivors of the "Select all" group that are still drafted and on this layer. */
+  function groupIds(): number[] {
+    return group.filter((id) => {
+      const p = game.pawns.get(id);
+      return !!p && p.faction === "colony" && p.drafted && !p.health.downed;
+    });
+  }
+
+  function setGroup(ids: number[]) {
+    group = ids;
+    pawnsR.group = new Set(ids);
+    store.set({ groupCount: ids.length });
+  }
+
+  /** Drafted survivor (or the selected group) chosen: tap an enemy to attack it, tap ground to move. Returns true if an order was given. */
   function orderAt(wx: number, wy: number): boolean {
+    const ids = groupIds().filter((id) => game.pawns.get(id)!.layer === renderer.layer);
+    if (ids.length) {
+      const target = pawnsR.pick(wx, wy);
+      const members = ids.map((id) => game.pawns.get(id)!);
+      if (target && target.faction !== "colony") {
+        for (const m of members) sim.orderAttack(game, m, target);
+        return true;
+      }
+      if (target) return false;
+      const x = Math.floor(wx / TILE), y = Math.floor(wy / TILE);
+      if (!game.walkable(renderer.layer, x, y)) return false;
+      // Each one to a free tile around the spot: the nearest survivor to the nearest tile.
+      const spots = spreadSpots(renderer.layer, x, y, members.length);
+      members.sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y));
+      members.forEach((m, k) => spots[k] && sim.orderMove(game, m, spots[k]));
+      return true;
+    }
     const sel = selected !== null ? game.pawns.get(selected) : undefined;
     if (!sel || sel.faction !== "colony" || !sel.drafted) return false;
     const target = pawnsR.pick(wx, wy);
@@ -430,6 +485,20 @@ async function boot() {
     const cols = [...game.pawns.values()].filter((p) => p.faction === "colony" && !p.health.downed);
     const on = cols.some((p) => !p.drafted);
     for (const p of cols) sim.setDrafted(game, p, on);
+    if (!on) setGroup([]);
+  };
+  actions.selectAllDrafted = () => {
+    // A second press lets the group go again.
+    if (groupIds().length) return setGroup([]);
+    let cols = [...game.pawns.values()].filter((p) => p.faction === "colony" && !p.health.downed && p.drafted);
+    if (!cols.length) {
+      cols = [...game.pawns.values()].filter((p) => p.faction === "colony" && !p.health.downed);
+      for (const p of cols) sim.setDrafted(game, p, true);
+    }
+    selected = null;
+    pawnsR.selected = null;
+    store.set({ pawn: null, inspect: null });
+    setGroup(cols.map((p) => p.id));
   };
   actions.setWork = (id, work, value) => {
     const p = game.pawns.get(id);
@@ -447,6 +516,8 @@ async function boot() {
   let paused = fromSave;
   let acc = 0;
   let selected: number | null = null;
+  /** Drafted survivors selected together with "Select all". */
+  let group: number[] = [];
 
   actions.setSpeed = (s) => {
     speed = s;
@@ -468,6 +539,7 @@ async function boot() {
     if (l >= 0) actions.setLayer(l);
   };
   actions.selectPawn = (id, center) => {
+    if (group.length) setGroup([]);
     selected = id;
     pawnsR.selected = id;
     const p = id !== null ? game.pawns.get(id) : undefined;
@@ -905,6 +977,7 @@ async function boot() {
     else if (e.key === "PageDown") actions.stepLayer(-1);
     else if (e.key === "Escape") {
       if (tools.spec) actions.setTool(null);
+      else if (group.length) setGroup([]);
       else if (store.state.menu) actions.openMenu(null);
       else actions.closeInspect();
     }
