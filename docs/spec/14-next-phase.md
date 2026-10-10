@@ -79,7 +79,7 @@ Installable web app (manifest, service worker, offline cache of the build), touc
 
 ### N1 — Surface buildings with upper floors, and sealed rooms with enemies
 
-Status: done (2026-10-10), see "Build plan" below. Not done yet: hostile robots outside lairs, multi-story towers the player builds.
+Status: done (2026-10-10), see "Build plan" below. Also done: rogue bot raids (storyteller, from day 25) and building upward (wooden stairs up, plank decks over open air with a wall or a closed room below).
 
 User: "add structures with the same number of stories to the surface so we can go up the same number of floors; rooms with closed doors that have enemies, like rats, dogs, hostile bots, turrets."
 

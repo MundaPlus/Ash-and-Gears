@@ -100,6 +100,8 @@ const GROUND: Record<string, Ground> = {
       for (let k = 0; k < 3; k++) p.shape(Print.ellipse(12 + r() * 40, 12 + r() * 40, 2 + r() * 2.5, 1.6 + r() * 1.5), { fill: "bone", line: 1.1 });
     },
   },
+  // A plank deck laid over open air (N1).
+  deck: { base: "ochreDark", tone: "hair", amount: 0.2, cell: 3, marks: cracks("soot", 1) },
   // Open air on tower floors (N1): a dark drop.
   open_air: { base: "soot", tone: "slateDark", amount: 0.12, cell: 5 },
   rock: { base: "slateDark", tone: "soot", amount: 0.38, cell: 3, marks: cracks("soot", 2) },
@@ -156,6 +158,7 @@ export function terrainEdgeTile(p: Print, id: string, dir: number) {
 }
 
 const FLOORS: Record<string, (p: Print) => void> = {
+  plank_deck: (p) => FLOORS.wood_floor(p),
   wood_floor: (p) => {
     p.shape(Print.rect(0, 0, 64, 64), { fill: "ochre", tone: { ink: "ochreDark", amount: 0.12, cell: 4 }, line: false, shift: 0 });
     for (const y of [0.8, 16, 32, 48]) p.line([[0, y], [64, y]], "ochreDark", 1.4);

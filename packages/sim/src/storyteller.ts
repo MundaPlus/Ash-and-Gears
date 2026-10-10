@@ -27,7 +27,7 @@ const STYLE = {
   none: { calmDays: 9999, pointsPerDay: 0, goodChance: 0 },
 };
 
-type EventKind = "raid" | "rad_rats" | "glow_hounds" | "rad_cloud";
+type EventKind = "raid" | "rad_rats" | "glow_hounds" | "rad_cloud" | "rogue_bots";
 
 function cost(game: Game, kind: EventKind): number {
   const colonists = [...game.pawns.values()].filter((p) => p.faction === "colony" && !p.robot).length;
@@ -36,6 +36,8 @@ function cost(game: Game, kind: EventKind): number {
       return 2;
     case "glow_hounds":
       return 4;
+    case "rogue_bots":
+      return 6;
     case "rad_cloud":
       return 3;
     case "raid":
@@ -52,6 +54,9 @@ function weight(game: Game, kind: EventKind): number {
     case "rad_rats":
     case "glow_hounds":
       return 0.9 * o.mutantScale;
+    case "rogue_bots":
+      // Old machines wander in from the dead city (N1): not before day 25.
+      return game.tick / game.ticksPerDay >= 25 ? 0.5 * o.raidScale : 0;
     case "rad_cloud": {
       // At most one cloud per 8 days.
       const gap = game.opts.scenario === "rad_season" ? 5 : 8;
@@ -85,11 +90,11 @@ export function edgeSpawn(game: Game): { x: number; y: number } {
   return { x: 1, y: 1 };
 }
 
-function spawnGroup(game: Game, kind: "raid" | "rad_rats" | "glow_hounds", size: number, faction?: FactionDef): { layer: number; x: number; y: number } {
+function spawnGroup(game: Game, kind: "raid" | "rad_rats" | "glow_hounds" | "rogue_bots", size: number, faction?: FactionDef): { layer: number; x: number; y: number } {
   const id = game.newId();
   game.groups.set(id, { id, kind, size, fleeing: false, arrived: game.tick });
   const at = edgeSpawn(game);
-  const creature = kind === "raid" ? "human" : kind === "rad_rats" ? "rad_rat" : "glow_hound";
+  const creature = kind === "raid" ? "human" : kind === "rad_rats" ? "rad_rat" : kind === "rogue_bots" ? "rogue_bot" : "glow_hound";
   // Early raiders carry mostly melee junk; guns get common as the days go by.
   const day = game.tick / game.ticksPerDay;
   const weapons = day < 15 ? ["pipe", "pipe", "machete", "machete", "pipe_pistol"] : ["pipe", "machete", "pipe_pistol", "pipe_pistol", "crossbow", "scrap_shotgun"];
@@ -153,6 +158,12 @@ export function fireEvent(game: Game, kind: EventKind): void {
       game.message("msg.glow_hounds", { n: size }, "bad", at);
       break;
     }
+    case "rogue_bots": {
+      const size = Math.max(2, Math.min(4, Math.floor(s.points / 4)));
+      const at = spawnGroup(game, "rogue_bots", size);
+      game.message("msg.rogue_bots", { n: size }, "bad", at);
+      break;
+    }
     case "rad_cloud":
       scheduleRadCloud(game, 12);
       break;
@@ -199,7 +210,7 @@ export function tickStoryteller(game: Game): void {
   // One threat at a time. Lairs (N1) stay on the map for good and do not count.
   if ([...game.groups.values()].some((gr) => gr.kind !== "lair")) return;
   // Pick an affordable threat by weight. Saving up is fine: bigger raids later.
-  const kinds: EventKind[] = ["raid", "rad_rats", "glow_hounds", "rad_cloud"];
+  const kinds: EventKind[] = ["raid", "rad_rats", "glow_hounds", "rad_cloud", "rogue_bots"];
   // No raids before day 10: the first days are for mutants and weather.
   const options = kinds.filter((k) => s.points >= cost(game, k) && weight(game, k) > 0 && (k !== "raid" || day >= 10));
   if (!options.length || !game.aiRng.chance(0.45)) return;

@@ -255,6 +255,16 @@ export function haulNow(game: Game, stackId: number): boolean {
   return true;
 }
 
+/** Take the "haul now" mark off a stack (the Cancel tool). */
+export function cancelHaulNow(game: Game, stackId: number): void {
+  const s = game.items.get(stackId);
+  if (!s?.haulNow) return;
+  delete s.haulNow;
+  haulCache.delete(game);
+  const L = game.map.layers[s.layer];
+  if (L) L.touch(s.x, s.y);
+}
+
 /** Can this stack go on the haul list (loose, and some storage takes it)? */
 export function canHaul(game: Game, stackId: number): boolean {
   const s = game.items.get(stackId);

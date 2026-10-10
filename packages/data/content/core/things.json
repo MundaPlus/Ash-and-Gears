@@ -1489,5 +1489,20 @@
    "steel": 2,
    "scrap": 3
   }
+ },
+ {
+  "id": "wood_stairs",
+  "kind": "stairs",
+  "color": "#9a7448",
+  "glyph": "^",
+  "hp": 200,
+  "stairs": -1,
+  "build": {
+   "cost": {
+    "wood": 20
+   },
+   "work": 300,
+   "menu": "structure"
+  }
  }
 ]

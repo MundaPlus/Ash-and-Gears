@@ -226,6 +226,7 @@ async function boot() {
     let label: string | null = null;
     if (spec?.kind === "build") label = t("tool.build", { name: t(spec.defKind === "floor" ? `floor.${spec.def}` : `thing.${spec.def}`) });
     else if (spec?.kind === "order") label = t("tool.order", { name: t(`order.${spec.desig}`) });
+    else if (spec?.kind === "haul") label = t("tool.order", { name: t("order.haul") });
     else if (spec?.kind === "cancel") label = t("tool.cancel");
     else if (spec?.kind === "zone" && spec.zone === "grow") label = t("tool.zone", { name: t("zone.grow", { crop: t(`thing.${spec.crop}`) }) });
     else if (spec?.kind === "zone") label = t("tool.zone", { name: t(`zone.${spec.zone}`) });

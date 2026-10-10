@@ -464,7 +464,7 @@ const sealed_door: Draw = (p) => {
 export const PRINT_THINGS: Partial<Record<string, Draw>> = {
   sealed_door,
   car_wreck, scrap_pile, loot_crate, dead_tree, mutant_shrub,
-  stairs_down: stairs(true), stairs_up: stairs(false), dug_stairs: stairs(true, true),
+  stairs_down: stairs(true), stairs_up: stairs(false), dug_stairs: stairs(true, true), wood_stairs: stairs(false),
   bunker_locker, old_safe, bedroll, table, chair, campfire, stove,
   glowcorn_plant: crop("teal", "tealDark", "glow", true),
   scrub_potato_plant: crop("teal", "tealDark", "ochre"),
