@@ -209,8 +209,9 @@ export function Hud() {
             <div class="bills" data-testid="crafter">
               <h3>{t("crafter.title")}</h3>
               {s.inspect.crafter.options.map((r) => (
-                <button key={r} class={s.inspect!.crafter!.current === r ? "on" : ""} onClick={() => actions.setCrafterRecipe(s.inspect!.crafter!.thingId, r)}>
-                  {t(`recipe.${r}`)}
+                <button key={r} class={`recipe ${s.inspect!.crafter!.current === r ? "on" : ""}`} onClick={() => actions.setCrafterRecipe(s.inspect!.crafter!.thingId, r)}>
+                  <b>{t(`recipe.${r}`)}</b>
+                  {s.inspect!.crafter!.needs?.[r] && <small>{s.inspect!.crafter!.needs[r]}</small>}
                 </button>
               ))}
             </div>

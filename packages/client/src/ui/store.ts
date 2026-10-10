@@ -13,7 +13,7 @@ export interface Inspect {
   /** Research desks and benches: a button that opens the research menu. */
   researchLink?: boolean;
   /** Auto-crafter: recipe choice. */
-  crafter?: { thingId: number; current: string | null; options: string[] };
+  crafter?: { thingId: number; current: string | null; options: string[]; needs?: Record<string, string> };
   /** Things to do on this tile (buttons); `first` is what the F key does. */
   actions?: { list: string[]; first: string | null };
   /** Stockpile under the tile: which item categories it takes. */
