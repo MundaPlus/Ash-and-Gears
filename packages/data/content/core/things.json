@@ -764,7 +764,6 @@
   "color": "#84603f",
   "glyph": "C",
   "hp": 120,
-  "blocks": true,
   "chest": 200,
   "build": {
    "cost": {

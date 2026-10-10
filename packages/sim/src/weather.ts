@@ -123,7 +123,8 @@ export function contaminate(game: Game, kind: "rad_cloud" | "toxic_rain" = "rad_
     if (def.crop) crops++;
   }
   for (const s of game.items.values()) {
-    if (s.layer !== 0) continue;
+    // Closed chests keep fallout out.
+    if (s.layer !== 0 || s.chest !== undefined) continue;
     const cat = game.reg.items.list[s.def].category;
     if (cat !== "food" && cat !== "water") continue;
     if (!rng.chance(chance[exposureAt(game, 0, s.x, s.y)])) continue;

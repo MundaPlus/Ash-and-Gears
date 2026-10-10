@@ -94,7 +94,7 @@ export function saveGame(game: Game): SaveFile {
     terrainIds: reg.terrain.list.map((t) => t.id),
     floorIds: reg.floors.list.map((f) => f.id),
     layers: game.map.layers.map((L) => ({ terrain: toB64(L.terrain), floor: toB64(L.floor), zone: toB64(L.zone), desig: toB64(L.desig), roof: toB64(L.roof) })),
-    things: [...game.things.values()].map((t) => ({ ...t, def: reg.things.list[t.def].id, ...(t.buffer ? { buffer: itemMapOut(t.buffer) } : {}), ...(t.store ? { store: itemMapOut(t.store) } : {}), ...(t.out ? { out: itemMapOut(t.out) } : {}), ...(t.filter !== undefined ? { filter: reg.items.list[t.filter].id as unknown as number } : {}), ...(t.cargo ? { cargo: { ...t.cargo, def: reg.items.list[t.cargo.def].id as unknown as number } } : {}) })),
+    things: [...game.things.values()].map((t) => ({ ...t, def: reg.things.list[t.def].id, ...(t.buffer ? { buffer: itemMapOut(t.buffer) } : {}), ...(t.out ? { out: itemMapOut(t.out) } : {}), ...(t.filter !== undefined ? { filter: reg.items.list[t.filter].id as unknown as number } : {}), ...(t.cargo ? { cargo: { ...t.cargo, def: reg.items.list[t.cargo.def].id as unknown as number } } : {}) })),
     items: [...game.items.values()].map((s) => ({ ...s, def: reg.items.list[s.def].id })),
     pawns: [...game.pawns.values()].map((p) => ({
       ...p,
@@ -179,7 +179,6 @@ export function loadGame(content: Content, raw: SaveFile): Game {
   for (const t of data.things) {
     const thing: Thing = { ...(t as unknown as Thing), def: idOr(reg.things, t.def, "thing") };
     if (t.buffer) thing.buffer = itemMapIn(t.buffer);
-    if (t.store) thing.store = itemMapIn(t.store);
     if (t.out) thing.out = itemMapIn(t.out);
     if (t.filter !== undefined) thing.filter = reg.items.idx(t.filter as unknown as string);
     if (t.cargo) thing.cargo = { ...t.cargo, def: reg.items.idx(t.cargo.def as unknown as string) };

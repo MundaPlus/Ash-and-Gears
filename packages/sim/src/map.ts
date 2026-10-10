@@ -36,8 +36,6 @@ export interface Thing {
   work?: number;
   /** Auto-crafter: finished products waiting to go out (item index -> count). */
   out?: Record<number, number>;
-  /** Chest: items inside (item index -> count). */
-  store?: Record<number, number>;
   /** Sorter belts and robot arms: the one item they handle (item index). */
   filter?: number;
   /** Splitter: which output gets the next packet. */
@@ -59,6 +57,8 @@ export interface ItemStack {
   contamUntil?: number;
   /** Rot progress 0..1 for food that rots. */
   rot?: number;
+  /** Inside this chest (thing id). Chest stacks sit at the chest's tile but not in the tile's item slot. */
+  chest?: number;
 }
 
 /** Player orders on tiles. */

@@ -11,7 +11,7 @@ import type { RecipeDef } from "@wc/data";
 import { atGoal, findItem, goTo, isReserved, reserve } from "./ai.ts";
 import { matchesInput, recipesFor } from "./bills.ts";
 import type { Game } from "./game.ts";
-import { dropItems, takeFromStack } from "./items.ts";
+import { chestStacks, dropItems, putInChest, takeFromStack } from "./items.ts";
 import { registerJob, registerWorkGiver } from "./jobs.ts";
 import { NO_THING, type Thing } from "./map.ts";
 import { pickUp } from "./hauling.ts";
@@ -64,11 +64,6 @@ export function crafterWants(game: Game, t: Thing, def: number): number {
 
 const total = (r?: Record<number, number>) => Object.values(r ?? {}).reduce((a, b) => a + b, 0);
 
-/** Items in a chest, all kinds together. */
-export function chestCount(t: Thing): number {
-  return total(t.store);
-}
-
 /** Try to hand items to whatever is on a tile. Returns how many were accepted. */
 export function offer(game: Game, layer: number, x: number, y: number, def: number, count: number, contaminated: boolean): number {
   const t = thingAt(game, layer, x, y);
@@ -91,13 +86,7 @@ export function offer(game: Game, layer: number, x: number, y: number, def: numb
     if (n > 0) t.buffer = { ...(t.buffer ?? {}), [def]: (t.buffer?.[def] ?? 0) + n };
     return n;
   }
-  if (t && d?.chest) {
-    // Contamination is not tracked inside chests: contaminated items stay out.
-    if (contaminated) return 0;
-    const n = Math.min(count, d.chest - chestCount(t));
-    if (n > 0) t.store = { ...(t.store ?? {}), [def]: (t.store?.[def] ?? 0) + n };
-    return Math.max(0, n);
-  }
+  if (t && d?.chest) return putInChest(game, t, def, count, contaminated);
   // Loaders and arms are machines, not floor space.
   if (t && (d?.blocks || d?.loader || d?.arm)) return 0;
   if (!game.walkable(layer, x, y)) return 0;
@@ -105,8 +94,11 @@ export function offer(game: Game, layer: number, x: number, y: number, def: numb
   return count - dropItems(game, def, count, layer, x, y, contaminated);
 }
 
-/** What can be taken from a tile: an item kind and how many, or null. `only` limits it to one item. */
-function peek(game: Game, layer: number, x: number, y: number, only?: number): { def: number; count: number; contaminated: boolean } | null {
+/**
+ * What can be taken from a tile: an item kind and how many, or null. `only` limits it to one item.
+ * `stack` is the item stack to take from (ground or chest).
+ */
+function peek(game: Game, layer: number, x: number, y: number, only?: number): { def: number; count: number; contaminated: boolean; stack?: number } | null {
   const t = thingAt(game, layer, x, y);
   const d = t ? game.reg.things.list[t.def] : null;
   const pick = (r?: Record<number, number>) => {
@@ -118,18 +110,21 @@ function peek(game: Game, layer: number, x: number, y: number, only?: number): {
     const c = t.cargo;
     return c && c.progress >= 0.5 && (only === undefined || c.def === only) ? { def: c.def, count: c.count, contaminated: !!c.contaminated } : null;
   }
-  if (t && d?.chest) return pick(t.store);
+  if (t && d?.chest) {
+    const s = chestStacks(game, t).find((c) => only === undefined || c.def === only);
+    return s ? { def: s.def, count: s.count, contaminated: !!s.contaminated, stack: s.id } : null;
+  }
   if (t && d?.autoCrafter) return pick(t.out);
   if (t && (d?.blocks || d?.loader || d?.arm)) return null;
   const L = game.map.layers[layer];
   const sid = L.item[L.i(x, y)];
   if (sid === NO_THING) return null;
   const s = game.items.get(sid)!;
-  return only === undefined || s.def === only ? { def: s.def, count: s.count, contaminated: !!s.contaminated } : null;
+  return only === undefined || s.def === only ? { def: s.def, count: s.count, contaminated: !!s.contaminated, stack: s.id } : null;
 }
 
-/** Remove `n` of item `def` from a tile (after peek said they are there). */
-function take(game: Game, layer: number, x: number, y: number, def: number, n: number): void {
+/** Remove `n` of item `def` from a tile (after peek said they are there; `stack` from peek). */
+function take(game: Game, layer: number, x: number, y: number, def: number, n: number, stack?: number): void {
   const t = thingAt(game, layer, x, y);
   const d = t ? game.reg.things.list[t.def] : null;
   const from = (r: Record<number, number>) => {
@@ -139,12 +134,8 @@ function take(game: Game, layer: number, x: number, y: number, def: number, n: n
   if (t && d?.belt && t.cargo) {
     t.cargo.count -= n;
     if (t.cargo.count <= 0) t.cargo = null;
-  } else if (t && d?.chest && t.store) from(t.store);
-  else if (t && d?.autoCrafter && t.out) from(t.out);
-  else {
-    const L = game.map.layers[layer];
-    takeFromStack(game, L.item[L.i(x, y)], n);
-  }
+  } else if (t && d?.autoCrafter && t.out) from(t.out);
+  else if (stack !== undefined) takeFromStack(game, stack, n);
 }
 
 /** One swing of a loader or arm: up to SWING items from behind to front. */
@@ -154,7 +145,7 @@ function swing(game: Game, l: Thing): void {
   const got = peek(game, l.layer, b.x, b.y, l.filter);
   if (!got) return;
   const n = offer(game, l.layer, f.x, f.y, got.def, Math.min(SWING, got.count), got.contaminated);
-  if (n > 0) take(game, l.layer, b.x, b.y, got.def, n);
+  if (n > 0) take(game, l.layer, b.x, b.y, got.def, n, got.stack);
 }
 
 /**
@@ -262,7 +253,11 @@ export function setFilter(game: Game, t: Thing, item: string | null): void {
 
 /** Things removed with items inside give them back on the ground. */
 export function spillContents(game: Game, t: Thing): void {
-  for (const r of [t.store, t.out, t.buffer]) for (const [k, n] of Object.entries(r ?? {})) if (n > 0) dropItems(game, Number(k), n, t.layer, t.x, t.y);
+  for (const s of chestStacks(game, t)) {
+    game.items.delete(s.id);
+    dropItems(game, s.def, s.count, t.layer, t.x, t.y, !!s.contaminated, s.contamUntil);
+  }
+  for (const r of [t.out, t.buffer]) for (const [k, n] of Object.entries(r ?? {})) if (n > 0) dropItems(game, Number(k), n, t.layer, t.x, t.y);
   if (t.cargo) dropItems(game, t.cargo.def, t.cargo.count, t.layer, t.x, t.y, !!t.cargo.contaminated);
 }
 

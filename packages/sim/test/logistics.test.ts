@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadCoreContent } from "@wc/data";
-import { dropItems, Game, loadGame, NO_THING, saveGame, setFilter, type Thing } from "../src/index.ts";
+import { chestStacks, dropItems, Game, loadGame, NO_THING, putInChest, saveGame, setFilter, WORK_TYPES, type Thing } from "../src/index.ts";
 
 const content = loadCoreContent();
 const run = (g: Game, hours: number) => {
@@ -23,7 +23,7 @@ function setup(seed: string) {
       }
       g.setTerrain(0, x, y, "dirt");
     }
-  for (const p of g.pawns.values()) p.work = {};
+  for (const p of g.pawns.values()) p.work = Object.fromEntries(WORK_TYPES.map((w) => [w, 0]));
   // Power: a fueled generator touching the second and third tile of the line.
   const gen = g.spawnThing("scrap_generator", 0, x0 + 1, y0 - 1);
   gen.fuel = 30;
@@ -40,8 +40,13 @@ function stackAt(g: Game, x: number, y: number): { def: string; count: number } 
 
 function chestWith(g: Game, x: number, y: number, items: Record<string, number>): Thing {
   const c = g.spawnThing("scrap_chest", 0, x, y);
-  c.store = Object.fromEntries(Object.entries(items).map(([k, n]) => [g.reg.items.idx(k), n]));
+  for (const [k, n] of Object.entries(items)) putInChest(g, c, g.reg.items.idx(k), n);
   return c;
+}
+
+/** What a chest holds, by item id. */
+function inside(g: Game, c: Thing): Record<string, number> {
+  return Object.fromEntries(chestStacks(g, c).map((s) => [g.reg.items.list[s.def].id, s.count]));
 }
 
 describe("belt logistics (A1)", () => {
@@ -94,8 +99,29 @@ describe("belt logistics (A1)", () => {
     g.spawnThing("wire", 0, x0 + 3, y0 - 1);
     run(g, 4);
     expect(stackAt(g, x0 + 2, y0)).toEqual({ def: "wood", count: 10 });
-    expect(chest.store).toEqual({ [g.reg.items.idx("stone")]: 10 });
-    expect(sink.store?.[g.reg.items.idx("scrap")]).toBe(12);
+    expect(inside(g, chest)).toEqual({ stone: 10 });
+    expect(inside(g, sink)).toEqual({ scrap: 12 });
+  });
+
+  it("survivors haul loose items into a chest and take food out of it", () => {
+    const { g, x0, y0 } = setup("haulchest");
+    const chest = chestWith(g, x0 + 4, y0, {});
+    dropItems(g, "wood", 15, 0, x0 + 6, y0 + 2);
+    for (const p of g.pawns.values()) p.work = Object.fromEntries(WORK_TYPES.map((w) => [w, w === "haul" ? 1 : 0]));
+    run(g, 6);
+    // The start supplies near home come along too.
+    expect(inside(g, chest).wood).toBeGreaterThanOrEqual(15);
+    expect(stackAt(g, x0 + 6, y0 + 2)).toBeNull();
+    // Food in the chest feeds a hungry survivor.
+    putInChest(g, chest, g.reg.items.idx("simple_meal"), 3);
+    for (const st of [...g.items.values()]) if (st.chest === undefined && g.reg.items.list[st.def].category === "food") g.items.delete(st.id);
+    const L = g.map.layers[0];
+    for (let i = 0; i < L.item.length; i++) if (L.item[i] !== NO_THING && !g.items.has(L.item[i])) L.item[i] = NO_THING;
+    const [eater] = [...g.pawns.values()].filter((p) => p.faction === "colony");
+    eater.needs.hunger = 0.1;
+    run(g, 4);
+    expect(eater.needs.hunger).toBeGreaterThan(0.5);
+    expect(inside(g, chest).simple_meal ?? 0).toBeLessThan(3);
   });
 
   it("chests, filters and crafter outputs survive a save", () => {
@@ -107,7 +133,7 @@ describe("belt logistics (A1)", () => {
     const L = g2.map.layers[0];
     const c2 = g2.things.get(L.thing[L.i(x0, y0)])!;
     const a2 = g2.things.get(L.thing[L.i(x0 + 1, y0)])!;
-    expect(c2.store).toEqual({ [g2.reg.items.idx("stone")]: 7 });
+    expect(inside(g2, c2)).toEqual({ stone: 7 });
     expect(a2.filter).toBe(g2.reg.items.idx("wood"));
   });
 });

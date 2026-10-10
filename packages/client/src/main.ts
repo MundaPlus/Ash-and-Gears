@@ -385,7 +385,11 @@ async function boot() {
       }
       const contents = (r?: Record<number, number>) =>
         Object.entries(r ?? {}).filter(([, n]) => n > 0).map(([k, n]) => `${n} × ${t(`item.${game.reg.items.list[Number(k)].id}`)}`).join(", ");
-      if (def.chest) lines.push(`${t("chest.title")} (${sim.chestCount(thing)}/${def.chest}): ${contents(thing.store) || t("chest.empty")}`);
+      if (def.chest) {
+        const inside: Record<number, number> = {};
+        for (const st of sim.chestStacks(game, thing)) inside[st.def] = (inside[st.def] ?? 0) + st.count;
+        lines.push(`${t("chest.title")} (${sim.chestCount(game, thing)}/${def.chest}): ${contents(inside) || t("chest.empty")}`);
+      }
       if (def.autoCrafter && contents(thing.out)) lines.push(`${t("chest.title")}: ${contents(thing.out)}`);
       if (def.arm || def.beltKind === "sort")
         filter = {

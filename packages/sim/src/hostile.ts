@@ -200,7 +200,8 @@ export function hostileTick(game: Game, p: Pawn): void {
     let food: { layer: number; x: number; y: number; id: number } | null = null;
     let bestD = Infinity;
     for (const s of game.items.values()) {
-      if (s.layer !== p.layer || game.reg.items.list[s.def].category !== "food") continue;
+      // Chests keep rats out.
+      if (s.layer !== p.layer || s.chest !== undefined || game.reg.items.list[s.def].category !== "food") continue;
       const d = dist(p, s);
       if (d < bestD) {
         bestD = d;

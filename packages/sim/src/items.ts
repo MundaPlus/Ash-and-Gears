@@ -3,7 +3,7 @@
  * Dropping more items than fit spills onto nearby free tiles.
  */
 import type { Game } from "./game.ts";
-import { NO_THING, type ItemStack } from "./map.ts";
+import { NO_THING, type ItemStack, type Thing } from "./map.ts";
 
 export function stackLimit(game: Game, def: number): number {
   return game.reg.items.list[def].stack;
@@ -13,6 +13,8 @@ export function stackLimit(game: Game, def: number): number {
 export function canHoldItem(game: Game, layer: number, x: number, y: number, def: number, contaminated = false): boolean {
   const L = game.map.layers[layer];
   if (!L.inBounds(x, y) || !game.walkable(layer, x, y)) return false;
+  // Nothing lies loose on a chest tile: things go into the chest (putInChest) or beside it.
+  if (game.thingDefAt(layer, x, y)?.chest) return false;
   const id = L.item[L.i(x, y)];
   if (id === NO_THING) return true;
   const s = game.items.get(id)!;
@@ -76,7 +78,7 @@ export function takeFromStack(game: Game, stackId: number, count: number): numbe
   s.count -= n;
   const L = game.map.layers[s.layer];
   if (s.count <= 0) {
-    L.item[L.i(s.x, s.y)] = NO_THING;
+    if (s.chest === undefined) L.item[L.i(s.x, s.y)] = NO_THING;
     game.items.delete(stackId);
   }
   L.touch(s.x, s.y);
@@ -89,5 +91,37 @@ export function countItems(game: Game, defId: string): number {
   const def = game.reg.items.idx(defId);
   let n = 0;
   for (const s of game.items.values()) if (s.def === def && s.layer >= 0) n += s.count;
+  return n;
+}
+
+// ---------------------------------------------------------------- chests
+
+/** The stacks inside a chest. */
+export function chestStacks(game: Game, t: Thing): ItemStack[] {
+  return [...game.items.values()].filter((s) => s.chest === t.id);
+}
+
+/** Items in a chest, all kinds together. */
+export function chestCount(game: Game, t: Thing): number {
+  return chestStacks(game, t).reduce((a, s) => a + s.count, 0);
+}
+
+/** Put items into a chest, up to its room. One stack per item kind (and contamination). Returns how many went in. */
+export function putInChest(game: Game, t: Thing, def: number, count: number, contaminated = false, contamUntil?: number): number {
+  const cap = game.reg.things.list[t.def].chest ?? 0;
+  const stacks = chestStacks(game, t);
+  const n = Math.min(count, cap - stacks.reduce((a, s) => a + s.count, 0));
+  if (n <= 0) return 0;
+  const same = stacks.find((s) => s.def === def && !!s.contaminated === contaminated);
+  if (same) same.count += n;
+  else {
+    const s: ItemStack = { id: game.newId(), def, count: n, layer: t.layer, x: t.x, y: t.y, chest: t.id };
+    if (contaminated) {
+      s.contaminated = true;
+      s.contamUntil = contamUntil ?? game.tick + game.opts.seasonDays * game.ticksPerDay;
+    }
+    game.items.set(s.id, s);
+  }
+  game.mapVersion++;
   return n;
 }
