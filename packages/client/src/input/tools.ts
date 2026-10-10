@@ -66,6 +66,12 @@ export class ToolController implements ToolHandler {
 
   private hovered: Tile | null = null;
 
+  /** Turn the building a quarter (Q/E or the button) and redraw the preview under the cursor at once. */
+  rotate(d: number) {
+    this.rot = (this.rot + d + 4) % 4;
+    this.draw();
+  }
+
   hover(wx: number, wy: number) {
     const t = this.tileAt(wx, wy);
     if (this.start || (this.hovered && this.hovered.x === t.x && this.hovered.y === t.y)) return;

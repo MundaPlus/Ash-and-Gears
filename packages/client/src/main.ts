@@ -233,7 +233,7 @@ async function boot() {
     store.set({ toolLabel: label ? `${label} · ${t("tool.hint")}${rot ? ` ${t("tool.rotate_hint")} ⟳` : ""}` : null, menu: null });
   };
   actions.rotateTool = (d) => {
-    tools.rot = (tools.rot + d + 4) % 4;
+    tools.rotate(d);
     store.set({ toolRot: tools.rot });
   };
   actions.setArt = (patch) => {
