@@ -6,6 +6,7 @@ import { Container, Graphics, Sprite, Text } from "pixi.js";
 import { PALETTES, SHIRTS, t } from "@wc/data";
 import { pain, type Game, type Pawn } from "@wc/sim";
 import { TILE, type TextureSet } from "./textures.ts";
+import { chargeBar } from "./dynamic.ts";
 
 /** A stable color per survivor, from a small warm palette that reads on dirt and asphalt. */
 /** UI swatch color per survivor: the middle color of its shirt ramp (rust palette). */
@@ -136,6 +137,8 @@ export class PawnRenderer {
         v.hp.rect(-10, -20, 20, 3).fill({ color: 0x1b1714, alpha: 0.8 });
         v.hp.rect(-10, -20, 20 * (1 - hurt), 3).fill(p.faction === "colony" ? 0x9fb84a : 0xc2453a);
       }
+      // Robots: the charge bar above the head, red to yellow to green.
+      if (p.robot) chargeBar(v.hp, -10, -25, 20, 4, p.charge ?? 1);
       v.body.alpha = p.mentalBreak ? 0.75 : 1;
       v.label.visible = zoom > 0.55;
       const name = p.faction === "wild" ? t(`creature.${p.nick}`) : p.nick;

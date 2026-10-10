@@ -28,6 +28,8 @@ export interface Thing {
   /** Generators: fuel units inside. Batteries: stored Wh. */
   fuel?: number;
   charge?: number;
+  /** Consumers: charge in the machine's own backup battery (Wh). */
+  bank?: number;
   /** Belt cargo moving across this tile. */
   cargo?: { def: number; count: number; progress: number; contaminated?: boolean } | null;
   /** Auto-crafter: chosen recipe, input buffer (item index -> count), work progress. */

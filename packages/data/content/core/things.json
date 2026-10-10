@@ -158,9 +158,18 @@
    "components": 2
   },
   "drops": {
-   "steel": [2, 6],
-   "bandage": [1, 4],
-   "canned_food": [2, 6]
+   "steel": [
+    2,
+    6
+   ],
+   "bandage": [
+    1,
+    4
+   ],
+   "canned_food": [
+    2,
+    6
+   ]
   },
   "lootChance": 0.5,
   "blueprintChance": 0.7
@@ -238,7 +247,10 @@
  },
  {
   "id": "bedroll",
-  "footprint": [1, 2],
+  "footprint": [
+   1,
+   2
+  ],
   "kind": "furniture",
   "color": "#b0834e",
   "glyph": "b",
@@ -258,7 +270,10 @@
  },
  {
   "id": "scrap_bed",
-  "footprint": [2, 2],
+  "footprint": [
+   2,
+   2
+  ],
   "kind": "furniture",
   "color": "#d6ab6b",
   "glyph": "B",
@@ -280,7 +295,10 @@
  },
  {
   "id": "table",
-  "footprint": [2, 1],
+  "footprint": [
+   2,
+   1
+  ],
   "kind": "furniture",
   "color": "#84603f",
   "glyph": "=",
@@ -332,7 +350,10 @@
  },
  {
   "id": "scrap_bench",
-  "footprint": [2, 1],
+  "footprint": [
+   2,
+   1
+  ],
   "kind": "furniture",
   "color": "#6f8088",
   "glyph": "S",
@@ -350,7 +371,10 @@
  },
  {
   "id": "stove",
-  "footprint": [2, 1],
+  "footprint": [
+   2,
+   1
+  ],
   "kind": "furniture",
   "color": "#4a3b33",
   "glyph": "O",
@@ -511,7 +535,10 @@
  },
  {
   "id": "research_desk",
-  "footprint": [2, 1],
+  "footprint": [
+   2,
+   1
+  ],
   "kind": "furniture",
   "color": "#4d6670",
   "glyph": "R",
@@ -529,7 +556,10 @@
  },
  {
   "id": "scrap_generator",
-  "footprint": [2, 1],
+  "footprint": [
+   2,
+   1
+  ],
   "kind": "furniture",
   "color": "#8a3b2e",
   "glyph": "G",
@@ -609,7 +639,10 @@
  {
   "id": "solar_panel",
   "kind": "furniture",
-  "footprint": [2, 2],
+  "footprint": [
+   2,
+   2
+  ],
   "color": "#3b4f63",
   "glyph": "*",
   "hp": 120,
@@ -631,7 +664,10 @@
  },
  {
   "id": "wind_turbine",
-  "footprint": [2, 2],
+  "footprint": [
+   2,
+   2
+  ],
   "kind": "furniture",
   "color": "#a6b0ba",
   "glyph": "Y",
@@ -654,7 +690,10 @@
  },
  {
   "id": "battery",
-  "footprint": [1, 2],
+  "footprint": [
+   1,
+   2
+  ],
   "kind": "furniture",
   "color": "#3b4f63",
   "glyph": "B",
@@ -695,7 +734,10 @@
  },
  {
   "id": "powered_bench",
-  "footprint": [2, 1],
+  "footprint": [
+   2,
+   1
+  ],
   "kind": "furniture",
   "color": "#6d86a0",
   "glyph": "P",
@@ -718,7 +760,10 @@
  },
  {
   "id": "smelter",
-  "footprint": [2, 1],
+  "footprint": [
+   2,
+   1
+  ],
   "kind": "furniture",
   "color": "#a8481a",
   "glyph": "F",
@@ -805,7 +850,10 @@
  {
   "id": "refinery",
   "kind": "furniture",
-  "footprint": [2, 1],
+  "footprint": [
+   2,
+   1
+  ],
   "color": "#5c4636",
   "glyph": "R",
   "hp": 250,
@@ -857,7 +905,10 @@
  {
   "id": "robot_bay",
   "kind": "furniture",
-  "footprint": [2, 2],
+  "footprint": [
+   2,
+   2
+  ],
   "color": "#56616d",
   "glyph": "B",
   "hp": 300,
@@ -865,7 +916,8 @@
   "bench": true,
   "robotBay": true,
   "power": {
-   "use": 200
+   "use": 50,
+   "bank": 4800
   },
   "build": {
    "cost": {
@@ -1065,7 +1117,10 @@
  {
   "id": "water_purifier",
   "kind": "furniture",
-  "footprint": [2, 1],
+  "footprint": [
+   2,
+   1
+  ],
   "color": "#8fae7e",
   "glyph": "U",
   "hp": 180,
@@ -1110,7 +1165,10 @@
  {
   "id": "fuel_still",
   "kind": "furniture",
-  "footprint": [2, 1],
+  "footprint": [
+   2,
+   1
+  ],
   "color": "#5a3a22",
   "glyph": "S",
   "hp": 160,
@@ -1134,7 +1192,10 @@
  {
   "id": "reactor_console",
   "kind": "furniture",
-  "footprint": [2, 2],
+  "footprint": [
+   2,
+   2
+  ],
   "color": "#9fd14a",
   "glyph": "R",
   "hp": 400,
@@ -1157,7 +1218,10 @@
  {
   "id": "school_bus",
   "kind": "furniture",
-  "footprint": [3, 2],
+  "footprint": [
+   3,
+   2
+  ],
   "color": "#e3c25a",
   "glyph": "B",
   "hp": 800,
@@ -1177,7 +1241,10 @@
  {
   "id": "satellite_dish",
   "kind": "furniture",
-  "footprint": [3, 3],
+  "footprint": [
+   3,
+   3
+  ],
   "color": "#a6b0ba",
   "glyph": "D",
   "hp": 500,

@@ -113,6 +113,8 @@ export const ThingDef = z.object({
       produce: z.number().min(0).default(0),
       use: z.number().min(0).default(0),
       store: z.number().min(0).default(0),
+      /** Consumers: own backup battery (Wh). It fills from the network only and feeds only its machine. Absent = half an hour of use. */
+      bank: z.number().min(0).optional(),
       fuel: z.object({ item: id, perHour: z.number().positive(), capacity: z.number().int().positive() }).optional(),
       /** Output follows the sun (day, weather) or the wind (A3). */
       source: z.enum(["solar", "wind"]).optional(),

@@ -3,6 +3,7 @@
  * body: no hunger, thirst, sleep, mood or social life. They do only some work types, fight badly,
  * and run on charge. Below a quarter charge they go to a free powered robot bay; a robot on a bay
  * charges and gets repaired. A robot bay builds robots and hauler drones with bills.
+ * The bay has its own battery (twice a battery): it fills from the network and charges robots.
  */
 import { atGoal, endJob, goTo, isReserved, reserve } from "./ai.ts";
 import { hostile } from "./combat.ts";
@@ -20,6 +21,8 @@ const CHARGE_PER_HOUR = 0.3;
 /** Damage repaired per in-game hour on a powered bay (each injury). */
 const REPAIR_PER_HOUR = 1.5;
 const GO_CHARGE_AT = 0.25;
+/** Energy for a full robot charge (Wh), taken from the bay's own battery. */
+const ROBOT_WH = 1000;
 
 /** What each kind may do. Everything else is ruled out. */
 const ALLOWED: Record<string, string[]> = {
@@ -84,7 +87,7 @@ export function tickRobot(game: Game, p: Pawn): void {
 function freeBay(game: Game, p: Pawn): Thing | null {
   const used = new Set([...game.pawns.values()].filter((o) => o.id !== p.id && o.job?.kind === "charge").map((o) => o.job!.targetId));
   const bays = [...game.things.values()]
-    .filter((t) => game.reg.things.list[t.def].robotBay && isPowered(game, t) && !used.has(t.id) && !isReserved(game, `bay:${t.id}`, p))
+    .filter((t) => game.reg.things.list[t.def].robotBay && (isPowered(game, t) || (t.bank ?? 0) > 0) && !used.has(t.id) && !isReserved(game, `bay:${t.id}`, p))
     .sort((a, b) => (a.x - p.x) ** 2 + (a.y - p.y) ** 2 - ((b.x - p.x) ** 2 + (b.y - p.y) ** 2));
   return bays.find((b) => game.path.canReach(p, b)) ?? null;
 }
@@ -112,12 +115,16 @@ registerJob("charge", (game, p, job) => {
     if (!atGoal(p)) return "run";
     job.stage = 2;
   }
-  if (!isPowered(game, bay)) return "fail";
   const perTick = 1 / game.ticksPerHour;
-  p.charge = Math.min(1, (p.charge ?? 0) + CHARGE_PER_HOUR * perTick);
+  // Charge comes out of the bay's battery; an empty bay only repairs (wait for the network to fill it).
+  const gain = Math.min(1 - (p.charge ?? 0), CHARGE_PER_HOUR * perTick, (bay.bank ?? 0) / ROBOT_WH);
+  if (gain > 0) {
+    p.charge = (p.charge ?? 0) + gain;
+    bay.bank = (bay.bank ?? 0) - gain * ROBOT_WH;
+  } else if (!isPowered(game, bay) && (p.charge ?? 0) < 0.98) return "fail";
   for (const i of p.health.injuries) i.dmg = Math.max(0, i.dmg - REPAIR_PER_HOUR * perTick);
   p.health.injuries = p.health.injuries.filter((i) => i.dmg > 0.01);
-  return p.charge >= 0.98 && p.health.injuries.length === 0 ? "done" : "run";
+  return (p.charge ?? 0) >= 0.98 && p.health.injuries.length === 0 ? "done" : "run";
 });
 
 /** Number of robots of a kind in the colony (the "stock" for robot bills). */

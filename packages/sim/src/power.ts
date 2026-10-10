@@ -13,6 +13,17 @@ import { NO_THING, type Thing } from "./map.ts";
 import { pickUp } from "./hauling.ts";
 
 const POWER_EVERY = 20;
+/** A consumer's backup battery, in hours of its own use, unless the thing sets `bank`. */
+const BACKUP_HOURS = 0.5;
+/** A backup battery fills from empty in this many hours (when the network has power to spare). */
+const BANK_FILL_HOURS = 4;
+
+/** Size of a consumer's backup battery (Wh); 0 for things that use no power. */
+export function bankSize(game: Game, t: Thing): number {
+  const p = game.reg.things.list[t.def].power;
+  if (!p?.use && !p?.bank) return 0;
+  return p.bank ?? p.use * BACKUP_HOURS;
+}
 
 export interface PowerNet {
   id: number;
@@ -166,6 +177,25 @@ export function tickPower(game: Game): void {
         game.message("msg.blackout", { n: cut.size }, "warn");
         game.lastBlackoutMsg = game.tick;
       }
+    }
+    // Cut machines run on their own backup battery while it lasts.
+    for (const u of users) {
+      if (!cut.has(u.id)) continue;
+      const need = game.reg.things.list[u.def].power!.use * dtH;
+      if ((u.bank ?? 0) >= need) {
+        u.bank! -= need;
+        cut.delete(u.id);
+      }
+    }
+    // Backup batteries fill next, from what is left (generators first, then the batteries).
+    let spare = Math.max(0, avail - served);
+    for (const u of users) {
+      const size = bankSize(game, u);
+      const add = Math.min(size - (u.bank ?? 0), (size / BANK_FILL_HOURS) * dtH, spare * dtH);
+      if (add <= 0) continue;
+      u.bank = (u.bank ?? 0) + add;
+      spare -= add / dtH;
+      served += add / dtH;
     }
     // Balance: surplus charges batteries, shortage drains them.
     stored = Math.max(0, Math.min(capacity, stored + (produce - served) * dtH));

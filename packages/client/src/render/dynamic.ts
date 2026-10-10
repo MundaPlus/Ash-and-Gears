@@ -3,7 +3,7 @@
  * Drawn with one Graphics object over the chunk layer.
  */
 import { Graphics } from "pixi.js";
-import { DIRS4, isPowered, poleLinks, sourceFactor, type Game } from "@wc/sim";
+import { bankSize, DIRS4, isPowered, poleLinks, sourceFactor, type Game } from "@wc/sim";
 import { TILE } from "./textures.ts";
 
 /** Overlay colors for power networks. */
@@ -88,12 +88,13 @@ export class DynamicRenderer {
         const charging = [...game.pawns.values()].some((p) => p.job?.kind === "charge" && p.job.targetId === t.id && p.job.stage === 2);
         if (charging && Math.sin(timeSec * 5) > 0) g.rect(px + 4, py + 4, 4, 4).fill(0x9fd14a);
       }
-      // Batteries show their charge as a bar.
-      if (d.power?.store) {
-        const k = Math.max(0, Math.min(1, (t.charge ?? 0) / d.power.store));
-        const by = py + fh * TILE - 7;
-        g.rect(px + 4, by, fw * TILE - 8, 4).fill(0x1b1714);
-        if (k > 0) g.rect(px + 5, by + 1, (fw * TILE - 10) * k, 2).fill(k < 0.2 ? 0xff4a3a : 0x9fd14a);
+      // Charge bars: batteries, the robot bay and every machine's backup battery, red to yellow to green.
+      if (d.power?.store) chargeBar(g, px + 4, py + fh * TILE - 7, fw * TILE - 8, 4, (t.charge ?? 0) / d.power.store);
+      const bank = bankSize(game, t);
+      if (bank > 0) {
+        // Big banks (the robot bay) get a full bar; a small backup battery gets a thin one in the corner.
+        if (bank >= 1000) chargeBar(g, px + 4, py + fh * TILE - 7, fw * TILE - 8, 4, (t.bank ?? 0) / bank);
+        else chargeBar(g, px + fw * TILE - 11, py + fh * TILE - 5, 8, 3, (t.bank ?? 0) / bank);
       }
       // Wind turbines: blades turn with the wind.
       if (d.power?.source === "wind") {
@@ -180,4 +181,16 @@ export class DynamicRenderer {
     }
     g.circle(x, y, 2).fill(0x1b1714);
   }
+}
+
+/** Charge color: red when low, yellow in the middle, green when full (palette tones). */
+export function chargeColor(k: number): number {
+  return k < 0.25 ? 0xd9472e : k < 0.6 ? 0xe3c25a : 0x9fd14a;
+}
+
+/** A charge bar with a dark frame; `k` is 0..1. */
+export function chargeBar(g: Graphics, x: number, y: number, w: number, h: number, k: number): void {
+  k = Math.max(0, Math.min(1, k));
+  g.rect(x, y, w, h).fill(0x1b1714);
+  if (k > 0) g.rect(x + 1, y + 1, Math.max(1, (w - 2) * k), h - 2).fill(chargeColor(k));
 }

@@ -134,7 +134,8 @@ export function buildShowcase(game: Game): void {
   put("wire", hx - 11, hy - 12);
 
   // Robots (A7, B6): a powered robot bay with one robot of each kind.
-  put("robot_bay", hx + 12, hy - 8);
+  const bay = put("robot_bay", hx + 12, hy - 8);
+  if (bay) bay.bank = 4800;
   put("solar_panel", hx + 14, hy - 8);
   put("wind_turbine", hx + 14, hy - 6);
   const bat3 = put("battery", hx + 16, hy - 8);
