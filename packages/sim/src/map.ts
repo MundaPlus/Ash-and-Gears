@@ -30,6 +30,8 @@ export interface Thing {
   charge?: number;
   /** Consumers: charge in the machine's own backup battery (Wh). */
   bank?: number;
+  /** Consumers: running on the backup battery right now (the network could not supply it). */
+  onBank?: boolean;
   /** Belt cargo moving across this tile. */
   cargo?: { def: number; count: number; progress: number; contaminated?: boolean } | null;
   /** Auto-crafter: chosen recipe, input buffer (item index -> count), work progress. */
@@ -46,6 +48,8 @@ export interface Thing {
   forPrisoners?: boolean;
   /** Power switch turned off. */
   off?: boolean;
+  /** Benches: up to 5 "make" orders, done in order before stock bills. */
+  queue?: { recipe: string; left: number }[];
   /** Graves: a corpse lies here. */
   filled?: boolean;
   /** Consumer priority set by the player (1 keep on longest .. 3 cut first); default from the def. */

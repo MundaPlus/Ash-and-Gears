@@ -213,5 +213,53 @@
   "prereqs": [
    "robotics"
   ]
+ },
+ {
+  "id": "food_preservation",
+  "cost": 1600,
+  "tier": 1,
+  "prereqs": []
+ },
+ {
+  "id": "advanced_medicine",
+  "cost": 2800,
+  "tier": 2,
+  "prereqs": [
+   "field_medicine",
+   "plastics"
+  ]
+ },
+ {
+  "id": "reinforced_walls",
+  "cost": 2200,
+  "tier": 1,
+  "prereqs": [
+   "smelting"
+  ]
+ },
+ {
+  "id": "heavy_turrets",
+  "cost": 3400,
+  "tier": 2,
+  "prereqs": [
+   "turret_wiring",
+   "smelting"
+  ]
+ },
+ {
+  "id": "large_batteries",
+  "cost": 3000,
+  "tier": 2,
+  "prereqs": [
+   "power_grid"
+  ]
+ },
+ {
+  "id": "climate_control",
+  "cost": 2600,
+  "tier": 2,
+  "prereqs": [
+   "power_grid"
+  ]
  }
 ]

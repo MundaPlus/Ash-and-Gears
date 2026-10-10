@@ -2,6 +2,7 @@ import { Application, Container, Graphics } from "pixi.js";
 import { h, render } from "preact";
 import { applyMods, loadCoreContent, t } from "@wc/data";
 import { enabledPacks, setModErrors } from "./mods.ts";
+import { readMark, SESSION_SLOT, writeMark } from "./session.ts";
 import {
   activeWorkTypes,
   billTarget,
@@ -23,7 +24,7 @@ import {
 import { ToolController } from "./input/tools.ts";
 import * as sim from "@wc/sim";
 import { Audio } from "./audio.ts";
-import { listSlots, readSlot, writeSlot } from "./storage.ts";
+import { downloadBytes, listSlots, readSlot, writeSlot } from "./storage.ts";
 import { TitleScreen } from "./ui/Screens.tsx";
 import { Camera } from "./input/camera.ts";
 import { PawnRenderer } from "./render/pawns.ts";
@@ -91,7 +92,20 @@ async function boot() {
   setModErrors(modded.errors);
   const content = modded.content;
   let game: Game;
-  if (params.has("load")) {
+  // A refresh of the running game: continue from the session state (see session.ts).
+  const mark = readMark();
+  const sessionBytes = mark && mark.url === location.search ? await readSlot(SESSION_SLOT).catch(() => null) : null;
+  let resumed: Game | null = null;
+  if (sessionBytes) {
+    try {
+      resumed = sim.loadGame(content, await sim.unpackSave(sessionBytes));
+    } catch (e) {
+      console.warn("session state did not load", e);
+    }
+  }
+  if (resumed) {
+    game = resumed;
+  } else if (params.has("load")) {
     let slot: string | null;
     try {
       slot = sessionStorage.getItem("wc-load");
@@ -158,6 +172,13 @@ async function boot() {
   const camera = new Camera(app.canvas, world, { w: game.map.w * TILE, h: game.map.h * TILE });
   camera.centerOn((game.home.x + 0.5) * TILE, (game.home.y + 0.5) * TILE);
   camera.zoom = 1.5;
+  // After a refresh: the view as it was.
+  if (resumed && mark?.camera) {
+    camera.zoom = mark.camera.zoom;
+    camera.centerOn(mark.camera.x, mark.camera.y);
+  }
+  // This tab now plays this game: a refresh continues it.
+  writeMark({ url: location.search, ...(mark?.camera && resumed ? { camera: mark.camera } : {}) });
   camera.onRightClick = (wx, wy) => {
     if (tools.spec) return actions.setTool(null);
     orderAt(wx, wy);
@@ -253,6 +274,29 @@ async function boot() {
     await writeSlot(slotInfo(`save-${Date.now()}`, label), await sim.packSave(sim.saveGame(game)));
     return label;
   };
+  actions.downloadSave = async () => {
+    const bytes = await sim.packSave(sim.saveGame(game));
+    downloadBytes(bytes, `ash-and-gears-day${game.time.day}-${game.opts.seed}.aag`);
+  };
+  // Session state for a refresh: every 20 s while playing, and when the tab is hidden or closed.
+  let sessionSaving = false;
+  async function saveSession() {
+    if (sessionSaving) return;
+    sessionSaving = true;
+    try {
+      writeMark({ url: location.search, camera: { x: camera.x, y: camera.y, zoom: camera.zoom } });
+      await writeSlot(slotInfo(SESSION_SLOT, t("menu.session")), await sim.packSave(sim.saveGame(game)));
+    } catch (e) {
+      console.warn("session save failed", e);
+    } finally {
+      sessionSaving = false;
+    }
+  }
+  setInterval(() => void saveSession(), 20000);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") void saveSession();
+  });
+  window.addEventListener("pagehide", () => void saveSession());
   let autosaving = false;
   async function autosave() {
     if (autosaving) return;
@@ -426,6 +470,8 @@ async function boot() {
     let title = L.floor[i] ? t(`floor.${game.reg.floors.list[L.floor[i] - 1].id}`) : t(`terrain.${td.id}`);
     const th = L.thing[i];
     let bills: { benchId: number; recipe: string; target: number; stock: number }[] | undefined;
+    let make: { benchId: number; queue: { recipe: string; left: number }[]; recipes: { id: string; inputs: string }[] } | undefined;
+    let researchLink = false;
     let crafter: { thingId: number; current: string | null; options: string[] } | undefined;
     let filter: { thingId: number; current: string | null; options: string[] } | undefined;
     let power: { thingId: number; priority?: number; switchOn?: boolean } | undefined;
@@ -439,6 +485,14 @@ async function boot() {
       if ((thing.contamUntil ?? 0) > game.tick) lines.push(t("inspect.contaminated"));
       if (def.bench)
         bills = recipesFor(game, def.id).map((r) => ({ benchId: thing.id, recipe: r.id, target: billTarget(game, thing, r), stock: stockOf(game, r) }));
+      // Benches get a make queue; desks and benches a shortcut to the research menu.
+      if (def.bench && recipesFor(game, def.id).length)
+        make = {
+          benchId: thing.id,
+          queue: (thing.queue ?? []).map((o) => ({ ...o })),
+          recipes: recipesFor(game, def.id).map((r) => ({ id: r.id, inputs: r.inputs.map((i) => `${i.count} ${i.item ? t(`item.${i.item}`) : t(`tag.${i.tag}`)}`).join(", ") })),
+        };
+      researchLink = !!def.bench || !!def.research;
       if (def.grave && thing.filled) lines.push(t("inspect.grave_filled"));
       if (def.burns) {
         lines.push(t("inspect.fuel", { v: Math.round(thing.fuel ?? 0), max: def.burns.capacity, item: t(`item.${def.burns.item}`) }));
@@ -449,6 +503,13 @@ async function boot() {
         if (p.fuel) lines.push(t("inspect.fuel", { v: Math.round(thing.fuel ?? 0), max: p.fuel.capacity, item: t(`item.${p.fuel.item}`) }));
         if (p.store) lines.push(t("inspect.charge", { v: Math.round(thing.charge ?? 0), max: p.store }));
         if (p.use) lines.push(sim.isPowered(game, thing) ? t("inspect.powered", { w: p.use }) : t("inspect.unpowered", { w: p.use }));
+        // Its own battery: how full, and whether it charges, is full, or keeps the machine running now.
+        const bank = sim.bankSize(game, thing);
+        if (bank > 0) {
+          const v = thing.bank ?? 0;
+          const state = thing.onBank ? "on_bank" : v >= bank - 0.5 ? "full" : sim.isPowered(game, thing) ? "charging" : "empty";
+          lines.push(t(p.bank ? "inspect.store" : "inspect.backup", { v: Math.round(v), max: Math.round(bank), pct: Math.round((v / bank) * 100), state: t(`inspect.bank_${state}`) }));
+        }
         if (p.produce && p.source) lines.push(t("inspect.output", { w: Math.round(p.produce * sim.sourceFactor(game, thing, p.source)) }));
         if (p.use) power = { thingId: thing.id, priority: sim.priorityOf(game, thing) };
         const net = game.nets[game.netOf.get(thing.id) ?? -1];
@@ -499,6 +560,9 @@ async function boot() {
       const st = game.items.get(it)!;
       const name = t(`item.${game.reg.items.list[st.def].id}`);
       lines.push(t("inspect.items", { count: st.count, item: st.contaminated ? `${name} (${t("item.contaminated")})` : name }));
+      // A manual: which research it opens.
+      const opens = game.reg.content.research.filter((r) => r.blueprint === game.reg.items.list[st.def].id);
+      if (opens.length) lines.push(t("inspect.unlocks", { project: opens.map((r) => t(`research.${r.id}`)).join(", ") }));
       // Food and bodies: how long until it rots, here and at this temperature.
       if (game.reg.items.list[st.def].rotDays) {
         const d = sim.daysToRot(game, st);
@@ -509,9 +573,24 @@ async function boot() {
     const stockpile = zoneHere?.kind === "stockpile" ? { zoneId: zoneHere.id, allow: [...zoneHere.allow], priority: sim.zonePriority(zoneHere) } : undefined;
     const ta = sim.tileActions(game, renderer.layer, x, y);
     const actionsUi = ta.actions.length ? { list: ta.actions as string[], first: ta.first } : undefined;
-    store.set({ inspect: { title, lines, bills, crafter, filter, power, prisonBed, actions: actionsUi, stockpile } });
+    store.set({ inspect: { title, lines, bills, crafter, filter, power, prisonBed, actions: actionsUi, stockpile, make, researchLink } });
   }
   let inspected: { x: number; y: number } | null = null;
+  actions.queueAdd = (benchId, recipe, n) => {
+    const b = game.things.get(benchId);
+    if (b) sim.queueAdd(game, b, recipe, n);
+    if (inspected) inspectTile(inspected.x, inspected.y);
+  };
+  actions.queueSet = (benchId, index, left) => {
+    const b = game.things.get(benchId);
+    if (b) sim.queueSet(b, index, left);
+    if (inspected) inspectTile(inspected.x, inspected.y);
+  };
+  actions.queueUp = (benchId, index) => {
+    const b = game.things.get(benchId);
+    if (b) sim.queueUp(b, index);
+    if (inspected) inspectTile(inspected.x, inspected.y);
+  };
   actions.setBillTarget = (benchId, recipe, n) => {
     setBillTarget(game, benchId, recipe, n);
     if (inspected) inspectTile(inspected.x, inspected.y);

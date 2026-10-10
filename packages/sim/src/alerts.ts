@@ -42,6 +42,9 @@ export function computeAlerts(game: Game): Alert[] {
   if (beds < people.length) out.push({ key: "alert.no_beds", params: { n: people.length - beds }, level: "warn" });
   const idle = people.filter((p) => !p.drafted && !p.mentalBreak && !p.health.downed && p.job?.kind === "wander" && !p.job.data?.sulk);
   if (idle.length) out.push({ key: "alert.idle", params: { names: idle.map((p) => p.nick).join(", ") }, level: "warn", at: idle[0] });
+  // Drafted survivors do not eat or drink until it is critical: warn early.
+  const starving = people.find((p) => p.drafted && (p.needs.thirst < 0.3 || p.needs.hunger < 0.3));
+  if (starving) out.push({ key: "alert.drafted_needs", params: { name: starving.nick }, level: starving.needs.thirst < 0.15 || starving.needs.hunger < 0.15 ? "bad" : "warn", at: starving });
   const hurt = people.find((p) => untendedInjuries(p).length > 0);
   if (hurt) out.push({ key: "alert.wounds", params: { name: hurt.nick }, level: hurt.health.downed ? "bad" : "warn", at: hurt });
   // A raider is marked for capture, but no bed is set for prisoners: the warden cannot take them.

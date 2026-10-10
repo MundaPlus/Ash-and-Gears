@@ -150,7 +150,7 @@ export class WorldRenderer {
         if (bpHere && bpHere.x === x && bpHere.y === y) {
           const bp = bpHere;
           const [bw, bh] = bp.kind === "thing" ? sizeOf(g, bp.def, bp.rot) : [1, 1];
-          const turnedBp = bp.kind === "thing" && bp.rot && bp.rot % 2 ? this.tex.thingsTurned[bp.def] : null;
+          const turnedBp = bp.kind === "thing" && bp.rot ? (this.tex.thingsRot[bp.rot]?.[bp.def] ?? (bp.rot % 2 ? this.tex.thingsTurned[bp.def] : null)) : null;
           const bs = new Sprite(bp.kind === "floor" ? this.tex.floors[bp.def] : (turnedBp ?? this.tex.things[bp.def]));
           bs.position.copyFrom(s.position);
           bs.width = bw * TILE;
@@ -209,7 +209,7 @@ export class WorldRenderer {
         // A big thing draws once, from its top-left tile.
         if (th !== NO_THING && g.things.get(th)!.x === x && g.things.get(th)!.y === y) {
           const thing = g.things.get(th)!;
-          const turnedBig = thing.rot && thing.rot % 2 ? this.tex.thingsTurned[thing.def] : null;
+          const turnedBig = thing.rot && !g.reg.things.list[thing.def].belt ? (this.tex.thingsRot[thing.rot]?.[thing.def] ?? (thing.rot % 2 ? this.tex.thingsTurned[thing.def] : null)) : null;
           const t = new Sprite(turnedBig ?? this.tex.things[thing.def]);
           const def = g.reg.things.list[thing.def];
           const [fw, fh] = sizeOf(g, thing.def, thing.rot);

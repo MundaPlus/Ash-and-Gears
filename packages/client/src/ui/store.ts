@@ -6,6 +6,10 @@ export interface Inspect {
   title: string;
   lines: string[];
   bills?: { benchId: number; recipe: string; target: number; stock: number }[];
+  /** Benches: the make queue (up to 5 orders) and what the bench can make. */
+  make?: { benchId: number; queue: { recipe: string; left: number }[]; recipes: { id: string; inputs: string }[] };
+  /** Research desks and benches: a button that opens the research menu. */
+  researchLink?: boolean;
   /** Auto-crafter: recipe choice. */
   crafter?: { thingId: number; current: string | null; options: string[] };
   /** Things to do on this tile (buttons); `first` is what the F key does. */
@@ -268,6 +272,10 @@ export const actions = {
   togglePowerOverlay: () => {},
   setCapture: (_pawn: number, _on: boolean) => {},
   tileAction: (_action: string) => {},
+  downloadSave: async () => {},
+  queueAdd: (_bench: number, _recipe: string, _n: number) => {},
+  queueSet: (_bench: number, _index: number, _left: number) => {},
+  queueUp: (_bench: number, _index: number) => {},
   setZonePriority: (_zone: number, _priority: number) => {},
   setZoneAllow: (_zone: number, _category: string, _on: boolean) => {},
   jumpTo: (_at: { layer: number; x: number; y: number }) => {},

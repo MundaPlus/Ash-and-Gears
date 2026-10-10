@@ -115,15 +115,35 @@ export class PawnRenderer {
       const sz = 1;
       if (p.health.downed) {
         v.body.rotation = Math.PI / 2;
+        v.body.x = 0;
         v.body.y = 5;
         v.zzz.visible = false;
       } else if (p.asleep) {
-        v.body.rotation = -Math.PI / 2;
-        v.body.y = 4;
+        // In a bed: lie in its middle, head toward the pillow (the pillow is at the top before the bed turns).
+        // On the ground: lie on the side.
+        const L = this.game.map.layers[p.layer];
+        const tid = L.inBounds(p.x, p.y) ? L.thing[L.i(p.x, p.y)] : -1;
+        const bed = tid !== -1 ? this.game.things.get(tid) : undefined;
+        if (bed && this.game.reg.things.list[bed.def].bed) {
+          const rot = bed.rot ?? 0;
+          const [w, h] = this.game.reg.things.list[bed.def].footprint;
+          const [fw, fh] = rot % 2 ? [h, w] : [w, h];
+          // Toward the pillow by a quarter of the bed's long side.
+          const [hx, hy] = [[0, -1], [1, 0], [0, 1], [-1, 0]][rot];
+          const pull = (Math.max(fw, fh) * TILE) / 4 - TILE / 2;
+          v.body.rotation = (rot * Math.PI) / 2;
+          v.body.x = (bed.x + fw / 2) * TILE - pos.x + hx * pull;
+          v.body.y = (bed.y + fh / 2) * TILE - pos.y + hy * pull;
+        } else {
+          v.body.rotation = -Math.PI / 2;
+          v.body.x = 0;
+          v.body.y = 4;
+        }
         v.zzz.visible = true;
         v.zzz.alpha = 0.5 + 0.5 * Math.sin(timeSec * 2 + p.id);
       } else {
         v.body.rotation = 0;
+        v.body.x = 0;
         v.zzz.visible = false;
         // Walk bob: two hops per tile-ish; idle breathing is a smaller wave.
         v.body.y = moving ? -Math.abs(Math.sin(timeSec * 10 + p.id)) * 3 : Math.sin(timeSec * 2 + p.id) * 0.6;

@@ -1,38 +1,36 @@
-# Handover — Ash & Gears — 2026-10-10 (late night)
+# Handover — Ash & Gears — 2026-10-11
 
 ## Goal
-The user wants a full post-apocalyptic colony + automation game (RimWorld + Factorio), built mostly autonomously by Claude. Demo v0.1.0 done; the Alpha (P1, A1–A10 in `docs/spec/12-alpha-plan.md`) is now done and tagged `v0.2.0-alpha`. The plan says: check-in at the end of Alpha. **Now waiting for the user's Alpha review.**
+The user wants a full post-apocalyptic colony + automation game (RimWorld + Factorio), built mostly autonomously by Claude. Demo v0.1.0 and Alpha v0.2.0 are done. The Beta (B1–B7, B9, B10 in `docs/spec/13-beta-plan.md`) is now done and tagged `v0.3.0-beta`. **Waiting for the user's Beta review.** B8 (phone app, PWA) was moved after the Beta by the user ("phone will be later").
 
 ## Done so far (all committed and pushed; `develop` and `master`)
-- AI art: 32 px sprites for people, creatures, things, items, walls, floors (`tools/art/ai/`, `packages/client/src/render/aiArt.ts`, picks in `tools/art/ai/picks.json`).
-- P1: rescue alarm, downed needs at half speed, attackers leave a beaten colony, smaller early raids, better scripted player.
-- A1 logistics (splitter, sorter, tunnels, robot arm, chests, bench sides) · A2 fluids (pipes, pump, tank, purifier, tap, fuel still) · A3 power grid (poles, switch, solar, wind, priorities, overlay) · A4 tiers 2–3 (old bunker layer 2, dug stairs, blueprints, refinery, electronics, assembler) · A5 traits/backstories/relationships · A6 prisoners and wardens · A7 robots and drones · A8 world map, expeditions, outposts · A9 factions, goodwill, caravans, trade · A10 presentation (site + Artifact https://claude.ai/artifact/Cmp6bsbnXyoFTZYF8AGCPF), release tag.
-- Tests: 83 unit, 14 e2e. Headless 12 seeds × 22 days: about 3–5 deaths.
+- B1–B4 story engine and three storylines (`packages/sim/src/plot.ts`, `content/core/story.json`), endings (`packages/client/src/ui/Ending.tsx`).
+- B5 scenarios (`packages/sim/src/scenarios.ts`).
+- B6 builder/miner/farmer/guard robots, raider hacking (`packages/sim/src/robots.ts`).
+- B7 mods: JSON content packs (`packages/data/src/mods.ts`, `packages/client/src/mods.ts`, `ui/Mods.tsx`, `mods/wasteland-bakery.json`, `docs/modding.md`).
+- B9 polish and user requests: story music cues, chapter banner, belts redrawn, pause-aware animation, robot bay battery, backup batteries, charge/fuel/progress bars, haul list + "haul now", stockpile priority, campfire/stove burn wood, wood regrowth + ash willow crop, graves, visible spoilage, electric heater, light (dark work 20% slower), recreation + schedules, click on map closes menus, work list colony-only, prison-bed alert, starvation-lock fix, compact robot chips.
+- B10: presentation (`packages/client/public/site/index.html`, Artifact https://claude.ai/artifact/Cmp6bsbnXyoFTZYF8AGCPF version 3), tag `v0.3.0-beta`.
+- Tests: 116 unit, 14 e2e. Headless 12 seeds × 22 days: about 5 deaths.
 
 ## Current state
-- Nothing in progress. Preview service `wasteland-colony` (vite preview 0.0.0.0:4173) serves the Alpha: http://192.168.31.215:4173/ (site: /site/, showcase: /?showcase=1, 32 px art: add `&px=32`).
+- Nothing in progress. Preview service `wasteland-colony` (vite preview 0.0.0.0:4173) serves the Beta: http://192.168.31.215:4173/ (site /site/, showcase /?showcase=1&px=16, story game e.g. `?line=reactor&scen=standard`).
 
 ## Decisions
-- See `docs/spec/12-alpha-plan.md` → "Progress and decisions made during the work".
-- Backstory work limits only on 3 of 24 backstories (more made colonies too weak).
-- Caravans are 20% of good events; faction raids normal size.
-
-## After the Alpha review (2026-10-11)
-- User feedback: gameplay and music fine; wants more songs (done: 13 songs in mood pools); prefers the **16 px** look (32 px AI art stays as an option, no more work on it); everything top-down except people, plants and trees (done in 16 px); seamless vertical walls (done); door animation and 25% door slowdown (done); machine/bench animations (done); battery 1x2 with charge bar, wind turbine 2x2 (done); better 16 px terrain and floors (done); QoL: inspect tile actions with F as default (done).
-- Own QoL picks done: alerts list, clickable messages, menu keys (B O Z J T M), forbid/allow stacks, stockpile filters, Dark Reader lock.
+- The user prefers the hand-pixeled 16 px look; things are top-down, only people and plants side view.
+- The user wants Claude to find and fix realism/clarity/QoL gaps on its own (see memory "feedback-gameplay-depth").
+- A mood thought for darkness was cut: the playtest went from 3 to 16 deaths.
 
 ## Next steps
-1. Show the user the 16 px pass and QoL changes; collect more feedback. Do not start Beta work before the user says so.
-2. Open points to mention: glow hound AI art does not glow; no tactical expedition maps; diplomacy is gifts only; wanderers still join on their own; Chrome extension window was hidden (headless Playwright used for checks).
+1. Get the user's Beta review; turn feedback into a plan.
+2. B8 phone app: PWA manifest, service worker, offline cache, touch polish (Capacitor only if an Android SDK exists).
+3. Known open issue: downed survivors after raids can die of thirst (seed s11).
 
 ## Key files
-- `docs/spec/12-alpha-plan.md` — plan, progress, decisions.
-- `packages/sim/src/` — logistics, fluids, power, social, prison, robots, world, factions, mapgen.
-- `packages/client/src/ui/` — WorldPanel, TradePanel, PawnPanel, Toolbar.
-- `tools/docs/record.mjs` — clip recorder (needs the preview server and ffmpeg).
+- `docs/spec/13-beta-plan.md` — Beta plan and progress table.
+- `CHANGELOG.md` — every change, newest first.
+- `scratchpad/batch.sh` (session scratchpad) — 12-seed headless playtest: `batch.sh <repo> 22 s1..s12`.
 
 ## Gotchas
-- e2e reuses the running preview server: run `npm run build` before `npm run e2e`.
-- Tests: set every work type to 0 (`WORK_TYPES`); an empty work table means default priority 3.
-- Headless playtests vary a lot per seed: compare 12 seeds (`s1`..`s12`).
-- Claude in Chrome may be hidden (visibilityState hidden); use headless Playwright scripts instead.
+- Always `npm run build` before `npm run e2e` (e2e uses the running preview server).
+- `cp` is aliased to `cp -i`; use `\cp -f` in scripts.
+- The showcase uses a random seed unless `&seed=` is given.

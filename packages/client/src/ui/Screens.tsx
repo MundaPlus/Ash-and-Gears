@@ -6,7 +6,9 @@
 import { t } from "@wc/data";
 import { useEffect, useState } from "preact/hooks";
 import { ART_SIZES } from "../render/textures.ts";
-import { listSlots, type SlotInfo } from "../storage.ts";
+import { importSaveFile, listSlots, type SlotInfo } from "../storage.ts";
+import { clearMark, SESSION_SLOT } from "../session.ts";
+import { TICKS_PER_SECOND, unpackSave } from "@wc/sim";
 import { actions, useStore } from "./store.ts";
 import { Mods } from "./Mods.tsx";
 import { installedMods } from "../mods.ts";
@@ -25,11 +27,13 @@ export interface NewGameOptions {
 }
 
 export function startNewGame(o: NewGameOptions) {
+  clearMark();
   const q = new URLSearchParams({ seed: o.seed || Math.random().toString(36).slice(2, 8), story: o.storyteller, raid: String(o.raid), mutant: String(o.mutant), rad: String(o.rad), size: String(o.size), day: String(o.day), line: o.line, scen: o.scenario });
   location.search = q.toString();
 }
 
 export function loadSlot(id: string) {
+  clearMark();
   try {
     sessionStorage.setItem("wc-load", id);
   } catch {
@@ -38,10 +42,40 @@ export function loadSlot(id: string) {
   location.search = "load=1";
 }
 
+/** Pick a save file from the computer: it becomes a slot in this browser and loads at once. */
+function LoadFile() {
+  const [err, setErr] = useState(false);
+  return (
+    <label class="modadd loadfile">
+      <span>{t("menu.load_file")}</span>
+      <input
+        type="file"
+        accept=".aag,.json,application/octet-stream"
+        data-testid="load-file"
+        onChange={async (e) => {
+          const input = e.target as HTMLInputElement;
+          const f = input.files?.[0];
+          if (!f) return;
+          const id = await importSaveFile(f, async (bytes) => {
+            const d = await unpackSave(bytes);
+            if (typeof d?.tick !== "number" || !Array.isArray(d.pawns)) throw new Error("not a save");
+            const tpd = Math.round((d.opts?.dayLengthSec ?? 360) * TICKS_PER_SECOND);
+            return { tick: d.tick, ticksPerDay: tpd, seed: String(d.opts?.seed ?? "?"), colonists: d.pawns.filter((p) => p.faction === "colony").length };
+          });
+          input.value = "";
+          if (id) loadSlot(id);
+          else setErr(true);
+        }}
+      />
+      {err && <small class="moderr">{t("menu.load_file_bad")}</small>}
+    </label>
+  );
+}
+
 function Slots({ onPick }: { onPick: (s: SlotInfo) => void }) {
   const [slots, setSlots] = useState<SlotInfo[] | null>(null);
   useEffect(() => {
-    listSlots().then(setSlots);
+    listSlots().then((all) => setSlots(all.filter((x) => x.id !== SESSION_SLOT)));
   }, []);
   if (slots === null) return <p class="hint">…</p>;
   if (!slots.length) return <p class="hint">{t("menu.no_saves")}</p>;
@@ -175,6 +209,7 @@ export function TitleScreen({ hasAutosave }: { hasAutosave: boolean }) {
         {view === "load" && (
           <div class="screen-body">
             <Slots onPick={(s) => loadSlot(s.id)} />
+            <LoadFile />
             <button onClick={() => setView("main")}>{t("menu.back")}</button>
           </div>
         )}
@@ -224,8 +259,14 @@ export function GameMenu() {
               </button>
             </div>
             {saved && <p class="hint">{t("menu.saved", { name: saved })}</p>}
+            <div class="row">
+              <button data-testid="download-save" onClick={() => actions.downloadSave()} title={t("menu.download_hint")}>
+                {t("menu.download")}
+              </button>
+            </div>
             <h3>{t("menu.load")}</h3>
             <Slots onPick={(sl) => loadSlot(sl.id)} />
+            <LoadFile />
           </div>
         )}
         {tab === "settings" && (

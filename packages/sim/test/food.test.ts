@@ -200,3 +200,34 @@ describe("rot", () => {
     expect(countItems(g, "canned_food")).toBe(36);
   });
 });
+
+describe("eating at a table", () => {
+  it("a hungry survivor carries the meal to a free chair at a table and eats there", () => {
+    const g = Game.create(loadCoreContent(), { seed: "table", mapSize: 96, storyteller: "none" });
+    const x0 = g.home.x + 4, y0 = g.home.y - 12;
+    const L = g.map.layers[0];
+    for (let y = y0 - 1; y <= y0 + 5; y++)
+      for (let x = x0 - 1; x <= x0 + 12; x++) {
+        const t = L.thing[L.i(x, y)];
+        if (t !== NO_THING) g.removeThing(t);
+        g.setTerrain(0, x, y, "dirt");
+      }
+    for (const s of [...g.items.values()]) if (g.reg.items.list[s.def].category === "food") g.items.delete(s.id);
+    for (let i = 0; i < L.item.length; i++) if (L.item[i] !== NO_THING && !g.items.has(L.item[i])) L.item[i] = NO_THING;
+    g.spawnThing("table", 0, x0 + 8, y0 + 2);
+    const chair = g.spawnThing("chair", 0, x0 + 8, y0 + 3);
+    dropItems(g, "simple_meal", 3, 0, x0, y0 + 2);
+    const p = [...g.pawns.values()].find((q) => q.faction === "colony")!;
+    p.x = x0 + 1;
+    p.y = y0 + 2;
+    p.needs.hunger = 0.3;
+    let sat = false;
+    for (let i = 0; i < g.ticksPerHour * 2; i++) {
+      g.step();
+      if (p.job?.kind === "eat" && p.job.stage === 2 && p.x === chair.x && p.y === chair.y) sat = true;
+    }
+    expect(sat).toBe(true);
+    expect(p.needs.hunger).toBeGreaterThan(0.5);
+    expect(p.memories.some((m) => g.reg.thoughts.list[m.thought].id === "ate_at_table")).toBe(true);
+  });
+});

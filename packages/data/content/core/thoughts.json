@@ -216,5 +216,15 @@
  {
   "id": "rotting_corpse",
   "mood": -7
+ },
+ {
+  "id": "ate_at_table",
+  "mood": 2,
+  "hours": 8
+ },
+ {
+  "id": "food_poisoning",
+  "mood": -8,
+  "hours": 10
  }
 ]

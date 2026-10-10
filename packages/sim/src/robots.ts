@@ -84,10 +84,11 @@ export function tickRobot(game: Game, p: Pawn): void {
   if (before > 0 && p.charge === 0) game.message("msg.robot_low", { name: p.nick }, "warn");
 }
 
-function freeBay(game: Game, p: Pawn): Thing | null {
+/** A free bay with power or stored charge; `any`: also a dead bay (a robot out of charge crawls there and waits). */
+function freeBay(game: Game, p: Pawn, any = false): Thing | null {
   const used = new Set([...game.pawns.values()].filter((o) => o.id !== p.id && o.job?.kind === "charge").map((o) => o.job!.targetId));
   const bays = [...game.things.values()]
-    .filter((t) => game.reg.things.list[t.def].robotBay && (isPowered(game, t) || (t.bank ?? 0) > 0) && !used.has(t.id) && !isReserved(game, `bay:${t.id}`, p))
+    .filter((t) => game.reg.things.list[t.def].robotBay && (any || isPowered(game, t) || (t.bank ?? 0) > 0) && !used.has(t.id) && !isReserved(game, `bay:${t.id}`, p))
     .sort((a, b) => (a.x - p.x) ** 2 + (a.y - p.y) ** 2 - ((b.x - p.x) ** 2 + (b.y - p.y) ** 2));
   return bays.find((b) => game.path.canReach(p, b)) ?? null;
 }
@@ -96,10 +97,11 @@ function freeBay(game: Game, p: Pawn): Thing | null {
 export function robotJob(game: Game, p: Pawn): Job | null | "idle" {
   const hurt = p.health.injuries.length > 0;
   if ((p.charge ?? 1) < GO_CHARGE_AT || hurt) {
-    const bay = freeBay(game, p);
+    // Out of charge: any bay will do, even one without power; the robot waits there for charge.
+    const bay = freeBay(game, p) ?? ((p.charge ?? 1) <= 0 ? freeBay(game, p, true) : null);
     if (bay && reserve(game, `bay:${bay.id}`, p)) return { kind: "charge", stage: 0, targetId: bay.id, target: { layer: bay.layer, x: bay.x, y: bay.y } };
   }
-  // Out of charge and no bay: stand still.
+  // Out of charge and no bay at all: stand still.
   if ((p.charge ?? 1) <= 0) return "idle";
   return null;
 }
@@ -121,8 +123,9 @@ registerJob("charge", (game, p, job) => {
   if (gain > 0) {
     p.charge = (p.charge ?? 0) + gain;
     bay.bank = (bay.bank ?? 0) - gain * ROBOT_WH;
-  } else if (!isPowered(game, bay) && (p.charge ?? 0) < 0.98) return "fail";
-  for (const i of p.health.injuries) i.dmg = Math.max(0, i.dmg - REPAIR_PER_HOUR * perTick);
+  }
+  // A dead bay (no power, nothing stored): the robot waits on it until power comes back. Repairs need power too.
+  if (isPowered(game, bay) || (bay.bank ?? 0) > 0) for (const i of p.health.injuries) i.dmg = Math.max(0, i.dmg - REPAIR_PER_HOUR * perTick);
   p.health.injuries = p.health.injuries.filter((i) => i.dmg > 0.01);
   return (p.charge ?? 0) >= 0.98 && p.health.injuries.length === 0 ? "done" : "run";
 });

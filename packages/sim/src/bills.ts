@@ -36,6 +36,40 @@ export function setBillTarget(game: Game, benchId: number, recipeId: string, n: 
   game.billTargets.set(`${benchId}:${recipeId}`, Math.max(0, Math.round(n)));
 }
 
+// ---------------------------------------------------------------- make queue
+
+/** How many orders a bench's make queue holds. */
+export const QUEUE_MAX = 5;
+
+/** Add a make order (or more of the last order when it is the same recipe). False when the queue is full. */
+export function queueAdd(game: Game, bench: Thing, recipeId: string, n = 1): boolean {
+  if (!recipesFor(game, game.reg.things.list[bench.def].id).some((r) => r.id === recipeId)) return false;
+  const q = (bench.queue ??= []);
+  const last = q[q.length - 1];
+  if (last?.recipe === recipeId) {
+    last.left = Math.min(99, last.left + n);
+    return true;
+  }
+  if (q.length >= QUEUE_MAX) return false;
+  q.push({ recipe: recipeId, left: Math.max(1, Math.min(99, n)) });
+  return true;
+}
+
+/** Change an order's count; 0 removes it. */
+export function queueSet(bench: Thing, index: number, left: number): void {
+  const q = bench.queue;
+  if (!q?.[index]) return;
+  if (left <= 0) q.splice(index, 1);
+  else q[index].left = Math.min(99, left);
+}
+
+/** Move an order one place up (earlier). */
+export function queueUp(bench: Thing, index: number): void {
+  const q = bench.queue;
+  if (!q || index <= 0 || index >= q.length) return;
+  [q[index - 1], q[index]] = [q[index], q[index - 1]];
+}
+
 export function recipesFor(game: Game, benchDefId: string): RecipeDef[] {
   return game.reg.content.recipes.filter((r) => r.benches.includes(benchDefId) && (!r.research || game.research.done.has(r.research)));
 }
@@ -74,9 +108,13 @@ function billJob(game: Game, p: Pawn, workType: WorkType): Job | null {
     .sort((a, b) => (a.x - p.x) ** 2 + (a.y - p.y) ** 2 - ((b.x - p.x) ** 2 + (b.y - p.y) ** 2));
   for (const bench of benches) {
     const def = game.reg.things.list[bench.def];
-    for (const r of recipesFor(game, def.id)) {
+    const all = recipesFor(game, def.id);
+    // Make orders first, in queue order; then the "keep in stock" bills.
+    const queued = (bench.queue ?? []).map((o) => all.find((r) => r.id === o.recipe)).filter((r): r is RecipeDef => !!r);
+    const cands: [RecipeDef, boolean][] = [...queued.map((r) => [r, true] as [RecipeDef, boolean]), ...all.map((r) => [r, false] as [RecipeDef, boolean])];
+    for (const [r, isOrder] of cands) {
       if (recipeWorkType(r) !== workType) continue;
-      if (stockOf(game, r) >= billTarget(game, bench, r)) continue;
+      if (!isOrder && stockOf(game, r) >= billTarget(game, bench, r)) continue;
       if (!game.path.canReachAdjacent(p, bench)) continue;
       // All inputs must exist somewhere before starting.
       const enough = r.inputs.every((inp) => {
@@ -92,7 +130,7 @@ function billJob(game: Game, p: Pawn, workType: WorkType): Job | null {
         if (!net || netAmount(game, net, r.fluidIn.kind) < r.fluidIn.liters) continue;
       }
       if (!reserve(game, `thing:${bench.id}`, p)) continue;
-      return { kind: "bill", stage: 0, targetId: bench.id, data: { recipe: r.id, input: 0, have: 0, work: r.work } };
+      return { kind: "bill", stage: 0, targetId: bench.id, data: { recipe: r.id, input: 0, have: 0, work: r.work, ...(isOrder ? { order: true } : {}) } };
     }
   }
   return null;
@@ -187,6 +225,11 @@ registerJob("bill", (game, p, job) => {
   if (burns?.whileWorking) bench.fuel = Math.max(0, (bench.fuel ?? 0) - burns.perHour / game.ticksPerHour);
   if (r.skill) learn(game, p, r.skill, 0.4);
   if ((job.data!.work as number) > 0) return "run";
+  // A make order: one fewer to go; the order leaves the queue when it is done.
+  if (job.data!.order) {
+    const i = (bench.queue ?? []).findIndex((o) => o.recipe === r.id);
+    if (i >= 0) queueSet(bench, i, bench.queue![i].left - 1);
+  }
   // Water from a contaminated well is contaminated too.
   const cont = isContaminatedThing(game, bench);
   // A robot rolls out of the bay.

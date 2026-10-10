@@ -109,6 +109,8 @@ export interface Pawn {
   lastAttacker?: number;
   /** Colony robot or drone (A7): no needs, mood or social life. */
   robot?: boolean;
+  /** Food poisoning until this tick: slower work. */
+  sickUntil?: number;
   /** Daily schedule (B9): 24 slots "any" | "work" | "sleep" | "joy". Absent = the default day. */
   schedule?: ("any" | "work" | "sleep" | "joy")[];
   /** Robot charge 0..1. */
@@ -175,6 +177,7 @@ export function workSpeed(game: Game, p: Pawn): number {
   for (const t of p.traits) m *= game.reg.traits.list[t].workSpeed;
   if (p.needs.rest < 0.1) m *= 0.7;
   if (p.rad >= 0.6) m *= 0.8;
+  if ((p.sickUntil ?? 0) > game.tick) m *= 0.75;
   return m * manipulation(game, p);
 }
 

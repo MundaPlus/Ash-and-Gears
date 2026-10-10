@@ -35,6 +35,7 @@ export function ResearchPanel() {
                         ? t("research.needs_blueprint", { item: t(`item.${r.blueprint}`) })
                         : `${Math.round(r.progress * 100)}% · ${r.cost}`}
                 </small>
+                {r.blueprint && r.state !== "done" && <small class="where">{t(`where.${r.blueprint}`)}</small>}
               </button>
             ))}
         </section>

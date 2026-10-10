@@ -5,7 +5,7 @@
  */
 import type { Game } from "./game.ts";
 import { dropItems, takeFromStack } from "./items.ts";
-import { NO_THING, type ItemStack } from "./map.ts";
+import { NO_THING, type ItemStack, type Thing } from "./map.ts";
 import { isSleepTime, tickNeeds } from "./needs.ts";
 import { isRoofed } from "./rooms.ts";
 import type { Pos } from "./path.ts";
@@ -13,9 +13,16 @@ import { addMemory, addRad, hasTraitFlag, traitMult, type Job, type Pawn } from 
 import { isContaminatedThing } from "./weather.ts";
 import { workOrder, workPriority } from "./worktypes.ts";
 import { haulJob } from "./hauling.ts";
+import { DIRS4 } from "./logistics.ts";
 import { relaxJob, slotNow } from "./recreation.ts";
 import { moving, tickHealthHourly } from "./health.ts";
 import { draftedTick, fleeFrom, hostileTick, selfDefense, updateGroups } from "./hostile.ts";
+import { nearestHostile } from "./combat.ts";
+
+/** Drafted survivors break off for a drink or a meal below this need level. */
+const DRAFTED_CRITICAL = 0.15;
+/** Speed of a robot with no charge left. */
+const ROBOT_CRAWL = 0.2;
 import { equipJob, inBed, rushToDowned } from "./medical.ts";
 import { fluidNetOf, LITERS_PER_DRINK, netDraw, tapHasWater } from "./fluids.ts";
 import { prisonerTick } from "./prison.ts";
@@ -27,7 +34,7 @@ export const WALK_SPEED = 0.15;
 const STAIRS_STEP_COST = 4;
 
 export * from "./jobs.ts";
-import { cleanups, drivers, registerJob, workGivers, type JobResult } from "./jobs.ts";
+import { cleanups, drivers, registerCleanup, registerJob, workGivers, type JobResult } from "./jobs.ts";
 
 // ---------------------------------------------------------------- reservations
 
@@ -74,7 +81,27 @@ export function moveSpeed(game: Game, p: Pawn): number {
   let s = WALK_SPEED * game.reg.content.creatures[p.creature].speed * moving(game, p);
   if (p.needs.rest < 0.05) s *= 0.7;
   if (p.carrying) s *= 0.9;
+  // A robot out of charge crawls on its last reserve, at a fifth of its speed.
+  if (p.robot && (p.charge ?? 1) <= 0) s *= ROBOT_CRAWL;
   return s * traitMult(game, p, (t) => t.moveSpeed);
+}
+
+/**
+ * Nobody may stand inside something solid (a machine built on them, a robot placed on a turbine):
+ * move them to the nearest free tile, in rings around where they stand.
+ */
+export function unstick(game: Game, p: Pawn): void {
+  if (game.walkable(p.layer, p.x, p.y)) return;
+  for (let r = 1; r <= 8; r++)
+    for (let dy = -r; dy <= r; dy++)
+      for (let dx = -r; dx <= r; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r || !game.walkable(p.layer, p.x + dx, p.y + dy)) continue;
+        p.x += dx;
+        p.y += dy;
+        p.path = null;
+        p.moveT = 0;
+        return;
+      }
 }
 
 /** Advance along the path. Plans again if the next tile became blocked. */
@@ -105,6 +132,7 @@ export function tickPawns(game: Game): void {
   const hourly = game.tick % Math.round(game.ticksPerHour) === 0;
   if (game.tick % 30 === 0) updateGroups(game);
   if (game.tick % 30 === 15) rushToDowned(game);
+  if (game.tick % 30 === 5) for (const p of game.pawns.values()) unstick(game, p);
   for (const p of [...game.pawns.values()]) {
     if (!game.pawns.has(p.id)) continue;
     if (p.cooldown > 0) p.cooldown--;
@@ -136,7 +164,19 @@ export function tickPawns(game: Game): void {
       continue;
     }
     if (p.drafted) {
-      draftedTick(game, p);
+      // Drafted survivors stay put, but when thirst or hunger gets critical and no enemy is close,
+      // they take a quick drink or meal and stay drafted (else a long stand-off kills them).
+      const n = p.needs;
+      const critical = n.thirst < DRAFTED_CRITICAL || n.hunger < DRAFTED_CRITICAL;
+      if (!p.job && critical && p.order?.kind !== "attack" && (game.tick + p.id) % 30 === 0 && !nearestHostile(game, p, "colony", 8)) {
+        const j = n.thirst <= n.hunger ? (drinkJob(game, p, true) ?? eatJob(game, p, true)) : (eatJob(game, p, true) ?? drinkJob(game, p, true));
+        if (j) startJob(game, p, j);
+      }
+      if (p.job && (p.job.kind === "eat" || p.job.kind === "drink")) {
+        const driver = drivers.get(p.job.kind)!;
+        const r = driver(game, p, p.job);
+        if (r !== "run") endJob(game, p, r === "fail");
+      } else draftedTick(game, p);
       tickMove(game, p);
       continue;
     }
@@ -158,7 +198,7 @@ export function tickPawns(game: Game): void {
       const k = p.job.kind;
       const needJob = k === "eat" || k === "drink" || k === "sleep";
       const urgent = p.needs.hunger < 0.1 || p.needs.thirst < 0.1;
-      const longOk = k === "sleep" || k === "shelter" || k === "research";
+      const longOk = k === "sleep" || k === "shelter" || k === "research" || k === "charge";
       if ((urgent && !needJob) || (!longOk && game.tick - p.job.started > game.ticksPerHour * 6)) {
         endJob(game, p, false);
         think(game, p);
@@ -312,7 +352,50 @@ function eatJob(game: Game, p: Pawn, desperate: boolean): Job | null {
   return null;
 }
 
+// Cut off on the way to the table: the food goes back on the ground.
+registerCleanup("eat", (game, p, job) => {
+  if (job.stage === 3 && !job.data?.eaten && typeof job.data?.units === "number")
+    dropItems(game, job.data.food as string, job.data.units, p.layer, p.x, p.y, !!job.data.glowing);
+});
+
+/** Food poisoning chance per meal: raw food, cooked meals, canned food. A table cuts it. */
+const POISON_CHANCE = { raw: 0.06, cooked: 0.02, canned: 0.004 };
+const TABLE_POISON_MULT = 0.4;
+/** How long food poisoning lasts (in-game hours). */
+const POISON_HOURS = 10;
+
+/** A free chair next to a table, near enough to carry the food to. */
+function findSeat(game: Game, p: Pawn): Thing | null {
+  let best: Thing | null = null, bestD = 40 * 40;
+  for (const t of game.things.values()) {
+    if (t.layer !== p.layer || !game.reg.things.list[t.def].seat) continue;
+    const d = (t.x - p.x) ** 2 + (t.y - p.y) ** 2;
+    if (d >= bestD || isReserved(game, `seat:${t.id}`, p)) continue;
+    const L = game.map.layers[t.layer];
+    const byTable = DIRS4.some(([dx, dy]) => {
+      if (!L.inBounds(t.x + dx, t.y + dy)) return false;
+      const o = L.thing[L.i(t.x + dx, t.y + dy)];
+      return o !== NO_THING && game.reg.things.list[game.things.get(o)!.def].table;
+    });
+    if (byTable && game.path.canReach(p, t)) {
+      best = t;
+      bestD = d;
+    }
+  }
+  return best;
+}
+
+/**
+ * Eat: walk to the food, take a meal's worth, carry it to a free seat at a table if there is one,
+ * then eat. At a table: a small mood lift and less chance of food poisoning.
+ */
 registerJob("eat", (game, p, job) => {
+  if (job.stage === 3) {
+    // Carrying the food to the table.
+    if (!atGoal(p)) return "run";
+    job.until = game.tick + Math.round(game.ticksPerHour * 0.3);
+    job.stage = 2;
+  }
   if (job.stage === 0) {
     const s = game.items.get(job.targetId!);
     if (!s || s.layer < 0) return "fail";
@@ -328,7 +411,14 @@ registerJob("eat", (game, p, job) => {
     const units = Math.max(1, Math.min(s.count, Math.floor((1 - p.needs.hunger) / def.nutrition)));
     const glowing = !!s.contaminated;
     const taken = takeFromStack(game, s.id, units);
-    job.data = { nutrition: taken * def.nutrition, food: def.id, glowing };
+    job.data = { nutrition: taken * def.nutrition, food: def.id, glowing, units: taken };
+    // A seat at a table nearby: carry the food there first (not when starving).
+    const seat = p.needs.hunger > 0.1 ? findSeat(game, p) : null;
+    if (seat && reserve(game, `seat:${seat.id}`, p) && goTo(game, p, { layer: seat.layer, x: seat.x, y: seat.y })) {
+      job.data.table = true;
+      job.stage = 3;
+      return "run";
+    }
     job.until = game.tick + Math.round(game.ticksPerHour * 0.3);
     job.stage = 2;
   }
@@ -337,6 +427,16 @@ registerJob("eat", (game, p, job) => {
   const def = game.reg.items.get(job.data!.food as string);
   const raw = def.raw && hasTraitFlag(game, p, "eats_raw_ok");
   addMemory(game, p, raw ? "ate_canned" : (def.eatThought ?? "ate_canned"));
+  job.data!.eaten = true;
+  const atTable = !!job.data!.table;
+  if (atTable) addMemory(game, p, "ate_at_table");
+  // Food poisoning: raw food most, canned food hardly; a table cuts the chance.
+  const base = def.id === "canned_food" ? POISON_CHANCE.canned : def.raw ? POISON_CHANCE.raw : POISON_CHANCE.cooked;
+  if (!hasTraitFlag(game, p, "eats_raw_ok") && game.aiRng.next() < base * (atTable ? TABLE_POISON_MULT : 1)) {
+    p.sickUntil = game.tick + Math.round(POISON_HOURS * game.ticksPerHour);
+    addMemory(game, p, "food_poisoning");
+    game.message("msg.food_poisoning", { name: p.nick }, "warn", p);
+  }
   if (job.data!.glowing) {
     addRad(game, p, 0.05);
     addMemory(game, p, "ate_glowing_food");
