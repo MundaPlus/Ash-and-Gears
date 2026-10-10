@@ -148,7 +148,8 @@ export function buildShowcase(game: Game): void {
   const used = new Set([...game.pawns.values()].flatMap((p) => [p.first, p.nick]));
   for (let i = 0; i < 2; i++) {
     // A free tile near home (the airlock walls stand just south of the house).
-    let sx = hx + i, sy = hy + 1;
+    const sy = hy + 1;
+    let sx = hx + i;
     for (let k = 0; k < 20 && !game.walkable(0, sx, sy); k++) sx++;
     const p = makeSurvivor(game, 0, sx, sy, used);
     p.weapon = game.reg.items.idx(i ? "crossbow" : "pipe_pistol");
