@@ -224,3 +224,14 @@ body.cinematic #ui { display: none; }
 .goals .alert.bad { background: rgba(255, 74, 58, 0.2); border-color: #ff4a3a; }
 .goals .alert:disabled { cursor: default; opacity: 1; }
 .toast.jump { cursor: pointer; text-align: left; font: inherit; color: inherit; width: 100%; }
+
+/* Story (Beta) */
+.goals .story { border-bottom: 1px solid #3d3128; padding-bottom: 6px; margin-bottom: 6px; }
+.goals .story b { display: block; color: #e3c25a; margin: 2px 0 4px; }
+.ending { position: fixed; inset: 0; background: rgba(20, 17, 15, 0.82); display: grid; place-items: center; z-index: 50; padding: 16px; }
+.ending-card { max-width: 560px; width: 100%; background: #241e19; border: 1px solid #d9742e; padding: 24px; }
+.ending-card h2 { margin: 6px 0 10px; font-size: 32px; }
+.ending-card .kicker { letter-spacing: 0.16em; text-transform: uppercase; color: #d9742e; font-size: 12px; margin: 0; }
+.ending-card .slide { background: #1b1714; border-left: 3px solid #e3c25a; padding: 12px 14px; margin: 14px 0; }
+.ending-card .slide h3 { margin: 0 0 6px; }
+.ending-buttons { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }

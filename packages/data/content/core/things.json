@@ -1130,5 +1130,71 @@
    "menu": "water",
    "research": "biofuel"
   }
+ },
+ {
+  "id": "reactor_console",
+  "kind": "furniture",
+  "footprint": [2, 2],
+  "color": "#9fd14a",
+  "glyph": "R",
+  "hp": 400,
+  "blocks": true,
+  "bench": true,
+  "power": {
+   "use": 300
+  },
+  "build": {
+   "cost": {
+    "steel": 40,
+    "electronics": 8,
+    "components": 10
+   },
+   "work": 1500,
+   "menu": "production",
+   "research": "reactor_control"
+  }
+ },
+ {
+  "id": "school_bus",
+  "kind": "furniture",
+  "footprint": [3, 2],
+  "color": "#e3c25a",
+  "glyph": "B",
+  "hp": 800,
+  "blocks": true,
+  "bench": true,
+  "build": {
+   "cost": {
+    "steel": 60,
+    "scrap": 80,
+    "components": 10
+   },
+   "work": 2000,
+   "menu": "production",
+   "research": "vehicle_repair"
+  }
+ },
+ {
+  "id": "satellite_dish",
+  "kind": "furniture",
+  "footprint": [3, 3],
+  "color": "#a6b0ba",
+  "glyph": "D",
+  "hp": 500,
+  "blocks": true,
+  "bench": true,
+  "power": {
+   "use": 400
+  },
+  "build": {
+   "cost": {
+    "steel": 50,
+    "electronics": 12,
+    "components": 10
+   },
+   "work": 1800,
+   "menu": "production",
+   "research": "dish_design"
+  }
  }
 ]

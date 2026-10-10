@@ -71,6 +71,19 @@ export interface Toast {
   at?: { layer: number; x: number; y: number };
 }
 
+export interface StoryUi {
+  line: string;
+  beat: string;
+  /** Goal lines: i18n key, params, met. */
+  goals: { key: string; params: Record<string, string | number>; met: boolean }[];
+}
+
+export interface EndingUi {
+  kind: "won" | "lost";
+  line: string | null;
+  slides: { name: string; key: string; params: Record<string, string | number> }[];
+}
+
 export interface AlertUi {
   key: string;
   params: Record<string, string | number>;
@@ -112,7 +125,7 @@ export interface WorldUi {
   h: number;
   biome: string[];
   home: { x: number; y: number };
-  sites: { id: number; x: number; y: number; kind: string; richness: number; danger: number; travel: number; outpost: number | null; food: number; water: number }[];
+  sites: { id: number; x: number; y: number; kind: string; story: string | null; richness: number; danger: number; travel: number; outpost: number | null; food: number; water: number }[];
   expeditions: { id: number; site: string; stage: string; hoursLeft: number; names: string[] }[];
   free: { id: number; nick: string }[];
   outpostCost: { item: string; n: number }[];
@@ -149,6 +162,10 @@ export interface UiState {
   menu: "build" | "orders" | "zones" | "work" | "research" | "world" | "trade" | null;
   /** Trader caravan near home (A9), or null. */
   caravan: CaravanUi | null;
+  /** Storyline beat in progress, or null (sandbox or finished). */
+  story: StoryUi | null;
+  /** Ending screen (win slides or obituary), until the player closes it. */
+  ending: EndingUi | null;
   /** Current problems (alerts list under the goals). */
   alerts: AlertUi[];
   /** World map panel data (A8), filled while the panel is open. */
@@ -185,6 +202,8 @@ class Store {
     layerCount: 1,
     world: null,
     alerts: [],
+    story: null,
+    ending: null,
     caravan: null,
     powerOverlay: false,
     clock: "",
@@ -242,6 +261,7 @@ export const actions = {
   tileAction: (_action: string) => {},
   setZoneAllow: (_zone: number, _category: string, _on: boolean) => {},
   jumpTo: (_at: { layer: number; x: number; y: number }) => {},
+  closeEnding: () => {},
   sendExpedition: (_site: number, _pawns: number[], _outpost: boolean) => {},
   trade: (_buy: Record<string, number>, _sell: Record<string, number>) => {},
   release: (_pawn: number) => {},

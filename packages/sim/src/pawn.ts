@@ -111,6 +111,8 @@ export interface Pawn {
   robot?: boolean;
   /** Robot charge 0..1. */
   charge?: number;
+  /** What this survivor did, for the ending slides (Beta). */
+  stats?: { kills?: number; rescues?: number; built?: number; crafted?: number };
   /** Named faction this raider, trader or prisoner belongs to (A9). */
   origin?: string;
   /** Downed raider marked for capture (A6). */
@@ -286,4 +288,9 @@ export function traitMult(game: Game, p: Pawn, pick: (t: TraitDef) => number): n
   let m = 1;
   for (const t of p.traits) m *= pick(game.reg.traits.list[t]);
   return m;
+}
+
+/** Count a deed for the ending slides. */
+export function addStat(p: Pawn, k: "kills" | "rescues" | "built" | "crafted", n = 1): void {
+  p.stats = { ...(p.stats ?? {}), [k]: (p.stats?.[k] ?? 0) + n };
 }

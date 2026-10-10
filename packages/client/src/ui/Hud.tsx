@@ -1,5 +1,6 @@
 import { t } from "@wc/data";
 import { ColonistBar } from "./ColonistBar.tsx";
+import { Ending } from "./Ending.tsx";
 import { PawnPanel } from "./PawnPanel.tsx";
 import { actions, useStore } from "./store.ts";
 import { Toasts } from "./Toasts.tsx";
@@ -27,8 +28,19 @@ export function Hud() {
       <Toasts />
       <Toolbar />
       <GameMenu />
-      {((s.goals.length > 0 && !s.goals.every((g) => g.done)) || s.alerts.length > 0) && (
+      {((s.goals.length > 0 && !s.goals.every((g) => g.done)) || s.alerts.length > 0 || s.story) && (
         <aside class="goals" data-testid="goals">
+          {s.story && (
+            <div class="story" data-testid="story">
+              <h3>{t(`line.${s.story.line}`)}</h3>
+              <b>{t(`story.${s.story.line}.${s.story.beat}`)}</b>
+              {s.story.goals.map((g, i) => (
+                <p key={i} class={g.met ? "done" : ""}>
+                  {g.met ? "✔" : "○"} {t(g.key, g.params)}
+                </p>
+              ))}
+            </div>
+          )}
           {s.goals.length > 0 && !s.goals.every((g) => g.done) && (
             <>
               <h3>{t("goal.title")}</h3>
@@ -56,6 +68,7 @@ export function Hud() {
         </aside>
       )}
       <PawnPanel />
+      <Ending />
       <header class="topbar">
         <div class="clock" data-testid="clock">
           <b>{s.clock}</b>

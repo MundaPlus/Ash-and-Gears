@@ -33,7 +33,7 @@ import { loadAiArt } from "./render/aiArt.ts";
 import { ART_SIZES, makeTextures, TILE, type ArtSettings } from "./render/textures.ts";
 import { WorldRenderer } from "./render/world.ts";
 import { Hud } from "./ui/Hud.tsx";
-import { actions, store, type BuildOption, type ColonistSummary, type PawnDetail, type WorkRow, type WorldUi, type CaravanUi } from "./ui/store.ts";
+import { actions, store, type BuildOption, type ColonistSummary, type PawnDetail, type WorkRow, type WorldUi, type CaravanUi, type StoryUi, type EndingUi } from "./ui/store.ts";
 
 /** Most sim ticks per frame, so a slow frame cannot snowball. */
 const MAX_TICKS_PER_FRAME = 12;
@@ -78,6 +78,7 @@ function optionsFromParams(params: URLSearchParams) {
     raidScale: num("raid", 1),
     mutantScale: num("mutant", 1),
     radCloudScale: num("rad", 1),
+    storyline: ["reactor", "bus", "orbit"].includes(params.get("line") ?? "") ? params.get("line") : null,
     storyteller: (story === "grandma" || story === "chaos" || story === "none" ? story : "sheriff") as "sheriff" | "grandma" | "chaos" | "none",
   };
 }
@@ -485,6 +486,32 @@ async function boot() {
   const jobKey = (p: Pawn) =>
     p.mentalBreak ? "job.sulk" : p.job?.kind === "work" ? `task.${p.job.data!.task}` : `job.${p.job?.kind ?? "none"}`;
 
+  // ---------------------------------------------------------------- story (Beta)
+  let endingSeen = !!(game.plot.won || game.plot.lost);
+  function storyUi(): StoryUi | null {
+    const b = sim.currentBeat(game);
+    if (!b || !game.plot.line) return null;
+    const goals = b.until.map((c) => {
+      const met = sim.conditionMet(game, c);
+      const id = c.id ?? "";
+      const params: Record<string, string | number> = { n: c.n ?? 1 };
+      if (c.type === "items") params.item = t(`item.${id}`);
+      if (c.type === "research") params.project = t(`research.${id}`);
+      if (c.type === "built") params.thing = t(`thing.${id}`);
+      if (c.type === "visited" || c.type === "outpost") params.site = t(`story.site.${id}`);
+      if (c.type === "flag") params.flag = t(`story.flag.${id}`);
+      if (c.type === "items") params.have = sim.countItems(game, id);
+      return { key: `goal.story.${c.type}`, params, met };
+    });
+    return { line: game.plot.line, beat: b.id, goals };
+  }
+  function endingUi(): EndingUi | null {
+    if (endingSeen || !(game.plot.won || game.plot.lost)) return null;
+    endingSeen = true;
+    paused = true;
+    return { kind: game.plot.won ? "won" : "lost", line: game.plot.line, slides: sim.endingSlides(game) };
+  }
+  actions.closeEnding = () => store.set({ ending: null });
   let worldProblem: string | null = null;
   function worldUi(): WorldUi {
     const w = sim.ensureWorld(game);
@@ -495,11 +522,14 @@ async function boot() {
       home: w.home,
       sites: w.sites.map((s) => {
         const need = sim.suppliesNeeded(game, s, 1);
-        return { id: s.id, x: s.x, y: s.y, kind: s.kind, richness: s.richness, danger: s.danger, travel: sim.travelHours(game, s), outpost: s.outpost ? Object.values(s.outpost.stock).reduce((a, b) => a + b, 0) : null, food: need.food, water: need.water };
+        return { id: s.id, x: s.x, y: s.y, kind: s.kind, story: s.storyKey ?? null, richness: s.richness, danger: s.danger, travel: sim.travelHours(game, s), outpost: s.outpost ? Object.values(s.outpost.stock).reduce((a, b) => a + b, 0) : null, food: need.food, water: need.water };
       }),
       expeditions: game.expeditions.map((e) => ({
         id: e.id,
-        site: w.sites.find((s) => s.id === e.siteId)?.kind ?? "",
+        site: (() => {
+          const st = w.sites.find((s) => s.id === e.siteId);
+          return st?.storyKey ? `story.site.${st.storyKey}` : `site.${st?.kind ?? ""}`;
+        })(),
         stage: e.stage,
         hoursLeft: Math.max(0, Math.ceil((e.until - game.tick) / game.ticksPerHour)),
         names: e.pawns.map((p) => p.nick),
@@ -633,7 +663,8 @@ async function boot() {
       if (typeof params.cause === "string") params.cause = t(`cause.${params.cause}`);
       if (typeof params.project === "string") params.project = t(`research.${params.project}`);
       if (typeof params.faction === "string") params.faction = t(`fac.${params.faction}`);
-      if (typeof params.site === "string") params.site = t(`site.${params.site}`);
+      if (typeof params.site === "string") params.site = params.site.startsWith("story.") ? t(params.site) : t(`site.${params.site}`);
+      if (typeof params.beat === "string") params.beat = t(params.beat);
       if (typeof params.kind === "string") params.kind = t(`pawn.${params.kind}`);
       toasts.push({ id: toastId++, text: t(m.key, params), level: m.level, until: now + TOAST_SEC, ...(m.at ? { at: m.at } : {}) });
     }
@@ -748,6 +779,8 @@ async function boot() {
         weather: game.weather.kind,
         goals: sim.GOALS.map((id) => ({ id, done: !!game.goals[id] })),
         alerts: sim.computeAlerts(game),
+        story: storyUi(),
+        ...((e) => (e ? { ending: e } : {}))(endingUi()),
         goalHint: (() => {
           const next = sim.GOALS.find((id) => !game.goals[id]);
           return next ? sim.goalHint(game, next) : null;

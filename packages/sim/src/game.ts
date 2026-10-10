@@ -25,6 +25,7 @@ import { ensureFluidNets, tickFluids, type FluidNet } from "./fluids.ts";
 import { tickSocial, type Bond } from "./social.ts";
 import { tickWorld, type Expedition, type WorldMap } from "./world.ts";
 import type { Caravan } from "./factions.ts";
+import { newPlot, startPlot, tickPlot, type Plot } from "./plot.ts";
 import { tickGoals } from "./goals.ts";
 
 /** Sim ticks per real second at 1x speed. */
@@ -46,6 +47,10 @@ export interface GameOptions {
   raidScale: number;
   mutantScale: number;
   storyteller: "sheriff" | "grandma" | "chaos" | "none";
+  /** Storyline id from story.json, or null for the sandbox (Beta). */
+  storyline: string | null;
+  /** Start scenario (Beta B5). */
+  scenario: string;
 }
 
 export const DEFAULT_OPTIONS: GameOptions = {
@@ -58,6 +63,8 @@ export const DEFAULT_OPTIONS: GameOptions = {
   raidScale: 1,
   mutantScale: 1,
   storyteller: "sheriff",
+  storyline: null,
+  scenario: "standard",
 };
 
 export const SEASONS = ["spring", "summer", "autumn", "winter"] as const;
@@ -92,6 +99,8 @@ export class Game {
   /** Pawns that died: for messages, stats and tests. */
   /** World map (A8), made on first use. */
   world: WorldMap | null = null;
+  /** Storyline progress (Beta). */
+  plot: Plot = newPlot(null);
   /** Goodwill per faction id; missing = the faction's start value (A9). */
   goodwill: Record<string, number> = {};
   /** Trader caravan near home, if any (A9). */
@@ -200,6 +209,7 @@ export class Game {
     g.story.lastThreat = g.tick;
     g.weather.until = g.tick + g.ticksPerDay / 2;
     g.message("msg.intro", {}, "info");
+    startPlot(g, g.opts.storyline);
     return g;
   }
 
@@ -352,6 +362,7 @@ export class Game {
     tickPawns(this);
     tickSocial(this);
     tickWorld(this);
+    tickPlot(this);
     tickTurrets(this);
     tickGoals(this);
   }

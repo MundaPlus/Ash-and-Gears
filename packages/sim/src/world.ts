@@ -11,6 +11,7 @@ import { damage, isFatal, tickHealthHourly } from "./health.ts";
 import { countItems, dropItems, takeFromStack } from "./items.ts";
 import { Noise2D } from "./noise.ts";
 import { onDeath } from "./social.ts";
+import { visitStorySite } from "./plot.ts";
 import { NEED_DECAY } from "./pawn.ts";
 
 export const BIOMES = ["wastes", "dead_forest", "ruined_city", "toxic_swamp", "mountains"] as const;
@@ -51,6 +52,10 @@ export interface Site {
   /** 0..1: chance-ish of trouble. */
   danger: number;
   outpost?: { since: number; stock: Record<string, number> };
+  /** Story location key (Beta): reaching it moves the story on. */
+  storyKey?: string;
+  /** Story items found on the first visit. */
+  storyLoot?: Record<string, number>;
 }
 
 export interface WorldMap {
@@ -192,7 +197,7 @@ export function launchExpedition(game: Game, siteId: number, pawnIds: number[], 
   }
   const exp: Expedition = { id: game.newId(), siteId, pawns, stage: "out", until: game.tick + travelHours(game, site) * game.ticksPerHour, food, water, loot: {}, outpost: outpost && !site.outpost };
   game.expeditions.push(exp);
-  game.message("msg.expedition_left", { n: pawns.length, site: site.kind }, "info");
+  game.message("msg.expedition_left", { n: pawns.length, site: siteName(site) }, "info");
   return exp;
 }
 
@@ -232,7 +237,7 @@ function tickExpedition(game: Game, world: WorldMap, exp: Expedition) {
   }
   if (!exp.pawns.length) {
     game.expeditions.splice(game.expeditions.indexOf(exp), 1);
-    game.message("msg.expedition_lost", { site: site.kind }, "bad");
+    game.message("msg.expedition_lost", { site: siteName(site) }, "bad");
     return;
   }
   if (exp.stage === "work") scavengeHour(game, exp, site);
@@ -242,12 +247,18 @@ function tickExpedition(game: Game, world: WorldMap, exp: Expedition) {
     exp.until = game.tick + SCAVENGE_HOURS * game.ticksPerHour;
     if (exp.outpost) {
       site.outpost = { since: game.tick, stock: {} };
-      game.message("msg.outpost_founded", { site: site.kind }, "info");
+      game.message("msg.outpost_founded", { site: siteName(site) }, "info");
     }
     // An outpost's stock goes into the packs.
     if (site.outpost) for (const [item, n] of Object.entries(site.outpost.stock)) exp.loot[item] = (exp.loot[item] ?? 0) + n;
     if (site.outpost) site.outpost.stock = {};
-    game.message("msg.expedition_arrived", { site: site.kind }, "info");
+    // A story location: its story items come first, and the story hears about the visit.
+    if (site.storyKey) {
+      for (const [item, n] of Object.entries(site.storyLoot ?? {})) exp.loot[item] = (exp.loot[item] ?? 0) + n;
+      site.storyLoot = {};
+      visitStorySite(game, site.storyKey);
+    }
+    game.message("msg.expedition_arrived", { site: siteName(site) }, "info");
   } else if (exp.stage === "work") {
     exp.stage = "back";
     exp.until = game.tick + travelHours(game, site) * game.ticksPerHour;
@@ -267,7 +278,7 @@ function scavengeHour(game: Game, exp: Expedition, site: Site) {
   for (const p of exp.pawns) learn(game, p, "scavenging", 3);
   // Trouble: fighters take less harm.
   if (rng.chance(site.danger * 0.04)) {
-    game.message("msg.expedition_ambush", { site: site.kind }, "bad");
+    game.message("msg.expedition_ambush", { site: siteName(site) }, "bad");
     for (const p of exp.pawns) {
       const fight = Math.max(skillLevel(game, p, "shooting"), skillLevel(game, p, "melee"));
       const hits = rng.int(0, 2);
@@ -319,4 +330,9 @@ function returnHome(game: Game, exp: Expedition, site: Site) {
   game.expeditions.splice(game.expeditions.indexOf(exp), 1);
   const total = Object.values(exp.loot).reduce((a, b) => a + b, 0);
   game.message("msg.expedition_back", { n: exp.pawns.length, items: total }, "info");
+}
+
+/** A site's name for messages: its story name, or its kind. */
+function siteName(site: Site): string {
+  return site.storyKey ? `story.site.${site.storyKey}` : site.kind;
 }

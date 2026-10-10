@@ -4,7 +4,7 @@
  */
 import type { Game } from "./game.ts";
 import { dropItems } from "./items.ts";
-import { addMemory, pawnName, traitMult, type Pawn } from "./pawn.ts";
+import { addMemory, addStat, pawnName, traitMult, type Pawn } from "./pawn.ts";
 import { onDeath } from "./social.ts";
 
 export const PARTS = ["head", "torso", "l_arm", "r_arm", "l_leg", "r_leg"] as const;
@@ -178,6 +178,9 @@ export function kill(game: Game, p: Pawn, cause: string): void {
   else if (creature.meat > 0) dropItems(game, "mutant_meat", creature.meat, p.layer, p.x, p.y);
   if (p.weapon !== null) dropItems(game, p.weapon, 1, p.layer, p.x, p.y);
   if (p.carrying) dropItems(game, p.carrying.def, p.carrying.count, p.layer, p.x, p.y);
+  // The one who struck last gets the kill.
+  const killer = p.lastAttacker !== undefined ? game.pawns.get(p.lastAttacker) : undefined;
+  if (killer && killer.faction === "colony" && p.faction !== "colony") addStat(killer, "kills");
   if (p.faction === "colony" && p.robot) game.message("msg.robot_destroyed", { name: p.nick }, "bad");
   else if (p.faction === "colony") {
     game.message("msg.died", { name: pawnName(p), cause }, "bad", p);

@@ -126,6 +126,42 @@ export const ITEMS: Record<string, string[]> = {
     "................",
     "................",
   ],
+  reactor_part: [
+    "................",
+    "................",
+    "......0000......",
+    ".....0ffff0.....",
+    "....0fcccf0.....",
+    "...0fc0ec0f0....",
+    "...0fc0ec0f0....",
+    "...0fc0ec0f0....",
+    "...0fc0ec0f0....",
+    "...0fc0ec0f0....",
+    "....0fcccf0.....",
+    ".....0ffff0.....",
+    "......0000......",
+    "................",
+    "................",
+    "................",
+  ],
+  reactor_spark: [
+    "................",
+    "................",
+    "................",
+    "....000.........",
+    "...0fff0........",
+    "...0f0f0000000..",
+    "...0fff0eeeee0..",
+    "....000.0e0e0...",
+    ".........0.0....",
+    "................",
+    "................",
+    "................",
+    "................",
+    "................",
+    "................",
+    "................",
+  ],
   components: [
     "................",
     "................",
@@ -620,3 +656,12 @@ export const FLOORS: Record<string, string[]> = {
     "2222222222222222",
   ],
 };
+
+// Story items that look like others.
+ITEMS.reactor_manual = ITEMS.factory_manual;
+ITEMS.bus_manual = ITEMS.factory_manual;
+ITEMS.signal_log = ITEMS.factory_manual;
+ITEMS.relay_code = ITEMS.electronics;
+ITEMS.engine_parts = ITEMS.components;
+ITEMS.bus_ready = ITEMS.components;
+ITEMS.armor_plates = ITEMS.steel;

@@ -198,3 +198,9 @@ export function tickStoryteller(game: Game): void {
   s.points -= cost(game, pick);
   s.lastThreat = game.tick;
 }
+
+/** A raid by a named faction, now (story events). */
+export function spawnRaid(game: Game, f: FactionDef, size: number): void {
+  const at = spawnGroup(game, "raid", size, f);
+  game.message("msg.raid_faction", { n: size, faction: f.id }, "bad", at);
+}

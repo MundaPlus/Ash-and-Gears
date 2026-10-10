@@ -307,6 +307,42 @@ export const BackstoryDef = z.object({
 });
 export type BackstoryDef = z.infer<typeof BackstoryDef>;
 
+/** Story (Beta B1): a condition that a beat's goal needs. */
+export const StoryCondition = z.object({
+  type: z.enum(["days", "beat_days", "research", "items", "built", "visited", "outpost", "flag", "people", "calm"]),
+  id: z.string().optional(),
+  n: z.number().optional(),
+});
+export type StoryCondition = z.infer<typeof StoryCondition>;
+
+/** Story: something a beat does when it starts or ends. */
+export const StoryEffect = z.object({
+  type: z.enum(["message", "site", "robot", "items", "take", "flag", "raid", "goodwill", "win"]),
+  id: z.string().optional(),
+  key: z.string().optional(),
+  level: z.enum(["info", "warn", "bad"]).optional(),
+  kind: z.string().optional(),
+  name: z.string().optional(),
+  n: z.number().optional(),
+  danger: z.number().optional(),
+  dist: z.tuple([z.number(), z.number()]).optional(),
+  items: z.record(id, z.number().int().positive()).optional(),
+});
+export type StoryEffect = z.infer<typeof StoryEffect>;
+
+export const StoryDef = z.object({
+  id,
+  beats: z.array(
+    z.object({
+      id,
+      start: z.array(StoryEffect).default([]),
+      until: z.array(StoryCondition).min(1),
+      done: z.array(StoryEffect).default([]),
+    }),
+  ),
+});
+export type StoryDef = z.infer<typeof StoryDef>;
+
 /** A faction of the wasteland (A9). */
 export const FactionDef = z.object({
   id,
@@ -353,6 +389,7 @@ export const Content = z.object({
   traits: z.array(TraitDef),
   backstories: z.array(BackstoryDef),
   factions: z.array(FactionDef),
+  story: z.array(StoryDef),
   thoughts: z.array(ThoughtDef),
   names: NameLists,
   /** Loot table for salvage rolls: item id -> [min, max]. */

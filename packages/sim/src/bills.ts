@@ -14,7 +14,7 @@ import { benchFeedsOut } from "./logistics.ts";
 import { fluidNetOf, netAdd, netAmount, netDraw, totalFluid } from "./fluids.ts";
 import { makeRobot, robotCount } from "./robots.ts";
 import { pickUp } from "./hauling.ts";
-import { learn, workSpeed, skillLevel, type Job, type Pawn } from "./pawn.ts";
+import { addStat, learn, workSpeed, skillLevel, type Job, type Pawn } from "./pawn.ts";
 import type { WorkType } from "./worktypes.ts";
 import { isContaminatedThing } from "./weather.ts";
 
@@ -205,6 +205,7 @@ registerJob("bill", (game, p, job) => {
     }
   }
   job.data!.done = true;
+  addStat(p, "crafted");
   return "done";
 });
 
