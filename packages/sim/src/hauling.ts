@@ -92,10 +92,16 @@ function zoneAt(game: Game, layer: number, x: number, y: number): Zone | null {
   return z === NO_THING ? null : (game.zones.get(z) ?? null);
 }
 
-function accepts(game: Game, z: Zone | null, def: number, contaminated: boolean): boolean {
+/** Does this stockpile take this item? The item filter decides when the zone has one, else the categories. */
+export function zoneTakes(game: Game, z: Zone | null | undefined, def: number): boolean {
   if (!z || z.kind !== "stockpile") return false;
+  const d = game.reg.items.list[def];
+  return z.allowItems ? z.allowItems.includes(d.id) : z.allow.includes(d.category);
+}
+
+function accepts(game: Game, z: Zone | null, def: number, contaminated: boolean): boolean {
   void contaminated;
-  return z.allow.includes(game.reg.items.list[def].category);
+  return zoneTakes(game, z, def);
 }
 
 const isCorpse = (game: Game, def: number) => game.reg.items.list[def].category === "corpse";
@@ -194,8 +200,7 @@ function isLoose(game: Game, s: ItemStack): boolean {
   if (s.layer < 0 || s.chest !== undefined || s.forbidden) return false;
   const here = storedPriority(game, s);
   if (here === 0) return true;
-  const cat = game.reg.items.list[s.def].category;
-  return [...game.zones.values()].some((z) => z.kind === "stockpile" && zonePriority(z) > here && z.allow.includes(cat));
+  return [...game.zones.values()].some((z) => zonePriority(z) > here && zoneTakes(game, z, s.def));
 }
 
 /** What needs hauling, best first: urgent stacks, then the ones closest to storage. Internal (not shown to players). */
@@ -208,17 +213,16 @@ export function haulList(game: Game): HaulEntry[] {
     const cap = game.reg.things.list[t.def].chest;
     if (cap && chestCount(game, t) < cap) chests.push({ layer: t.layer, x: t.x, y: t.y });
   }
-  const tilesByCat = new Map<string, (Pos & { pr: number })[]>();
+  const zoneTiles: { z: Zone; pr: number; tiles: Pos[] }[] = [];
   for (const z of game.zones.values()) {
     if (z.kind !== "stockpile") continue;
     const L = game.map.layers[z.layer];
     const tiles: Pos[] = [];
     for (let i = 0; i < L.zone.length; i++) if (L.zone[i] === z.id) tiles.push({ layer: z.layer, x: i % L.w, y: Math.floor(i / L.w) });
-    const pr = zonePriority(z);
-    for (const cat of z.allow) tilesByCat.set(cat, [...(tilesByCat.get(cat) ?? []), ...tiles.map((q) => ({ ...q, pr }))]);
+    zoneTiles.push({ z, pr: zonePriority(z), tiles });
   }
   const list: HaulEntry[] = [];
-  if (chests.length || tilesByCat.size)
+  if (chests.length || zoneTiles.length)
     for (const s of game.items.values()) {
       if (!isLoose(game, s)) continue;
       if (isCorpse(game, s.def)) {
@@ -229,8 +233,9 @@ export function haulList(game: Game): HaulEntry[] {
       }
       let best = Infinity;
       const here = storedPriority(game, s);
-      for (const q of [...chests.map((c) => ({ ...c, pr: CHEST_PRIORITY })), ...(tilesByCat.get(game.reg.items.list[s.def].category) ?? [])]) {
-        if (q.pr <= here) continue;
+      const spots = [...(here < CHEST_PRIORITY ? chests : [])];
+      for (const zt of zoneTiles) if (zt.pr > here && zoneTakes(game, zt.z, s.def)) spots.push(...zt.tiles);
+      for (const q of spots) {
         const d = Math.hypot(q.x - s.x, q.y - s.y) + (q.layer !== s.layer ? 30 : 0);
         if (d < best) best = d;
       }
@@ -255,10 +260,9 @@ export function canHaul(game: Game, stackId: number): boolean {
   const s = game.items.get(stackId);
   if (!s || !isLoose(game, s) || s.haulNow) return false;
   if (isCorpse(game, s.def)) return !!findGrave(game, null, s);
-  // Some chest with room, or some stockpile that takes the category (the haul list may be a few ticks old).
-  const cat = game.reg.items.list[s.def].category;
+  // Some chest with room, or some better stockpile that takes the item (the haul list may be a few ticks old).
   const here = storedPriority(game, s);
-  if ([...game.zones.values()].some((z) => z.kind === "stockpile" && zonePriority(z) > here && z.allow.includes(cat))) return true;
+  if ([...game.zones.values()].some((z) => zonePriority(z) > here && zoneTakes(game, z, s.def))) return true;
   if (here >= CHEST_PRIORITY) return false;
   return [...game.things.values()].some((t) => {
     const cap = game.reg.things.list[t.def].chest;

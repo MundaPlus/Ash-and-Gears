@@ -108,6 +108,8 @@ export interface Zone {
   layer: number;
   /** Allowed item categories (stockpile). */
   allow: string[];
+  /** Stockpile: when set, exactly these item ids are taken (per-item filter, N3); categories are then only a summary. */
+  allowItems?: string[];
   /** Crop def id (grow zones, M4). */
   crop?: string;
   /** Stockpile priority (B9): 1 low, 2 normal (default), 3 high, 4 critical. Items move up to better stockpiles. */

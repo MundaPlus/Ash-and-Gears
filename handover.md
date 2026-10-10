@@ -1,40 +1,41 @@
-# Handover — Ash & Gears — 2026-10-11 (late)
+# Handover — Ash & Gears — 2026-10-11 (end of session)
 
 ## Goal
-The user wants a full post-apocalyptic colony + automation game (RimWorld + Factorio), built mostly autonomously by Claude, with Claude making "realism, clarity and quality-of-life" improvements on its own. Demo, Alpha and Beta are done. v0.4.0 made the new "Salvage Print" art style the default. Many small user requests followed and are done (see CHANGELOG.md, newest on top). **Next: the new features N3, N2, N1 in `docs/spec/14-next-phase.md`, then the phone app.**
+The user wants a full post-apocalyptic colony + automation game (RimWorld + Factorio), built mostly autonomously by Claude, with Claude making "realism, clarity and quality-of-life" improvements on its own. Demo, Alpha, Beta done; v0.4.0 made the code-drawn "Salvage Print" art style the default. Now: user requests N1–N3 (`docs/spec/14-next-phase.md`), then the phone app.
 
-## Done so far (all committed and pushed: Gitea `origin` master+develop, GitHub `github` main+develop)
-- Beta (v0.3.x): storylines, endings, scenarios, tier-4 robots, mods, colony life (recreation, schedules, graves, fuel, light), haul list, stockpile priority, make queue, tables, research expansion, refresh-resume, save files, GitHub Pages.
-- v0.4.0: Salvage Print style (code-drawn, `packages/client/src/render/print/`: `kit.ts`, `sprites.ts` people, `ground.ts` terrain/floors/walls, `things.ts` all things + battery cells, `items.ts` items/creatures/robots, `textures.ts` builder). Pixel style stays (`?style=pixel`, Settings).
-- After v0.4.0 (this session): single arrows, battery cells per 25% with blink, idle survivors give themselves salvage/cut orders (`designations.ts` `findOwnWork`, `ownWorkJob`), mellow work sounds per task (`audio.ts`), live inspect panel, print doors drawn live (slide, upright in N-S walls, `dynamic.ts` `printDoor`), build ghost under the cursor (`input/tools.ts`), visible blueprints + blueprint status (materials, workers, progress; `construction.ts` `blueprintStatus`), clean wall corners (`ground.ts` `wallTile`), new car wreck art + turned wrecks, showcase keeps stairs + way into the bunker, clearer stairs, belt cargo in inspect, grow/shrink zone buttons, Remove floor order (`unfloor`), auto-crafter recipes show inputs/outputs.
-- Tests: 127 unit (Vitest), 14 e2e (Playwright). 12-seed playtest: about 2 deaths.
+## Done so far (committed and pushed: Gitea `origin` master+develop, GitHub `github` main+develop)
+- Everything up to "Auto-crafter recipes show inputs and outputs" — see `CHANGELOG.md` (newest on top) and the previous summary in git history of this file.
+- This last step (committed in the final commit of the session):
+  - `packages/sim/src/links.ts` `ensureLinks`: runs at the end of `Game.create` and `loadGame`. Repairs stairs in pairs, and digs a route to the bunker (cave tunnel → service shaft `stairs_down` on layer 1 → tunnel on layer 2 to the westmost `bunker_door`) when none is reachable. Mall Rats clearing keeps stairs. Showcase `wayToBunker` removed (links cover it). Test `packages/sim/test/deep.test.ts` "showcase way to the bunker" still passes.
+  - N3 sim part: `Zone.allowItems`, `zoneTakes`, `setZoneItem`, `setZoneFilter` (`hauling.ts`, `tileactions.ts`, `map.ts`).
+- Checks at the end: 127 unit tests pass, 14 e2e pass, build OK.
 
 ## Current state
-- Nothing in progress; working tree clean. Preview service `wasteland-colony` serves the build at http://192.168.31.215:4173/ (LAN). Live on GitHub Pages: https://mundaplus.github.io/Ash-and-Gears/ (deploys on push to GitHub `main`).
+- Working tree clean after the last commit. Preview service at http://192.168.31.215:4173/ (LAN); live on https://mundaplus.github.io/Ash-and-Gears/ (deploys from GitHub `main`).
+- The user's own saved game gets the stairs and bunker route on its next load (ensureLinks in loadGame).
 
 ## Decisions
-- Salvage Print is the default style; pixel 16 stays as an option. People: high three-quarter view, 4 facings; raiders with respirator and tall mohawk.
-- Self-chosen orders (idle work) never compete with real work; game option `idleWork` (tests that count resources set it false).
-- A mood thought for darkness was cut (killed colonies in playtests).
+- Salvage Print is the default; pixel 16 stays (`?style=pixel`, Settings).
+- Bunker access is given on foot (route dug by `ensureLinks`), because the user found digging down unclear. Deep digging research still allows digging elsewhere.
 - Release flow: commit on `develop`, merge `--no-ff` into `master`, push `origin master develop` and `github master:main develop`.
 
 ## Next steps
-1. N3 stockpile filters per item (spec in `docs/spec/14-next-phase.md`).
-2. N2 weapon and armor tiers (research, apparel slots, armor by damage type, recipes, print art).
-3. N1 surface towers with upper floors, sealed rooms with enemies (rats, hounds, hostile bots, turrets); also in the bunker.
+1. Add unit tests for `ensureLinks`: (a) a new game: surface stairs reach the bunker door; (b) remove the surface `stairs_down`, save + load → it is back; (c) Mall Rats keeps stairs.
+2. Finish N3 UI: in the stockpile panel (`packages/client/src/ui/Hud.tsx`, inspect `stockpile` from `main.ts`): per-category ▸ that opens item toggles (`setZoneItem`), category state on/partial, "Copy filter" / "Paste filter" (client clipboard → `setZoneFilter`); i18n keys; unit test for `zoneTakes` with `allowItems` (a scrap-only stockpile next to a loader).
+3. N2 weapon and armor tiers, then N1 towers with upper floors and sealed enemy rooms (plans in `docs/spec/14-next-phase.md`).
 4. Phone app (PWA).
-5. Keep looking for realism/clarity/QoL gaps on your own (user rule, see memory "feedback-gameplay-depth").
+5. Keep finding realism/clarity/QoL gaps unasked (memory "feedback-gameplay-depth").
 
 ## Key files
-- `docs/spec/14-next-phase.md` — plan, progress table, N1–N3.
+- `docs/spec/14-next-phase.md` — plan, progress, N1–N3.
 - `CHANGELOG.md` — every change, newest first.
-- `packages/client/src/render/print/` — Salvage Print art; `render/dynamic.ts` — overlays (doors, bars, blueprints).
-- `packages/sim/src/` — simulation; `designations.ts`, `construction.ts`, `hauling.ts`, `power.ts`, `ai.ts` are the hot spots.
+- `packages/sim/src/links.ts`, `hauling.ts`, `tileactions.ts`, `designations.ts`, `construction.ts`, `ai.ts` — recent sim work.
+- `packages/client/src/render/print/` — Salvage Print art; `render/dynamic.ts` — overlays; `ui/Hud.tsx` — inspect panel.
 
 ## Gotchas
-- Always `npm run build` before `npm run e2e` (e2e uses the running preview server).
-- `cp` is aliased to `cp -i`: use `\cp -f`. `pkill -f` can match your own shell; kill by exact PID.
-- Port 8765 on this machine belongs to another app; use 8799 for test servers.
-- GitHub token lives in `~/.git-credentials` as `https://MundaPlus:TOKEN@github.com`. **Never print that file.** The token can push but cannot create Pages or re-run workflows.
-- The test config hides console output; write debug data to a file in the scratchpad instead.
-- Showcase uses a random seed unless `&seed=` is given.
+- Always `npm run build` before `npm run e2e`.
+- `cp` is `cp -i`: use `\cp -f`. Kill processes by exact PID (`pkill -f` can hit your own shell).
+- Port 8765 is another app; use 8799 for test servers.
+- GitHub token in `~/.git-credentials` (`https://MundaPlus:TOKEN@github.com`). Never print that file. It can push but cannot create Pages or re-run workflows.
+- Vitest hides console output: write debug data to a scratchpad file.
+- The session context window is 1M tokens; the context-guard hook reports the real usage.

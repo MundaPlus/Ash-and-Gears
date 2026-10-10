@@ -1,6 +1,7 @@
 /**
  * The game state and the fixed-step tick loop. No DOM. Runs in the browser and in Node.
  */
+import { ensureLinks } from "./links.ts";
 import type { Content } from "@wc/data";
 import { GameMap, NO_THING, type Blueprint, type ItemStack, type Thing, type Zone } from "./map.ts";
 import { generateHomeMap } from "./mapgen.ts";
@@ -218,6 +219,8 @@ export class Game {
     g.weather.until = g.tick + g.ticksPerDay / 2;
     g.message("msg.intro", {}, "info");
     startPlot(g, g.opts.storyline);
+    // Stairs in pairs, and a way on foot to the old bunker.
+    ensureLinks(g);
     return g;
   }
 

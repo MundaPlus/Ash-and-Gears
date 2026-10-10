@@ -3,6 +3,7 @@
  * (so content order and mods can change), typed arrays are base64. Running jobs and reservations
  * are dropped on load; survivors simply think again. Each format change adds a migration step.
  */
+import { ensureLinks } from "./links.ts";
 import type { Expedition, WorldMap } from "./world.ts";
 import type { Caravan } from "./factions.ts";
 import type { Plot } from "./plot.ts";
@@ -266,6 +267,8 @@ export function loadGame(content: Content, raw: SaveFile): Game {
     if (room && !room.outdoor) room.temp = r.temp;
   }
   for (const L of game.map.layers) L.chunkVersion.fill(1);
+  // Old saves: put back missing stairs and the way to the bunker.
+  ensureLinks(game);
   return game;
 }
 
