@@ -2,7 +2,7 @@
 import type { Pawn } from "./pawn.ts";
 
 /** Work types in default order (spec 01, "Work"). Givers exist for some; the rest arrive in later milestones. */
-export const WORK_TYPES = ["firefight", "doctor", "cook", "construct", "grow", "mine", "salvage", "craft", "research", "haul"] as const;
+export const WORK_TYPES = ["firefight", "doctor", "warden", "cook", "construct", "grow", "mine", "salvage", "craft", "research", "haul"] as const;
 export type WorkType = (typeof WORK_TYPES)[number];
 export const DEFAULT_PRIORITY = 3;
 

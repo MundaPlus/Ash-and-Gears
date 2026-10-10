@@ -25,7 +25,7 @@ export function inBed(game: Game, p: Pawn): boolean {
 function freeBed(game: Game, p: Pawn, patient: Pawn): { layer: number; x: number; y: number; id: number } | null {
   const occupied = new Set([...game.pawns.values()].filter((o) => o.id !== patient.id && inBed(game, o)).map((o) => `${o.layer},${o.x},${o.y}`));
   const beds = [...game.things.values()]
-    .filter((t) => game.reg.things.list[t.def].bed && !occupied.has(`${t.layer},${t.x},${t.y}`) && !isReserved(game, `thing:${t.id}`, p))
+    .filter((t) => game.reg.things.list[t.def].bed && !t.forPrisoners && !occupied.has(`${t.layer},${t.x},${t.y}`) && !isReserved(game, `thing:${t.id}`, p))
     .sort((a, b) => (a.x - p.x) ** 2 + (a.y - p.y) ** 2 - ((b.x - p.x) ** 2 + (b.y - p.y) ** 2));
   return beds.find((b) => game.path.canReach(p, b)) ?? null;
 }
@@ -63,7 +63,14 @@ registerWorkGiver({
   workType: "doctor",
   give(game, p): Job | null {
     for (const patient of game.pawns.values()) {
-      if (patient.faction !== "colony" || patient.id === p.id || isReserved(game, `pawn:${patient.id}`, p)) continue;
+      // Doctors treat prisoners too (they are fed by wardens, not here).
+      if ((patient.faction !== "colony" && patient.faction !== "prisoner") || patient.id === p.id || isReserved(game, `pawn:${patient.id}`, p)) continue;
+      if (patient.faction === "prisoner") {
+        if (untendedInjuries(patient).length === 0 || !game.path.canReachAdjacent(p, patient) || !reserve(game, `pawn:${patient.id}`, p)) continue;
+        const bandage = findItem(game, p, (d) => !!game.reg.items.list[d].medicine);
+        if (bandage !== null && reserve(game, `item:${bandage}`, p)) return { kind: "tend", stage: 0, targetId: patient.id, data: { med: bandage } };
+        return { kind: "tend", stage: 1, targetId: patient.id, data: { med: -1 } };
+      }
       if (!game.path.canReachAdjacent(p, patient)) continue;
       const job = careFor(game, p, patient);
       if (job) return job;

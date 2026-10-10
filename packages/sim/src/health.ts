@@ -189,7 +189,7 @@ export function tickHealthHourly(game: Game, p: Pawn, inBed: boolean): void {
   for (const i of h.injuries) i.age = (i.age ?? 0) + 1;
   if (h.bloodLoss >= 1) return kill(game, p, "blood_loss");
 
-  if (p.faction === "colony" || p.faction === "raiders") {
+  if (p.faction === "colony" || p.faction === "raiders" || p.faction === "prisoner") {
     // Torso has 40 HP: about 3 days without food, under 2 days without water.
     if (p.needs.hunger <= 0) damage(game, p, 0.5, "starvation", "torso");
     if (p.needs.thirst <= 0) damage(game, p, 1, "dehydration", "torso");

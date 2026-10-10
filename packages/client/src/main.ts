@@ -253,6 +253,19 @@ async function boot() {
     sim.setResearch(game, id);
     store.set({ research: researchRows() });
   };
+  actions.setCapture = (id, on) => {
+    const p = game.pawns.get(id);
+    if (p) sim.setCapture(game, p, on);
+  };
+  actions.release = (id) => {
+    const p = game.pawns.get(id);
+    if (p) sim.release(game, p);
+  };
+  actions.setPrisonBed = (thingId, on) => {
+    const th = game.things.get(thingId);
+    if (th) sim.setPrisonBed(game, th, on);
+    if (inspected) inspectTile(inspected.x, inspected.y);
+  };
   actions.togglePowerOverlay = () => {
     dyn.powerOverlay = !dyn.powerOverlay;
     store.set({ powerOverlay: dyn.powerOverlay });
@@ -376,6 +389,7 @@ async function boot() {
     let crafter: { thingId: number; current: string | null; options: string[] } | undefined;
     let filter: { thingId: number; current: string | null; options: string[] } | undefined;
     let power: { thingId: number; priority?: number; switchOn?: boolean } | undefined;
+    let prisonBed: { thingId: number; on: boolean } | undefined;
     if (th !== NO_THING) {
       const thing = game.things.get(th)!;
       const def = game.reg.things.list[thing.def];
@@ -409,6 +423,7 @@ async function boot() {
       }
       if (def.autoCrafter && contents(thing.out)) lines.push(`${t("chest.title")}: ${contents(thing.out)}`);
       if (def.switch) power = { thingId: thing.id, switchOn: !thing.off };
+      if (def.bed) prisonBed = { thingId: thing.id, on: !!thing.forPrisoners };
       if (def.pipe || (def.fluid && def.fluid.role !== "purifier")) {
         const net = sim.fluidNetOf(game, thing);
         if (net)
@@ -440,7 +455,7 @@ async function boot() {
       const name = t(`item.${game.reg.items.list[st.def].id}`);
       lines.push(t("inspect.items", { count: st.count, item: st.contaminated ? `${name} (${t("item.contaminated")})` : name }));
     }
-    store.set({ inspect: { title, lines, bills, crafter, filter, power } });
+    store.set({ inspect: { title, lines, bills, crafter, filter, power, prisonBed } });
   }
   let inspected: { x: number; y: number } | null = null;
   actions.setBillTarget = (benchId, recipe, n) => {
@@ -498,6 +513,8 @@ async function boot() {
       // Shown levels include trait and backstory bonuses.
       skills: game.reg.skills.list.map((s, i) => ({ id: s.id, level: sim.skillLevel(game, p, s.id), passion: p.skills[i].passion })),
       traits: p.traits.map((ti) => game.reg.traits.list[ti].id),
+      capture: !!p.capture,
+      resistance: p.resistance ?? 0,
       backstory: (p.backstory ?? []).map((b) => game.reg.backstories.list[b].id),
       noWork: p.noWork ?? [],
       relations: [...game.pawns.values()]

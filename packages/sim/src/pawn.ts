@@ -8,7 +8,7 @@ import type { ItemStack } from "./map.ts";
 import type { Pos } from "./path.ts";
 import { manipulation, newHealth, type Health } from "./health.ts";
 
-export type Faction = "colony" | "raiders" | "wild";
+export type Faction = "colony" | "raiders" | "wild" | "prisoner" | "visitor";
 
 /** Player orders for drafted survivors. */
 export type Order = { kind: "move"; pos: Pos } | { kind: "attack"; target: number };
@@ -107,6 +107,12 @@ export interface Pawn {
   group: number | null;
   /** Last pawn that hit this one. */
   lastAttacker?: number;
+  /** Downed raider marked for capture (A6). */
+  capture?: boolean;
+  /** Prisoner: resistance to recruiting; 0 = ready to be asked (A6). */
+  resistance?: number;
+  /** Prisoner: tick of the last warden talk. */
+  lastTalk?: number;
 }
 
 export const XP_PER_LEVEL = (level: number) => 1000 + level * 250;

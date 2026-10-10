@@ -131,6 +131,13 @@ export function Hud() {
               ))}
             </div>
           )}
+          {s.inspect.prisonBed && (
+            <div class="bills" data-testid="prison-bed">
+              <button class={s.inspect.prisonBed.on ? "on" : ""} onClick={() => actions.setPrisonBed(s.inspect!.prisonBed!.thingId, !s.inspect!.prisonBed!.on)}>
+                {t(s.inspect.prisonBed.on ? "prison.bed_on" : "prison.bed_off")}
+              </button>
+            </div>
+          )}
           {s.inspect.power && (
             <div class="bills" data-testid="power">
               {s.inspect.power.switchOn !== undefined && (

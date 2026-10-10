@@ -42,6 +42,19 @@ export function PawnPanel() {
         </button>
       )}
       {p.drafted && <p class="hint">{t("pawn.draft_hint")}</p>}
+      {p.faction === "raiders" && p.downed && (
+        <button class={`draft ${p.capture ? "on" : ""}`} data-testid="capture" onClick={() => actions.setCapture(p.id, !p.capture)}>
+          {t(p.capture ? "prison.cancel_capture" : "prison.capture")}
+        </button>
+      )}
+      {p.faction === "prisoner" && (
+        <>
+          <p class="sub">{p.resistance > 0 ? t("prison.resistance", { n: Math.ceil(p.resistance) }) : t("prison.ready")}</p>
+          <button class="draft" data-testid="release" onClick={() => actions.release(p.id)}>
+            {t("prison.release")}
+          </button>
+        </>
+      )}
       <h3>{t("pawn.health")}</h3>
       <Bar value={1 - p.bloodLoss} label={t("pawn.blood")} />
       <Bar value={1 - p.pain} label={t("pawn.pain")} />

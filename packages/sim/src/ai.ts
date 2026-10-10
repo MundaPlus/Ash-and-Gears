@@ -16,6 +16,7 @@ import { moving, tickHealthHourly } from "./health.ts";
 import { draftedTick, fleeFrom, hostileTick, selfDefense, updateGroups } from "./hostile.ts";
 import { equipJob, inBed, rushToDowned } from "./medical.ts";
 import { fluidNetOf, LITERS_PER_DRINK, netDraw, tapHasWater } from "./fluids.ts";
+import { prisonerTick } from "./prison.ts";
 
 /** Tiles per tick at walk cost 1 (3 tiles per real second at 1x). */
 export const WALK_SPEED = 0.15;
@@ -103,7 +104,7 @@ export function tickPawns(game: Game): void {
   for (const p of [...game.pawns.values()]) {
     if (!game.pawns.has(p.id)) continue;
     if (p.cooldown > 0) p.cooldown--;
-    if (p.faction === "colony") tickNeeds(game, p);
+    if (p.faction === "colony" || p.faction === "prisoner") tickNeeds(game, p);
     if (hourly) {
       tickHealthHourly(game, p, inBed(game, p));
       if (!game.pawns.has(p.id)) continue;
@@ -112,6 +113,11 @@ export function tickPawns(game: Game): void {
       if (p.job) endJob(game, p, false);
       p.path = null;
       p.drafted = false;
+      continue;
+    }
+    if (p.faction === "prisoner" || p.faction === "visitor") {
+      prisonerTick(game, p);
+      tickMove(game, p);
       continue;
     }
     if (p.faction !== "colony") {
@@ -399,7 +405,7 @@ function findBed(game: Game, p: Pawn): number | null {
   if (own === undefined) p.bedId = null;
   const owned = new Set([...game.pawns.values()].map((o) => o.bedId));
   const beds = [...game.things.values()]
-    .filter((t) => game.reg.things.list[t.def].bed && !owned.has(t.id) && !isReserved(game, `thing:${t.id}`, p))
+    .filter((t) => game.reg.things.list[t.def].bed && !t.forPrisoners && !owned.has(t.id) && !isReserved(game, `thing:${t.id}`, p))
     .sort((a, b) => dist2(p, a) - dist2(p, b));
   for (const b of beds) {
     if (!game.path.canReach(p, b)) continue;

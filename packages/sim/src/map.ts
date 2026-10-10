@@ -40,6 +40,8 @@ export interface Thing {
   filter?: number;
   /** Splitter: which output gets the next packet. */
   splitNext?: number;
+  /** Bed for prisoners (A6). */
+  forPrisoners?: boolean;
   /** Power switch turned off. */
   off?: boolean;
   /** Consumer priority set by the player (1 keep on longest .. 3 cut first); default from the def. */

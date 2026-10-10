@@ -8,6 +8,8 @@ export interface Inspect {
   bills?: { benchId: number; recipe: string; target: number; stock: number }[];
   /** Auto-crafter: recipe choice. */
   crafter?: { thingId: number; current: string | null; options: string[] };
+  /** Beds: for prisoners or not. */
+  prisonBed?: { thingId: number; on: boolean };
   /** Power consumers: priority; switches: on or off. */
   power?: { thingId: number; priority?: number; switchOn?: boolean };
   /** Sorter belts and robot arms: the one item they handle (null = any). */
@@ -43,6 +45,9 @@ export interface PawnDetail {
   missing: string[];
   skills: { id: string; level: number; passion: number }[];
   traits: string[];
+  /** Downed raider marked for capture; prisoner resistance. */
+  capture: boolean;
+  resistance: number;
   /** [childhood, adulthood] backstory ids. */
   backstory: string[];
   noWork: string[];
@@ -186,6 +191,9 @@ export const actions = {
   togglePause: () => {},
   setLayer: (_l: number) => {},
   togglePowerOverlay: () => {},
+  setCapture: (_pawn: number, _on: boolean) => {},
+  release: (_pawn: number) => {},
+  setPrisonBed: (_thing: number, _on: boolean) => {},
   setPriority: (_thing: number, _p: number) => {},
   setSwitch: (_thing: number, _on: boolean) => {},
   selectPawn: (_id: number | null, _center = false) => {},

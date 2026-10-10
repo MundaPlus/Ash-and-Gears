@@ -119,7 +119,7 @@ function nearestEdge(game: Game, p: Pawn): Pos {
   return opts[0];
 }
 
-function leave(game: Game, p: Pawn) {
+export function leave(game: Game, p: Pawn) {
   if (p.layer !== 0 || p.x <= 0 || p.y <= 0 || p.x >= game.map.w - 1 || p.y >= game.map.h - 1) {
     game.pawns.delete(p.id);
     return;
