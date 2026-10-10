@@ -45,13 +45,30 @@ function arrow(p: Print, x: number, y: number, ink: Ink = "ochre") {
 
 // ---------------------------------------------------------------- ruins and nature
 
+/** A car wreck from above, nose to the right: tires, a dented roof, cracked glass, rust, one door gone. */
 const car_wreck: Draw = (p) => {
-  shadow(p, 6, 10, 52, 44, 10);
-  p.shape(Print.rect(6, 10, 52, 44, 10), { fill: "rustDark", tone: { ink: "soot", amount: 0.35 }, line: true });
-  p.shape(Print.rect(16, 18, 32, 28, 5), { fill: "tealDark", tone: { ink: "soot", amount: 0.3 }, line: 2 });
-  p.line([[18, 20], [46, 44]], "slate", 1.4);
-  p.tone(Print.ellipse(46, 18, 7, 5), "rust", 0.6, 3);
-  for (const [x, y] of [[10, 14], [54, 14], [10, 50], [54, 50]] as Pt[]) p.shape(Print.ellipse(x, y, 4, 4), { fill: "soot", line: 1.4 });
+  shadow(p, 5, 15, 54, 34, 12);
+  // Tires stick out at the sides.
+  for (const x of [13, 43]) for (const y of [11, 47]) p.shape(Print.rect(x, y, 10, 6, 2.5), { fill: "soot", line: 1.6 });
+  // Body: hood (right), cabin, trunk (left).
+  p.shape(Print.rect(4, 14, 56, 36, 11), { fill: "rustDark", tone: { ink: "soot", amount: 0.22 }, line: true });
+  p.shape([[42, 18], [57, 21], [57, 43], [42, 46]], { fill: "rust", tone: { ink: "rustDark", amount: 0.35 }, line: 1.6 });
+  p.line([[45, 26], [55, 27]], "rustDark", 1.2);
+  p.line([[45, 38], [55, 37]], "rustDark", 1.2);
+  // Windshield with a star crack, the roof with a dent, the rear window.
+  p.shape([[35, 19], [42, 18], [42, 46], [35, 45]], { fill: "teal", tone: { ink: "tealDark", amount: 0.3 }, line: 1.6 });
+  p.line([[38, 30], [41, 24]], "bone", 1);
+  p.line([[38, 30], [41, 35]], "bone", 1);
+  p.line([[38, 30], [36, 22]], "bone", 1);
+  p.shape(Print.rect(16, 20, 19, 24, 3), { fill: "slateDark", tone: { ink: "soot", amount: 0.25 }, line: 1.6 });
+  p.tone(Print.ellipse(25, 31, 5, 4), "soot", 0.55, 2.5);
+  p.shape([[10, 21], [16, 20], [16, 44], [10, 43]], { fill: "tealDark", line: 1.6 });
+  // A missing door: the dark cabin shows through on one side.
+  p.shape(Print.rect(20, 44, 14, 5, 1), { fill: "soot", line: 1.4 });
+  // Rust holes and a lost headlight.
+  p.tone(Print.ellipse(52, 40, 4, 3), "soot", 0.6, 2.5);
+  p.tone(Print.ellipse(8, 26, 3, 4), "rust", 0.6, 2.5);
+  p.dot(58, 22, 1.8, "bone");
 };
 const scrap_pile: Draw = (p) => {
   p.tone(Print.ellipse(34, 40, 26, 16), "soot", 0.45, 3);

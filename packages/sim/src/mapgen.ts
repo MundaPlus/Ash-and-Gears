@@ -81,7 +81,7 @@ function generateSurface(game: Game, rng: Rng) {
         const roll = rng.next();
         setT(game, layer, x, y, roll < 0.08 ? "dirt" : roll < 0.11 ? "rubble" : "asphalt");
         // Roads cross, so a tile may already hold a wreck from the other road.
-        if (rng.chance(0.012) && layer.thing[layer.i(x, y)] === NO_THING) game.spawnThing("car_wreck", 0, x, y);
+        if (rng.chance(0.012) && layer.thing[layer.i(x, y)] === NO_THING) game.spawnThing("car_wreck", 0, x, y, (x * 7 + y * 13) % 4); // wrecks face all ways (from the position: no extra random numbers, so maps stay the same)
       }
   }
 

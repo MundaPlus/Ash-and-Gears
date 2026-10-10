@@ -247,24 +247,41 @@ const WALLS: Record<string, WallMat> = {
   },
 };
 
-/** A wall tile of a material, joined to its neighbors (n, e, s, w); the open south side shows its face. */
+/**
+ * A wall tile of a material, joined to its neighbors (n, e, s, w). Every wall has the same thickness
+ * both ways: a core square with arms to the joined sides, so corners, T-joins and crosses line up.
+ * A wall with nothing south of it shows its front face as a darker band inside its bottom edge, and casts
+ * a short shadow below. Ink lines run only along open edges.
+ */
 export function wallTile(p: Print, id: string, n: boolean, e: boolean, s: boolean, w: boolean): boolean {
   const m = WALLS[id];
   if (!m) return false;
-  const x0 = w ? 0 : 6, x1 = e ? 64 : 58, y0 = n ? 0 : 6, y1 = s ? 64 : 50;
+  const A = 6, B = 58; // the wall runs between these lines, both ways
+  const FACE = 12; // front band height
+  const parts: [number, number, number, number][] = [[A, A, B - A, B - A]];
+  if (n) parts.push([A, 0, B - A, A]);
+  if (s) parts.push([A, B, B - A, 64 - B]);
+  if (w) parts.push([0, A, A, B - A]);
+  if (e) parts.push([B, A, 64 - B, B - A]);
+  const x0 = w ? 0 : A, x1 = e ? 64 : B;
+  // Cast shadow first, so the wall sits on it.
+  if (!s) p.tone(Print.rect(x0 + 3, B, x1 - x0, 6), "soot", 0.5, 3);
+  for (const [x, y, ww, hh] of parts) p.shape(Print.rect(x, y, ww, hh), { fill: m.top, tone: { ink: m.tone, amount: 0.25, cell: 4 }, line: false, shift: 0 });
+  m.marks(p, A, A, B, B - (s ? 0 : FACE));
+  // Front face: a band along the bottom of the core and the side arms.
   if (!s) {
-    p.tone(Print.rect(x0 + 4, 60, x1 - x0, 4), "soot", 0.5, 3);
-    p.shape(Print.rect(x0, y1 - 2, x1 - x0, 14), { fill: m.face, tone: { ink: "soot", amount: 0.3 }, line: false, shift: 0 });
-    p.line([[x0, y1 + 12], [x1, y1 + 12]], "soot", 2.6);
-    if (!w) p.line([[x0, y1 - 2], [x0, y1 + 12]], "soot", 2.6);
-    if (!e) p.line([[x1, y1 - 2], [x1, y1 + 12]], "soot", 2.6);
+    p.shape(Print.rect(x0, B - FACE, x1 - x0, FACE), { fill: m.face, tone: { ink: "soot", amount: 0.3 }, line: false, shift: 0 });
+    p.line([[x0, B - FACE], [x1, B - FACE]], "soot", 1.4);
   }
-  p.shape(Print.rect(x0, y0, x1 - x0, y1 - y0), { fill: m.top, tone: { ink: m.tone, amount: 0.25, cell: 4 }, line: false, shift: 0 });
-  m.marks(p, x0, y0, x1, y1);
-  if (!n) p.line([[x0, y0], [x1, y0]], "soot", 2.6);
-  if (!s) p.line([[x0, y1], [x1, y1]], "soot", 2.6);
-  if (!w) p.line([[x0, y0], [x0, y1]], "soot", 2.6);
-  if (!e) p.line([[x1, y0], [x1, y1]], "soot", 2.6);
+  const L = (a: [number, number], b: [number, number]) => p.line([a, b], "soot", 2.6);
+  // Open sides of the core, and the side lines of each arm.
+  const lines: [boolean, [number, number][][], [number, number][][]][] = [
+    [n, [[[A, A], [B, A]]], [[[A, 0], [A, A]], [[B, 0], [B, A]]]],
+    [s, [[[A, B], [B, B]]], [[[A, B], [A, 64]], [[B, B], [B, 64]]]],
+    [w, [[[A, A], [A, B]]], [[[0, A], [A, A]], [[0, B], [A, B]]]],
+    [e, [[[B, A], [B, B]]], [[[B, A], [64, A]], [[B, B], [64, B]]]],
+  ];
+  for (const [joined, open, arm] of lines) for (const [a, b] of joined ? arm : open) L(a, b);
   return true;
 }
 
