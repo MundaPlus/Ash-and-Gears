@@ -1,5 +1,10 @@
 # Changelog
 
+## 2026-10-10
+- N3 stockpile filter panel: each category has a ▸ button that opens its items with on/off toggles. A category with only some items on shows a dashed border and "(8 of 9)". "Copy filter" and "Paste filter" move a whole filter to another stockpile (`packages/client/src/ui/Hud.tsx`, `main.ts`, `ui/store.ts`, `style.css`, `packages/data/i18n/en.json`) — user request: stockpiles for loaders and automation.
+- The inspect panel scrolls when it is too tall, and has a maximum height. Before, a long panel ran off the screen on phones (`packages/client/src/style.css`) — found with the new e2e test.
+- Tests: `ensureLinks` (new game reaches the bunker door, missing surface stairs come back on load, Mall Rats keeps stairs) (`packages/sim/test/links.test.ts`); item filter (scrap-only stockpile by a loader, partial category) (`packages/sim/test/haul.test.ts`); e2e stockpile filter, copy and paste (`tests/e2e/stockpile.spec.ts`).
+
 ## 2026-10-11
 - Handover: a "First: restart the running services" section (pull, build, restart the `wasteland-colony` preview service, check it) (`handover.md`) — user request.
 - Plan: N4 remove old (not built) floors and salvage everything except multi-floor structures (`docs/spec/14-next-phase.md`, `handover.md`) — user request.

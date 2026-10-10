@@ -36,7 +36,9 @@ button.on { background: var(--rust); color: var(--ink); border-color: var(--rust
 .layerbox span { font: 600 13px var(--mono); padding: 0 8px; min-width: 96px; text-align: center; }
 
 .inspect { position: absolute; left: 8px; bottom: calc(env(safe-area-inset-bottom, 0px) + 60px); width: min(320px, calc(100vw - 16px));
-  background: var(--panel); border: 1px solid var(--line); padding: 10px 14px; }
+  background: var(--panel); border: 1px solid var(--line); padding: 10px 14px;
+  /* Long panels (stockpile filters, benches) scroll instead of running off the screen. */
+  max-height: calc(100vh - 140px); overflow-y: auto; }
 .inspect h2 { margin: 0 32px 6px 0; font-size: 16px; color: var(--rust); }
 .inspect p { margin: 2px 0; font-size: 14px; }
 .inspect .close { position: absolute; top: 4px; right: 4px; min-width: 32px; min-height: 32px; border: 0; background: transparent; font-size: 20px; }
@@ -280,6 +282,15 @@ body.cinematic #ui { display: none; }
 .schedule .slot.picked { outline: 2px solid #efd8a4; color: #efd8a4; }
 .prio-row { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; margin-bottom: 6px; }
 .prio-row span { margin-right: 4px; color: #b0834e; }
+
+/* Stockpile filter: a category button, its ▸ item list, and a dashed border when only some items are on. */
+.stock-cat-row { display: flex; gap: 3px; margin: 2px 0; }
+.stock-cat-row button:first-child { flex: 1; text-align: left; padding: 0 10px; }
+.stock-cat-row button.open { min-width: 40px; }
+.stock-cat-row button.partial { border: 1px dashed var(--rust); }
+.stock-cat-row button.partial small { color: var(--dim); font-size: 11px; }
+.stock-items { display: flex; flex-wrap: wrap; gap: 3px; margin: 2px 0 6px 12px; max-height: 180px; overflow-y: auto; }
+.stock-items button { min-height: 32px; font-size: 13px; padding: 0 8px; }
 
 /* Robot chips in the colonist bar: name and charge only. */
 .colonist.robot { grid-template-columns: 1fr; min-width: 0; padding-inline: 6px; font-size: 11px; }

@@ -110,6 +110,8 @@ N2 first (smaller, uses existing combat), then N1 (map generation, new layers, s
 
 ### N3 — Stockpile filters per item
 
+Status: done (2026-10-10). Sim and panel: ▸ per category, item toggles, partial state, Copy / Paste filter.
+
 User: "the stockpile zones need more granularity if I want to use them for loaders and automation."
 
 Today a stockpile takes whole categories (resources, food, ...). Add item-level filters: in the stockpile panel each category opens a list of its items with on/off toggles; a stockpile can take only scrap, for example, next to a loader. Sim: `Zone.allowItems?: string[]` (when set, items decide; categories stay for the quick view); `accepts()` checks items first; haul list and stockpile priority use the same check. Keep a "copy filter" / "paste filter" pair of buttons for many small stockpiles.

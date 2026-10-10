@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadCoreContent } from "@wc/data";
-import { createZone, doTileAction, dropItems, Game, haulList, isLit, NO_THING, setZonePriority, storedCount, tileActions, WORK_TYPES } from "../src/index.ts";
+import { createZone, doTileAction, dropItems, Game, haulList, isLit, NO_THING, setZoneAllow, setZoneFilter, setZoneItem, setZonePriority, storedCount, tileActions, WORK_TYPES, zoneTakes } from "../src/index.ts";
 
 const content = loadCoreContent();
 const run = (g: Game, hours: number) => {
@@ -131,5 +131,39 @@ describe("idle survivors find their own work", () => {
     expect(g.autoDesig.size).toBeGreaterThan(0);
     const busy = [...g.pawns.values()].filter((p) => p.faction === "colony" && p.job?.kind === "work").length;
     expect(busy).toBeGreaterThan(0);
+  });
+});
+
+describe("stockpile item filter (N3)", () => {
+  it("a scrap-only stockpile by a loader takes scrap and leaves wood for the others", () => {
+    const { g, x0, y0 } = setup("itemfilter");
+    for (const p of g.pawns.values()) p.work = Object.fromEntries(WORK_TYPES.map((w) => [w, w === "haul" ? 1 : 0]));
+    const [main] = [...g.zones.values()];
+    // The loader's own tile: scrap only, high priority. The main stockpile takes everything.
+    createZone(g, "stockpile", 0, [{ x: x0 + 6, y: y0 }]);
+    const feed = [...g.zones.values()].find((z) => z.id !== main.id)!;
+    setZonePriority(g, feed.id, 3);
+    setZoneFilter(g, feed.id, { allow: ["resource"], allowItems: ["scrap"] });
+    g.spawnThing("loader", 0, x0 + 7, y0, 0);
+    expect(zoneTakes(g, feed, g.reg.items.idx("scrap"))).toBe(true);
+    expect(zoneTakes(g, feed, g.reg.items.idx("wood"))).toBe(false);
+    drop(g, "wood", 5, x0 + 12, y0 + 2);
+    drop(g, "scrap", 5, x0 + 14, y0 + 2);
+    run(g, 6);
+    const L = g.map.layers[0];
+    const zoneOf = (item: string) => [...g.items.values()].filter((s) => g.reg.items.list[s.def].id === item).map((s) => L.zone[L.i(s.x, s.y)]);
+    expect(zoneOf("scrap")).toEqual([feed.id]);
+    expect(zoneOf("wood").every((z) => z === main.id)).toBe(true);
+  });
+
+  it("turning one item off makes the category partial and keeps the rest", () => {
+    const { g } = setup("itemtoggle");
+    const [z] = [...g.zones.values()];
+    setZoneItem(g, z.id, "wood", false);
+    expect(zoneTakes(g, z, g.reg.items.idx("wood"))).toBe(false);
+    expect(zoneTakes(g, z, g.reg.items.idx("scrap"))).toBe(true);
+    expect(z.allow).toContain("resource");
+    setZoneAllow(g, z.id, "resource", true);
+    expect(zoneTakes(g, z, g.reg.items.idx("wood"))).toBe(true);
   });
 });
