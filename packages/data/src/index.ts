@@ -22,4 +22,5 @@ export function loadCoreContent(): Content {
   return Content.parse({ terrain, things, items, floors, recipes, creatures, research, skills, traits, backstories, factions, story, thoughts, names, loot });
 }
 export * from "./i18n.ts";
+export * from "./mods.ts";
 export * from "./art/index.ts";

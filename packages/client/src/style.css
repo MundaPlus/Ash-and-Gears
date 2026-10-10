@@ -235,3 +235,12 @@ body.cinematic #ui { display: none; }
 .ending-card .slide { background: #1b1714; border-left: 3px solid #e3c25a; padding: 12px 14px; margin: 14px 0; }
 .ending-card .slide h3 { margin: 0 0 6px; }
 .ending-buttons { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+
+/* Mods (B7) */
+.modlist { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 6px; }
+.modlist > li { border: 1px solid var(--line, #5c4636); padding: 6px 8px; display: grid; gap: 4px; }
+.modlist > li.off { opacity: 0.55; }
+.modlist .desc { color: var(--muted, #b0834e); }
+.modbtns { display: flex; gap: 6px; justify-content: flex-end; }
+.moderr { color: #d9742e; font-size: 0.85em; margin: 0; padding-left: 16px; }
+.modadd { display: grid; gap: 4px; margin: 8px 0; }

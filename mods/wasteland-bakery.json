@@ -1,0 +1,39 @@
+{
+  "id": "wasteland-bakery",
+  "name": "Wasteland Bakery",
+  "version": "1.0",
+  "author": "Ash & Gears example",
+  "description": "Bake glowcorn flatbread at the campfire or stove. An example mod: one item, one recipe, strings and art.",
+  "items": [
+    { "id": "flatbread", "color": "#d6ab6b", "glyph": "b", "category": "food", "nutrition": 0.3, "stack": 30, "rotDays": 6, "eatThought": "ate_canned", "value": 2 }
+  ],
+  "recipes": [
+    { "id": "bake_flatbread", "benches": ["campfire", "stove"], "inputs": [{ "item": "glowcorn", "count": 6 }], "output": { "flatbread": 1 }, "work": 150, "skill": "cooking", "target": 4 }
+  ],
+  "i18n": {
+    "item.flatbread": "Flatbread",
+    "recipe.bake_flatbread": "Bake flatbread"
+  },
+  "art": {
+    "items": {
+      "flatbread": [
+        "................",
+        "................",
+        "................",
+        "................",
+        "....00000000....",
+        "...0555555550...",
+        "..055454455550..",
+        "..054555545450..",
+        "..055545555550..",
+        "..045555455440..",
+        "...0444444440...",
+        "....00000000....",
+        "................",
+        "................",
+        "................",
+        "................"
+      ]
+    }
+  }
+}

@@ -1,6 +1,7 @@
 import { Application, Container, Graphics } from "pixi.js";
 import { h, render } from "preact";
-import { loadCoreContent, t } from "@wc/data";
+import { applyMods, loadCoreContent, t } from "@wc/data";
+import { enabledPacks, setModErrors } from "./mods.ts";
 import {
   activeWorkTypes,
   billTarget,
@@ -78,7 +79,7 @@ function optionsFromParams(params: URLSearchParams) {
     raidScale: num("raid", 1),
     mutantScale: num("mutant", 1),
     radCloudScale: num("rad", 1),
-    storyline: ["reactor", "bus", "orbit"].includes(params.get("line") ?? "") ? params.get("line") : null,
+    storyline: /^[a-z0-9_-]+$/.test(params.get("line") ?? "") ? params.get("line") : null,
     scenario: (sim.SCENARIOS as readonly string[]).includes(params.get("scen") ?? "") ? params.get("scen")! : "standard",
     storyteller: (story === "grandma" || story === "chaos" || story === "none" ? story : "sheriff") as "sheriff" | "grandma" | "chaos" | "none",
   };
@@ -86,7 +87,10 @@ function optionsFromParams(params: URLSearchParams) {
 
 async function boot() {
   const params = new URLSearchParams(location.search);
-  const content = loadCoreContent();
+  // Mods (B7): enabled packs go on top of the core content; bad packs are left out and shown in the mod list.
+  const modded = applyMods(loadCoreContent(), enabledPacks());
+  setModErrors(modded.errors);
+  const content = modded.content;
   let game: Game;
   if (params.has("load")) {
     let slot: string | null;

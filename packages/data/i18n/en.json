@@ -965,5 +965,15 @@
   "pawn.farmer_bot": "Farmer robot",
   "pawn.guard_bot": "Guard robot",
   "msg.robot_hacked": "Raiders hacked {name}! It fights for them now. Knock it down or wait: the hack wears off in 12 hours.",
-  "msg.robot_unhacked": "{name} shook off the hack and is back with the colony."
+  "msg.robot_unhacked": "{name} shook off the hack and is back with the colony.",
+  "title.mods": "Mods",
+  "mods.title": "Mods",
+  "mods.hint": "A mod is a .json content pack. Later mods in the list win when two change the same thing.",
+  "mods.none": "No mods installed.",
+  "mods.add": "Add mod file (.json)",
+  "mods.remove": "Remove",
+  "mods.up": "Load earlier",
+  "mods.restart": "Changes take effect with the next new game or load.",
+  "mods.err_json": "{file} is not valid JSON.",
+  "mods.err_id": "{file} needs an \"id\" and a \"name\"."
 }
