@@ -90,7 +90,8 @@ export class Game {
   /** Visual effects for the renderer (shots, hits). Old entries are dropped. */
   readonly fx: { kind: "shot" | "melee" | "turret"; layer: number; from: { x: number; y: number }; to: { x: number; y: number }; hit: boolean; tick: number }[] = [];
   /** Raids and packs: id -> state. */
-  readonly groups = new Map<number, { id: number; kind: string; size: number; fleeing: boolean; arrived: number }>();
+  /** Hostile groups. `beatenAt`: tick when the last standing survivor went down (the group leaves soon after). */
+  readonly groups = new Map<number, { id: number; kind: string; size: number; fleeing: boolean; arrived: number; beatenAt?: number }>();
   /** Burning tiles: node id -> intensity 0..1. */
   readonly fires = new Map<number, number>();
   readonly story: StoryState = { points: 0, lastThreat: 0, lastGood: 0, log: [], raidsSurvived: 0 };

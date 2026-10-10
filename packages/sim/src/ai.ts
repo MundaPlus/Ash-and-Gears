@@ -14,7 +14,7 @@ import { isContaminatedThing } from "./weather.ts";
 import { workOrder } from "./worktypes.ts";
 import { moving, tickHealthHourly } from "./health.ts";
 import { draftedTick, fleeFrom, hostileTick, selfDefense, updateGroups } from "./hostile.ts";
-import { equipJob, inBed } from "./medical.ts";
+import { equipJob, inBed, rushToDowned } from "./medical.ts";
 
 /** Tiles per tick at walk cost 1 (3 tiles per real second at 1x). */
 export const WALK_SPEED = 0.15;
@@ -98,6 +98,7 @@ function tickMove(game: Game, p: Pawn): void {
 export function tickPawns(game: Game): void {
   const hourly = game.tick % Math.round(game.ticksPerHour) === 0;
   if (game.tick % 30 === 0) updateGroups(game);
+  if (game.tick % 30 === 15) rushToDowned(game);
   for (const p of [...game.pawns.values()]) {
     if (!game.pawns.has(p.id)) continue;
     if (p.cooldown > 0) p.cooldown--;
@@ -127,7 +128,9 @@ export function tickPawns(game: Game): void {
       tickMove(game, p);
       continue;
     }
-    if (p.mentalBreak && p.job && !p.job.data?.sulk && p.job.kind !== "eat" && p.job.kind !== "drink") endJob(game, p, false);
+    // Sulking survivors keep only eating, drinking and the alarm care for a downed friend (rescue, feed, tend).
+    const breakKeeps = p.job && ["eat", "drink", "rescue", "feed", "tend"].includes(p.job.kind);
+    if (p.mentalBreak && p.job && !p.job.data?.sulk && !breakKeeps) endJob(game, p, false);
     // A radiation cloud is coming: drop idle or outdoor work and think again (that finds shelter).
     // Eating and drinking finish first: cutting them off would loop (drink, interrupted, drink...).
     const keep = p.job?.kind === "shelter" || p.job?.kind === "eat" || p.job?.kind === "drink";

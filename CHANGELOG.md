@@ -1,6 +1,9 @@
 # Changelog
 
 ## 2026-10-10
+- Rescue alarm: when a survivor is downed outside a bed, or downed and thirsty, hungry or bleeding, the nearest free doctor drops their work (not eating or drinking) and runs over, unless enemies are within 10 tiles of the patient. Sulking survivors answer the alarm too (`packages/sim/src/medical.ts` `rushToDowned`, `ai.ts`; test in `packages/sim/test/combat.test.ts`) — P1 "doctors rush to the downed".
+- Downed survivors lose hunger and thirst at half speed (`packages/sim/src/needs.ts`) — they died of thirst before anyone could get up.
+- Attackers leave one hour after the last survivor goes down, with a message (`packages/sim/src/hostile.ts`, `game.ts`, `packages/data/i18n/en.json`) — raiders stayed up to 18 hours over a downed colony. Headless runs on 12 seeds (22 days): deaths fell from 29 to 16. Most of the rest is starvation from the scripted player's small farms.
 - AI walls and floors at "32": walls get 16 joined looks from one texture (outline on open sides, shaded front face when no wall is below); floors use the AI texture (`packages/client/src/render/aiArt.ts` `aiWallTextures`, `render/textures.ts`). Scrap wall uses try 2 (`tools/art/ai/picks.json`).
 - AI textures get seamless edges: `clean.py` blends a half-shifted copy in near the border (`tools/art/ai/clean.py`).
 - AI sprite list covers all things, items and the glow hound, plus wood/stone/ruin walls and three floors; more tries for survivors (12) and raiders (10) (`tools/art/ai/sprites.json`).

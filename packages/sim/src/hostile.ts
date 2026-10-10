@@ -149,7 +149,14 @@ function nearestColonist(game: Game, p: Pawn): Pawn | null {
 
 /** Group morale: a group flees once half of it is dead or down. */
 export function updateGroups(game: Game): void {
+  const defended = [...game.pawns.values()].some((p) => p.faction === "colony" && !p.health.downed);
   for (const g of game.groups.values()) {
+    // Nobody left standing: the attackers take what they want and go.
+    if (defended) g.beatenAt = undefined;
+    else if (g.beatenAt === undefined) {
+      g.beatenAt = game.tick;
+      game.message(`msg.${g.kind}_won`, {}, "bad");
+    }
     const members = [...game.pawns.values()].filter((p) => p.group === g.id);
     const fighting = members.filter((p) => !p.health.downed).length;
     // Rats scatter after losing a third; raiders and hounds after losing half.
@@ -178,7 +185,8 @@ export function hostileTick(game: Game, p: Pawn): void {
   const stayHours = creature.behavior === "food_swarm" ? 8 : creature.behavior === "hunter" ? 10 : 18;
   // No group (its raid already ended, e.g. this one got up again after being downed): go home.
   const orphan = p.group !== null && !group;
-  const overstayed = orphan || (!!group && game.tick - group.arrived > stayHours * game.ticksPerHour);
+  const beaten = group?.beatenAt !== undefined && game.tick - group.beatenAt > game.ticksPerHour;
+  const overstayed = orphan || beaten || (!!group && game.tick - group.arrived > stayHours * game.ticksPerHour);
   // Animals bolt once badly hurt; raiders hold on a little longer.
   const painLimit = creature.behavior === "human" ? 0.6 : 0.4;
   if (overstayed || group?.fleeing || pain(game, p) > painLimit || (creature.behavior === "hunter" && daylight && game.tick - (group?.arrived ?? 0) > game.ticksPerHour * 3)) {

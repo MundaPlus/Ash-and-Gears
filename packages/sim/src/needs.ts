@@ -18,7 +18,8 @@ const MOOD_STEP = 0.5;
 export const BREAK_THRESHOLD = 35;
 
 export function tickNeeds(game: Game, p: Pawn): void {
-  const perTick = 1 / game.ticksPerDay;
+  // Downed survivors lie still: hunger and thirst go down at half speed, so friends have time to help.
+  const perTick = (p.health.downed ? 0.5 : 1) / game.ticksPerDay;
   p.needs.hunger = Math.max(0, p.needs.hunger - NEED_DECAY.hunger * perTick);
   p.needs.thirst = Math.max(0, p.needs.thirst - NEED_DECAY.thirst * perTick);
   if (p.asleep) {
