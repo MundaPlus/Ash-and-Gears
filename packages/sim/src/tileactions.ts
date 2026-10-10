@@ -71,4 +71,28 @@ export function setZoneAllow(game: Game, zoneId: number, category: string, on: b
   const z = game.zones.get(zoneId);
   if (!z || z.kind !== "stockpile") return;
   z.allow = on ? [...new Set([...z.allow, category])] : z.allow.filter((c) => c !== category);
+  // With an item filter: the whole category goes on or off.
+  if (z.allowItems) {
+    const ids = game.reg.items.list.filter((d) => d.category === category).map((d) => d.id);
+    z.allowItems = on ? [...new Set([...z.allowItems, ...ids])] : z.allowItems.filter((i) => !ids.includes(i));
+  }
+}
+
+/** Turn one item on or off for a stockpile (N3). The first item toggle starts an item filter from the categories. */
+export function setZoneItem(game: Game, zoneId: number, itemId: string, on: boolean): void {
+  const z = game.zones.get(zoneId);
+  if (!z || z.kind !== "stockpile" || !game.reg.items.has(itemId)) return;
+  z.allowItems ??= game.reg.items.list.filter((d) => z.allow.includes(d.category)).map((d) => d.id);
+  z.allowItems = on ? [...new Set([...z.allowItems, itemId])] : z.allowItems.filter((i) => i !== itemId);
+  // Categories: on when any of their items is on (the summary the panel shows).
+  z.allow = [...new Set(game.reg.items.list.filter((d) => z.allowItems!.includes(d.id)).map((d) => d.category))];
+}
+
+/** Set a stockpile's whole filter (paste). */
+export function setZoneFilter(game: Game, zoneId: number, filter: { allow: string[]; allowItems?: string[] }): void {
+  const z = game.zones.get(zoneId);
+  if (!z || z.kind !== "stockpile") return;
+  z.allow = [...filter.allow];
+  if (filter.allowItems) z.allowItems = [...filter.allowItems];
+  else delete z.allowItems;
 }

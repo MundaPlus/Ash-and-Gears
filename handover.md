@@ -1,36 +1,41 @@
-# Handover — Ash & Gears — 2026-10-11
+# Handover — Ash & Gears — 2026-10-11 (end of session)
 
 ## Goal
-The user wants a full post-apocalyptic colony + automation game (RimWorld + Factorio), built mostly autonomously by Claude. Demo v0.1.0 and Alpha v0.2.0 are done. The Beta (B1–B7, B9, B10 in `docs/spec/13-beta-plan.md`) is now done and tagged `v0.3.0-beta`. **Waiting for the user's Beta review.** B8 (phone app, PWA) was moved after the Beta by the user ("phone will be later").
+The user wants a full post-apocalyptic colony + automation game (RimWorld + Factorio), built mostly autonomously by Claude, with Claude making "realism, clarity and quality-of-life" improvements on its own. Demo, Alpha, Beta done; v0.4.0 made the code-drawn "Salvage Print" art style the default. Now: user requests N1–N3 (`docs/spec/14-next-phase.md`), then the phone app.
 
-## Done so far (all committed and pushed; `develop` and `master`)
-- B1–B4 story engine and three storylines (`packages/sim/src/plot.ts`, `content/core/story.json`), endings (`packages/client/src/ui/Ending.tsx`).
-- B5 scenarios (`packages/sim/src/scenarios.ts`).
-- B6 builder/miner/farmer/guard robots, raider hacking (`packages/sim/src/robots.ts`).
-- B7 mods: JSON content packs (`packages/data/src/mods.ts`, `packages/client/src/mods.ts`, `ui/Mods.tsx`, `mods/wasteland-bakery.json`, `docs/modding.md`).
-- B9 polish and user requests: story music cues, chapter banner, belts redrawn, pause-aware animation, robot bay battery, backup batteries, charge/fuel/progress bars, haul list + "haul now", stockpile priority, campfire/stove burn wood, wood regrowth + ash willow crop, graves, visible spoilage, electric heater, light (dark work 20% slower), recreation + schedules, click on map closes menus, work list colony-only, prison-bed alert, starvation-lock fix, compact robot chips.
-- B10: presentation (`packages/client/public/site/index.html`, Artifact https://claude.ai/artifact/Cmp6bsbnXyoFTZYF8AGCPF version 3), tag `v0.3.0-beta`.
-- Tests: 116 unit, 14 e2e. Headless 12 seeds × 22 days: about 5 deaths.
+## Done so far (committed and pushed: Gitea `origin` master+develop, GitHub `github` main+develop)
+- Everything up to "Auto-crafter recipes show inputs and outputs" — see `CHANGELOG.md` (newest on top) and the previous summary in git history of this file.
+- This last step (committed in the final commit of the session):
+  - `packages/sim/src/links.ts` `ensureLinks`: runs at the end of `Game.create` and `loadGame`. Repairs stairs in pairs, and digs a route to the bunker (cave tunnel → service shaft `stairs_down` on layer 1 → tunnel on layer 2 to the westmost `bunker_door`) when none is reachable. Mall Rats clearing keeps stairs. Showcase `wayToBunker` removed (links cover it). Test `packages/sim/test/deep.test.ts` "showcase way to the bunker" still passes.
+  - N3 sim part: `Zone.allowItems`, `zoneTakes`, `setZoneItem`, `setZoneFilter` (`hauling.ts`, `tileactions.ts`, `map.ts`).
+- Checks at the end: 127 unit tests pass, 14 e2e pass, build OK.
 
 ## Current state
-- Nothing in progress. Preview service `wasteland-colony` (vite preview 0.0.0.0:4173) serves the Beta: http://192.168.31.215:4173/ (site /site/, showcase /?showcase=1&px=16, story game e.g. `?line=reactor&scen=standard`).
+- Working tree clean after the last commit. Preview service at http://192.168.31.215:4173/ (LAN); live on https://mundaplus.github.io/Ash-and-Gears/ (deploys from GitHub `main`).
+- The user's own saved game gets the stairs and bunker route on its next load (ensureLinks in loadGame).
 
 ## Decisions
-- The user prefers the hand-pixeled 16 px look; things are top-down, only people and plants side view.
-- The user wants Claude to find and fix realism/clarity/QoL gaps on its own (see memory "feedback-gameplay-depth").
-- A mood thought for darkness was cut: the playtest went from 3 to 16 deaths.
+- Salvage Print is the default; pixel 16 stays (`?style=pixel`, Settings).
+- Bunker access is given on foot (route dug by `ensureLinks`), because the user found digging down unclear. Deep digging research still allows digging elsewhere.
+- Release flow: commit on `develop`, merge `--no-ff` into `master`, push `origin master develop` and `github master:main develop`.
 
 ## Next steps
-1. Get the user's Beta review; turn feedback into a plan.
-2. B8 phone app: PWA manifest, service worker, offline cache, touch polish (Capacitor only if an Android SDK exists).
-3. Known open issue: downed survivors after raids can die of thirst (seed s11).
+1. Add unit tests for `ensureLinks`: (a) a new game: surface stairs reach the bunker door; (b) remove the surface `stairs_down`, save + load → it is back; (c) Mall Rats keeps stairs.
+2. Finish N3 UI: in the stockpile panel (`packages/client/src/ui/Hud.tsx`, inspect `stockpile` from `main.ts`): per-category ▸ that opens item toggles (`setZoneItem`), category state on/partial, "Copy filter" / "Paste filter" (client clipboard → `setZoneFilter`); i18n keys; unit test for `zoneTakes` with `allowItems` (a scrap-only stockpile next to a loader).
+3. N2 weapon and armor tiers, then N1 towers with upper floors and sealed enemy rooms (plans in `docs/spec/14-next-phase.md`).
+4. Phone app (PWA).
+5. Keep finding realism/clarity/QoL gaps unasked (memory "feedback-gameplay-depth").
 
 ## Key files
-- `docs/spec/13-beta-plan.md` — Beta plan and progress table.
+- `docs/spec/14-next-phase.md` — plan, progress, N1–N3.
 - `CHANGELOG.md` — every change, newest first.
-- `scratchpad/batch.sh` (session scratchpad) — 12-seed headless playtest: `batch.sh <repo> 22 s1..s12`.
+- `packages/sim/src/links.ts`, `hauling.ts`, `tileactions.ts`, `designations.ts`, `construction.ts`, `ai.ts` — recent sim work.
+- `packages/client/src/render/print/` — Salvage Print art; `render/dynamic.ts` — overlays; `ui/Hud.tsx` — inspect panel.
 
 ## Gotchas
-- Always `npm run build` before `npm run e2e` (e2e uses the running preview server).
-- `cp` is aliased to `cp -i`; use `\cp -f` in scripts.
-- The showcase uses a random seed unless `&seed=` is given.
+- Always `npm run build` before `npm run e2e`.
+- `cp` is `cp -i`: use `\cp -f`. Kill processes by exact PID (`pkill -f` can hit your own shell).
+- Port 8765 is another app; use 8799 for test servers.
+- GitHub token in `~/.git-credentials` (`https://MundaPlus:TOKEN@github.com`). Never print that file. It can push but cannot create Pages or re-run workflows.
+- Vitest hides console output: write debug data to a scratchpad file.
+- The session context window is 1M tokens; the context-guard hook reports the real usage.

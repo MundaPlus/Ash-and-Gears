@@ -31,7 +31,8 @@ export function applyScenario(game: Game): void {
       for (let x = x0; x < x0 + w; x++) {
         if (!L.inBounds(x, y)) continue;
         const th = L.thing[L.i(x, y)];
-        if (th !== NO_THING) game.removeThing(th);
+        // Keep stairs: the caves below have stairs up to them.
+        if (th !== NO_THING && game.reg.things.list[game.things.get(th)!.def].kind !== "stairs") game.removeThing(th);
         game.setTerrain(0, x, y, "ruin_floor");
         const edge = x === x0 || y === y0 || x === x0 + w - 1 || y === y0 + h - 1;
         const gap = (y === y0 + h - 1 && (x === hx || x === hx + 1)) || (x === x0 && y === hy) || (x === x0 + w - 1 && y === hy - 2);
