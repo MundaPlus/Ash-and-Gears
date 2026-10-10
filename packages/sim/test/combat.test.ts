@@ -22,7 +22,7 @@ import {
 } from "../src/index.ts";
 
 const content = loadCoreContent();
-const newGame = (seed: string, storyteller: "none" | "sheriff" = "none") => Game.create(content, { seed, mapSize: 96, storyteller });
+const newGame = (seed: string, storyteller: "none" | "sheriff" = "none") => Game.create(content, { seed, mapSize: 96, storyteller, idleWork: false });
 const run = (g: Game, hours: number) => {
   for (let i = 0, n = Math.round(hours * g.ticksPerHour); i < n; i++) g.step();
 };
@@ -66,7 +66,7 @@ describe("health", () => {
   });
 
   it("starving to death takes a few days once food runs out", () => {
-    const g = Game.create(content, { seed: "starve2", mapSize: 96, dayLengthSec: 120, storyteller: "none" });
+    const g = Game.create(content, { seed: "starve2", mapSize: 96, dayLengthSec: 120, storyteller: "none", idleWork: false });
     for (const s of [...g.items.values()]) if (g.reg.items.list[s.def].category === "food") {
       const L = g.map.layers[s.layer];
       L.item[L.i(s.x, s.y)] = -1;
@@ -221,7 +221,7 @@ void ({} as Pawn);
 
 describe("drafted needs and feeding the downed", () => {
   it("a drafted survivor with critical thirst and no enemy near takes a drink and stays drafted", () => {
-    const g = Game.create(loadCoreContent(), { seed: "drafted-drink", mapSize: 96, storyteller: "none" });
+    const g = Game.create(loadCoreContent(), { seed: "drafted-drink", mapSize: 96, storyteller: "none", idleWork: false });
     const p = [...g.pawns.values()].find((q) => q.faction === "colony")!;
     setDrafted(g, p, true);
     p.needs.thirst = 0.12;
@@ -232,7 +232,7 @@ describe("drafted needs and feeding the downed", () => {
   });
 
   it("a doctor brings water to a downed survivor even with no jugs and no clean well", () => {
-    const g = Game.create(loadCoreContent(), { seed: "feed-downed", mapSize: 96, storyteller: "none" });
+    const g = Game.create(loadCoreContent(), { seed: "feed-downed", mapSize: 96, storyteller: "none", idleWork: false });
     for (const s of [...g.items.values()]) if (g.reg.items.list[s.def].category === "water") g.items.delete(s.id);
     const L = g.map.layers[0];
     for (let i = 0; i < L.item.length; i++) if (L.item[i] !== -1 && !g.items.has(L.item[i])) L.item[i] = -1;

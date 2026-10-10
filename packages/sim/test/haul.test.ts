@@ -16,7 +16,7 @@ function drop(g: Game, item: string, n: number, x: number, y: number): number {
 
 /** A clear strip east of home with a 2x2 stockpile at its west end. */
 function setup(seed: string) {
-  const g = Game.create(content, { seed, mapSize: 96, storyteller: "none" });
+  const g = Game.create(content, { seed, mapSize: 96, storyteller: "none", idleWork: false });
   const x0 = g.home.x + 4, y0 = g.home.y - 12;
   const L = g.map.layers[0];
   for (let y = y0 - 1; y <= y0 + 3; y++)
@@ -118,5 +118,18 @@ describe("stockpile priority (B9)", () => {
     const atHigh = [0, 1].map((k) => L.item[L.i(x0 + 20 + k, y0)]).filter((id) => id !== NO_THING).map((id) => g.items.get(id)!.count).reduce((a, b) => a + b, 0);
     expect(atHigh).toBe(5);
     expect(haulList(g).length).toBe(0);
+  });
+});
+
+describe("idle survivors find their own work", () => {
+  it("an idle survivor gives itself a salvage order near home, and the player's orders come first", () => {
+    const g = Game.create(loadCoreContent(), { seed: "idle", mapSize: 96, storyteller: "none" });
+    const near = [...g.things.values()].filter((t) => t.layer === 0 && g.reg.things.list[t.def].yield && g.reg.things.list[t.def].kind !== "plant" && !g.reg.things.list[t.def].build && Math.abs(t.x - g.home.x) < 25 && Math.abs(t.y - g.home.y) < 25);
+    expect(near.length).toBeGreaterThan(0);
+    for (const p of g.pawns.values()) p.work = Object.fromEntries(WORK_TYPES.map((w) => [w, w === "salvage" ? 1 : 0]));
+    run(g, 1);
+    expect(g.autoDesig.size).toBeGreaterThan(0);
+    const busy = [...g.pawns.values()].filter((p) => p.faction === "colony" && p.job?.kind === "work").length;
+    expect(busy).toBeGreaterThan(0);
   });
 });

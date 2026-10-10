@@ -52,6 +52,8 @@ export interface GameOptions {
   storyline: string | null;
   /** Start scenario (Beta B5). */
   scenario: string;
+  /** Idle survivors give themselves orders (salvage, cut dead wood). Tests that count resources turn it off. */
+  idleWork: boolean;
 }
 
 export const DEFAULT_OPTIONS: GameOptions = {
@@ -66,6 +68,7 @@ export const DEFAULT_OPTIONS: GameOptions = {
   storyteller: "sheriff",
   storyline: null,
   scenario: "standard",
+  idleWork: true,
 };
 
 export const SEASONS = ["spring", "summer", "autumn", "winter"] as const;
@@ -82,6 +85,8 @@ export class Game {
   readonly zones = new Map<number, Zone>();
   /** Node ids (layer * w * h + tile) that carry a player order. */
   readonly desigTiles = new Set<number>();
+  /** Orders survivors gave themselves when idle (same keys as desigTiles); the player's own orders go first. */
+  readonly autoDesig = new Set<number>();
   /** Surface tile indices that need a roof and have none yet. */
   readonly roofTodo = new Set<number>();
   rooms = new Map<number, Room>();

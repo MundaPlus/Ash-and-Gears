@@ -763,7 +763,8 @@ async function boot() {
   function colonists(): ColonistSummary[] {
     return [...game.pawns.values()].filter((p) => p.faction === "colony").map((p) => {
       const worst = p.situational.map((ti) => game.reg.thoughts.list[ti]).sort((a, b) => a.mood - b.mood)[0];
-      const warn = p.health.downed ? "downed" : p.drafted ? "drafted" : (worst?.id ?? null);
+      const idle = !p.robot && p.job?.kind === "wander" && !p.job.data?.sulk && !p.mentalBreak;
+      const warn = p.health.downed ? "downed" : p.drafted ? "drafted" : idle ? "idle" : (worst?.id ?? null);
       return { id: p.id, nick: p.nick, mood: Math.round(p.mood), color: hex(PawnRenderer.colorOf(p)), job: jobKey(p), warn, ...(p.robot ? { charge: p.charge ?? 1 } : {}) };
     }).sort((a, b) => Number(a.charge !== undefined) - Number(b.charge !== undefined));
   }
