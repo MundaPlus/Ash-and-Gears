@@ -1,6 +1,7 @@
 # Changelog
 
 ## 2026-10-11
+- Battery is 1x2; its charge bar sits at the bottom of the footprint (`packages/data/content/core/things.json`, `packages/client/src/render/dynamic.ts`). Seven new songs are in (`packages/client/public/music/`).
 - 16 px art pass (the user prefers the 16 px look): refined survivor and raider sprites (clear face with eyes, collar, sleeves with hands, belt, pants, boots), and hair color now varies per survivor (12 looks: 6 shirts × hair colors) (`packages/data/src/art/items.ts`, `src/art/index.ts` `HAIRS`, `packages/client/src/render/textures.ts`).
 - 16 px things redrawn top-down (only people, plants and trees stay side view): table, chair, campfire, workbench, stove, research desk, powered bench, smelter, generator, well, rain collector, turret, lamp, battery, pump, water tank, solar panel, wind turbine, power pole, robot arm, chest, bunker locker, car wreck, loot crate, old safe; repeat bands for wide things adjusted (`packages/data/src/art/things.ts`, `src/art/index.ts`).
 - Fix: vertical wall runs had a stripe at every tile (each tile drew its own front face). Tiles with a wall below now repeat only the top surface; the bottom tile keeps the front face (`packages/data/src/art/index.ts` `wallVariant`).

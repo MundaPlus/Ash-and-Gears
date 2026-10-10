@@ -654,6 +654,7 @@
  },
  {
   "id": "battery",
+  "footprint": [1, 2],
   "kind": "furniture",
   "color": "#3b4f63",
   "glyph": "B",

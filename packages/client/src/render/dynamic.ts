@@ -91,8 +91,9 @@ export class DynamicRenderer {
       // Batteries show their charge as a bar.
       if (d.power?.store) {
         const k = Math.max(0, Math.min(1, (t.charge ?? 0) / d.power.store));
-        g.rect(px + 4, py + TILE - 7, TILE - 8, 4).fill(0x1b1714);
-        if (k > 0) g.rect(px + 5, py + TILE - 6, (TILE - 10) * k, 2).fill(k < 0.2 ? 0xff4a3a : 0x9fd14a);
+        const by = py + fh * TILE - 7;
+        g.rect(px + 4, by, fw * TILE - 8, 4).fill(0x1b1714);
+        if (k > 0) g.rect(px + 5, by + 1, (fw * TILE - 10) * k, 2).fill(k < 0.2 ? 0xff4a3a : 0x9fd14a);
       }
       // Wind turbines: blades turn with the wind.
       if (d.power?.source === "wind") {
