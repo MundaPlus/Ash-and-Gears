@@ -203,12 +203,37 @@ async function boot() {
   writeMark({ url: location.search, ...(mark?.camera && resumed ? { camera: mark.camera } : {}) });
   camera.onRightClick = (wx, wy) => {
     if (tools.spec) return actions.setTool(null);
-    if (openPawnMenu(wx, wy, false)) return;
+    if (openPawnMenu(wx, wy, false) || openTileMenu(wx, wy, false)) return;
     orderAt(wx, wy);
   };
 
-  /** Who the character menu is for. */
-  let menuFor: { actor: number; target: number } | null = null;
+  /** Who (or which tile) the menu is for. */
+  let menuFor: { actor: number; target?: number; tile?: { layer: number; x: number; y: number } } | null = null;
+
+  /** Screen position (UI pixels) of a world point, for the menu. */
+  function menuAt(wx: number, wy: number) {
+    const r = app.canvas.getBoundingClientRect();
+    const ui = store.state.uiScale || 1;
+    return { x: (r.left + (wx - camera.x) * camera.zoom + camera.viewW / 2) / ui, y: (r.top + (wy - camera.y) * camera.zoom + camera.viewH / 2) / ui };
+  }
+
+  /**
+   * The tile menu (user: "force an order"): with one survivor selected, point at a tile: mine, salvage,
+   * cut, clear, deconstruct, remove floor, pry, haul, harvest, sow, build, done now by that survivor.
+   * Drafted: "Move here" comes first; on plain ground a drafted survivor just moves (no menu).
+   */
+  function openTileMenu(wx: number, wy: number, touch: boolean): boolean {
+    const actor = selected !== null ? game.pawns.get(selected) : undefined;
+    if (!actor || actor.faction !== "colony" || group.length) return false;
+    const x = Math.floor(wx / TILE), y = Math.floor(wy / TILE);
+    const opts: string[] = sim.tileForceActions(game, actor, renderer.layer, x, y).map((o) => `do_${o}`);
+    if (!opts.length) return false;
+    if (actor.drafted && game.walkable(renderer.layer, x, y)) opts.unshift("move");
+    if (touch) opts.unshift("inspect");
+    menuFor = { actor: actor.id, tile: { layer: renderer.layer, x, y } };
+    store.set({ pawnMenu: { ...menuAt(wx, wy), title: t("pawnmenu.tile_title", { name: actor.nick }), options: opts } });
+    return true;
+  }
 
   /**
    * The character menu: a survivor is selected and the player points at another character. The options
@@ -222,13 +247,9 @@ async function boot() {
     const opts: string[] = sim.pawnActions(game, actor, target);
     if (!opts.length) return false;
     if (touch) opts.unshift("select");
-    const r = app.canvas.getBoundingClientRect();
-    const ui = store.state.uiScale || 1;
-    const sx = (r.left + (wx - camera.x) * camera.zoom + camera.viewW / 2) / ui;
-    const sy = (r.top + (wy - camera.y) * camera.zoom + camera.viewH / 2) / ui;
     const title = target.faction === "wild" ? t(`creature.${game.reg.content.creatures[target.creature].id}`) : target.nick;
     menuFor = { actor: actor.id, target: target.id };
-    store.set({ pawnMenu: { x: sx, y: sy, title, options: opts } });
+    store.set({ pawnMenu: { ...menuAt(wx, wy), title, options: opts } });
     return true;
   }
   actions.pawnMenuPick = (opt) => {
@@ -236,8 +257,18 @@ async function boot() {
     menuFor = null;
     store.set({ pawnMenu: null });
     if (!m || !opt) return;
-    const actor = game.pawns.get(m.actor), target = game.pawns.get(m.target);
-    if (!actor || !target) return;
+    const actor = game.pawns.get(m.actor);
+    if (!actor) return;
+    if (m.tile) {
+      const { layer, x, y } = m.tile;
+      if (opt === "inspect") return inspectTile(x, y);
+      if (opt === "move") sim.orderMove(game, actor, { layer, x, y });
+      else sim.doTileForce(game, actor, layer, x, y, opt.slice(3) as sim.TileForce);
+      if (selected === actor.id) store.set({ pawn: pawnDetail(actor) });
+      return;
+    }
+    const target = m.target !== undefined ? game.pawns.get(m.target) : undefined;
+    if (!target) return;
     if (opt === "select") return actions.selectPawn(target.id);
     sim.doPawnAction(game, actor, target, opt as sim.PawnAction);
     if (selected === actor.id) store.set({ pawn: pawnDetail(actor) });
@@ -590,7 +621,7 @@ async function boot() {
 
   camera.onTap = (wx, wy, touch) => {
     if (store.state.pawnMenu) return actions.pawnMenuPick(null);
-    if (touch && openPawnMenu(wx, wy, true)) return;
+    if (touch && (openPawnMenu(wx, wy, true) || (!game.pawns.get(selected ?? -1)?.drafted && openTileMenu(wx, wy, true)))) return;
     if (orderAt(wx, wy)) return;
     const p = pawnsR.pick(wx, wy);
     if (p) return actions.selectPawn(p.id);

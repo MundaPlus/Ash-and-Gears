@@ -10,7 +10,7 @@ import type { Game } from "./game.ts";
 import { countItems, dropItems, takeFromStack } from "./items.ts";
 import { NO_THING, type Blueprint } from "./map.ts";
 import { dropCarried, pickUp } from "./hauling.ts";
-import type { Pawn } from "./pawn.ts";
+import type { Job, Pawn } from "./pawn.ts";
 import { canDesignate, designate } from "./designations.ts";
 import { ensureRooms, setRoof } from "./rooms.ts";
 import { registerTask, workJob } from "./work.ts";
@@ -257,6 +257,21 @@ registerWorkGiver({
     return null;
   },
 });
+
+/** Work on this one plan now (the player's menu): build it, or bring what it still needs. */
+export function forceBuildJob(game: Game, p: Pawn, bp: Blueprint): Job | null {
+  if (!game.path.canReachAdjacent(p, bp)) return null;
+  if (!needsMaterials(bp)) return blocked(game, bp) ? null : workJob(game, p, "build", bp, bp.id);
+  for (const [itemIdx, n] of Object.entries(bp.need)) {
+    if (n <= 0) continue;
+    const def = Number(itemIdx);
+    const stack = findItem(game, p, (d, cont) => d === def && !cont);
+    if (stack === null || !reserve(game, `item:${stack}`, p)) continue;
+    reserve(game, `bp:${bp.id}`, p);
+    return { kind: "deliver", stage: 0, targetId: stack, data: { bp: bp.id, item: def } };
+  }
+  return null;
+}
 
 /** Total still needed of `item` by `first` and other free blueprints near it. */
 function batchNeed(game: Game, p: Pawn, first: Blueprint, item: number): number {
