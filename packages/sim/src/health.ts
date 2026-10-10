@@ -61,6 +61,8 @@ export function partDamage(p: Pawn, part: PartId): number {
 
 /** 0..1 pain from all injuries. */
 export function pain(game: Game, p: Pawn): number {
+  // Machines feel no pain: they keep going until a part breaks.
+  if (p.robot) return 0;
   let s = 0;
   for (const i of p.health.injuries) s += i.dmg * (KIND[i.kind]?.pain ?? 1);
   return Math.min(1, (s * traitMult(game, p, (t) => t.painMult)) / (90 * game.reg.content.creatures[p.creature].hp));
@@ -71,6 +73,8 @@ const CLOT_HOURS = 8;
 
 /** Bleeding in blood-loss per in-game hour. Wounds clot over time; tending stops most bleeding. */
 export function bleedRate(p: Pawn): number {
+  // Machines do not bleed.
+  if (p.robot) return 0;
   let r = 0;
   for (const i of p.health.injuries) {
     const b = (KIND[i.kind]?.bleed ?? 0) * i.dmg * Math.max(0, 1 - (i.age ?? 0) / CLOT_HOURS);
@@ -170,10 +174,12 @@ export function kill(game: Game, p: Pawn, cause: string): void {
   for (const [k, v] of game.reservations) if (v === p.id) game.reservations.delete(k);
   const creature = game.reg.content.creatures[p.creature];
   if (creature.behavior === "human") dropItems(game, "corpse", 1, p.layer, p.x, p.y);
+  else if (creature.behavior === "machine") dropItems(game, "scrap", 8, p.layer, p.x, p.y);
   else if (creature.meat > 0) dropItems(game, "mutant_meat", creature.meat, p.layer, p.x, p.y);
   if (p.weapon !== null) dropItems(game, p.weapon, 1, p.layer, p.x, p.y);
   if (p.carrying) dropItems(game, p.carrying.def, p.carrying.count, p.layer, p.x, p.y);
-  if (p.faction === "colony") {
+  if (p.faction === "colony" && p.robot) game.message("msg.robot_destroyed", { name: p.nick }, "bad");
+  else if (p.faction === "colony") {
     game.message("msg.died", { name: pawnName(p), cause }, "bad");
     for (const o of game.pawns.values()) if (o.faction === "colony") addMemory(game, o, "colonist_died");
     onDeath(game, p);

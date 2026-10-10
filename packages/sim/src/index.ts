@@ -26,6 +26,7 @@ export * from "./fire.ts";
 export * from "./fluids.ts";
 export * from "./social.ts";
 export * from "./prison.ts";
+export * from "./robots.ts";
 export * from "./jobs.ts";
 export * from "./research.ts";
 export * from "./power.ts";

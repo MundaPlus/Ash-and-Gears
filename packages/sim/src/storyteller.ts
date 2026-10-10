@@ -27,7 +27,7 @@ const STYLE = {
 type EventKind = "raid" | "rad_rats" | "glow_hounds" | "rad_cloud";
 
 function cost(game: Game, kind: EventKind): number {
-  const colonists = [...game.pawns.values()].filter((p) => p.faction === "colony").length;
+  const colonists = [...game.pawns.values()].filter((p) => p.faction === "colony" && !p.robot).length;
   switch (kind) {
     case "rad_rats":
       return 2;
@@ -98,7 +98,7 @@ export function fireEvent(game: Game, kind: EventKind): void {
   switch (kind) {
     case "raid": {
       // A small colony gets a small raid: fewer raiders than survivors until day 20, as many until day 40, then one more.
-      const colonists = [...game.pawns.values()].filter((p) => p.faction === "colony").length;
+      const colonists = [...game.pawns.values()].filter((p) => p.faction === "colony" && !p.robot).length;
       const first = !s.log.some((e) => e.event === "raid" && e.tick < game.tick);
       const day = game.tick / game.ticksPerDay;
       const cap = colonists + (day < 20 ? -1 : day < 40 ? 0 : 1);
@@ -114,7 +114,7 @@ export function fireEvent(game: Game, kind: EventKind): void {
       break;
     }
     case "glow_hounds": {
-      const colonists = [...game.pawns.values()].filter((p) => p.faction === "colony").length;
+      const colonists = [...game.pawns.values()].filter((p) => p.faction === "colony" && !p.robot).length;
       const size = Math.max(2, Math.min(3, colonists, Math.floor(s.points / 3)));
       spawnGroup(game, "glow_hounds", size);
       game.message("msg.glow_hounds", { n: size }, "bad");

@@ -156,6 +156,8 @@ export const ThingDef = z.object({
   chest: z.number().int().positive().optional(),
   /** Auto-crafter: runs a recipe without a survivor while powered. */
   autoCrafter: z.boolean().default(false),
+  /** Robot bay: robots charge and get repaired here while it has power (A7). */
+  robotBay: z.boolean().default(false),
   /** Auto-crafter work speed multiplier (the assembler is faster, A4). */
   crafterSpeed: z.number().positive().default(1),
   /** Work speed multiplier for bills done here (when powered, if it uses power). */
@@ -224,6 +226,8 @@ export const RecipeDef = z.object({
   output: z.record(id, z.number().int().positive()),
   /** Fluid made instead of (or with) items: liters go into the bench's pipe network (A2). */
   fluidOut: z.object({ kind: z.enum(["fuel"]), liters: z.number().positive() }).optional(),
+  /** Makes a robot instead of items: the creature id of the new colony robot (A7). */
+  spawn: id.optional(),
   /** Fluid used: liters taken from the bench's pipe network when the work starts (A4). */
   fluidIn: z.object({ kind: z.enum(["fuel", "water", "clean_water"]), liters: z.number().positive() }).optional(),
   work: z.number().int().positive(),
@@ -246,7 +250,7 @@ export const CreatureDef = z.object({
   speed: z.number().positive().default(1),
   /** Natural attack (bite, claws). Humans use weapons or fists. */
   attack: z.object({ dmg: z.number(), cooldown: z.number().int(), range: z.number(), accuracy: z.number().default(0), kind: z.string() }),
-  behavior: z.enum(["human", "food_swarm", "hunter"]),
+  behavior: z.enum(["human", "food_swarm", "hunter", "machine"]),
   /** Meat dropped when killed. */
   meat: z.number().int().min(0).default(0),
 });

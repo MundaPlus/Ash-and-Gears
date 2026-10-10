@@ -226,5 +226,55 @@
   "skill": "technology",
   "target": 10,
   "research": "electronics"
+ },
+ {
+  "id": "build_robot",
+  "benches": [
+   "robot_bay"
+  ],
+  "inputs": [
+   {
+    "item": "steel",
+    "count": 15
+   },
+   {
+    "item": "electronics",
+    "count": 3
+   },
+   {
+    "item": "components",
+    "count": 4
+   }
+  ],
+  "output": {},
+  "spawn": "robot",
+  "work": 1500,
+  "skill": "technology",
+  "target": 1
+ },
+ {
+  "id": "build_hauler_drone",
+  "benches": [
+   "robot_bay"
+  ],
+  "inputs": [
+   {
+    "item": "steel",
+    "count": 6
+   },
+   {
+    "item": "electronics",
+    "count": 1
+   },
+   {
+    "item": "components",
+    "count": 2
+   }
+  ],
+  "output": {},
+  "spawn": "hauler_drone",
+  "work": 700,
+  "skill": "technology",
+  "target": 0
  }
 ]

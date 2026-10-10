@@ -107,6 +107,10 @@ export interface Pawn {
   group: number | null;
   /** Last pawn that hit this one. */
   lastAttacker?: number;
+  /** Colony robot or drone (A7): no needs, mood or social life. */
+  robot?: boolean;
+  /** Robot charge 0..1. */
+  charge?: number;
   /** Downed raider marked for capture (A6). */
   capture?: boolean;
   /** Prisoner: resistance to recruiting; 0 = ready to be asked (A6). */

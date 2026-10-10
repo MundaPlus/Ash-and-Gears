@@ -146,7 +146,7 @@ export function makeTextures(reg: Registry, art: ArtSettings, ai: AiArt = new Ma
   const aiRaiders = aiDetail("raider");
   const raiders = aiRaiders?.length ? aiRaiders.map((c) => aiTexture(c, palette)) : [gridTexture(prepDetail(CREATURES.raider), colors)];
   const creatures: Record<string, Texture> = {};
-  for (const id of ["rad_rat", "glow_hound"]) {
+  for (const id of ["rad_rat", "glow_hound", "robot", "hauler_drone"]) {
     const look = aiDetail(id)?.[0];
     creatures[id] = look ? aiTexture(look, palette) : gridTexture(prepDetail(CREATURES[id]), colors);
   }

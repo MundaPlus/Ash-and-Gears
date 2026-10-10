@@ -17,6 +17,7 @@ import { draftedTick, fleeFrom, hostileTick, selfDefense, updateGroups } from ".
 import { equipJob, inBed, rushToDowned } from "./medical.ts";
 import { fluidNetOf, LITERS_PER_DRINK, netDraw, tapHasWater } from "./fluids.ts";
 import { prisonerTick } from "./prison.ts";
+import { robotJob, tickRobot } from "./robots.ts";
 
 /** Tiles per tick at walk cost 1 (3 tiles per real second at 1x). */
 export const WALK_SPEED = 0.15;
@@ -104,7 +105,8 @@ export function tickPawns(game: Game): void {
   for (const p of [...game.pawns.values()]) {
     if (!game.pawns.has(p.id)) continue;
     if (p.cooldown > 0) p.cooldown--;
-    if (p.faction === "colony" || p.faction === "prisoner") tickNeeds(game, p);
+    if (p.robot) tickRobot(game, p);
+    else if (p.faction === "colony" || p.faction === "prisoner") tickNeeds(game, p);
     if (hourly) {
       tickHealthHourly(game, p, inBed(game, p));
       if (!game.pawns.has(p.id)) continue;
@@ -199,6 +201,19 @@ function startJob(game: Game, p: Pawn, job: Job | null): boolean {
 /** The decision tree. Order matters: survival first, then schedule, then work, then idle. */
 export function think(game: Game, p: Pawn): void {
   const n = p.needs;
+  if (p.robot) {
+    // Robots: charge when low or hurt, else work; idle robots wait at a bay or wander.
+    const r = robotJob(game, p);
+    if (r === "idle") return;
+    if (r && startJob(game, p, r)) return;
+    for (const w of workOrder(p)) for (const g of workGivers) if (g.workType === w && startJob(game, p, g.give(game, p))) return;
+    if ((p.charge ?? 1) < 0.9) {
+      const rest = robotJob(game, { ...p, charge: 0.1 } as Pawn);
+      if (rest && rest !== "idle" && startJob(game, p, rest)) return;
+    }
+    startJob(game, p, wanderJob(game, p, false));
+    return;
+  }
   if (p.mentalBreak) {
     // Sulking survivors still eat and drink when it gets urgent.
     if (n.thirst < 0.2 && startJob(game, p, drinkJob(game, p, true))) return;

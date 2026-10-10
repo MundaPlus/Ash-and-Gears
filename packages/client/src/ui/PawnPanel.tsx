@@ -73,7 +73,8 @@ export function PawnPanel() {
           </li>
         ))}
       </ul>
-      {p.faction !== "colony" ? null : (
+      {p.robot && <Bar value={p.charge} label={t("pawn.charge")} />}
+      {p.faction !== "colony" || p.robot ? null : (
         <>
       <Bar value={p.mood / 100} label={t("pawn.mood")} />
       <h3>{t("pawn.needs")}</h3>

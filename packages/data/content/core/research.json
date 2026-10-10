@@ -163,5 +163,13 @@
    "auto_crafting"
   ],
   "blueprint": "assembler_schematic"
+ },
+ {
+  "id": "robotics",
+  "cost": 4500,
+  "tier": 3,
+  "prereqs": [
+   "electronics"
+  ]
  }
 ]

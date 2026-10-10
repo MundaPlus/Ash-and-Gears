@@ -513,6 +513,8 @@ async function boot() {
       // Shown levels include trait and backstory bonuses.
       skills: game.reg.skills.list.map((s, i) => ({ id: s.id, level: sim.skillLevel(game, p, s.id), passion: p.skills[i].passion })),
       traits: p.traits.map((ti) => game.reg.traits.list[ti].id),
+      robot: !!p.robot,
+      charge: p.charge ?? 1,
       capture: !!p.capture,
       resistance: p.resistance ?? 0,
       backstory: (p.backstory ?? []).map((b) => game.reg.backstories.list[b].id),

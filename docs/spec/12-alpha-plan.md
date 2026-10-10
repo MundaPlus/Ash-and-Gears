@@ -54,7 +54,8 @@ Each milestone ends like the demo ones: tests green, headless playtests on sever
 | A4 | Done | Third layer with the old bunker; dug stairs; blueprints from lockers and salvage; refinery → plastic, electronics, assembler. See below |
 | A5 | Done | 30 traits, 24 backstories (only 3 rule out work: more made colonies too weak in headless runs), opinions/friends/rivals/lovers/family with mood effects |
 | A6 | Done | Capture downed raiders, prisoner beds, warden work (feed, talk), resistance → recruit, release, escape after 2 days alone. Wanderers still join on their own |
-| A7 | Next | Robots |
+| A7 | Done | Robot bay builds robots and hauler drones; charge, bay charging and repair; limited work types; no needs or mood. Robot art is hand-pixeled |
+| A8 | Next | World map and expeditions |
 
 ### A4 design (tech tiers 2–3)
 

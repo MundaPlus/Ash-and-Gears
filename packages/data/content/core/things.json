@@ -853,6 +853,30 @@
   }
  },
  {
+  "id": "robot_bay",
+  "kind": "furniture",
+  "footprint": [2, 2],
+  "color": "#56616d",
+  "glyph": "B",
+  "hp": 300,
+  "blocks": false,
+  "bench": true,
+  "robotBay": true,
+  "power": {
+   "use": 200
+  },
+  "build": {
+   "cost": {
+    "steel": 30,
+    "electronics": 4,
+    "components": 6
+   },
+   "work": 900,
+   "menu": "production",
+   "research": "robotics"
+  }
+ },
+ {
   "id": "belt_splitter",
   "kind": "structure",
   "color": "#4f5a66",

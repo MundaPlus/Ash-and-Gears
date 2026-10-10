@@ -45,6 +45,9 @@ export interface PawnDetail {
   missing: string[];
   skills: { id: string; level: number; passion: number }[];
   traits: string[];
+  /** Colony robot: charge 0..1 instead of needs and mood. */
+  robot: boolean;
+  charge: number;
   /** Downed raider marked for capture; prisoner resistance. */
   capture: boolean;
   resistance: number;

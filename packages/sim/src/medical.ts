@@ -64,7 +64,7 @@ registerWorkGiver({
   give(game, p): Job | null {
     for (const patient of game.pawns.values()) {
       // Doctors treat prisoners too (they are fed by wardens, not here).
-      if ((patient.faction !== "colony" && patient.faction !== "prisoner") || patient.id === p.id || isReserved(game, `pawn:${patient.id}`, p)) continue;
+      if ((patient.faction !== "colony" && patient.faction !== "prisoner") || patient.robot || patient.id === p.id || isReserved(game, `pawn:${patient.id}`, p)) continue;
       if (patient.faction === "prisoner") {
         if (untendedInjuries(patient).length === 0 || !game.path.canReachAdjacent(p, patient) || !reserve(game, `pawn:${patient.id}`, p)) continue;
         const bandage = findItem(game, p, (d) => !!game.reg.items.list[d].medicine);
@@ -88,7 +88,7 @@ const KEEP_FOR_ALARM = new Set(["rescue", "feed", "tend", "flee", "shelter", "ea
  */
 export function rushToDowned(game: Game): void {
   for (const patient of game.pawns.values()) {
-    if (patient.faction !== "colony" || !patient.health.downed) continue;
+    if (patient.faction !== "colony" || patient.robot || !patient.health.downed) continue;
     const needsCare = !inBed(game, patient) || patient.needs.thirst < 0.3 || patient.needs.hunger < 0.3 || untendedInjuries(patient).length > 0;
     if (!needsCare) continue;
     if (game.reservations.has(`pawn:${patient.id}`) && game.pawns.has(game.reservations.get(`pawn:${patient.id}`)!)) continue;
@@ -222,7 +222,7 @@ registerJob("tend", (game, p, job) => {
 // ---------------------------------------------------------------- equip weapons
 
 export function equipJob(game: Game, p: Pawn): Job | null {
-  if (p.weapon !== null || p.faction !== "colony") return null;
+  if (p.weapon !== null || p.faction !== "colony" || p.robot) return null;
   const ranged = findItem(game, p, (d) => (game.reg.items.list[d].weapon?.range ?? 0) > 1.5);
   const w = ranged ?? findItem(game, p, (d) => !!game.reg.items.list[d].weapon);
   if (w === null || !reserve(game, `item:${w}`, p)) return null;

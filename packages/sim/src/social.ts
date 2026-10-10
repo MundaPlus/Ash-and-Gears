@@ -47,7 +47,8 @@ export function relationLabel(game: Game, a: Pawn, b: Pawn): "lover" | "family" 
   return o >= FRIEND_AT ? "friend" : o <= RIVAL_AT ? "rival" : "acquaintance";
 }
 
-const colonists = (game: Game) => [...game.pawns.values()].filter((p) => p.faction === "colony");
+/** People only: robots have no social life. */
+const colonists = (game: Game) => [...game.pawns.values()].filter((p) => p.faction === "colony" && !p.robot);
 const awake = (p: Pawn) => !p.health.downed && !p.asleep && !p.drafted;
 
 /** Once per in-game hour: survivors close to each other may talk. */
@@ -107,6 +108,7 @@ export function socialThoughts(game: Game, p: Pawn): string[] {
 
 /** A survivor died: those close to them grieve (or not). */
 export function onDeath(game: Game, dead: Pawn): void {
+  if (dead.robot) return;
   for (const o of colonists(game)) {
     if (o.id === dead.id) continue;
     const label = relationLabel(game, o, dead);

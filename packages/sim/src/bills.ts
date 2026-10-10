@@ -12,6 +12,7 @@ import { countItems, dropItems } from "./items.ts";
 import type { Thing } from "./map.ts";
 import { benchFeedsOut } from "./logistics.ts";
 import { fluidNetOf, netAdd, netAmount, netDraw, totalFluid } from "./fluids.ts";
+import { makeRobot, robotCount } from "./robots.ts";
 import { pickUp } from "./hauling.ts";
 import { learn, workSpeed, skillLevel, type Job, type Pawn } from "./pawn.ts";
 import type { WorkType } from "./worktypes.ts";
@@ -40,6 +41,7 @@ export function recipesFor(game: Game, benchDefId: string): RecipeDef[] {
 
 /** Units in stock of the recipe's first output (on the ground anywhere, not carried). */
 export function stockOf(game: Game, r: RecipeDef): number {
+  if (r.spawn) return robotCount(game, r.spawn);
   if (r.fluidOut) return totalFluid(game, r.fluidOut.kind);
   const [item] = Object.keys(r.output);
   return countItems(game, item);
@@ -182,6 +184,12 @@ registerJob("bill", (game, p, job) => {
   if ((job.data!.work as number) > 0) return "run";
   // Water from a contaminated well is contaminated too.
   const cont = isContaminatedThing(game, bench);
+  // A robot rolls out of the bay.
+  if (r.spawn) {
+    const bot = makeRobot(game, r.spawn, bench.layer, bench.x, bench.y);
+    game.pawns.set(bot.id, bot);
+    game.message("msg.robot_built", { kind: r.spawn, name: bot.nick }, "info");
+  }
   // Fluids go into the bench's own pipe network (what does not fit is lost).
   if (r.fluidOut) {
     const net = fluidNetOf(game, bench);
