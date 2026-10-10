@@ -63,7 +63,10 @@ describe("building upward (N1)", () => {
     dropItems(g, "scrap", 10, 0, g.home.x + 6, g.home.y + 6);
     const L = g.map.layers[0];
     const id = L.item[L.i(g.home.x + 6, g.home.y + 6)];
+    const before = L.chunkVersion.reduce((a, v) => a + v, 0);
     expect(haulNow(g, id)).toBe(true);
+    // The tile redraws, so the arrow shows.
+    expect(L.chunkVersion.reduce((a, v) => a + v, 0)).toBeGreaterThan(before);
     expect(g.items.get(id)!.haulNow).toBe(true);
     cancelHaulNow(g, id);
     expect(g.items.get(id)!.haulNow).toBeUndefined();
