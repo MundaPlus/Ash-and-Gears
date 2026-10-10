@@ -1,6 +1,8 @@
 # Changelog
 
 ## 2026-10-11
+- Fix: a pawn could stand inside a solid thing (a robot on a wind turbine). Every 30 ticks, anyone on a blocked tile is moved to the nearest free tile (`packages/sim/src/ai.ts` `unstick`; test in `packages/sim/test/robots.test.ts`) — user report.
+- README rewritten for GitHub: hero screenshot, features, screenshot table, controls, saves, run and publish steps, development and layout; images in `docs/images/` (hero, four gallery shots, a 1280x640 social preview) (`README.md`, `docs/images/`).
 - A robot with no charge left crawls at a fifth of its speed to the nearest bay, even one without power, and waits there; it charges as soon as the bay has power or stored charge. Repairs need power too. A charging robot is no longer cut off by the 6-hour job limit (`packages/sim/src/robots.ts`, `ai.ts`; test in `packages/sim/test/robots.test.ts`) — user request.
 - The inspect panel shows each powered machine's battery: percent, Wh, and whether it is charging, full, empty, or running the machine right now; the robot bay shows its robot store the same way (`packages/sim/src/power.ts` `onBank`, `map.ts`; `packages/client/src/main.ts`; i18n) — user request.
 - GitHub Pages: the build takes a sub-path from `BASE_PATH`; a workflow builds, tests and publishes the game on every push to master (`packages/client/vite.config.ts`, `.github/workflows/pages.yml`). The presentation page links work under any sub-path (`packages/client/public/site/index.html`).

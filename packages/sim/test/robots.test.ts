@@ -138,3 +138,24 @@ describe("robots out of charge", () => {
     expect(bot.charge!).toBeGreaterThan(0.2);
   });
 });
+
+describe("collisions", () => {
+  it("a pawn standing inside a solid thing is moved to the nearest free tile", () => {
+    const g = Game.create(content, { seed: "unstick", mapSize: 96, storyteller: "none" });
+    const x0 = g.home.x - 14, y0 = g.home.y - 8;
+    const L = g.map.layers[0];
+    for (let y = y0 - 2; y <= y0 + 4; y++)
+      for (let x = x0 - 2; x <= x0 + 6; x++) {
+        const t = L.thing[L.i(x, y)];
+        if (t !== NO_THING) g.removeThing(t);
+        g.setTerrain(0, x, y, "dirt");
+      }
+    g.spawnThing("wind_turbine", 0, x0, y0);
+    const bot = makeRobot(g, "robot", 0, x0 + 1, y0 + 1);
+    g.pawns.set(bot.id, bot);
+    expect(g.walkable(0, bot.x, bot.y)).toBe(false);
+    run(g, 0.1);
+    expect(g.walkable(0, bot.x, bot.y)).toBe(true);
+    expect(Math.abs(bot.x - (x0 + 1)) + Math.abs(bot.y - (y0 + 1))).toBeLessThanOrEqual(3);
+  });
+});

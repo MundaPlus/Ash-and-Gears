@@ -85,6 +85,24 @@ export function moveSpeed(game: Game, p: Pawn): number {
   return s * traitMult(game, p, (t) => t.moveSpeed);
 }
 
+/**
+ * Nobody may stand inside something solid (a machine built on them, a robot placed on a turbine):
+ * move them to the nearest free tile, in rings around where they stand.
+ */
+export function unstick(game: Game, p: Pawn): void {
+  if (game.walkable(p.layer, p.x, p.y)) return;
+  for (let r = 1; r <= 8; r++)
+    for (let dy = -r; dy <= r; dy++)
+      for (let dx = -r; dx <= r; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r || !game.walkable(p.layer, p.x + dx, p.y + dy)) continue;
+        p.x += dx;
+        p.y += dy;
+        p.path = null;
+        p.moveT = 0;
+        return;
+      }
+}
+
 /** Advance along the path. Plans again if the next tile became blocked. */
 function tickMove(game: Game, p: Pawn): void {
   if (!p.path || p.path.length === 0) return;
@@ -113,6 +131,7 @@ export function tickPawns(game: Game): void {
   const hourly = game.tick % Math.round(game.ticksPerHour) === 0;
   if (game.tick % 30 === 0) updateGroups(game);
   if (game.tick % 30 === 15) rushToDowned(game);
+  if (game.tick % 30 === 5) for (const p of game.pawns.values()) unstick(game, p);
   for (const p of [...game.pawns.values()]) {
     if (!game.pawns.has(p.id)) continue;
     if (p.cooldown > 0) p.cooldown--;
