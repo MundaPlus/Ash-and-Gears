@@ -104,7 +104,7 @@ export function Toolbar() {
 
       <nav class="toolbar" data-testid="toolbar">
         {(["build", "orders", "zones", "work", "research", "world"] as const).map((m) => (
-          <button key={m} class={s.menu === m ? "on" : ""} data-testid={`tb-${m}`} onClick={() => actions.openMenu(m)}>
+          <button key={m} class={s.menu === m ? "on" : ""} data-testid={`tb-${m}`} onClick={() => actions.openMenu(m)} title={t(`tb.${m}.key`)}>
             {t(`tb.${m}`)}
           </button>
         ))}

@@ -39,6 +39,8 @@ import { actions, store, type BuildOption, type ColonistSummary, type PawnDetail
 const MAX_TICKS_PER_FRAME = 12;
 const TOAST_SEC = 7;
 /** Big events pause the game so the player can react (spec 06). */
+/** Toolbar menus by key (W, A, S, D move the camera). */
+const MENU_KEYS: Record<string, "build" | "orders" | "zones" | "work" | "research" | "world"> = { b: "build", o: "orders", z: "zones", j: "work", t: "research", m: "world" };
 const AUTO_PAUSE = new Set(["msg.raid", "msg.raid_faction", "msg.glow_hounds", "msg.rad_rats", "msg.rad_warning", "msg.downed", "msg.died"]);
 
 const hex = (n: number) => `#${n.toString(16).padStart(6, "0")}`;
@@ -252,6 +254,10 @@ async function boot() {
   actions.setResearch = (id) => {
     sim.setResearch(game, id);
     store.set({ research: researchRows() });
+  };
+  actions.jumpTo = (at) => {
+    if (at.layer !== renderer.layer) actions.setLayer(at.layer);
+    camera.centerOn((at.x + 0.5) * TILE, (at.y + 0.5) * TILE);
   };
   actions.tileAction = (a) => {
     if (!inspected) return;
@@ -516,6 +522,13 @@ async function boot() {
     tradeProblem = p ? `trade.problem.${p}` : null;
     store.set({ caravan: caravanUi() });
   };
+  // Panels with data fill at once when they open (not on the next UI update).
+  const openMenuBase = actions.openMenu;
+  actions.openMenu = (m) => {
+    openMenuBase(m);
+    if (store.state.menu === "world") store.set({ world: worldUi() });
+    if (store.state.menu === "trade") store.set({ caravan: caravanUi() });
+  };
   actions.sendExpedition = (siteId, ids, outpost) => {
     const site = sim.ensureWorld(game).sites.find((s) => s.id === siteId);
     const pawns = ids.map((id) => game.pawns.get(id)).filter((p): p is sim.Pawn => !!p);
@@ -616,7 +629,7 @@ async function boot() {
       if (typeof params.faction === "string") params.faction = t(`fac.${params.faction}`);
       if (typeof params.site === "string") params.site = t(`site.${params.site}`);
       if (typeof params.kind === "string") params.kind = t(`pawn.${params.kind}`);
-      toasts.push({ id: toastId++, text: t(m.key, params), level: m.level, until: now + TOAST_SEC });
+      toasts.push({ id: toastId++, text: t(m.key, params), level: m.level, until: now + TOAST_SEC, ...(m.at ? { at: m.at } : {}) });
     }
     toasts = toasts.slice(-4);
     if (fresh.length || toasts.length !== store.state.toasts.length) store.set({ toasts });
@@ -630,6 +643,7 @@ async function boot() {
     } else if (e.key === "1" || e.key === "2" || e.key === "3") actions.setSpeed(Number(e.key));
     else if ((e.key === "q" || e.key === "e") && tools.spec) actions.rotateTool(e.key === "e" ? 1 : -1);
     else if (e.key === "p" || e.key === "P") actions.togglePowerOverlay();
+    else if (MENU_KEYS[e.key.toLowerCase()]) actions.openMenu(MENU_KEYS[e.key.toLowerCase()]);
     else if ((e.key === "f" || e.key === "F") && store.state.inspect?.actions?.first) actions.tileAction(store.state.inspect.actions.first);
     else if (e.key === "r" || e.key === "R") {
       if (selected !== null) actions.toggleDraft(selected);
@@ -727,6 +741,7 @@ async function boot() {
         season: t(`season.${tm.season}`, { year: tm.year }),
         weather: game.weather.kind,
         goals: sim.GOALS.map((id) => ({ id, done: !!game.goals[id] })),
+        alerts: sim.computeAlerts(game),
         goalHint: (() => {
           const next = sim.GOALS.find((id) => !game.goals[id]);
           return next ? sim.goalHint(game, next) : null;

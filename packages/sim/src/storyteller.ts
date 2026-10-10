@@ -71,7 +71,7 @@ export function edgeSpawn(game: Game): { x: number; y: number } {
   return { x: 1, y: 1 };
 }
 
-function spawnGroup(game: Game, kind: "raid" | "rad_rats" | "glow_hounds", size: number, faction?: FactionDef) {
+function spawnGroup(game: Game, kind: "raid" | "rad_rats" | "glow_hounds", size: number, faction?: FactionDef): { layer: number; x: number; y: number } {
   const id = game.newId();
   game.groups.set(id, { id, kind, size, fleeing: false, arrived: game.tick });
   const at = edgeSpawn(game);
@@ -99,6 +99,7 @@ function spawnGroup(game: Game, kind: "raid" | "rad_rats" | "glow_hounds", size:
     }
     game.pawns.set(p.id, p);
   }
+  return { layer: 0, x: at.x, y: at.y };
 }
 
 export function fireEvent(game: Game, kind: EventKind): void {
@@ -114,22 +115,22 @@ export function fireEvent(game: Game, kind: EventKind): void {
       const f = raidingFaction(game);
       const base = first ? 2 : Math.max(2, Math.min(7, cap, 2 + Math.floor((s.points - 6) / 4)));
       const size = first || !f ? base : Math.max(2, Math.min(8, Math.round(base * f.raidSize)));
-      spawnGroup(game, "raid", size, f ?? undefined);
-      if (f) game.message("msg.raid_faction", { n: size, faction: f.id }, "bad");
-      else game.message("msg.raid", { n: size }, "bad");
+      const at = spawnGroup(game, "raid", size, f ?? undefined);
+      if (f) game.message("msg.raid_faction", { n: size, faction: f.id }, "bad", at);
+      else game.message("msg.raid", { n: size }, "bad", at);
       break;
     }
     case "rad_rats": {
       const size = Math.min(8, 3 + Math.floor(s.points / 2));
-      spawnGroup(game, "rad_rats", size);
-      game.message("msg.rad_rats", { n: size }, "bad");
+      const at = spawnGroup(game, "rad_rats", size);
+      game.message("msg.rad_rats", { n: size }, "bad", at);
       break;
     }
     case "glow_hounds": {
       const colonists = [...game.pawns.values()].filter((p) => p.faction === "colony" && !p.robot).length;
       const size = Math.max(2, Math.min(3, colonists, Math.floor(s.points / 3)));
-      spawnGroup(game, "glow_hounds", size);
-      game.message("msg.glow_hounds", { n: size }, "bad");
+      const at = spawnGroup(game, "glow_hounds", size);
+      game.message("msg.glow_hounds", { n: size }, "bad", at);
       break;
     }
     case "rad_cloud":
@@ -148,7 +149,7 @@ function goodEvent(game: Game) {
     const p = makeSurvivor(game, 0, at.x, at.y, new Set(colonists.flatMap((c) => [c.first, c.nick])));
     game.pawns.set(p.id, p);
     for (const c of game.pawns.values()) if (c.faction === "colony") addMemory(game, c, "wanderer_joined");
-    game.message("msg.wanderer", { name: p.nick }, "info");
+    game.message("msg.wanderer", { name: p.nick }, "info", p);
     s.log.push({ tick: game.tick, event: "wanderer" });
   } else {
     const loot: [string, number][] = [["canned_food", 15], ["clean_water", 15], ["scrap", 40], ["components", 3], ["bandage", 6], ["cloth", 15]];

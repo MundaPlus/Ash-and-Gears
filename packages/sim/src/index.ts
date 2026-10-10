@@ -30,6 +30,7 @@ export * from "./robots.ts";
 export * from "./world.ts";
 export * from "./factions.ts";
 export * from "./tileactions.ts";
+export * from "./alerts.ts";
 export * from "./jobs.ts";
 export * from "./research.ts";
 export * from "./power.ts";

@@ -89,7 +89,7 @@ export function sendCaravan(game: Game, at: { x: number; y: number }): boolean {
     pawnIds.push(p.id);
   }
   game.caravan = { faction: f.id, stock, leaveAt: game.tick + CARAVAN_HOURS * game.ticksPerHour, pawnIds };
-  game.message("msg.caravan", { faction: f.id }, "info");
+  game.message("msg.caravan", { faction: f.id }, "info", { layer: 0, ...at });
   return true;
 }
 

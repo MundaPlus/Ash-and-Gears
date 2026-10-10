@@ -65,6 +65,15 @@ export interface Toast {
   text: string;
   level: "info" | "warn" | "bad";
   until: number;
+  /** Where it happened: clicking the message moves the camera there. */
+  at?: { layer: number; x: number; y: number };
+}
+
+export interface AlertUi {
+  key: string;
+  params: Record<string, string | number>;
+  level: "warn" | "bad";
+  at?: { layer: number; x: number; y: number };
 }
 
 export interface BuildOption {
@@ -138,6 +147,8 @@ export interface UiState {
   menu: "build" | "orders" | "zones" | "work" | "research" | "world" | "trade" | null;
   /** Trader caravan near home (A9), or null. */
   caravan: CaravanUi | null;
+  /** Current problems (alerts list under the goals). */
+  alerts: AlertUi[];
   /** World map panel data (A8), filled while the panel is open. */
   world: WorldUi | null;
   /** i18n key + params describing the active tool, or null. */
@@ -171,6 +182,7 @@ class Store {
     layer: 0,
     layerCount: 1,
     world: null,
+    alerts: [],
     caravan: null,
     powerOverlay: false,
     clock: "",
@@ -226,6 +238,7 @@ export const actions = {
   togglePowerOverlay: () => {},
   setCapture: (_pawn: number, _on: boolean) => {},
   tileAction: (_action: string) => {},
+  jumpTo: (_at: { layer: number; x: number; y: number }) => {},
   sendExpedition: (_site: number, _pawns: number[], _outpost: boolean) => {},
   trade: (_buy: Record<string, number>, _sell: Record<string, number>) => {},
   release: (_pawn: number) => {},

@@ -188,7 +188,7 @@ registerJob("bill", (game, p, job) => {
   if (r.spawn) {
     const bot = makeRobot(game, r.spawn, bench.layer, bench.x, bench.y);
     game.pawns.set(bot.id, bot);
-    game.message("msg.robot_built", { kind: r.spawn, name: bot.nick }, "info");
+    game.message("msg.robot_built", { kind: r.spawn, name: bot.nick }, "info", bot);
   }
   // Fluids go into the bench's own pipe network (what does not fit is lost).
   if (r.fluidOut) {

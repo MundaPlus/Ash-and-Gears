@@ -165,7 +165,7 @@ registerTask("salvage", {
       if (wanted.length) {
         const item = game.aiRng.pick(wanted);
         dropItems(game, item, 1, t.layer, t.x, t.y);
-        game.message("msg.blueprint_found", { name: p.nick, item }, "info");
+        game.message("msg.blueprint_found", { name: p.nick, item }, "info", { layer: t.layer, x: t.x, y: t.y });
       }
     }
     if (game.aiRng.chance(def.lootChance * (1 + lvl / 20))) {
@@ -173,7 +173,7 @@ registerTask("salvage", {
       const [item, [lo, hi]] = game.aiRng.pick(loot);
       const n = game.aiRng.int(lo, hi);
       dropItems(game, item, n, t.layer, t.x, t.y);
-      game.message("msg.loot_found", { name: p.nick, count: n, item });
+      game.message("msg.loot_found", { name: p.nick, count: n, item }, "info", { layer: t.layer, x: t.x, y: t.y });
     }
   },
 });

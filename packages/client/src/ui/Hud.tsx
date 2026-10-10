@@ -24,18 +24,31 @@ export function Hud() {
       <Toasts />
       <Toolbar />
       <GameMenu />
-      {s.goals.length > 0 && !s.goals.every((g) => g.done) && (
+      {((s.goals.length > 0 && !s.goals.every((g) => g.done)) || s.alerts.length > 0) && (
         <aside class="goals" data-testid="goals">
-          <h3>{t("goal.title")}</h3>
-          {s.goals.map((g) => (
-            <p key={g.id} class={g.done ? "done" : ""}>
-              {g.done ? "✔" : "○"} {t(`goal.${g.id}`)}
-            </p>
-          ))}
-          {s.goalHint && (
-            <p class="hint" data-testid="goal-hint">
-              {t(s.goalHint)}
-            </p>
+          {s.goals.length > 0 && !s.goals.every((g) => g.done) && (
+            <>
+              <h3>{t("goal.title")}</h3>
+              {s.goals.map((g) => (
+                <p key={g.id} class={g.done ? "done" : ""}>
+                  {g.done ? "✔" : "○"} {t(`goal.${g.id}`)}
+                </p>
+              ))}
+              {s.goalHint && (
+                <p class="hint" data-testid="goal-hint">
+                  {t(s.goalHint)}
+                </p>
+              )}
+            </>
+          )}
+          {s.alerts.length > 0 && (
+            <div class="alerts" data-testid="alerts">
+              {s.alerts.map((a) => (
+                <button key={a.key} class={`alert ${a.level}`} disabled={!a.at} onClick={() => a.at && actions.jumpTo(a.at)}>
+                  {t(a.key, a.params)}
+                </button>
+              ))}
+            </div>
           )}
         </aside>
       )}

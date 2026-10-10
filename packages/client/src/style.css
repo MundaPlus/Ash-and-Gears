@@ -217,3 +217,10 @@ body.cinematic #ui { display: none; }
 .tileactions { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
 .tileactions button { display: inline-flex; gap: 6px; align-items: center; }
 .tileactions kbd { font: 600 11px monospace; border: 1px solid currentColor; border-bottom-width: 2px; padding: 0 4px; }
+
+/* Alerts and clickable messages */
+.goals .alerts { display: grid; gap: 4px; margin-top: 8px; }
+.goals .alert { text-align: left; font-size: 12px; padding: 3px 6px; background: rgba(217, 116, 46, 0.18); border: 1px solid #d9742e; color: inherit; }
+.goals .alert.bad { background: rgba(255, 74, 58, 0.2); border-color: #ff4a3a; }
+.goals .alert:disabled { cursor: default; opacity: 1; }
+.toast.jump { cursor: pointer; text-align: left; font: inherit; color: inherit; width: 100%; }

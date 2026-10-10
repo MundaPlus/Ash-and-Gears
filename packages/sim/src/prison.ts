@@ -54,7 +54,7 @@ export function makePrisoner(game: Game, p: Pawn, bed: Thing): void {
   p.resistance ??= 8 + game.aiRng.int(0, 17);
   p.lastTalk = game.tick;
   p.needs = { hunger: Math.min(p.needs.hunger, 0.6), thirst: Math.min(p.needs.thirst, 0.6), rest: p.needs.rest };
-  game.message("msg.captured", { name: p.nick }, "info");
+  game.message("msg.captured", { name: p.nick }, "info", p);
   if (p.origin) changeGoodwill(game, p.origin, -5);
 }
 
@@ -65,7 +65,7 @@ export function recruit(game: Game, p: Pawn): void {
   delete p.resistance;
   delete p.lastTalk;
   p.work = {};
-  game.message("msg.recruited", { name: p.nick }, "info");
+  game.message("msg.recruited", { name: p.nick }, "info", p);
   if (p.origin) changeGoodwill(game, p.origin, -10);
   for (const c of game.pawns.values()) if (c.faction === "colony" && c.id !== p.id) addMemory(game, c, "wanderer_joined");
 }
@@ -89,7 +89,7 @@ export function prisonerTick(game: Game, p: Pawn): void {
   if (game.tick % Math.round(game.ticksPerHour) === 0 && game.tick - (p.lastTalk ?? game.tick) > game.ticksPerDay * 2 && game.aiRng.chance(0.03)) {
     p.faction = "visitor";
     p.bedId = null;
-    game.message("msg.escaped", { name: p.nick }, "warn");
+    game.message("msg.escaped", { name: p.nick }, "warn", p);
     return;
   }
   const bed = p.bedId !== null ? game.things.get(p.bedId) : undefined;

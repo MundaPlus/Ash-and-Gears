@@ -151,7 +151,8 @@ export class Game {
   /** Bumped only when walkability changes. Pathfinding caches use it. */
   pathVersion = 0;
   /** Messages for the player (alerts, events). The client drains this list. */
-  readonly messages: { tick: number; key: string; params: Record<string, string | number>; level: "info" | "warn" | "bad" }[] = [];
+  /** Messages for the player; `at` is where it happened (the UI can jump there). */
+  readonly messages: { tick: number; key: string; params: Record<string, string | number>; level: "info" | "warn" | "bad"; at?: { layer: number; x: number; y: number } }[] = [];
 
   constructor(content: Content, opts: Partial<GameOptions> = {}) {
     this.reg = new Registry(content);
@@ -182,8 +183,8 @@ export class Game {
     ensureFluidNets(this);
   }
 
-  message(key: string, params: Record<string, string | number> = {}, level: "info" | "warn" | "bad" = "info") {
-    this.messages.push({ tick: this.tick, key, params, level });
+  message(key: string, params: Record<string, string | number> = {}, level: "info" | "warn" | "bad" = "info", at?: { layer: number; x: number; y: number }) {
+    this.messages.push({ tick: this.tick, key, params, level, ...(at ? { at: { layer: at.layer, x: at.x, y: at.y } } : {}) });
     if (this.messages.length > 200) this.messages.shift();
   }
 
