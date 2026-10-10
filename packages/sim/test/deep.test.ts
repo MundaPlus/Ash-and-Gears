@@ -81,3 +81,20 @@ describe("tech tiers and the old bunker (A4)", () => {
     void refinery;
   });
 });
+
+describe("showcase way to the bunker", () => {
+  it("a survivor on the surface can walk down the stairs and into the old bunker", async () => {
+    const { buildShowcase } = await import("../src/index.ts");
+    for (const seed of ["look1", "batt1", "showcase"]) {
+      const g = Game.create(loadCoreContent(), { seed, mapSize: 200, storyteller: "none" });
+      buildShowcase(g);
+      g.rebuildDerived();
+      const door = [...g.things.values()].filter((t) => t.layer === 2 && g.reg.things.list[t.def].id === "bunker_door").reduce((a, b) => (b.x < a.x ? b : a));
+      const p = [...g.pawns.values()].find((q) => q.faction === "colony" && !q.robot)!;
+      // A free floor tile in the first room (lockers stand in some spots).
+      const L2 = g.map.layers[2];
+      const inside = [1, 2, 3, 4, 5].flatMap((dx) => [-2, -1, 0, 1, 2].map((dy) => ({ x: door.x + dx, y: door.y + dy }))).find((q) => g.walkable(2, q.x, q.y) && L2.thing[L2.i(q.x, q.y)] === NO_THING)!;
+      expect(g.path.canReach(p, { layer: 2, ...inside })).toBe(true);
+    }
+  });
+});

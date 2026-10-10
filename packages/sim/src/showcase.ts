@@ -9,6 +9,7 @@ import { NO_THING } from "./map.ts";
 import { makeSurvivor } from "./pawn.ts";
 import { makeRobot } from "./robots.ts";
 import { completeRoofs } from "./rooms.ts";
+import { digDown } from "./construction.ts";
 
 export function buildShowcase(game: Game): void {
   const { x: hx, y: hy } = game.home;
@@ -18,7 +19,8 @@ export function buildShowcase(game: Game): void {
     for (let x = hx - 18; x <= hx + 18; x++) {
       if (!L.inBounds(x, y)) continue;
       const i = L.i(x, y);
-      if (L.thing[i] !== NO_THING) game.removeThing(L.thing[i]);
+      // Keep stairs: the caves below have stairs up to them.
+      if (L.thing[i] !== NO_THING && game.reg.things.list[game.things.get(L.thing[i])!.def].kind !== "stairs") game.removeThing(L.thing[i]);
       if (L.item[i] !== NO_THING) {
         game.items.delete(L.item[i]);
         L.item[i] = NO_THING;
@@ -159,7 +161,52 @@ export function buildShowcase(game: Game): void {
     p.weapon = game.reg.items.idx(i ? "crossbow" : "pipe_pistol");
     game.pawns.set(p.id, p);
   }
+  wayToBunker(game);
   completeRoofs(game);
   game.goals = { shelter: true, water: true, lights: true };
   game.message("msg.showcase", {}, "info");
+}
+
+/**
+ * The way down to the old bunker: dug stairs in the caves next to the stairs from the surface, and a
+ * tunnel on the bunker layer from below them to the bunker's outer door (west side), around the bunker.
+ */
+function wayToBunker(game: Game): void {
+  if (game.map.layers.length < 3) return;
+  const L1 = game.map.layers[1], L2 = game.map.layers[2];
+  const id = (t: { def: number }) => game.reg.things.list[t.def].id;
+  const down = [...game.things.values()].filter((t) => t.layer === 0 && id(t) === "stairs_down").sort((a, b) => Math.abs(a.x - game.home.x) + Math.abs(a.y - game.home.y) - (Math.abs(b.x - game.home.x) + Math.abs(b.y - game.home.y)))[0];
+  const doors = [...game.things.values()].filter((t) => t.layer === 2 && id(t) === "bunker_door");
+  if (!down || !doors.length) return;
+  // A free cave tile next to where the surface stairs come down.
+  let sx = -1, sy = -1;
+  for (let r = 1; r <= 4 && sx < 0; r++)
+    for (let dy = -r; dy <= r && sx < 0; dy++)
+      for (let dx = -r; dx <= r && sx < 0; dx++) {
+        const x = down.x + dx, y = down.y + dy;
+        if (L1.inBounds(x, y) && game.walkable(1, x, y) && L1.thing[L1.i(x, y)] === NO_THING) [sx, sy] = [x, y];
+      }
+  if (sx < 0) return;
+  game.spawnThing("dug_stairs", 1, sx, sy);
+  digDown(game, 2, sx, sy);
+  // The outer door is the westmost one; the bunker's box is the span of its walls.
+  const door = doors.reduce((a, b) => (b.x < a.x ? b : a));
+  const walls = [...game.things.values()].filter((t) => t.layer === 2 && (id(t) === "bunker_wall" || id(t) === "bunker_door"));
+  const minY = Math.min(...walls.map((t) => t.y)), maxY = Math.max(...walls.map((t) => t.y));
+  const carve = (x: number, y: number) => {
+    if (!L2.inBounds(x, y)) return;
+    const th = L2.thing[L2.i(x, y)];
+    if (th !== NO_THING && id(game.things.get(th)!) !== "stairs_up" && game.reg.things.list[game.things.get(th)!.def].blocks) game.removeThing(th);
+    if (game.reg.terrain.list[L2.terrain[L2.i(x, y)]].solid) game.setTerrain(2, x, y, "rough_floor");
+  };
+  const line = (x0: number, y0: number, x1: number, y1: number) => {
+    for (let x = Math.min(x0, x1); x <= Math.max(x0, x1); x++) for (let y = Math.min(y0, y1); y <= Math.max(y0, y1); y++) carve(x, y);
+  };
+  // Around the bunker: to a row above or below it, west past it, then down or up to the door.
+  const ry = sy < (minY + maxY) / 2 ? minY - 2 : maxY + 2;
+  const cx = door.x - 2;
+  line(sx, sy, sx, ry);
+  line(sx, ry, cx, ry);
+  line(cx, ry, cx, door.y);
+  line(cx, door.y, door.x - 1, door.y);
 }
