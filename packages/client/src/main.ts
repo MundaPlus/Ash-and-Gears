@@ -600,7 +600,9 @@ async function boot() {
     const stockpile = zoneHere?.kind === "stockpile" ? { zoneId: zoneHere.id, allow: [...zoneHere.allow], priority: sim.zonePriority(zoneHere) } : undefined;
     const ta = sim.tileActions(game, renderer.layer, x, y);
     const actionsUi = ta.actions.length ? { list: ta.actions as string[], first: ta.first } : undefined;
-    store.set({ inspect: { title, lines, bills, crafter, filter, power, prisonBed, actions: actionsUi, stockpile, make, researchLink } });
+    // Any zone tile: grow or shrink this zone with the zone tools.
+    const zone = zoneHere ? { kind: zoneHere.kind, ...(zoneHere.crop ? { crop: zoneHere.crop } : {}) } : undefined;
+    store.set({ inspect: { title, lines, bills, crafter, filter, power, prisonBed, actions: actionsUi, stockpile, make, researchLink, zone } });
   }
   let inspected: { x: number; y: number } | null = null;
   actions.queueAdd = (benchId, recipe, n) => {

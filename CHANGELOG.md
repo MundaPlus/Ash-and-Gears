@@ -1,6 +1,7 @@
 # Changelog
 
 ## 2026-10-11
+- Grow and shrink zones: the inspect panel of any zone tile has "Grow zone" (the zone tool for that kind and crop; drag next to the zone and the new tiles join it) and "Shrink zone" (the remove tool) (`packages/client/src/ui/Hud.tsx`, `store.ts`, `main.ts`; i18n) — user request.
 - The inspect panel shows what rides on a belt piece ("On the belt: 3 × Scrap") or that it is empty; it updates live (`packages/client/src/main.ts`; i18n) — user report.
 - Fix: the showcase cleared its yard and removed the surface stairs down in some seeds, leaving the cave stairs up with nothing above. It now keeps stairs (`packages/sim/src/showcase.ts`) — user report.
 - Showcase: a way down to the old bunker: dug stairs in the caves next to the stairs from the surface, and a tunnel on the bunker layer around the bunker to its outer door (`packages/sim/src/showcase.ts` `wayToBunker`; test in `packages/sim/test/deep.test.ts`) — user question "how do I get to the bunker?".

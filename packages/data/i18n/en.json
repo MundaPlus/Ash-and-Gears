@@ -1080,5 +1080,9 @@
   "inspect.bp_wait_builder": "Materials are in. Waiting for a builder.",
   "inspect.bp_short": "Not enough on the map: {list}",
   "inspect.belt_cargo": "On the belt: {count} × {item}",
-  "inspect.belt_empty": "The belt is empty here."
+  "inspect.belt_empty": "The belt is empty here.",
+  "zone.grow_btn": "Grow zone",
+  "zone.shrink_btn": "Shrink zone",
+  "zone.grow_hint": "Drag next to the zone: new tiles join it.",
+  "zone.shrink_hint": "Drag over zone tiles to take them out."
 }

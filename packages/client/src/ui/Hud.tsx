@@ -215,6 +215,20 @@ export function Hud() {
               ))}
             </div>
           )}
+          {s.inspect.zone && (
+            <div class="row benchbtns" data-testid="zone-tools">
+              <button
+                data-testid="zone-grow-btn"
+                onClick={() => actions.setTool(s.inspect!.zone!.kind === "grow" ? { kind: "zone", zone: "grow", crop: s.inspect!.zone!.crop! } : { kind: "zone", zone: "stockpile" })}
+                title={t("zone.grow_hint")}
+              >
+                {t("zone.grow_btn")}
+              </button>
+              <button data-testid="zone-shrink-btn" onClick={() => actions.setTool({ kind: "zone", zone: "remove" })} title={t("zone.shrink_hint")}>
+                {t("zone.shrink_btn")}
+              </button>
+            </div>
+          )}
           {s.inspect.stockpile && (
             <div class="bills" data-testid="stockpile">
               <h3>{t("stockpile.title")}</h3>

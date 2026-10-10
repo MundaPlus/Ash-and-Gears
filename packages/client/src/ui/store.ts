@@ -8,6 +8,8 @@ export interface Inspect {
   bills?: { benchId: number; recipe: string; target: number; stock: number }[];
   /** Benches: the make queue (up to 5 orders) and what the bench can make. */
   make?: { benchId: number; queue: { recipe: string; left: number }[]; recipes: { id: string; inputs: string }[] };
+  /** Zone under the tile: its kind and crop, for the grow and shrink buttons. */
+  zone?: { kind: "stockpile" | "grow"; crop?: string };
   /** Research desks and benches: a button that opens the research menu. */
   researchLink?: boolean;
   /** Auto-crafter: recipe choice. */
