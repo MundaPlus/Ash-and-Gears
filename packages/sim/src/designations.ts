@@ -210,7 +210,8 @@ const GIVERS: [WorkType, DesigKind][] = [
   ["construct", "deconstruct"],
 ];
 
-function nearestDesignated(game: Game, p: Pawn, kind: DesigKind): Job | null {
+/** The nearest order of a kind. Orders survivors gave themselves are only for idle survivors (`own`). */
+function nearestDesignated(game: Game, p: Pawn, kind: DesigKind, own = false): Job | null {
   const code = Desig[kind];
   const { w, h } = game.map;
   const cands: { layer: number; x: number; y: number; d: number }[] = [];
@@ -220,9 +221,9 @@ function nearestDesignated(game: Game, p: Pawn, kind: DesigKind): Job | null {
     if (game.map.layers[layer].desig[i] !== code) continue;
     const x = i % w, y = Math.floor(i / w);
     if (isReserved(game, `tile:${layer},${x},${y}`, p)) continue;
-    // The player's own orders first; orders a survivor gave itself when idle come after them.
-    const own = game.autoDesig.has(n) ? 1e7 : 0;
-    cands.push({ layer, x, y, d: own + (x - p.x) ** 2 + (y - p.y) ** 2 + (layer !== p.layer ? 900 : 0) });
+    // Self-chosen orders never compete with real work: the normal search skips them.
+    if (game.autoDesig.has(n) !== own) continue;
+    cands.push({ layer, x, y, d: (x - p.x) ** 2 + (y - p.y) ** 2 + (layer !== p.layer ? 900 : 0) });
   }
   cands.sort((a, b) => a.d - b.d);
   for (const c of cands.slice(0, 20)) {
@@ -286,6 +287,17 @@ export function findOwnWork(game: Game, p: Pawn): boolean {
     }
   }
   return false;
+}
+
+/** A job from the orders idle survivors gave themselves (salvage or cut), for a survivor that does that work. */
+export function ownWorkJob(game: Game, p: Pawn): Job | null {
+  if (!game.autoDesig.size) return null;
+  for (const [kind, wt] of [["salvage", "salvage"], ["cut", "grow"]] as [DesigKind, WorkType][]) {
+    if (workPriority(p, wt) <= 0) continue;
+    const j = nearestDesignated(game, p, kind, true);
+    if (j) return j;
+  }
+  return null;
 }
 
 /** Items that only story sites give (never found by random salvage). */
