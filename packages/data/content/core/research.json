@@ -104,6 +104,14 @@
   ]
  },
  {
+  "id": "deep_digging",
+  "cost": 2400,
+  "tier": 2,
+  "prereqs": [
+   "smelting"
+  ]
+ },
+ {
   "id": "belt_logistics",
   "cost": 2800,
   "tier": 2,
@@ -125,5 +133,35 @@
   "id": "field_medicine",
   "cost": 1200,
   "tier": 0
+ },
+ {
+  "id": "plastics",
+  "cost": 3200,
+  "tier": 2,
+  "prereqs": [
+   "biofuel",
+   "smelting"
+  ],
+  "blueprint": "plastics_manual"
+ },
+ {
+  "id": "electronics",
+  "cost": 3600,
+  "tier": 2,
+  "prereqs": [
+   "plastics",
+   "powered_tools"
+  ],
+  "blueprint": "electronics_manual"
+ },
+ {
+  "id": "assembling",
+  "cost": 5000,
+  "tier": 3,
+  "prereqs": [
+   "electronics",
+   "auto_crafting"
+  ],
+  "blueprint": "assembler_schematic"
  }
 ]

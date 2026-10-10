@@ -51,7 +51,8 @@ Each milestone ends like the demo ones: tests green, headless playtests on sever
 | A1 | Done | Splitter (front, left, right in turn), sorter (filter item forward, rest right), underground belt in/out pair (5 tiles, also carries power), robot arm (loader with a one-item filter), scrap chest (200 items, walkable; contents are item stacks so survivors use them; keeps rats and fallout out). Benches: input side north, output side south when not turned |
 | A2 | Done | Fluid model: network pools like power; liters live on pipes and tanks. Fluids: water (dirty), clean water, fuel. Pump next to water (stops while surface water carries fallout), tank 500 L, purifier between two networks (bench sides), tap = drinking spot, fuel still (bill makes 15 L from 12 raw food), generators top up from fuel pipes |
 | A3 | Done | Poles link poles within 6 tiles; switch; solar (by day, weather) and wind (gusts); priorities 1–3 with strict blackouts; power overlay (P) |
-| A4 | Next | See below |
+| A4 | Done | Third layer with the old bunker; dug stairs; blueprints from lockers and salvage; refinery → plastic, electronics, assembler. See below |
+| A5 | Next | Traits and backstories, relationships |
 
 ### A4 design (tech tiers 2–3)
 

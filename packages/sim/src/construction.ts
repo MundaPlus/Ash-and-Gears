@@ -63,6 +63,8 @@ function canPlaceTile(game: Game, kind: Blueprint["kind"], defId: string, layer:
   if (kind === "floor") return L.floor[i] === 0;
   const build = game.reg.things.get(defId).build;
   if (!build || (build.research && !game.research.done.has(build.research))) return false;
+  // Stairs down need a layer below.
+  if ((game.reg.things.get(defId).stairs ?? 0) > 0 && layer + 1 >= game.map.layers.length) return false;
   return L.thing[i] === NO_THING || clearOrder(game, layer, x, y) !== null;
 }
 
@@ -141,6 +143,7 @@ function completeBlueprint(game: Game, bp: Blueprint) {
     takeFromStack(game, s.id, s.count);
   }
   game.spawnThing(def.id, bp.layer, bp.x, bp.y, bp.rot);
+  if ((def.stairs ?? 0) > 0) digDown(game, bp.layer + 1, bp.x, bp.y);
   for (const m of moved) dropItems(game, m.def, m.count, bp.layer, m.x, m.y, m.contaminated);
   if (def.blocks) {
     for (const p of game.pawns.values()) {
@@ -313,3 +316,19 @@ registerWorkGiver({
     return null;
   },
 });
+
+/** Dug stairs: open a small room on the layer below and put the way up there. */
+export function digDown(game: Game, layer: number, x: number, y: number): void {
+  const L = game.map.layers[layer];
+  if (!L) return;
+  for (let dy = -1; dy <= 1; dy++)
+    for (let dx = -1; dx <= 1; dx++) {
+      const tx = x + dx, ty = y + dy;
+      if (!L.inBounds(tx, ty)) continue;
+      const i = L.i(tx, ty);
+      const th = L.thing[i];
+      if (th !== NO_THING && (dx === 0 && dy === 0 ? true : game.reg.things.list[game.things.get(th)!.def].blocks)) game.removeThing(th);
+      if (game.reg.terrain.list[L.terrain[i]].solid) game.setTerrain(layer, tx, ty, "rough_floor");
+    }
+  game.spawnThing("stairs_up", layer, x, y);
+}

@@ -5,7 +5,7 @@
 import { isReserved } from "./ai.ts";
 import { registerWorkGiver } from "./jobs.ts";
 import type { Game } from "./game.ts";
-import { dropItems } from "./items.ts";
+import { countItems, dropItems } from "./items.ts";
 import { spillContents } from "./logistics.ts";
 import { Desig, NO_THING, type DesigKind } from "./map.ts";
 import { skillLevel, type Job, type Pawn } from "./pawn.ts";
@@ -153,6 +153,21 @@ registerTask("salvage", {
       return;
     }
     dropYield(game, def.yield, yieldMult(lvl), t.layer, t.x, t.y);
+    for (const [item, [lo, hi]] of Object.entries(def.drops ?? {})) {
+      const n = game.aiRng.int(lo, hi);
+      if (n > 0) dropItems(game, item, n, t.layer, t.x, t.y);
+    }
+    // A blueprint the colony still needs: not researched yet and not in stock.
+    if (def.blueprintChance > 0 && game.aiRng.chance(def.blueprintChance)) {
+      const wanted = game.reg.content.research
+        .filter((r) => r.blueprint && !game.research.done.has(r.id) && countItems(game, r.blueprint) < 1)
+        .map((r) => r.blueprint!);
+      if (wanted.length) {
+        const item = game.aiRng.pick(wanted);
+        dropItems(game, item, 1, t.layer, t.x, t.y);
+        game.message("msg.blueprint_found", { name: p.nick, item }, "info");
+      }
+    }
     if (game.aiRng.chance(def.lootChance * (1 + lvl / 20))) {
       const loot = Object.entries(game.reg.content.loot);
       const [item, [lo, hi]] = game.aiRng.pick(loot);

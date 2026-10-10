@@ -63,6 +63,10 @@ export const ThingDef = z.object({
   yield: z.record(id, z.number().int().positive()).optional(),
   /** Chance (0..1) of a loot roll when salvaged. */
   lootChance: z.number().min(0).max(1).default(0),
+  /** Always dropped when salvaged, item -> [min, max] (old-world lockers, A4). */
+  drops: z.record(id, z.tuple([z.number().int().min(0), z.number().int().positive()])).optional(),
+  /** Chance (0..1) to find a blueprint the colony still needs when salvaged (A4). */
+  blueprintChance: z.number().min(0).max(1).default(0),
   /** Stairs link this layer offset: -1 = up, +1 = down. */
   stairs: z.number().int().optional(),
   build: BuildInfo.optional(),
@@ -139,11 +143,11 @@ export const ThingDef = z.object({
   /**
    * Fluid role (A2). pump: rate L/h from a water tile next to it (needs power); tank: holds capacity L;
    * purifier: rate L/h of water from its input side to clean water on its output side (needs power);
-   * tap: survivors drink clean water from its network; still: a bench whose fuel bills fill its network.
+   * tap: survivors drink clean water from its network; machine: a bench on the pipes whose bills use or make fluids.
    */
   fluid: z
     .object({
-      role: z.enum(["pump", "tank", "purifier", "tap", "still"]),
+      role: z.enum(["pump", "tank", "purifier", "tap", "machine"]),
       rate: z.number().positive().optional(),
       capacity: z.number().positive().optional(),
     })
@@ -152,6 +156,8 @@ export const ThingDef = z.object({
   chest: z.number().int().positive().optional(),
   /** Auto-crafter: runs a recipe without a survivor while powered. */
   autoCrafter: z.boolean().default(false),
+  /** Auto-crafter work speed multiplier (the assembler is faster, A4). */
+  crafterSpeed: z.number().positive().default(1),
   /** Work speed multiplier for bills done here (when powered, if it uses power). */
   benchSpeed: z.number().positive().default(1),
   /** Can be rotated when placed (belts, loaders, crafters). */
@@ -218,6 +224,8 @@ export const RecipeDef = z.object({
   output: z.record(id, z.number().int().positive()),
   /** Fluid made instead of (or with) items: liters go into the bench's pipe network (A2). */
   fluidOut: z.object({ kind: z.enum(["fuel"]), liters: z.number().positive() }).optional(),
+  /** Fluid used: liters taken from the bench's pipe network when the work starts (A4). */
+  fluidIn: z.object({ kind: z.enum(["fuel", "water", "clean_water"]), liters: z.number().positive() }).optional(),
   work: z.number().int().positive(),
   skill: id.optional(),
   /** Default "keep this many in stock" target. "per_colonist" multiplies by colony size. */

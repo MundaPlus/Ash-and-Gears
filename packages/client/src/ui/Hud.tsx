@@ -8,7 +8,7 @@ import { GameMenu } from "./Screens.tsx";
 
 export function Hud() {
   const s = useStore();
-  const layerName = s.layer <= 1 ? t(`layer.${s.layer}`) : t("layer.n", { n: s.layer });
+  const layerName = s.layer <= 2 ? t(`layer.${s.layer}`) : t("layer.n", { n: s.layer });
   return (
     <>
       <div class="topleft">

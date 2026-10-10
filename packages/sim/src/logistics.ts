@@ -272,7 +272,7 @@ export function tickLogistics(game: Game): void {
     const ready = r.inputs.every((i) => (c.buffer?.[game.reg.items.idx(i.item!)] ?? 0) >= i.count);
     const batch = Object.values(r.output).reduce((a, b) => a + b, 0);
     if (!ready || total(c.out) >= batch * 2) continue;
-    c.work = (c.work ?? 0) + CRAFTER_RATE;
+    c.work = (c.work ?? 0) + CRAFTER_RATE * game.reg.things.list[c.def].crafterSpeed;
     if (c.work < r.work) continue;
     c.work = 0;
     for (const i of r.inputs) c.buffer![game.reg.items.idx(i.item!)] -= i.count;

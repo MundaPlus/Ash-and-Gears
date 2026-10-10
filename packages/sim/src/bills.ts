@@ -11,7 +11,7 @@ import type { Game } from "./game.ts";
 import { countItems, dropItems } from "./items.ts";
 import type { Thing } from "./map.ts";
 import { benchFeedsOut } from "./logistics.ts";
-import { fluidNetOf, netAdd, totalFluid } from "./fluids.ts";
+import { fluidNetOf, netAdd, netAmount, netDraw, totalFluid } from "./fluids.ts";
 import { pickUp } from "./hauling.ts";
 import { learn, workSpeed, skillLevel, type Job, type Pawn } from "./pawn.ts";
 import type { WorkType } from "./worktypes.ts";
@@ -82,6 +82,11 @@ function billJob(game: Game, p: Pawn, workType: WorkType): Job | null {
         return n >= inp.count;
       });
       if (!enough) continue;
+      // Fluid inputs come from the bench's own pipes.
+      if (r.fluidIn) {
+        const net = fluidNetOf(game, bench);
+        if (!net || netAmount(game, net, r.fluidIn.kind) < r.fluidIn.liters) continue;
+      }
       if (!reserve(game, `thing:${bench.id}`, p)) continue;
       return { kind: "bill", stage: 0, targetId: bench.id, data: { recipe: r.id, input: 0, have: 0, work: r.work } };
     }
@@ -128,6 +133,16 @@ registerJob("bill", (game, p, job) => {
       }
       if ((job.data!.input as number) >= r.inputs.length) {
         if (!goTo(game, p, bench, true)) return "fail";
+        // Take the fluid now; the cleanup gives it back if the job stops early.
+        if (r.fluidIn && !job.data!.fluid) {
+          const net = fluidNetOf(game, bench);
+          const got = net ? netDraw(game, net, r.fluidIn.kind, r.fluidIn.liters) : 0;
+          if (got < r.fluidIn.liters) {
+            if (net && got > 0) netAdd(game, net, r.fluidIn.kind, got);
+            return "fail";
+          }
+          job.data!.fluid = got;
+        }
         job.stage = 2;
         return "run";
       }
@@ -189,8 +204,13 @@ registerJob("bill", (game, p, job) => {
 registerCleanup("bill", (game, p, job) => {
   if (job.data?.done) return;
   const bench = game.things.get(job.targetId!);
+  const r = game.reg.content.recipes.find((x) => x.id === job.data?.recipe);
+  if (bench && r?.fluidIn && typeof job.data?.fluid === "number") {
+    const net = fluidNetOf(game, bench);
+    if (net) netAdd(game, net, r.fluidIn.kind, job.data.fluid);
+  }
   for (const [k, v] of Object.entries(job.data ?? {})) {
-    if (typeof v !== "number" || v <= 0) continue;
+    if (typeof v !== "number" || v <= 0 || k === "fluid") continue;
     if (k.startsWith("u")) dropItems(game, Number(k.slice(1)), v, p.layer, p.x, p.y);
     else if (k.startsWith("b") && bench) {
       const def = Number(k.slice(1));

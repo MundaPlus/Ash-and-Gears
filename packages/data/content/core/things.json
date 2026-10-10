@@ -56,7 +56,8 @@
   "yield": {
    "canned_food": 4
   },
-  "lootChance": 0.9
+  "lootChance": 0.9,
+  "blueprintChance": 0.04
  },
  {
   "id": "dead_tree",
@@ -98,6 +99,71 @@
   "glyph": "^",
   "hp": 1000,
   "stairs": -1
+ },
+ {
+  "id": "dug_stairs",
+  "kind": "stairs",
+  "color": "#d0d6dc",
+  "glyph": "v",
+  "hp": 800,
+  "stairs": 1,
+  "build": {
+   "cost": {
+    "wood": 20,
+    "stone": 10
+   },
+   "work": 600,
+   "menu": "structure",
+   "research": "deep_digging"
+  }
+ },
+ {
+  "id": "bunker_wall",
+  "kind": "structure",
+  "color": "#56616d",
+  "glyph": "#",
+  "hp": 900,
+  "blocks": true,
+  "wall": true,
+  "insulation": 0.8,
+  "work": 900,
+  "yield": {
+   "steel": 2,
+   "scrap": 4
+  }
+ },
+ {
+  "id": "bunker_door",
+  "kind": "structure",
+  "color": "#7b8794",
+  "glyph": "D",
+  "hp": 600,
+  "door": true,
+  "wall": true,
+  "insulation": 0.7,
+  "work": 700,
+  "yield": {
+   "steel": 3
+  }
+ },
+ {
+  "id": "bunker_locker",
+  "kind": "structure",
+  "color": "#a6b0ba",
+  "glyph": "L",
+  "hp": 300,
+  "blocks": true,
+  "work": 300,
+  "yield": {
+   "components": 2
+  },
+  "drops": {
+   "steel": [2, 6],
+   "bandage": [1, 4],
+   "canned_food": [2, 6]
+  },
+  "lootChance": 0.5,
+  "blueprintChance": 0.7
  },
  {
   "id": "scrap_wall",
@@ -735,6 +801,58 @@
   }
  },
  {
+  "id": "refinery",
+  "kind": "furniture",
+  "footprint": [2, 1],
+  "color": "#5c4636",
+  "glyph": "R",
+  "hp": 250,
+  "blocks": true,
+  "bench": true,
+  "heat": 6,
+  "power": {
+   "use": 300
+  },
+  "fluid": {
+   "role": "machine",
+   "capacity": 40
+  },
+  "build": {
+   "cost": {
+    "steel": 25,
+    "components": 4,
+    "scrap": 20
+   },
+   "work": 700,
+   "menu": "production",
+   "research": "plastics"
+  }
+ },
+ {
+  "id": "assembler",
+  "kind": "furniture",
+  "color": "#b8e05a",
+  "glyph": "A",
+  "hp": 300,
+  "blocks": true,
+  "autoCrafter": true,
+  "crafterSpeed": 2.5,
+  "rotatable": true,
+  "power": {
+   "use": 400
+  },
+  "build": {
+   "cost": {
+    "steel": 20,
+    "electronics": 6,
+    "components": 6
+   },
+   "work": 1200,
+   "menu": "production",
+   "research": "assembling"
+  }
+ },
+ {
   "id": "belt_splitter",
   "kind": "structure",
   "color": "#4f5a66",
@@ -974,7 +1092,7 @@
   "bench": true,
   "heat": 4,
   "fluid": {
-   "role": "still",
+   "role": "machine",
    "capacity": 40
   },
   "build": {

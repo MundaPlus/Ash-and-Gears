@@ -43,6 +43,20 @@
   "category": "resource"
  },
  {
+  "id": "plastic",
+  "color": "#d0d6dc",
+  "glyph": "p",
+  "category": "resource",
+  "stack": 75
+ },
+ {
+  "id": "electronics",
+  "color": "#4f8a2a",
+  "glyph": "e",
+  "category": "resource",
+  "stack": 50
+ },
+ {
   "id": "canned_food",
   "color": "#efd8a4",
   "glyph": "f",
@@ -207,6 +221,27 @@
  {
   "id": "factory_manual",
   "color": "#efd8a4",
+  "glyph": "?",
+  "category": "blueprint",
+  "stack": 1
+ },
+ {
+  "id": "plastics_manual",
+  "color": "#9fd14a",
+  "glyph": "?",
+  "category": "blueprint",
+  "stack": 1
+ },
+ {
+  "id": "electronics_manual",
+  "color": "#6d86a0",
+  "glyph": "?",
+  "category": "blueprint",
+  "stack": 1
+ },
+ {
+  "id": "assembler_schematic",
+  "color": "#e3c25a",
   "glyph": "?",
   "category": "blueprint",
   "stack": 1

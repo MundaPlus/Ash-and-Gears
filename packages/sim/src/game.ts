@@ -48,7 +48,7 @@ export interface GameOptions {
 export const DEFAULT_OPTIONS: GameOptions = {
   seed: "wasteland",
   mapSize: 200,
-  layers: 2,
+  layers: 3,
   dayLengthSec: 360,
   seasonDays: 15,
   radCloudScale: 1,

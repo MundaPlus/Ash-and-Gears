@@ -37,7 +37,8 @@
   "benches": [
    "scrap_bench",
    "powered_bench",
-   "auto_crafter"
+   "auto_crafter",
+   "assembler"
   ],
   "inputs": [
    {
@@ -57,7 +58,8 @@
   "benches": [
    "scrap_bench",
    "powered_bench",
-   "auto_crafter"
+   "auto_crafter",
+   "assembler"
   ],
   "inputs": [
    {
@@ -144,7 +146,8 @@
   "id": "smelt_steel",
   "benches": [
    "smelter",
-   "auto_crafter"
+   "auto_crafter",
+   "assembler"
   ],
   "inputs": [
    {
@@ -182,5 +185,46 @@
   "work": 300,
   "skill": "crafting",
   "target": 60
+ },
+ {
+  "id": "refine_plastic",
+  "benches": [
+   "refinery"
+  ],
+  "inputs": [],
+  "output": {
+   "plastic": 4
+  },
+  "fluidIn": {
+   "kind": "fuel",
+   "liters": 10
+  },
+  "work": 250,
+  "skill": "crafting",
+  "target": 20
+ },
+ {
+  "id": "make_electronics",
+  "benches": [
+   "powered_bench",
+   "assembler"
+  ],
+  "inputs": [
+   {
+    "item": "components",
+    "count": 2
+   },
+   {
+    "item": "plastic",
+    "count": 1
+   }
+  ],
+  "output": {
+   "electronics": 1
+  },
+  "work": 300,
+  "skill": "technology",
+  "target": 10,
+  "research": "electronics"
  }
 ]
