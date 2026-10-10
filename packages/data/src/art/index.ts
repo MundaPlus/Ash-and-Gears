@@ -6,7 +6,7 @@
 import { CREATURES, FLOORS, ITEMS } from "./items.ts";
 import { THINGS } from "./things.ts";
 
-export { terrainGrid, TERRAIN_VARIANTS } from "./terrain.ts";
+export { terrainEdge, terrainGrid, terrainLayer, TERRAIN_VARIANTS } from "./terrain.ts";
 export { THINGS, ITEMS, CREATURES, FLOORS };
 
 /** Palettes share index roles: 0-7 neutral ramp, 8-10 rust, 11-12 plants, 13-14 metal, 15 glow. */

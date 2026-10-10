@@ -7,7 +7,7 @@
  * characters in "hybrid" and "32".
  */
 import { Texture } from "pixi.js";
-import { CREATURES, FLOORS, HAIRS, ITEMS, PALETTES, parseGrid, scale2x, SHIRTS, terrainGrid, TERRAIN_VARIANTS, THINGS, lineVariant, rotateGrid, thingGrid, TURN_IN_LINE, wallVariant } from "@wc/data";
+import { CREATURES, FLOORS, HAIRS, ITEMS, PALETTES, parseGrid, scale2x, SHIRTS, terrainEdge, terrainGrid, terrainLayer, TERRAIN_VARIANTS, THINGS, lineVariant, rotateGrid, thingGrid, TURN_IN_LINE, wallVariant } from "@wc/data";
 import type { Registry } from "@wc/sim";
 import { aiTexture, aiWallTextures, type AiArt } from "./aiArt.ts";
 
@@ -25,6 +25,10 @@ export interface ArtSettings {
 export interface TextureSet {
   /** [terrain index][variant] */
   terrain: Texture[][];
+  /** [terrain index][side 0 N, 1 E, 2 S, 3 W]: its dithered border to lay over a lower neighbor. */
+  terrainEdges: Texture[][];
+  /** Border layer per terrain index (higher spills over lower). */
+  terrainLayers: number[];
   things: Texture[];
   /** Joined wall looks by neighbor mask (see wallVariant), or null for things that are not walls. */
   walls: (Texture[] | null)[];
@@ -106,6 +110,8 @@ export function makeTextures(reg: Registry, art: ArtSettings, ai: AiArt = new Ma
   const prepDetail = (rows: string[]) => (art.size === "16" ? parseGrid(rows) : scale2x(parseGrid(rows)));
 
   const terrain = reg.terrain.list.map((d) => Array.from({ length: TERRAIN_VARIANTS }, (_, v) => gridTexture(prepGrid(terrainGrid(d.id, v)), colors)));
+  const terrainEdges = reg.terrain.list.map((d) => [0, 1, 2, 3].map((dir) => gridTexture(prepGrid(terrainEdge(d.id, 0, dir)), colors)));
+  const terrainLayers = reg.terrain.list.map((d) => terrainLayer(d.id));
   const things = reg.things.list.map((d) => {
     const look = aiWorld(d.id)?.[0];
     if (look && !d.wall && !d.conduit && !d.pipe) return aiTexture(look, palette);
@@ -177,7 +183,7 @@ export function makeTextures(reg: Registry, art: ArtSettings, ai: AiArt = new Ma
     g.ellipse(16, 29, 9, 3, 0, 0, Math.PI * 2);
     g.fill();
   });
-  return { terrain, things, walls, lines, stubs, turned, thingsTurned, items, floors, desig, survivors, raiders, creatures, shadow };
+  return { terrain, terrainEdges, terrainLayers, things, walls, lines, stubs, turned, thingsTurned, items, floors, desig, survivors, raiders, creatures, shadow };
 }
 
 /** Stable variant per tile so the ground does not repeat. */
