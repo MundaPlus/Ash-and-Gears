@@ -1,10 +1,10 @@
 # Build the game and publish it on GitHub Pages at https://<user>.github.io/<repo>/
-# Runs on every push to master, and by hand from the Actions tab.
+# Runs on every push to master (main on GitHub), and by hand from the Actions tab.
 name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [master]
+    branches: [master, main]
   workflow_dispatch:
 
 permissions:
