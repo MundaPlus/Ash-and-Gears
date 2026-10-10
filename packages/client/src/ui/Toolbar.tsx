@@ -2,6 +2,7 @@ import { t } from "@wc/data";
 import { actions, useStore, type BuildOption } from "./store.ts";
 import { WorkGrid } from "./WorkGrid.tsx";
 import { ResearchPanel } from "./ResearchPanel.tsx";
+import { WorldPanel } from "./WorldPanel.tsx";
 
 const BUILD_MENUS = ["structure", "furniture", "production", "power", "water", "defense", "floor"];
 const ORDERS = ["salvage", "deconstruct", "mine", "clear", "cut"] as const;
@@ -75,6 +76,7 @@ export function Toolbar() {
       )}
       {s.menu === "work" && <WorkGrid />}
       {s.menu === "research" && <ResearchPanel />}
+      {s.menu === "world" && <WorldPanel />}
 
       {s.toolLabel && (
         <div class="toolhint" data-testid="tool-hint">
@@ -89,7 +91,7 @@ export function Toolbar() {
       )}
 
       <nav class="toolbar" data-testid="toolbar">
-        {(["build", "orders", "zones", "work", "research"] as const).map((m) => (
+        {(["build", "orders", "zones", "work", "research", "world"] as const).map((m) => (
           <button key={m} class={s.menu === m ? "on" : ""} data-testid={`tb-${m}`} onClick={() => actions.openMenu(m)}>
             {t(`tb.${m}`)}
           </button>

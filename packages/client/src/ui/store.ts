@@ -86,6 +86,19 @@ export interface ResearchRow {
   current: boolean;
 }
 
+export interface WorldUi {
+  w: number;
+  h: number;
+  biome: string[];
+  home: { x: number; y: number };
+  sites: { id: number; x: number; y: number; kind: string; richness: number; danger: number; travel: number; outpost: number | null; food: number; water: number }[];
+  expeditions: { id: number; site: string; stage: string; hoursLeft: number; names: string[] }[];
+  free: { id: number; nick: string }[];
+  outpostCost: { item: string; n: number }[];
+  /** i18n key of the last launch problem, or null. */
+  problem: string | null;
+}
+
 export interface WorkRow {
   id: number;
   nick: string;
@@ -111,7 +124,9 @@ export interface UiState {
   toasts: Toast[];
   resources: { id: string; count: number }[];
   /** Open toolbar menu. */
-  menu: "build" | "orders" | "zones" | "work" | "research" | null;
+  menu: "build" | "orders" | "zones" | "work" | "research" | "world" | null;
+  /** World map panel data (A8), filled while the panel is open. */
+  world: WorldUi | null;
   /** i18n key + params describing the active tool, or null. */
   toolLabel: string | null;
   buildOptions: BuildOption[];
@@ -142,6 +157,7 @@ class Store {
     paused: false,
     layer: 0,
     layerCount: 1,
+    world: null,
     powerOverlay: false,
     clock: "",
     season: "",
@@ -195,6 +211,7 @@ export const actions = {
   setLayer: (_l: number) => {},
   togglePowerOverlay: () => {},
   setCapture: (_pawn: number, _on: boolean) => {},
+  sendExpedition: (_site: number, _pawns: number[], _outpost: boolean) => {},
   release: (_pawn: number) => {},
   setPrisonBed: (_thing: number, _on: boolean) => {},
   setPriority: (_thing: number, _p: number) => {},

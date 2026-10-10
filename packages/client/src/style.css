@@ -192,3 +192,13 @@ body.cinematic #ui { display: none; }
 
 /* Next-step help under the goals (first hour). */
 .goals .hint { margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(239, 216, 164, 0.25); color: #e3c25a; font-size: 12px; }
+
+/* World map (A8) */
+.worldmenu { max-width: min(560px, calc(100vw - 32px)); }
+.worldmenu .worldmap { width: 100%; height: auto; display: block; border: 1px solid #3a2e26; margin: 6px 0; }
+.worldmenu .site { cursor: pointer; }
+.worldmenu .team { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 6px 0; }
+.worldmenu .neg { color: #ff8a70; }
+@media (max-width: 420px) {
+  .toolbar button { font-size: 12px; padding-left: 4px; padding-right: 4px; }
+}

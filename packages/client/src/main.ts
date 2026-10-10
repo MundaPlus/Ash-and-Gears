@@ -33,7 +33,7 @@ import { loadAiArt } from "./render/aiArt.ts";
 import { ART_SIZES, makeTextures, TILE, type ArtSettings } from "./render/textures.ts";
 import { WorldRenderer } from "./render/world.ts";
 import { Hud } from "./ui/Hud.tsx";
-import { actions, store, type BuildOption, type ColonistSummary, type PawnDetail, type WorkRow } from "./ui/store.ts";
+import { actions, store, type BuildOption, type ColonistSummary, type PawnDetail, type WorkRow, type WorldUi } from "./ui/store.ts";
 
 /** Most sim ticks per frame, so a slow frame cannot snowball. */
 const MAX_TICKS_PER_FRAME = 12;
@@ -466,6 +466,38 @@ async function boot() {
   const jobKey = (p: Pawn) =>
     p.mentalBreak ? "job.sulk" : p.job?.kind === "work" ? `task.${p.job.data!.task}` : `job.${p.job?.kind ?? "none"}`;
 
+  let worldProblem: string | null = null;
+  function worldUi(): WorldUi {
+    const w = sim.ensureWorld(game);
+    return {
+      w: w.w,
+      h: w.h,
+      biome: w.biome.map((b) => sim.BIOMES[b]),
+      home: w.home,
+      sites: w.sites.map((s) => {
+        const need = sim.suppliesNeeded(game, s, 1);
+        return { id: s.id, x: s.x, y: s.y, kind: s.kind, richness: s.richness, danger: s.danger, travel: sim.travelHours(game, s), outpost: s.outpost ? Object.values(s.outpost.stock).reduce((a, b) => a + b, 0) : null, food: need.food, water: need.water };
+      }),
+      expeditions: game.expeditions.map((e) => ({
+        id: e.id,
+        site: w.sites.find((s) => s.id === e.siteId)?.kind ?? "",
+        stage: e.stage,
+        hoursLeft: Math.max(0, Math.ceil((e.until - game.tick) / game.ticksPerHour)),
+        names: e.pawns.map((p) => p.nick),
+      })),
+      free: [...game.pawns.values()].filter((p) => p.faction === "colony" && !p.robot && !p.health.downed && !p.drafted).map((p) => ({ id: p.id, nick: p.nick })),
+      outpostCost: Object.entries(sim.OUTPOST_COST).map(([item, n]) => ({ item, n })),
+      problem: worldProblem,
+    };
+  }
+  actions.sendExpedition = (siteId, ids, outpost) => {
+    const site = sim.ensureWorld(game).sites.find((s) => s.id === siteId);
+    const pawns = ids.map((id) => game.pawns.get(id)).filter((p): p is sim.Pawn => !!p);
+    const problem = site ? sim.canLaunch(game, site, pawns, outpost) : "no_people";
+    worldProblem = problem ? `world.problem.${problem}` : null;
+    if (!problem) sim.launchExpedition(game, siteId, ids, outpost);
+    store.set({ world: worldUi() });
+  };
   function workRows(): WorkRow[] {
     return [...game.pawns.values()].map((p) => ({
       id: p.id,
@@ -673,6 +705,7 @@ async function boot() {
         fps: fpsTime > 1 ? Math.round(fpsFrames / fpsTime) : store.state.fps,
         colonists: colonists(),
         ...(store.state.menu === "work" ? { workRows: workRows() } : {}),
+        ...(store.state.menu === "world" ? { world: worldUi() } : {}),
         ...(store.state.menu === "research" ? { research: researchRows() } : {}),
         ...(store.state.menu === "build" ? { buildOptions: buildRows() } : {}),
         pawn: sel ? pawnDetail(sel) : null,

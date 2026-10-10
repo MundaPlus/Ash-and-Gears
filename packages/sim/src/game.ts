@@ -23,6 +23,7 @@ import { ensureNets, tickPower, type PowerNet } from "./power.ts";
 import { tickLogistics } from "./logistics.ts";
 import { ensureFluidNets, tickFluids, type FluidNet } from "./fluids.ts";
 import { tickSocial, type Bond } from "./social.ts";
+import { tickWorld, type Expedition, type WorldMap } from "./world.ts";
 import { tickGoals } from "./goals.ts";
 
 /** Sim ticks per real second at 1x speed. */
@@ -88,6 +89,10 @@ export class Game {
   openWaterContamUntil = 0;
   soilContamUntil = 0;
   /** Pawns that died: for messages, stats and tests. */
+  /** World map (A8), made on first use. */
+  world: WorldMap | null = null;
+  /** Teams away from the home map (A8). */
+  expeditions: Expedition[] = [];
   /** Opinions "a>b" -> what a thinks of b (A5). */
   readonly opinions = new Map<string, number>();
   /** Bonds "a:b" (smaller id first) -> family or lover (A5). */
@@ -337,6 +342,7 @@ export class Game {
     tickFluids(this);
     tickPawns(this);
     tickSocial(this);
+    tickWorld(this);
     tickTurrets(this);
     tickGoals(this);
   }

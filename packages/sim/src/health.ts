@@ -223,3 +223,9 @@ export function untendedInjuries(p: Pawn): Injury[] {
 export function addInPainThought(game: Game, p: Pawn, out: string[]): void {
   if (pain(game, p) > 0.3) out.push("in_pain");
 }
+
+/** Dead by the body's own rules (for pawns away from the map, where kill() does not run). */
+export function isFatal(game: Game, p: Pawn): boolean {
+  if (p.health.bloodLoss >= 1) return true;
+  return VITAL.some((part) => partDamage(p, part) >= partMax(game, p, part));
+}
