@@ -15,7 +15,7 @@ import { workOrder, workPriority } from "./worktypes.ts";
 import { haulJob } from "./hauling.ts";
 import { DIRS4 } from "./logistics.ts";
 import { relaxJob, slotNow } from "./recreation.ts";
-import { findOwnWork } from "./designations.ts";
+import { findOwnWork, ownWorkJob } from "./designations.ts";
 import { moving, tickHealthHourly } from "./health.ts";
 import { draftedTick, fleeFrom, hostileTick, selfDefense, updateGroups } from "./hostile.ts";
 import { nearestHostile } from "./combat.ts";
@@ -294,10 +294,9 @@ export function think(game: Game, p: Pawn): void {
   if (workPriority(p, "haul") > 0 && startJob(game, p, haulJob(game, p, true))) return;
   for (const w of workOrder(p))
     for (const g of workGivers) if (g.workType === w && startJob(game, p, g.give(game, p))) return;
-  // Nothing to do: give yourself an order (salvage junk or cut dead wood near home), then take it.
-  if (findOwnWork(game, p))
-    for (const w of workOrder(p))
-      for (const g of workGivers) if (g.workType === w && startJob(game, p, g.give(game, p))) return;
+  // Nothing to do: take an order you gave yourself, or give yourself one (salvage junk or cut dead wood near home).
+  if (startJob(game, p, ownWorkJob(game, p))) return;
+  if (findOwnWork(game, p) && startJob(game, p, ownWorkJob(game, p))) return;
   startJob(game, p, wanderJob(game, p, false));
 }
 

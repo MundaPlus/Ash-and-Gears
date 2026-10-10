@@ -1,6 +1,7 @@
 # Changelog
 
 ## 2026-10-11
+- Fix: self-chosen cut orders are "grow" work, so idle-work cutting could win over sowing a new field (e2e food test). Self-chosen orders are now skipped by the normal work search and taken only by a survivor with nothing else to do (`packages/sim/src/designations.ts` `ownWorkJob`, `ai.ts`).
 - Idle survivors find their own work: when nothing is ordered for them, they give themselves an order near home (within 30 tiles): salvage ruins, wrecks and junk, or cut dead trees and shrubs (first when stored wood is below 50). Only work types they do; at most 2 such orders per survivor; the player's own orders always come first. Game option `idleWork` (on by default; off in tests that count resources). The colonist bar marks idle survivors "Idle" (`packages/sim/src/designations.ts` `findOwnWork`, `ai.ts`, `game.ts` `autoDesig`; `packages/client/src/main.ts`, `ui/ColonistBar.tsx`; i18n; test in `packages/sim/test/haul.test.ts`) — user request.
 - Fix: loaders, crafters and arms showed two direction arrows in Salvage Print; the overlay arrow is now drawn only in the pixel style (`packages/client/src/render/dynamic.ts`, `main.ts`) — user report.
 - Battery cells (Salvage Print): each cell is an equal share of the charge, so a full battery lights all 4 (the texture showed 3 of 4 always); the large battery has 4 cells too. The cell in use blinks while the network draws on its batteries (`packages/client/src/render/print/things.ts` `BATTERY_CELLS`, `render/dynamic.ts`) — user report.
