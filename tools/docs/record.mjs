@@ -113,6 +113,69 @@ const CLIPS = {
     },
     step: () => {},
   },
+  // Alpha clips: the 32 px AI art, logistics and water, robots, the old bunker.
+  alpha: {
+    url: "/?showcase=1&seed=showcase&cinematic=1&px=32",
+    frames: 300,
+    ms: 50,
+    setup: (g) => {
+      const t = g.game.ticksPerDay;
+      g.runTicks(Math.round(t * (10 / 24)) - (g.game.tick % t));
+      g.setSpeed(2);
+      g.camera.zoom = 1.4;
+    },
+    step: (g, i, n) => {
+      const { x, y } = g.game.home;
+      const k = i / n;
+      g.camera.centerOn((x - 10 + k * 20) * 32, (y - 9 + k * 12) * 32);
+    },
+  },
+  logistics: {
+    url: "/?showcase=1&seed=showcase&cinematic=1&px=32",
+    frames: 270,
+    ms: 50,
+    setup: (g) => {
+      const t = g.game.ticksPerDay;
+      g.runTicks(Math.round(t * (12 / 24)) - (g.game.tick % t));
+      g.setSpeed(2);
+      g.camera.zoom = 2;
+    },
+    step: (g, i, n) => {
+      const { x, y } = g.game.home;
+      const k = i / n;
+      // From the waterworks down to the factory line.
+      g.camera.centerOn((x - 12 + k * 10) * 32, (y - 11 + k * 17.5) * 32);
+    },
+  },
+  robots: {
+    url: "/?showcase=1&seed=showcase&cinematic=1&px=32",
+    frames: 240,
+    ms: 50,
+    setup: (g) => {
+      const t = g.game.ticksPerDay;
+      g.runTicks(Math.round(t * (14 / 24)) - (g.game.tick % t));
+      g.setSpeed(3);
+      g.camera.zoom = 1.9;
+      const { x, y } = g.game.home;
+      g.camera.centerOn((x + 10) * 32, (y - 5) * 32);
+    },
+    step: (g) => g.runTicks(4),
+  },
+  bunker: {
+    url: "/?seed=showcase&cinematic=1&px=32",
+    frames: 210,
+    ms: 50,
+    setup: (g) => {
+      g.setLayer(2);
+      const lk = [...g.game.things.values()].find((t) => g.game.reg.things.list[t.def].id === "bunker_locker");
+      g.camera.zoom = 1.6;
+      g.bunker = lk ? { x: lk.x, y: lk.y } : g.game.home;
+    },
+    step: (g, i, n) => {
+      const k = i / n;
+      g.camera.centerOn((g.bunker.x - 4 + k * 12) * 32, (g.bunker.y + 2) * 32);
+    },
+  },
 };
 
 mkdirSync(outDir, { recursive: true });

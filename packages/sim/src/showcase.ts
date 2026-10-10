@@ -7,6 +7,7 @@ import { createZone } from "./hauling.ts";
 import { dropItems } from "./items.ts";
 import { NO_THING } from "./map.ts";
 import { makeSurvivor } from "./pawn.ts";
+import { makeRobot } from "./robots.ts";
 import { completeRoofs } from "./rooms.ts";
 
 export function buildShowcase(game: Game): void {
@@ -24,7 +25,7 @@ export function buildShowcase(game: Game): void {
       }
       game.setTerrain(0, x, y, "dirt");
     }
-  for (const r of ["scrap_power", "batteries", "electric_lights", "powered_tools", "smelting", "turret_wiring", "conveyors", "auto_crafting", "rain_catchers", "field_medicine", "gunsmithing"])
+  for (const r of ["scrap_power", "batteries", "electric_lights", "powered_tools", "smelting", "turret_wiring", "conveyors", "auto_crafting", "rain_catchers", "field_medicine", "gunsmithing", "belt_logistics", "plumbing", "water_purification", "biofuel", "power_grid", "renewables", "deep_digging", "robotics"])
     game.research.done.add(r);
 
   const put = (id: string, x: number, y: number, rot?: number) => {
@@ -113,10 +114,43 @@ export function buildShowcase(game: Game): void {
   stock.forEach(([item, n], k) => dropItems(game, item, n, 0, hx + 4 + (k % 6), hy + 8 + Math.floor(k / 6)));
   put("rain_collector", hx + 11, hy + 9);
 
+  // Waterworks (A2, A3): pump at a sludge pool, tank, purifier, tap; solar power with a battery and poles.
+  for (let y = hy - 12; y <= hy - 10; y++) for (let x = hx - 17; x <= hx - 16; x++) game.setTerrain(0, x, y, "sludge");
+  put("water_pump", hx - 15, hy - 11);
+  put("pipe", hx - 14, hy - 11);
+  const tank = put("water_tank", hx - 13, hy - 11);
+  if (tank) tank.liquid = { water: 220 };
+  put("pipe", hx - 12, hy - 11);
+  put("water_purifier", hx - 11, hy - 11, 3);
+  const pipe2 = put("pipe", hx - 10, hy - 11);
+  if (pipe2) pipe2.liquid = { clean_water: 10 };
+  const tap = put("water_tap", hx - 9, hy - 11);
+  if (tap) tap.liquid = { clean_water: 5 };
+  put("solar_panel", hx - 16, hy - 13);
+  const bat2 = put("battery", hx - 17, hy - 13);
+  if (bat2) bat2.charge = 2000;
+  put("power_pole", hx - 14, hy - 13);
+  put("power_pole", hx - 11, hy - 13);
+  put("wire", hx - 11, hy - 12);
+
+  // Robots (A7): a powered robot bay with a robot and a hauler drone.
+  put("robot_bay", hx + 12, hy - 8);
+  put("solar_panel", hx + 14, hy - 8);
+  put("wind_turbine", hx + 14, hy - 6);
+  const bat3 = put("battery", hx + 16, hy - 8);
+  if (bat3) bat3.charge = 2400;
+  for (const kind of ["robot", "hauler_drone"]) {
+    const bot = makeRobot(game, kind, 0, hx + 11, hy - 5);
+    game.pawns.set(bot.id, bot);
+  }
+
   // Two more survivors, so the base looks lived in.
   const used = new Set([...game.pawns.values()].flatMap((p) => [p.first, p.nick]));
   for (let i = 0; i < 2; i++) {
-    const p = makeSurvivor(game, 0, hx + i, hy - 1, used);
+    // A free tile near home (the airlock walls stand just south of the house).
+    let sx = hx + i, sy = hy + 1;
+    for (let k = 0; k < 20 && !game.walkable(0, sx, sy); k++) sx++;
+    const p = makeSurvivor(game, 0, sx, sy, used);
     p.weapon = game.reg.items.idx(i ? "crossbow" : "pipe_pistol");
     game.pawns.set(p.id, p);
   }

@@ -571,7 +571,7 @@ async function boot() {
       backstory: (p.backstory ?? []).map((b) => game.reg.backstories.list[b].id),
       noWork: p.noWork ?? [],
       relations: [...game.pawns.values()]
-        .filter((o) => o.faction === "colony" && o.id !== p.id)
+        .filter((o) => o.faction === "colony" && !o.robot && o.id !== p.id)
         .map((o) => ({ nick: o.nick, opinion: Math.round(sim.opinion(game, p, o)), label: sim.relationLabel(game, p, o) }))
         .sort((a, b) => b.opinion - a.opinion),
       thoughts: thoughts.filter((th) => !th.id.startsWith("trait_")),
