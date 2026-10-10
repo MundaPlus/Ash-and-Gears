@@ -35,3 +35,15 @@ A full game loop with an end: pick a storyline at the start, play it to an endin
 | B8 | Phone app | PWA install, offline, touch polish |
 | B9 | Polish + music | Own polish list, story music cues |
 | B10 | Beta delivery | Presentation update, tag `v0.3.0-beta`, review with the user |
+
+## Progress (2026-10-11)
+
+| # | Status |
+|---|---|
+| B1–B4 | Done |
+| B5 | Done |
+| B6 | Done |
+| B7 | Done |
+| B8 | Later (the user moved the phone app after B9 and B10) |
+| B9 | In progress: story music cues, chapter banner, loose item counts, foldable goals, recreation and schedules, haul list, fuel and charge bars, progress bars |
+| B10 | Not started |
