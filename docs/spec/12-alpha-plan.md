@@ -42,3 +42,20 @@ Each milestone ends like the demo ones: tests green, headless playtests on sever
 - Exact tier list and research costs for tiers 2–3.
 - Fluid model detail (per-tile pressure vs network pools). Default: network pools, like power.
 - Robot art: hand-pixeled like the rest.
+
+## Progress and decisions made during the work
+
+| Milestone | State (2026-10-10) | Decisions |
+|---|---|---|
+| P1 | Done | Rescue alarm (nearest free doctor drops work, also when sulking); downed survivors lose hunger and thirst at half speed; attackers leave one hour after the last survivor goes down; raid cap = survivors − 1 before day 20, = survivors until day 40, then + 1. Headless runs, 12 seeds × 22 days: deaths 29 → 13 |
+| A1 | Done | Splitter (front, left, right in turn), sorter (filter item forward, rest right), underground belt in/out pair (5 tiles, also carries power), robot arm (loader with a one-item filter), scrap chest (200 items, walkable; contents are item stacks so survivors use them; keeps rats and fallout out). Benches: input side north, output side south when not turned |
+| A2 | Done | Fluid model: network pools like power; liters live on pipes and tanks. Fluids: water (dirty), clean water, fuel. Pump next to water (stops while surface water carries fallout), tank 500 L, purifier between two networks (bench sides), tap = drinking spot, fuel still (bill makes 15 L from 12 raw food), generators top up from fuel pipes |
+| A3 | Done | Poles link poles within 6 tiles; switch; solar (by day, weather) and wind (gusts); priorities 1–3 with strict blackouts; power overlay (P) |
+| A4 | Next | See below |
+
+### A4 design (tech tiers 2–3)
+
+- Tiers: tier 1 = demo tree plus plumbing, biofuel; tier 2 = belt logistics, purification, power grid, renewables, auto-crafting, plastics, electronics; tier 3 = the old bunker (layer 2), assembler, refinery, robots (A7).
+- Blueprint items gate key tier 2–3 nodes. They come from salvage loot (rare), deep digging (layer 2) and later from expeditions and trade (A8–A9).
+- New chains: steel (exists) → steel parts; plastic from fuel at a refinery; electronics from components + plastic.
+- Second underground layer: an old bunker with sealed rooms, old-world loot and blueprints, reached by digging stairs down from layer 1.
