@@ -120,12 +120,12 @@ export class ToolController implements ToolHandler {
     return out;
   }
 
-  /** Belts turn to face a way; big non-square things turn to lie the other way. R turns both. */
+  /** Everything turns while placing (Q/E), except walls, doors, wires, pipes and plants; floors never turn. */
   rotatable(): boolean {
     const s = this.spec;
     if (s?.kind !== "build" || s.defKind !== "thing") return false;
     const d = this.game.reg.things.get(s.def);
-    return d.rotatable || d.footprint[0] !== d.footprint[1];
+    return !d.wall && !d.door && !d.conduit && !d.pipe && d.kind !== "plant";
   }
 
   /** Footprint of the thing being placed, after rotation (1x1 for other tools). */

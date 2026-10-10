@@ -1,6 +1,10 @@
 # Changelog
 
 ## 2026-10-11
+- Eating at tables: a survivor takes a meal and carries it to a free chair next to a table (within 40 tiles), then eats there: "ate at a table" (+2). Food poisoning: each meal has a chance (raw food 6%, cooked 2%, canned 0.4%; 60% less at a table); it gives -8 mood and 25% slower work for 10 hours, with a message. Cut off on the way, the food goes back on the ground (`packages/sim/src/ai.ts` `findSeat`, eat job; `pawn.ts` `sickUntil`; thoughts, i18n; test in `packages/sim/test/food.test.ts`) — user request.
+- Rotation: everything except walls, doors, floors, wires, pipes and plants can be turned with Q/E while placing; turned things draw their art turned 90, 180 or 270 degrees (`packages/client/src/input/tools.ts`, `render/textures.ts` `thingsRot`, `render/world.ts`) — user request.
+- Sleeping pose: a survivor in a bed lies in its middle with the head at the pillow, for every bed rotation (`packages/client/src/render/pawns.ts`) — user report.
+- README credits: code and art by Marko Munda, vibe-coded with Claude Code.
 - Make queue: every workbench has a queue of up to 5 orders ("Components x3"), done in order before the keep-in-stock bills. A "Make..." button opens the Make window: click a recipe to queue one (Shift+click for five), change counts, move orders up, remove them. Benches and research desks have a "Research" button that opens the research menu (`packages/sim/src/bills.ts` `queueAdd`, `queueSet`, `queueUp`; `map.ts`; `packages/client/src/ui/MakeWindow.tsx`, `Hud.tsx`, `store.ts`, `main.ts`, `style.css`; i18n; test `packages/sim/test/queue.test.ts`) — user request.
 - Fix: a pawn could stand inside a solid thing (a robot on a wind turbine). Every 30 ticks, anyone on a blocked tile is moved to the nearest free tile (`packages/sim/src/ai.ts` `unstick`; test in `packages/sim/test/robots.test.ts`) — user report.
 - README rewritten for GitHub: hero screenshot, features, screenshot table, controls, saves, run and publish steps, development and layout; images in `docs/images/` (hero, four gallery shots, a 1280x640 social preview) (`README.md`, `docs/images/`).

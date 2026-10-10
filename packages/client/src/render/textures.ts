@@ -40,6 +40,8 @@ export interface TextureSet {
   turned: (Texture | null)[];
   /** Big non-square things placed turned (rotation 1 or 3), or null. */
   thingsTurned: (Texture | null)[];
+  /** Things placed turned: thingsRot[rot][def] for rot 1..3 (90, 180, 270 degrees clockwise), or null. */
+  thingsRot: (Texture | null)[][];
   items: Texture[];
   floors: Texture[];
   /** Order markers by Desig code (index 0 unused). */
@@ -140,6 +142,16 @@ export function makeTextures(reg: Registry, art: ArtSettings, ai: AiArt = new Ma
     if (look && d.footprint[0] !== d.footprint[1]) return aiTexture(look, palette, true);
     return d.footprint[0] !== d.footprint[1] && THINGS[d.id] ? gridTexture(prepGrid(rotateGrid(thingGrid(d.id, ...d.footprint)!)), colors) : null;
   });
+  // Everything that can be placed turned (not walls, doors, wires, pipes or plants) gets its art turned too.
+  const turnable = (d: (typeof reg.things.list)[number]) => !!THINGS[d.id] && !d.wall && !d.door && !d.conduit && !d.pipe && d.kind !== "plant";
+  const thingsRot = [0, 1, 2, 3].map((rot) =>
+    reg.things.list.map((d) => {
+      if (rot === 0 || !turnable(d)) return null;
+      let grid = thingGrid(d.id, ...d.footprint)!;
+      for (let k = 0; k < rot; k++) grid = rotateGrid(grid);
+      return gridTexture(prepGrid(grid), colors);
+    }),
+  );
   const items = reg.items.list.map((d) => {
     const look = aiDetail(d.id)?.[0];
     if (look) return aiTexture(look, palette);
@@ -226,7 +238,7 @@ export function makeTextures(reg: Registry, art: ArtSettings, ai: AiArt = new Ma
     g.fillRect(8, 3, 1, 1);
     g.fillRect(3, 9, 1, 1);
   });
-  return { forbid, haul, rot, terrain, terrainEdges, terrainLayers, things, walls, lines, stubs, turned, thingsTurned, items, floors, desig, survivors, raiders, creatures, shadow };
+  return { forbid, haul, rot, terrain, terrainEdges, terrainLayers, things, walls, lines, stubs, turned, thingsTurned, thingsRot, items, floors, desig, survivors, raiders, creatures, shadow };
 }
 
 /** Stable variant per tile so the ground does not repeat. */
