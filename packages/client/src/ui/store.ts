@@ -86,6 +86,14 @@ export interface ResearchRow {
   current: boolean;
 }
 
+export interface CaravanUi {
+  faction: string;
+  hoursLeft: number;
+  markup: number;
+  rows: { id: string; yours: number; theirs: number; value: number }[];
+  problem: string | null;
+}
+
 export interface WorldUi {
   w: number;
   h: number;
@@ -95,6 +103,7 @@ export interface WorldUi {
   expeditions: { id: number; site: string; stage: string; hoursLeft: number; names: string[] }[];
   free: { id: number; nick: string }[];
   outpostCost: { item: string; n: number }[];
+  factions: { id: string; goodwill: number; relation: string }[];
   /** i18n key of the last launch problem, or null. */
   problem: string | null;
 }
@@ -124,7 +133,9 @@ export interface UiState {
   toasts: Toast[];
   resources: { id: string; count: number }[];
   /** Open toolbar menu. */
-  menu: "build" | "orders" | "zones" | "work" | "research" | "world" | null;
+  menu: "build" | "orders" | "zones" | "work" | "research" | "world" | "trade" | null;
+  /** Trader caravan near home (A9), or null. */
+  caravan: CaravanUi | null;
   /** World map panel data (A8), filled while the panel is open. */
   world: WorldUi | null;
   /** i18n key + params describing the active tool, or null. */
@@ -158,6 +169,7 @@ class Store {
     layer: 0,
     layerCount: 1,
     world: null,
+    caravan: null,
     powerOverlay: false,
     clock: "",
     season: "",
@@ -212,6 +224,7 @@ export const actions = {
   togglePowerOverlay: () => {},
   setCapture: (_pawn: number, _on: boolean) => {},
   sendExpedition: (_site: number, _pawns: number[], _outpost: boolean) => {},
+  trade: (_buy: Record<string, number>, _sell: Record<string, number>) => {},
   release: (_pawn: number) => {},
   setPrisonBed: (_thing: number, _on: boolean) => {},
   setPriority: (_thing: number, _p: number) => {},

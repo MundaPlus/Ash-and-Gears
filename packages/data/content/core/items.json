@@ -3,58 +3,67 @@
   "id": "scrap",
   "color": "#a8481a",
   "glyph": "s",
-  "category": "resource"
+  "category": "resource",
+  "value": 1
  },
  {
   "id": "wood",
   "color": "#84603f",
   "glyph": "w",
-  "category": "resource"
+  "category": "resource",
+  "value": 1
  },
  {
   "id": "stone",
   "color": "#9a8e7e",
   "glyph": "o",
-  "category": "resource"
+  "category": "resource",
+  "value": 0.5
  },
  {
   "id": "coal",
   "color": "#1b1714",
   "glyph": "c",
-  "category": "resource"
+  "category": "resource",
+  "value": 1
  },
  {
   "id": "cloth",
   "color": "#d6ab6b",
   "glyph": "~",
-  "category": "resource"
+  "category": "resource",
+  "value": 2
  },
  {
   "id": "components",
   "color": "#6f8088",
   "glyph": "g",
   "category": "resource",
-  "stack": 25
+  "stack": 25,
+  "value": 10
  },
  {
   "id": "steel",
   "color": "#a7b4bb",
   "glyph": "S",
-  "category": "resource"
+  "category": "resource",
+  "value": 4
  },
  {
   "id": "plastic",
   "color": "#d0d6dc",
   "glyph": "p",
   "category": "resource",
-  "stack": 75
+  "stack": 75,
+  "value": 5
  },
  {
   "id": "electronics",
   "color": "#4f8a2a",
   "glyph": "e",
   "category": "resource",
-  "stack": 50
+  "stack": 50,
+  "value": 25
  },
  {
   "id": "canned_food",
@@ -63,7 +72,8 @@
   "category": "food",
   "nutrition": 0.45,
   "stack": 25,
-  "eatThought": "ate_canned"
+  "eatThought": "ate_canned",
+  "value": 3
  },
  {
   "id": "dirty_water",
@@ -71,7 +81,8 @@
   "glyph": "d",
   "category": "water",
   "hydration": 0.5,
-  "stack": 20
+  "stack": 20,
+  "value": 0.5
  },
  {
   "id": "clean_water",
@@ -79,7 +90,8 @@
   "glyph": "W",
   "category": "water",
   "hydration": 0.5,
-  "stack": 20
+  "stack": 20,
+  "value": 2
  },
  {
   "id": "glowcorn",
@@ -89,7 +101,8 @@
   "nutrition": 0.05,
   "raw": true,
   "rotDays": 12,
-  "eatThought": "ate_raw"
+  "eatThought": "ate_raw",
+  "value": 1
  },
  {
   "id": "scrub_potato",
@@ -99,7 +112,8 @@
   "nutrition": 0.05,
   "raw": true,
   "rotDays": 30,
-  "eatThought": "ate_raw"
+  "eatThought": "ate_raw",
+  "value": 1
  },
  {
   "id": "simple_meal",
@@ -109,7 +123,8 @@
   "nutrition": 0.9,
   "stack": 10,
   "rotDays": 4,
-  "eatThought": "ate_meal"
+  "eatThought": "ate_meal",
+  "value": 6
  },
  {
   "id": "mutant_meat",
@@ -119,7 +134,8 @@
   "nutrition": 0.05,
   "raw": true,
   "rotDays": 3,
-  "eatThought": "ate_raw_meat"
+  "eatThought": "ate_raw_meat",
+  "value": 1
  },
  {
   "id": "pipe",
@@ -132,7 +148,8 @@
    "cooldown": 40,
    "range": 1.5,
    "kind": "blunt"
-  }
+  },
+  "value": 8
  },
  {
   "id": "machete",
@@ -145,7 +162,8 @@
    "cooldown": 42,
    "range": 1.5,
    "kind": "cut"
-  }
+  },
+  "value": 15
  },
  {
   "id": "sledgehammer",
@@ -158,7 +176,8 @@
    "cooldown": 70,
    "range": 1.5,
    "kind": "blunt"
-  }
+  },
+  "value": 20
  },
  {
   "id": "pipe_pistol",
@@ -172,7 +191,8 @@
    "range": 14,
    "accuracy": 0,
    "kind": "gunshot"
-  }
+  },
+  "value": 40
  },
  {
   "id": "crossbow",
@@ -186,7 +206,8 @@
    "range": 18,
    "accuracy": 0.08,
    "kind": "arrow"
-  }
+  },
+  "value": 35
  },
  {
   "id": "scrap_shotgun",
@@ -200,7 +221,8 @@
    "range": 7,
    "accuracy": 0.15,
    "kind": "gunshot"
-  }
+  },
+  "value": 60
  },
  {
   "id": "bandage",
@@ -208,7 +230,8 @@
   "glyph": "+",
   "category": "medicine",
   "stack": 25,
-  "medicine": 0.6
+  "medicine": 0.6,
+  "value": 6
  },
  {
   "id": "corpse",
@@ -216,34 +239,39 @@
   "glyph": "x",
   "category": "misc",
   "stack": 1,
-  "rotDays": 3
+  "rotDays": 3,
+  "value": 0
  },
  {
   "id": "factory_manual",
   "color": "#efd8a4",
   "glyph": "?",
   "category": "blueprint",
-  "stack": 1
+  "stack": 1,
+  "value": 150
  },
  {
   "id": "plastics_manual",
   "color": "#9fd14a",
   "glyph": "?",
   "category": "blueprint",
-  "stack": 1
+  "stack": 1,
+  "value": 150
  },
  {
   "id": "electronics_manual",
   "color": "#6d86a0",
   "glyph": "?",
   "category": "blueprint",
-  "stack": 1
+  "stack": 1,
+  "value": 150
  },
  {
   "id": "assembler_schematic",
   "color": "#e3c25a",
   "glyph": "?",
   "category": "blueprint",
-  "stack": 1
+  "stack": 1,
+  "value": 150
  }
 ]

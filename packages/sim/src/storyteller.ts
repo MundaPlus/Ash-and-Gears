@@ -3,6 +3,8 @@
  * after a threat comes a calm spell. Sliders scale raids, mutants and radiation clouds.
  * Grandma Grit waits longer between threats; Doctor Chaos ignores the calm spells.
  */
+import type { FactionDef } from "@wc/data";
+import { equipRaider, raidingFaction, relationOf, sendCaravan } from "./factions.ts";
 import type { Game } from "./game.ts";
 import { dropItems } from "./items.ts";
 import { addMemory, makeHostile, makeSurvivor } from "./pawn.ts";
@@ -44,7 +46,8 @@ function weight(game: Game, kind: EventKind): number {
   const o = game.opts;
   switch (kind) {
     case "raid":
-      return 1.0 * o.raidScale;
+      // Only hostile factions raid.
+      return game.reg.content.factions.some((f) => relationOf(game, f.id) === "hostile") ? 1.0 * o.raidScale : 0;
     case "rad_rats":
     case "glow_hounds":
       return 0.9 * o.mutantScale;
@@ -68,7 +71,7 @@ export function edgeSpawn(game: Game): { x: number; y: number } {
   return { x: 1, y: 1 };
 }
 
-function spawnGroup(game: Game, kind: "raid" | "rad_rats" | "glow_hounds", size: number) {
+function spawnGroup(game: Game, kind: "raid" | "rad_rats" | "glow_hounds", size: number, faction?: FactionDef) {
   const id = game.newId();
   game.groups.set(id, { id, kind, size, fleeing: false, arrived: game.tick });
   const at = edgeSpawn(game);
@@ -88,6 +91,12 @@ function spawnGroup(game: Game, kind: "raid" | "rad_rats" | "glow_hounds", size:
     }
     const weapon = kind === "raid" ? game.aiRng.pick(weapons) : null;
     const p = makeHostile(game, creature, kind === "raid" ? "raiders" : "wild", 0, x, y, id, weapon);
+    if (faction) {
+      // Faction gear once the early days are over; their traits from the start.
+      const melee = p.weapon;
+      equipRaider(game, p, faction);
+      if (day < 15) p.weapon = melee;
+    }
     game.pawns.set(p.id, p);
   }
 }
@@ -102,9 +111,12 @@ export function fireEvent(game: Game, kind: EventKind): void {
       const first = !s.log.some((e) => e.event === "raid" && e.tick < game.tick);
       const day = game.tick / game.ticksPerDay;
       const cap = colonists + (day < 20 ? -1 : day < 40 ? 0 : 1);
-      const size = first ? 2 : Math.max(2, Math.min(7, cap, 2 + Math.floor((s.points - 6) / 4)));
-      spawnGroup(game, "raid", size);
-      game.message("msg.raid", { n: size }, "bad");
+      const f = raidingFaction(game);
+      const base = first ? 2 : Math.max(2, Math.min(7, cap, 2 + Math.floor((s.points - 6) / 4)));
+      const size = first || !f ? base : Math.max(2, Math.min(8, Math.round(base * f.raidSize)));
+      spawnGroup(game, "raid", size, f ?? undefined);
+      if (f) game.message("msg.raid_faction", { n: size, faction: f.id }, "bad");
+      else game.message("msg.raid", { n: size }, "bad");
       break;
     }
     case "rad_rats": {
@@ -129,7 +141,9 @@ export function fireEvent(game: Game, kind: EventKind): void {
 function goodEvent(game: Game) {
   const s = game.story;
   const colonists = [...game.pawns.values()].filter((p) => p.faction === "colony");
-  if (colonists.length < 8 && game.aiRng.chance(0.5)) {
+  if (game.aiRng.chance(0.2) && sendCaravan(game, edgeSpawn(game))) {
+    s.log.push({ tick: game.tick, event: "caravan" });
+  } else if (colonists.length < 8 && game.aiRng.chance(0.5)) {
     const at = edgeSpawn(game);
     const p = makeSurvivor(game, 0, at.x, at.y, new Set(colonists.flatMap((c) => [c.first, c.nick])));
     game.pawns.set(p.id, p);

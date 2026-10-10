@@ -8,6 +8,7 @@
 import { atGoal, findItem, goTo, isReserved, reserve } from "./ai.ts";
 import type { Game } from "./game.ts";
 import { leave } from "./hostile.ts";
+import { changeGoodwill } from "./factions.ts";
 import { registerJob, registerWorkGiver } from "./jobs.ts";
 import type { Thing } from "./map.ts";
 import { addMemory, learn, skillLevel, type Job, type Pawn } from "./pawn.ts";
@@ -54,6 +55,7 @@ export function makePrisoner(game: Game, p: Pawn, bed: Thing): void {
   p.lastTalk = game.tick;
   p.needs = { hunger: Math.min(p.needs.hunger, 0.6), thirst: Math.min(p.needs.thirst, 0.6), rest: p.needs.rest };
   game.message("msg.captured", { name: p.nick }, "info");
+  if (p.origin) changeGoodwill(game, p.origin, -5);
 }
 
 /** A prisoner joins the colony. */
@@ -64,6 +66,7 @@ export function recruit(game: Game, p: Pawn): void {
   delete p.lastTalk;
   p.work = {};
   game.message("msg.recruited", { name: p.nick }, "info");
+  if (p.origin) changeGoodwill(game, p.origin, -10);
   for (const c of game.pawns.values()) if (c.faction === "colony" && c.id !== p.id) addMemory(game, c, "wanderer_joined");
 }
 
@@ -73,6 +76,7 @@ export function release(game: Game, p: Pawn): void {
   p.faction = "visitor";
   p.bedId = null;
   game.message("msg.released", { name: p.nick }, "info");
+  if (p.origin) changeGoodwill(game, p.origin, 12);
 }
 
 /** Prisoners and visitors: what they do each tick (instead of the colony AI). */

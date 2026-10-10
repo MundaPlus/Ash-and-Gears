@@ -56,7 +56,8 @@ Each milestone ends like the demo ones: tests green, headless playtests on sever
 | A6 | Done | Capture downed raiders, prisoner beds, warden work (feed, talk), resistance → recruit, release, escape after 2 days alone. Wanderers still join on their own |
 | A7 | Done | Robot bay builds robots and hauler drones; charge, bay charging and repair; limited work types; no needs or mood. Robot art is hand-pixeled |
 | A8 | Done | World of biomes and 14 sites; expeditions resolve off-map (travel, scavenge, ambush) and return at the map edge; outposts gather and are emptied by visits. No tactical site maps |
-| A9 | Next | Factions and trade |
+| A9 | Done | 4 factions with goodwill; faction raids; trader caravans with value trade and gifts; prisoners affect goodwill. Diplomacy beyond gifts (peace talks, allies helping) is left for later |
+| A10 | Next | Alpha delivery: presentation page, LAN build, review with the user |
 
 ### A4 design (tech tiers 2–3)
 

@@ -19,7 +19,8 @@ const FX_KEEP = 80;
 
 export function hostile(a: Pawn, b: Pawn): boolean {
   // Prisoners and visitors fight nobody, and nobody fights them.
-  if (a.faction === "prisoner" || a.faction === "visitor" || b.faction === "prisoner" || b.faction === "visitor") return false;
+  const calm = (f: string) => f === "prisoner" || f === "visitor" || f === "trader";
+  if (calm(a.faction) || calm(b.faction)) return false;
   return a.faction !== b.faction;
 }
 
@@ -141,7 +142,7 @@ export function attack(game: Game, p: Pawn, target: Pawn): boolean {
 export function nearestHostile(game: Game, p: { layer: number; x: number; y: number }, faction: string, range: number): Pawn | null {
   let best: Pawn | null = null, bestD = range;
   for (const o of game.pawns.values()) {
-    if (o.faction === faction || o.faction === "prisoner" || o.faction === "visitor" || o.layer !== p.layer || o.health.downed) continue;
+    if (o.faction === faction || o.faction === "prisoner" || o.faction === "visitor" || o.faction === "trader" || o.layer !== p.layer || o.health.downed) continue;
     const d = dist(p, o);
     if (d <= bestD && canSee(game, p.layer, p, o)) {
       bestD = d;

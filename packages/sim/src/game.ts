@@ -24,6 +24,7 @@ import { tickLogistics } from "./logistics.ts";
 import { ensureFluidNets, tickFluids, type FluidNet } from "./fluids.ts";
 import { tickSocial, type Bond } from "./social.ts";
 import { tickWorld, type Expedition, type WorldMap } from "./world.ts";
+import type { Caravan } from "./factions.ts";
 import { tickGoals } from "./goals.ts";
 
 /** Sim ticks per real second at 1x speed. */
@@ -91,6 +92,10 @@ export class Game {
   /** Pawns that died: for messages, stats and tests. */
   /** World map (A8), made on first use. */
   world: WorldMap | null = null;
+  /** Goodwill per faction id; missing = the faction's start value (A9). */
+  goodwill: Record<string, number> = {};
+  /** Trader caravan near home, if any (A9). */
+  caravan: Caravan | null = null;
   /** Teams away from the home map (A8). */
   expeditions: Expedition[] = [];
   /** Opinions "a>b" -> what a thinks of b (A5). */

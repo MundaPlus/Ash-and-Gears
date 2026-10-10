@@ -1,0 +1,6 @@
+[
+  {"id": "rust_knights", "kind": "raider", "goodwill": -60, "weapons": ["pipe_pistol", "scrap_shotgun", "machete", "crossbow"], "raidSize": 1},
+  {"id": "glow_cult", "kind": "cult", "goodwill": -30, "weapons": ["machete", "sledgehammer", "pipe"], "traits": ["rad_hardened"], "raidSize": 1},
+  {"id": "water_union", "kind": "trader", "goodwill": 15, "sells": {"clean_water": [20, 40], "canned_food": [10, 25], "bandage": [4, 10], "cloth": [10, 20], "components": [2, 6]}},
+  {"id": "scrap_nomads", "kind": "trader", "goodwill": 0, "sells": {"scrap": [40, 80], "steel": [10, 25], "components": [4, 10], "pipe_pistol": [0, 2], "electronics": [0, 3], "plastic": [0, 8]}}
+]

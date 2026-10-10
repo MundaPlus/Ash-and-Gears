@@ -18,6 +18,7 @@ import { equipJob, inBed, rushToDowned } from "./medical.ts";
 import { fluidNetOf, LITERS_PER_DRINK, netDraw, tapHasWater } from "./fluids.ts";
 import { prisonerTick } from "./prison.ts";
 import { robotJob, tickRobot } from "./robots.ts";
+import { traderTick } from "./factions.ts";
 
 /** Tiles per tick at walk cost 1 (3 tiles per real second at 1x). */
 export const WALK_SPEED = 0.15;
@@ -115,6 +116,11 @@ export function tickPawns(game: Game): void {
       if (p.job) endJob(game, p, false);
       p.path = null;
       p.drafted = false;
+      continue;
+    }
+    if (p.faction === "trader") {
+      traderTick(game, p);
+      tickMove(game, p);
       continue;
     }
     if (p.faction === "prisoner" || p.faction === "visitor") {

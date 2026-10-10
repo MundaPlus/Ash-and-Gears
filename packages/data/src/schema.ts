@@ -181,6 +181,8 @@ export const ItemDef = z.object({
   category: z.enum(["resource", "food", "water", "medicine", "weapon", "apparel", "blueprint", "misc"]),
   /** Nutrition per unit (food). */
   nutrition: z.number().min(0).default(0),
+  /** Trade value per unit (A9). */
+  value: z.number().min(0).default(1),
   /** Raw food: cooking input, mood penalty when eaten raw. */
   raw: z.boolean().default(false),
   /** Days until it rots at full rate (warm). Absent = never rots. */
@@ -305,6 +307,23 @@ export const BackstoryDef = z.object({
 });
 export type BackstoryDef = z.infer<typeof BackstoryDef>;
 
+/** A faction of the wasteland (A9). */
+export const FactionDef = z.object({
+  id,
+  kind: z.enum(["raider", "trader", "cult"]),
+  /** Goodwill toward the colony at the start, -100..100. */
+  goodwill: z.number().min(-100).max(100),
+  /** Weapons its raiders carry. */
+  weapons: z.array(id).default([]),
+  /** Traits its raiders have. */
+  traits: z.array(id).default([]),
+  /** Raid size multiplier. */
+  raidSize: z.number().positive().default(1),
+  /** What its traders sell: item -> [min, max] per caravan. */
+  sells: z.record(id, z.tuple([z.number().int().min(0), z.number().int().positive()])).default({}),
+});
+export type FactionDef = z.infer<typeof FactionDef>;
+
 export const ThoughtDef = z.object({
   id,
   mood: z.number(),
@@ -333,6 +352,7 @@ export const Content = z.object({
   skills: z.array(SkillDef),
   traits: z.array(TraitDef),
   backstories: z.array(BackstoryDef),
+  factions: z.array(FactionDef),
   thoughts: z.array(ThoughtDef),
   names: NameLists,
   /** Loot table for salvage rolls: item id -> [min, max]. */

@@ -77,6 +77,14 @@ export function WorldPanel() {
       ) : (
         <p class="hint">{t("world.pick_site")}</p>
       )}
+      <section>
+        <h4>{t("world.factions")}</h4>
+        {w.factions.map((f) => (
+          <p key={f.id} title={t(`fac.${f.id}.desc`)}>
+            {t(`fac.${f.id}`)} · <b class={f.relation === "hostile" ? "neg" : f.relation === "ally" ? "pos" : ""}>{t(`rel.${f.relation}`)}</b> ({f.goodwill > 0 ? `+${f.goodwill}` : f.goodwill})
+          </p>
+        ))}
+      </section>
       {w.expeditions.length > 0 && (
         <section>
           <h4>{t("world.away")}</h4>

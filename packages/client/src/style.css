@@ -202,3 +202,13 @@ body.cinematic #ui { display: none; }
 @media (max-width: 420px) {
   .toolbar button { font-size: 12px; padding-left: 4px; padding-right: 4px; }
 }
+
+/* Trade (A9) */
+.trademenu { max-width: min(620px, calc(100vw - 32px)); }
+.trademenu table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.trademenu td, .trademenu th { padding: 2px 4px; text-align: left; }
+.trademenu td button { min-width: 22px; padding: 0 4px; }
+.trademenu td b { display: inline-block; min-width: 26px; text-align: center; }
+.trademenu .neg, .worldmenu .neg { color: #ff8a70; }
+.worldmenu .pos { color: #9fd14a; }
+.caravanbanner { position: fixed; left: 50%; transform: translateX(-50%); bottom: 64px; background: rgba(27, 23, 20, 0.92); border: 1px solid #e3c25a; padding: 6px 10px; display: flex; gap: 10px; align-items: center; z-index: 5; max-width: calc(100vw - 32px); }

@@ -4,6 +4,7 @@
  * are dropped on load; survivors simply think again. Each format change adds a migration step.
  */
 import type { Expedition, WorldMap } from "./world.ts";
+import type { Caravan } from "./factions.ts";
 import type { Content } from "@wc/data";
 import { Game, type GameOptions } from "./game.ts";
 import type { Blueprint, ItemStack, Thing, Zone } from "./map.ts";
@@ -48,6 +49,8 @@ export interface SaveFile {
   goals: Record<string, boolean>;
   opinions?: [string, number][];
   world?: WorldMap | null;
+  goodwill?: Record<string, number>;
+  caravan?: Caravan | null;
   expeditions?: (Omit<Expedition, "pawns"> & { pawns: SavedPawn[] })[];
   bonds?: [string, string][];
 }
@@ -131,6 +134,8 @@ export function saveGame(game: Game): SaveFile {
     goals: { ...game.goals },
     opinions: [...game.opinions],
     world: game.world,
+    goodwill: { ...game.goodwill },
+    caravan: game.caravan,
     expeditions: game.expeditions.map((e) => ({ ...e, pawns: e.pawns.map((p) => pawnOut(game, p)) })),
     bonds: [...game.bonds],
   };
@@ -236,6 +241,8 @@ export function loadGame(content: Content, raw: SaveFile): Game {
   game.goals = { ...(data.goals ?? {}) };
   for (const [k, v] of data.opinions ?? []) game.opinions.set(k, v);
   game.world = data.world ?? null;
+  game.goodwill = { ...(data.goodwill ?? {}) };
+  game.caravan = data.caravan ?? null;
   game.expeditions = (data.expeditions ?? []).map((e) => ({ ...e, pawns: e.pawns.map((sp) => pawnIn(game, sp)) }));
   for (const [k, v] of data.bonds ?? []) game.bonds.set(k, v as "family" | "lover");
   game.story.raidsSurvived ??= 0;

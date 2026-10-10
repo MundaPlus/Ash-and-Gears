@@ -3,6 +3,7 @@ import { actions, useStore, type BuildOption } from "./store.ts";
 import { WorkGrid } from "./WorkGrid.tsx";
 import { ResearchPanel } from "./ResearchPanel.tsx";
 import { WorldPanel } from "./WorldPanel.tsx";
+import { TradePanel } from "./TradePanel.tsx";
 
 const BUILD_MENUS = ["structure", "furniture", "production", "power", "water", "defense", "floor"];
 const ORDERS = ["salvage", "deconstruct", "mine", "clear", "cut"] as const;
@@ -77,6 +78,17 @@ export function Toolbar() {
       {s.menu === "work" && <WorkGrid />}
       {s.menu === "research" && <ResearchPanel />}
       {s.menu === "world" && <WorldPanel />}
+      {s.menu === "trade" && s.caravan && <TradePanel />}
+      {s.caravan && s.menu !== "trade" && (
+        <div class="caravanbanner" data-testid="caravan-banner">
+          <span>
+            {t("fac." + s.caravan.faction)} · {t("trade.leaves", { h: s.caravan.hoursLeft })}
+          </span>
+          <button data-testid="open-trade" onClick={() => actions.openMenu("trade")}>
+            {t("trade.open")}
+          </button>
+        </div>
+      )}
 
       {s.toolLabel && (
         <div class="toolhint" data-testid="tool-hint">

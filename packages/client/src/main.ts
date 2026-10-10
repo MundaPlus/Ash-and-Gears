@@ -33,13 +33,13 @@ import { loadAiArt } from "./render/aiArt.ts";
 import { ART_SIZES, makeTextures, TILE, type ArtSettings } from "./render/textures.ts";
 import { WorldRenderer } from "./render/world.ts";
 import { Hud } from "./ui/Hud.tsx";
-import { actions, store, type BuildOption, type ColonistSummary, type PawnDetail, type WorkRow, type WorldUi } from "./ui/store.ts";
+import { actions, store, type BuildOption, type ColonistSummary, type PawnDetail, type WorkRow, type WorldUi, type CaravanUi } from "./ui/store.ts";
 
 /** Most sim ticks per frame, so a slow frame cannot snowball. */
 const MAX_TICKS_PER_FRAME = 12;
 const TOAST_SEC = 7;
 /** Big events pause the game so the player can react (spec 06). */
-const AUTO_PAUSE = new Set(["msg.raid", "msg.glow_hounds", "msg.rad_rats", "msg.rad_warning", "msg.downed", "msg.died"]);
+const AUTO_PAUSE = new Set(["msg.raid", "msg.raid_faction", "msg.glow_hounds", "msg.rad_rats", "msg.rad_warning", "msg.downed", "msg.died"]);
 
 const hex = (n: number) => `#${n.toString(16).padStart(6, "0")}`;
 
@@ -487,9 +487,28 @@ async function boot() {
       })),
       free: [...game.pawns.values()].filter((p) => p.faction === "colony" && !p.robot && !p.health.downed && !p.drafted).map((p) => ({ id: p.id, nick: p.nick })),
       outpostCost: Object.entries(sim.OUTPOST_COST).map(([item, n]) => ({ item, n })),
+      factions: game.reg.content.factions.map((f) => ({ id: f.id, goodwill: Math.round(sim.goodwill(game, f.id)), relation: sim.relationOf(game, f.id) })),
       problem: worldProblem,
     };
   }
+  let tradeProblem: string | null = null;
+  function caravanUi(): CaravanUi | null {
+    const c = game.caravan;
+    if (!c) return null;
+    const ids = new Set([...Object.keys(c.stock), ...game.reg.items.list.filter((d) => d.value > 0 && d.category !== "blueprint" && sim.countItems(game, d.id) > 0).map((d) => d.id)]);
+    return {
+      faction: c.faction,
+      hoursLeft: Math.max(0, Math.ceil((c.leaveAt - game.tick) / game.ticksPerHour)),
+      markup: sim.markup(game, c.faction),
+      rows: [...ids].map((id) => ({ id, yours: sim.countItems(game, id), theirs: c.stock[id] ?? 0, value: game.reg.items.get(id).value })),
+      problem: tradeProblem,
+    };
+  }
+  actions.trade = (buy, sell) => {
+    const p = sim.trade(game, buy, sell);
+    tradeProblem = p ? `trade.problem.${p}` : null;
+    store.set({ caravan: caravanUi() });
+  };
   actions.sendExpedition = (siteId, ids, outpost) => {
     const site = sim.ensureWorld(game).sites.find((s) => s.id === siteId);
     const pawns = ids.map((id) => game.pawns.get(id)).filter((p): p is sim.Pawn => !!p);
@@ -587,6 +606,9 @@ async function boot() {
       if (typeof params.part === "string") params.part = t(`part.${params.part}`);
       if (typeof params.cause === "string") params.cause = t(`cause.${params.cause}`);
       if (typeof params.project === "string") params.project = t(`research.${params.project}`);
+      if (typeof params.faction === "string") params.faction = t(`fac.${params.faction}`);
+      if (typeof params.site === "string") params.site = t(`site.${params.site}`);
+      if (typeof params.kind === "string") params.kind = t(`pawn.${params.kind}`);
       toasts.push({ id: toastId++, text: t(m.key, params), level: m.level, until: now + TOAST_SEC });
     }
     toasts = toasts.slice(-4);
@@ -706,6 +728,7 @@ async function boot() {
         colonists: colonists(),
         ...(store.state.menu === "work" ? { workRows: workRows() } : {}),
         ...(store.state.menu === "world" ? { world: worldUi() } : {}),
+        caravan: store.state.menu === "trade" || !!game.caravan !== !!store.state.caravan || (game.caravan && store.state.caravan && Math.ceil((game.caravan.leaveAt - game.tick) / game.ticksPerHour) !== store.state.caravan.hoursLeft) ? caravanUi() : store.state.caravan,
         ...(store.state.menu === "research" ? { research: researchRows() } : {}),
         ...(store.state.menu === "build" ? { buildOptions: buildRows() } : {}),
         pawn: sel ? pawnDetail(sel) : null,

@@ -78,7 +78,7 @@ export class PawnRenderer {
     body.anchor.set(0.5, 0.5);
     body.width = body.height = TILE;
     shadow.width = shadow.height = TILE;
-    const labelColor = p.faction === "colony" ? 0xefd8a4 : p.faction === "prisoner" || p.faction === "visitor" ? 0xe3c25a : 0xff8a70;
+    const labelColor = p.faction === "colony" ? 0xefd8a4 : p.faction === "prisoner" || p.faction === "visitor" || p.faction === "trader" ? 0xe3c25a : 0xff8a70;
     const label = new Text({ text: p.nick, style: { fontFamily: "monospace", fontSize: 11, fill: labelColor, stroke: { color: 0x1b1714, width: 3 } } });
     label.anchor.set(0.5, 0);
     label.position.set(0, 14);

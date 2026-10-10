@@ -8,7 +8,7 @@ import type { ItemStack } from "./map.ts";
 import type { Pos } from "./path.ts";
 import { manipulation, newHealth, type Health } from "./health.ts";
 
-export type Faction = "colony" | "raiders" | "wild" | "prisoner" | "visitor";
+export type Faction = "colony" | "raiders" | "wild" | "prisoner" | "visitor" | "trader";
 
 /** Player orders for drafted survivors. */
 export type Order = { kind: "move"; pos: Pos } | { kind: "attack"; target: number };
@@ -111,6 +111,8 @@ export interface Pawn {
   robot?: boolean;
   /** Robot charge 0..1. */
   charge?: number;
+  /** Named faction this raider, trader or prisoner belongs to (A9). */
+  origin?: string;
   /** Downed raider marked for capture (A6). */
   capture?: boolean;
   /** Prisoner: resistance to recruiting; 0 = ready to be asked (A6). */
