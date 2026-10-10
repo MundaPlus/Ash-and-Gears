@@ -70,5 +70,11 @@
   "crossbow": 1,
   "scrap_shotgun": 1,
   "bandage": 2,
-  "factory_manual": 3
+  "factory_manual": 3,
+  "wood_wall": 2,
+  "stone_wall": 1,
+  "ruin_wall": 2,
+  "wood_floor": 3,
+  "scrap_tiles": 3,
+  "stone_tiles": 2
 }
