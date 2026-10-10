@@ -8,7 +8,7 @@
 import type { Game } from "./game.ts";
 import { dropItems } from "./items.ts";
 import { addRad } from "./pawn.ts";
-import { exposureAt, isRoofed, type Exposure } from "./rooms.ts";
+import { exposureAt, type Exposure } from "./rooms.ts";
 
 export type WeatherKind = "clear" | "overcast" | "rain" | "toxic_rain" | "rad_cloud";
 
@@ -16,7 +16,9 @@ export type WeatherKind = "clear" | "overcast" | "rain" | "toxic_rain" | "rad_cl
 const DURATION: Record<WeatherKind, [number, number]> = { clear: [12, 40], overcast: [6, 20], rain: [3, 10], toxic_rain: [3, 8], rad_cloud: [5, 10] };
 const TEMP_OFFSET: Record<WeatherKind, number> = { clear: 0, overcast: -1, rain: -3, toxic_rain: -3, rad_cloud: -2 };
 /** Dose per in-game hour under the open sky during a cloud. */
-export const CLOUD_DOSE_PER_HOUR = 0.07;
+export /** Share of a cloud's dose inside a roofed room whose door opens straight outside. */
+const LEAKY_SHARE = 0.3;
+const CLOUD_DOSE_PER_HOUR = 0.07;
 const TOXIC_RAIN_DOSE_PER_HOUR = 0.02;
 
 /** Chance that one crop, water source or stack is contaminated, by shelter. */
@@ -74,7 +76,13 @@ export function tickWeather(game: Game): void {
   // Hourly effects.
   if (w.kind === "rad_cloud" || w.kind === "toxic_rain") {
     const dose = w.kind === "rad_cloud" ? CLOUD_DOSE_PER_HOUR : TOXIC_RAIN_DOSE_PER_HOUR;
-    for (const p of game.pawns.values()) if (!game.map.layers[p.layer].underground && !isRoofed(game, p.layer, p.x, p.y)) addRad(game, p, dose);
+    for (const p of game.pawns.values()) {
+      if (game.map.layers[p.layer].underground) continue;
+      // A roof keeps toxic rain off. A cloud seeps through a door that opens outside: a third of the dose.
+      const e = exposureAt(game, p.layer, p.x, p.y);
+      const share = e === "open" ? 1 : e === "leaky" && w.kind === "rad_cloud" ? LEAKY_SHARE : 0;
+      if (share > 0) addRad(game, p, dose * share);
+    }
   }
   // Toxic ground (glowing pools) gives a small dose to anyone standing on it.
   for (const p of game.pawns.values()) {

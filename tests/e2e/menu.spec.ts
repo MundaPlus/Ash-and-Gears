@@ -34,5 +34,8 @@ test("title screen, new game, save and load", async ({ page }, info) => {
   const loaded = await page.evaluate(() => (window as any).__game.game.tick);
   expect(loaded).toBeGreaterThanOrEqual(tick);
   expect(loaded).toBeLessThan(tick + 400);
+  // A loaded game starts paused: the clock does not move.
+  await page.waitForTimeout(800);
+  expect(await page.evaluate(() => (window as any).__game.game.tick)).toBe(loaded);
   expect(errors).toEqual([]);
 });

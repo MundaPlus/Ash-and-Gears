@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-11
+- Radiation clouds (user: "strive to be in a room with an airlock, or the bunker"). A room whose door opens straight outside now lets in a third of a cloud's dose; sealed rooms and underground stay safe. When a cloud comes, survivors look for the nearest sealed room (airlock or closed hall), else go underground by the stairs (caves, bunker), else any roof. They move on from a leaky room when something safer is in reach, and stay put (and keep working) when nothing better is. Banner and inspect texts say so (`packages/sim/src/ai.ts` `shelterRank`/`shelterJob`, `weather.ts`, `en.json`; test in `packages/sim/test/food.test.ts`).
+- A reload or a loaded save starts paused; a new game starts running (`packages/client/src/main.ts`; check in `tests/e2e/menu.spec.ts`) — user request.
+
 ## 2026-10-10
 - Fix: the mass Haul order did not show the "haul now" arrow until something else redrew the map. Marking a stack now redraws its tile (`packages/sim/src/hauling.ts` `haulNow`; test in `upper.test.ts`) — user report.
 - Fix: on narrower screens the tool hint covered the song name. The song name hides while a tool is active (`packages/client/src/ui/Hud.tsx`).
@@ -25,7 +29,6 @@
 - The inspect panel scrolls when it is too tall, and has a maximum height. Before, a long panel ran off the screen on phones (`packages/client/src/style.css`) — found with the new e2e test.
 - Tests: `ensureLinks` (new game reaches the bunker door, missing surface stairs come back on load, Mall Rats keeps stairs) (`packages/sim/test/links.test.ts`); item filter (scrap-only stockpile by a loader, partial category) (`packages/sim/test/haul.test.ts`); e2e stockpile filter, copy and paste (`tests/e2e/stockpile.spec.ts`).
 
-## 2026-10-11
 - Handover: a "First: restart the running services" section (pull, build, restart the `wasteland-colony` preview service, check it) (`handover.md`) — user request.
 - Plan: N4 remove old (not built) floors and salvage everything except multi-floor structures (`docs/spec/14-next-phase.md`, `handover.md`) — user request.
 - Layer links check (user request): on every new game and every load, stairs are repaired in pairs (stairs up always have stairs down above; stairs down have stairs up below), and if no path leads from the surface stairs to the old bunker's outer door, a cave tunnel leads to an old service shaft and a short tunnel to the door. Old saves get repaired on load. The Mall Rats clearing keeps stairs; the showcase-only route code is gone (`packages/sim/src/links.ts` `ensureLinks`; `game.ts`, `save.ts`, `scenarios.ts`, `showcase.ts`) — user report: stairs down missing near the settlement, bunker not reachable.
