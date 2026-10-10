@@ -10,6 +10,7 @@ import { Texture } from "pixi.js";
 import { CREATURES, FLOORS, HAIRS, ITEMS, PALETTES, parseGrid, scale2x, SHIRTS, terrainEdge, terrainGrid, terrainLayer, TERRAIN_VARIANTS, THINGS, lineVariant, rotateGrid, thingGrid, TURN_IN_LINE, wallVariant } from "@wc/data";
 import type { Registry } from "@wc/sim";
 import { aiTexture, aiWallTextures, type AiArt } from "./aiArt.ts";
+import { applyPrint, type PrintPeople } from "./print/textures.ts";
 
 /** World units per tile. Sprites are drawn to this size whatever their pixel size. */
 export const TILE = 32;
@@ -17,7 +18,12 @@ export const TILE = 32;
 export type ArtSize = "16" | "32" | "hybrid";
 export const ART_SIZES: ArtSize[] = ["16", "hybrid", "32"];
 
+export type ArtStyle = "print" | "pixel";
+export const ART_STYLES: ArtStyle[] = ["print", "pixel"];
+
 export interface ArtSettings {
+  /** "print" = Salvage Print (default), "pixel" = the hand-pixeled grids. */
+  style: ArtStyle;
   palette: string;
   size: ArtSize;
 }
@@ -58,6 +64,8 @@ export interface TextureSet {
   haul: Texture;
   /** Dull green-brown spots on spoiling food and bodies. */
   rot: Texture;
+  /** Salvage Print people: four facings and walking frames (absent in the pixel style). */
+  people?: PrintPeople;
 }
 
 function gridTexture(grid: number[][], colors: string[], remap?: Record<number, number>): Texture {
@@ -107,6 +115,11 @@ function fallback(color: string, glyph: string): Texture {
 }
 
 export function makeTextures(reg: Registry, art: ArtSettings, ai: AiArt = new Map()): TextureSet {
+  const pixel = makePixelTextures(reg, art, ai);
+  return art.style === "print" ? applyPrint(pixel, reg, art.palette) : pixel;
+}
+
+function makePixelTextures(reg: Registry, art: ArtSettings, ai: AiArt): TextureSet {
   const colors = PALETTES[art.palette] ?? PALETTES.rust;
   const palette = PALETTES[art.palette] ? art.palette : "rust";
   /** AI looks for an id: things and floors only at "32", details (items, characters) at "hybrid" and "32". */

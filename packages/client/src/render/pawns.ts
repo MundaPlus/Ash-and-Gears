@@ -19,6 +19,9 @@ interface View {
   zzz: Text;
   flag: Graphics;
   hp: Graphics;
+  shadow: Sprite;
+  /** Salvage Print: facing 0 S, 1 E, 2 N, 3 W (kept while standing). */
+  dir: number;
 }
 
 export class PawnRenderer {
@@ -49,6 +52,17 @@ export class PawnRenderer {
     const raider = this.tex.raiders[p.id % this.tex.raiders.length];
     if (creature.behavior === "human") return raider;
     return this.tex.creatures[creature.id] ?? raider;
+  }
+
+  /** Salvage Print frames for people ([facing][frame]), or null for creatures, robots and the pixel style. */
+  private printFrames(p: Pawn) {
+    const people = this.tex.people;
+    if (!people || p.robot) return null;
+    const creature = this.game.reg.content.creatures[p.creature];
+    if (creature.behavior !== "human") return null;
+    const raider = p.faction === "raiders" || p.faction === "prisoner";
+    const list = raider ? people.raiders : people.survivors;
+    return list[p.id % list.length];
   }
 
   /** New textures (palette or size changed). */
@@ -95,7 +109,7 @@ export class PawnRenderer {
     const hp = new Graphics();
     root.addChild(shadow, body, label, zzz, flag, hp);
     this.root.addChild(root);
-    return { root, body, label, zzz, flag, hp };
+    return { root, body, label, zzz, flag, hp, shadow, dir: 0 };
   }
 
   update(timeSec: number, zoom: number) {
@@ -148,7 +162,31 @@ export class PawnRenderer {
         // Walk bob: two hops per tile-ish; idle breathing is a smaller wave.
         v.body.y = moving ? -Math.abs(Math.sin(timeSec * 10 + p.id)) * 3 : Math.sin(timeSec * 2 + p.id) * 0.6;
       }
-      v.body.scale.x = Math.abs(v.body.scale.x) * p.facing * sz;
+      // Salvage Print people: a texture per facing and walking frame, with headroom above the tile.
+      const frames = this.printFrames(p);
+      v.shadow.visible = !frames;
+      if (frames) {
+        const next = p.path?.[0];
+        if (moving && next) {
+          const dx = next.x - p.x, dy = next.y - p.y;
+          v.dir = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 1 : dx < 0 ? 3 : v.dir) : dy > 0 ? 0 : 2;
+        } else if (p.job) v.dir = p.facing > 0 ? 1 : 3;
+        else if (!p.asleep && !p.health.downed) v.dir = 0;
+        const fr = moving ? 1 + (Math.floor(timeSec * 6 + p.id) % 2) : 0;
+        const h = this.tex.people!.headroom;
+        v.body.texture = frames[v.dir][fr];
+        v.body.anchor.set(0.5, (0.5 + h) / (1 + h));
+        v.body.width = TILE;
+        v.body.height = TILE * (1 + h);
+        if (!p.health.downed && !p.asleep) v.body.y = 0;
+      }
+      else {
+        // Pixel style: one square texture, mirrored for left and right.
+        v.body.anchor.set(0.5, 0.5);
+        v.body.width = v.body.height = TILE;
+        v.body.scale.x = Math.abs(v.body.scale.x) * p.facing * sz;
+      }
+
       v.flag.visible = p.drafted;
       // Health bar: shows when hurt.
       const hurt = Math.min(1, p.health.bloodLoss + pain(this.game, p));

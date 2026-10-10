@@ -5,7 +5,7 @@
  */
 import { t } from "@wc/data";
 import { useEffect, useState } from "preact/hooks";
-import { ART_SIZES } from "../render/textures.ts";
+import { ART_SIZES, ART_STYLES } from "../render/textures.ts";
 import { importSaveFile, listSlots, type SlotInfo } from "../storage.ts";
 import { clearMark, SESSION_SLOT } from "../session.ts";
 import { TICKS_PER_SECOND, unpackSave } from "@wc/sim";
@@ -272,6 +272,14 @@ export function GameMenu() {
         {tab === "settings" && (
           <div class="screen-body">
             <h3>{t("settings.art")}</h3>
+            <div class="choices">
+              {ART_STYLES.map((st) => (
+                <button key={st} class={s.art.style === st ? "on" : ""} data-testid={`style-${st}`} onClick={() => actions.setArt({ style: st })}>
+                  <b>{t(`style.${st}`)}</b>
+                  <small>{t(`style.${st}.desc`)}</small>
+                </button>
+              ))}
+            </div>
             <div class="choices">
               {["rust", "toxic", "ash"].map((p) => (
                 <button key={p} class={s.art.palette === p ? "on" : ""} data-testid={`palette-${p}`} onClick={() => actions.setArt({ palette: p })}>
