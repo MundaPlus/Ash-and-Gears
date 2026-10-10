@@ -67,3 +67,27 @@ describe("stale orders", () => {
     expect(w.thinkCooldown).toBe(0);
   });
 });
+
+describe("the character menu (direct orders)", () => {
+  it("offers attack on a standing enemy, put down on a downed one, and rescue and tend on a downed friend", async () => {
+    const { pawnActions, doPawnAction } = await import("../src/index.ts");
+    const g = Game.create(content, { seed: "menu", mapSize: 96, storyteller: "none" });
+    const [a, friend] = [...g.pawns.values()].filter((p) => p.faction === "colony");
+    const h = legless(g);
+    const standing = makeHostile(g, "rad_rat", "wild", 0, g.home.x + 7, g.home.y + 7, 88888, null);
+    g.pawns.set(standing.id, standing);
+    expect(pawnActions(g, a, standing)).toEqual(["attack"]);
+    expect(pawnActions(g, a, h)).toEqual(["put_down"]);
+    // A downed friend with a wound, outside a bed.
+    friend.health.injuries.push({ part: "l_leg", kind: "cut", dmg: 8, tended: 0 });
+    friend.health.downed = true;
+    g.spawnThing("scrap_bed", 0, g.home.x - 3, g.home.y - 3);
+    const opts = pawnActions(g, a, friend);
+    expect(opts).toContain("rescue");
+    expect(opts).toContain("tend");
+    // Put the hound down from the menu: the survivor goes at once.
+    expect(doPawnAction(g, a, h, "put_down")).toBe(true);
+    run(g, 1);
+    expect(g.pawns.has(h.id)).toBe(false);
+  });
+});

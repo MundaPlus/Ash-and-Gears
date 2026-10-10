@@ -35,7 +35,7 @@ export function setPrisonBed(game: Game, t: Thing, on: boolean): void {
   for (const p of game.pawns.values()) if (p.faction === "colony" && p.bedId === t.id && on) p.bedId = null;
 }
 
-function freePrisonBed(game: Game, p: Pawn): Thing | null {
+export function freePrisonBed(game: Game, p: Pawn): Thing | null {
   const used = new Set([...game.pawns.values()].filter((o) => o.faction === "prisoner").map((o) => o.bedId));
   const beds = [...game.things.values()]
     .filter((t) => t.forPrisoners && game.reg.things.list[t.def].bed && !used.has(t.id) && !isReserved(game, `thing:${t.id}`, p))

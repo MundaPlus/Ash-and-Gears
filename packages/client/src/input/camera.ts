@@ -32,7 +32,7 @@ export class Camera {
   /** Pointer id that pans with the right or middle mouse button. */
   private panPointer: number | null = null;
   private panStart: { x: number; y: number } | null = null;
-  onTap: (worldX: number, worldY: number) => void = () => {};
+  onTap: (worldX: number, worldY: number, touch: boolean) => void = () => {};
   /** Active tool (build, orders, zones). With a tool, left drag / one finger works the tool. */
   tool: ToolHandler | null = null;
 
@@ -196,7 +196,7 @@ export class Camera {
     this.pointers.delete(e.pointerId);
     if (wasTap) {
       const w = this.screenToWorld(e.offsetX, e.offsetY);
-      this.onTap(w.x, w.y);
+      this.onTap(w.x, w.y, e.pointerType === "touch");
     }
     if (this.pointers.size === 0) {
       this.dragStart = null;

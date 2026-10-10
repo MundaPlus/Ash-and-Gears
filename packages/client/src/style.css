@@ -321,3 +321,10 @@ body.cinematic #ui { display: none; }
 .researchmenu .proj .where { display: block; color: #d6ab6b; font-size: 11px; margin-top: 3px; white-space: normal; }
 .bills button.recipe { display: grid; text-align: left; gap: 1px; }
 .bills button.recipe small { font-size: 11px; opacity: 0.85; }
+
+/* Character menu (right-click another character with a survivor selected). */
+.pawnmenu { position: absolute; z-index: 40; transform: translate(12px, -50%); display: grid; gap: 2px; min-width: 150px;
+  background: var(--panel); border: 1px solid var(--rust); padding: 6px; box-shadow: 0 6px 18px #0008; }
+.pawnmenu b { font-size: 12px; color: var(--dim); padding: 0 4px 2px; }
+.pawnmenu button { text-align: left; min-height: 34px; padding: 0 10px; }
+.pawnmenu button.dim { color: var(--dim); }

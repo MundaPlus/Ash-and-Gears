@@ -10,3 +10,4 @@ import "./fire.ts";
 import "./research.ts";
 import "./power.ts";
 import "./logistics.ts";
+import "./orders.ts";

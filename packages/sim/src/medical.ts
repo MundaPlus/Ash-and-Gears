@@ -24,7 +24,7 @@ export function inBed(game: Game, p: Pawn): boolean {
   return th !== NO_THING && !!game.reg.things.list[game.things.get(th)!.def].bed;
 }
 
-function freeBed(game: Game, p: Pawn, patient: Pawn): { layer: number; x: number; y: number; id: number } | null {
+export function freeBed(game: Game, p: Pawn, patient: Pawn): { layer: number; x: number; y: number; id: number } | null {
   const occupied = new Set([...game.pawns.values()].filter((o) => o.id !== patient.id && inBed(game, o)).map((o) => `${o.layer},${o.x},${o.y}`));
   const beds = [...game.things.values()]
     .filter((t) => game.reg.things.list[t.def].bed && !t.forPrisoners && !occupied.has(`${t.layer},${t.x},${t.y}`) && !isReserved(game, `thing:${t.id}`, p))
@@ -32,20 +32,28 @@ function freeBed(game: Game, p: Pawn, patient: Pawn): { layer: number; x: number
   return beds.find((b) => game.path.canReach(p, b)) ?? null;
 }
 
-/** The care a doctor can give one patient now (rescue, feed or tend), or null. */
-function careFor(game: Game, p: Pawn, patient: Pawn): Job | null {
+export type CareKind = "rescue" | "feed" | "tend";
+
+/** One kind of care for a patient now (the player's menu), or null when it is not needed or not possible. */
+export function careJob(game: Game, p: Pawn, patient: Pawn, kind: CareKind): Job | null {
+  return careFor(game, p, patient, kind);
+}
+
+/** The care a doctor can give one patient now (rescue, feed or tend), or null. `only`: just that kind. */
+function careFor(game: Game, p: Pawn, patient: Pawn, only?: CareKind): Job | null {
   // 1. Rescue: downed and not in a bed, and there is a free bed.
-  if (patient.health.downed && !inBed(game, patient)) {
+  if ((!only || only === "rescue") && patient.health.downed && !inBed(game, patient)) {
     const bed = freeBed(game, p, patient);
     if (bed && reserve(game, `pawn:${patient.id}`, p) && reserve(game, `thing:${bed.id}`, p))
       return { kind: "rescue", stage: 0, targetId: patient.id, target: { layer: bed.layer, x: bed.x, y: bed.y } };
   }
   // 2. Feed: downed patients cannot eat or drink on their own.
-  if (patient.health.downed && (patient.needs.hunger < 0.4 || patient.needs.thirst < 0.4)) {
+  const feedAt = only === "feed" ? 0.7 : 0.4;
+  if ((!only || only === "feed") && patient.health.downed && (patient.needs.hunger < feedAt || patient.needs.thirst < feedAt)) {
     // The lower need first; when nothing is there for it, the other one.
     const order: ("water" | "food")[] = patient.needs.thirst < patient.needs.hunger ? ["water", "food"] : ["food", "water"];
     for (const want of order) {
-      if ((want === "water" ? patient.needs.thirst : patient.needs.hunger) >= 0.4) continue;
+      if ((want === "water" ? patient.needs.thirst : patient.needs.hunger) >= feedAt) continue;
       // Near death, dirty or glowing water and food are better than none.
       const desperate = (want === "water" ? patient.needs.thirst : patient.needs.hunger) < 0.15;
       const src = findItem(game, p, (d, cont) => game.reg.items.list[d].category === want && (desperate || !cont));
@@ -62,7 +70,7 @@ function careFor(game: Game, p: Pawn, patient: Pawn): Job | null {
     }
   }
   // 3. Tend: untended wounds. Downed or resting patients first; others also get tended where they stand.
-  if (untendedInjuries(patient).length > 0 && reserve(game, `pawn:${patient.id}`, p)) {
+  if ((!only || only === "tend") && untendedInjuries(patient).length > 0 && reserve(game, `pawn:${patient.id}`, p)) {
     const bandage = findItem(game, p, (d) => !!game.reg.items.list[d].medicine);
     if (bandage !== null && reserve(game, `item:${bandage}`, p)) return { kind: "tend", stage: 0, targetId: patient.id, data: { med: bandage } };
     return { kind: "tend", stage: 1, targetId: patient.id, data: { med: -1 } };
