@@ -2,7 +2,7 @@
 
 **A post-apocalyptic colony sim with progressive automation.** RimWorld's people, Factorio's machines, the end of the world. It runs in the browser on PC and phone.
 
-![A grown colony: a brick house, a conveyor line into an auto-crafter, wires, solar and wind power, a farm, survivors and robots](docs/images/hero.png)
+![A grown colony in the Salvage Print style: a stone house with beds, a conveyor line, wires, solar and wind power, a farm, survivors and robots](docs/images/hero.png)
 
 > **Play it in your browser:** use the website link in the *About* box of this repository (GitHub Pages). Nothing to install.
 
@@ -20,7 +20,7 @@ Three survivors climb out of the rubble. Salvage the old world, keep everyone fe
 - **A world outside:** a world map, expeditions, outposts, and four factions that trade or raid.
 - **A colony that lives:** recreation, daily schedules, graves, fuel for fires, wood that grows back, food that spoils.
 - **Mods:** content packs are plain JSON. See [docs/modding.md](docs/modding.md).
-- **Hand-pixeled 16 px art** in three palettes, and adaptive music.
+- **Two art styles:** Salvage Print (default), drawn in code like a worn two-color print and sharp at every zoom, or hand-pixeled 16 px art. Three palettes each, and adaptive music.
 
 ## Screenshots
 
@@ -55,7 +55,7 @@ Saves stay in your browser (IndexedDB). The game also autosaves. To keep a backu
 
 ### URL options
 
-`?showcase=1` opens a grown colony. `?seed=abc` sets the map seed. `?line=reactor|bus|orbit` starts a storyline. `?scen=lone|mall|bunker|rad_season` picks a scenario. `?palette=rust|toxic|ash` changes the palette.
+`?showcase=1` opens a grown colony. `?seed=abc` sets the map seed. `?line=reactor|bus|orbit` starts a storyline. `?scen=lone|mall|bunker|rad_season` picks a scenario. `?palette=rust|toxic|ash` changes the palette. `?style=pixel` uses the 16 px art.
 
 ## Run it yourself
 

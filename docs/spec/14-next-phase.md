@@ -62,3 +62,15 @@ Installable web app (manifest, service worker, offline cache of the build), touc
 1. S1, then the user's style review (gate).
 2. S2–S6.
 3. Phone app.
+
+## Progress (2026-10-11)
+
+| # | Status |
+|---|---|
+| S1 | Done. The user approved the style; raider masks and mohawks reworked after review |
+| S2 | Done: 15 terrains with variants and borders, 3 floors, walls in 6 materials, doors |
+| S3 | Done: 12 survivor looks and 3 raider looks, 4 facings, walking steps |
+| S4 | Done: all 61 things with turned versions, wires and pipes |
+| S5 | Done: all 38 items, creatures and robots; effects keep their animated overlays |
+| S6 | Done: Salvage Print is the default (user request), switch in Settings, README and presentation screenshots and clips retaken |
+| Phone app | Next |
