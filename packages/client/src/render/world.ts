@@ -3,7 +3,7 @@
  * Close up: chunk containers of sprites, hidden when off screen.
  * Far out: one small overview texture per layer (1 pixel per tile), so phones stay fast.
  */
-import { Container, Sprite, Texture } from "pixi.js";
+import { Container, Sprite, Text, Texture } from "pixi.js";
 import { CHUNK, NO_THING, type Game } from "@wc/sim";
 import { WALL_E, WALL_N, WALL_S, WALL_W } from "@wc/data";
 
@@ -16,6 +16,9 @@ import { TILE, variantAt, type TextureSet } from "./textures.ts";
 
 /** Below this zoom the overview texture replaces the chunks. */
 const OVERVIEW_ZOOM = 0.3;
+/** From this zoom on, stacks show how many items they hold (user request). */
+const COUNT_ZOOM = 1.4;
+const COUNT_STYLE = { fontFamily: "monospace", fontSize: 10, fontWeight: "bold" as const, fill: 0xefd8a4, stroke: { color: 0x1b1714, width: 3 } };
 
 interface Chunk {
   cx: number;
@@ -23,6 +26,8 @@ interface Chunk {
   root: Container;
   /** Items, things and marks of this chunk. Kept above all ground, so big things can reach into the next chunk. */
   top: Container;
+  /** Stack counts, shown only close up. */
+  counts: Container;
   version: number;
 }
 
@@ -58,7 +63,9 @@ export class WorldRenderer {
           top.position.copyFrom(root.position);
           top.visible = false;
           tops.addChild(top);
-          list.push({ cx, cy, root, top, version: -1 });
+          const counts = new Container();
+          top.addChild(counts);
+          list.push({ cx, cy, root, top, counts, version: -1 });
         }
       this.chunks.push(list);
       const ov = new Sprite(Texture.EMPTY);
@@ -96,6 +103,7 @@ export class WorldRenderer {
       const x0 = c.cx * span, y0 = c.cy * span;
       const vis = x0 < view.x + view.w && x0 + span > view.x && y0 < view.y + view.h && y0 + span > view.y;
       c.root.visible = c.top.visible = vis;
+      c.counts.visible = zoom >= COUNT_ZOOM;
       if (vis) {
         const L = this.game.map.layers[this.layer];
         const v = L.chunkVersion[c.cy * L.chunksX + c.cx];
@@ -107,7 +115,8 @@ export class WorldRenderer {
   private buildChunk(l: number, c: Chunk, version: number) {
     const g = this.game, L = g.map.layers[l];
     c.root.removeChildren().forEach((ch) => ch.destroy());
-    c.top.removeChildren().forEach((ch) => ch.destroy());
+    c.top.removeChildren().forEach((ch) => ch !== c.counts && ch.destroy());
+    c.counts.removeChildren().forEach((ch) => ch.destroy());
     const things: Sprite[] = [];
     const items: Sprite[] = [];
     const overlays: Sprite[] = [];
@@ -185,6 +194,13 @@ export class WorldRenderer {
           t.position.set(s.x + TILE * 0.075, s.y + TILE * 0.1);
           if (st.contaminated) t.tint = 0xb8ff6a;
           items.push(t);
+          if (st.count > 1) {
+            const n = new Text({ text: String(st.count), style: COUNT_STYLE });
+            n.resolution = 3;
+            n.anchor.set(1, 1);
+            n.position.set(s.x + TILE - 1, s.y + TILE);
+            c.counts.addChild(n);
+          }
           // Forbidden stacks: a small red cross in the corner.
           // Spoiling food and bodies: a few dull green-brown spots.
           if ((st.rot ?? 0) >= 0.5) {
@@ -273,6 +289,8 @@ export class WorldRenderer {
     for (const t of items) c.top.addChild(t);
     for (const t of things) c.top.addChild(t);
     for (const t of marks) c.top.addChild(t);
+    // Counts on top of everything in the chunk.
+    c.top.addChild(c.counts);
     c.version = version;
   }
 

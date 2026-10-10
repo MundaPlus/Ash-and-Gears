@@ -8,7 +8,7 @@ import { nearestHostile } from "./combat.ts";
 import { workPriority } from "./worktypes.ts";
 import { registerJob, registerWorkGiver } from "./jobs.ts";
 import type { Game } from "./game.ts";
-import { untendedInjuries } from "./health.ts";
+import { pain, untendedInjuries } from "./health.ts";
 import { dropItems, takeFromStack } from "./items.ts";
 import { armorScore, UPGRADE_MARGIN, weaponScore, wornIn } from "./gear.ts";
 import { NO_THING } from "./map.ts";
@@ -73,7 +73,10 @@ function careFor(game: Game, p: Pawn, patient: Pawn): Job | null {
 registerWorkGiver({
   workType: "doctor",
   give(game, p): Job | null {
-    for (const patient of game.pawns.values()) {
+    // The worst first: downed patients, then by pain and blood loss.
+    const severity = (q: Pawn) => (q.health.downed ? 10 : 0) + pain(game, q) + q.health.bloodLoss;
+    const patients = [...game.pawns.values()].sort((a, b) => severity(b) - severity(a));
+    for (const patient of patients) {
       // Doctors treat prisoners too (they are fed by wardens, not here).
       if ((patient.faction !== "colony" && patient.faction !== "prisoner") || patient.robot || patient.id === p.id || isReserved(game, `pawn:${patient.id}`, p)) continue;
       if (patient.faction === "prisoner") {

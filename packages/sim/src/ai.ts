@@ -19,7 +19,7 @@ import { haulJob } from "./hauling.ts";
 import { DIRS4 } from "./logistics.ts";
 import { relaxJob, slotNow } from "./recreation.ts";
 import { findOwnWork, ownWorkJob } from "./designations.ts";
-import { moving, tickHealthHourly } from "./health.ts";
+import { moving, pain, tickHealthHourly } from "./health.ts";
 import { draftedTick, fleeFrom, hostileTick, selfDefense, updateGroups } from "./hostile.ts";
 import { nearestHostile } from "./combat.ts";
 
@@ -288,6 +288,7 @@ export function think(game: Game, p: Pawn): void {
   }
   if (n.thirst < 0.45 && startJob(game, p, drinkJob(game, p, false))) return;
   if (n.hunger < 0.4 && startJob(game, p, eatJob(game, p, false))) return;
+  if (needsBedRest(game, p) && startJob(game, p, bedRestJob(game, p))) return;
   if (startJob(game, p, equipJob(game, p))) return;
   // Recreation: in joy hours until fun is full; in "any" hours when bored; in work hours only when joyless.
   // Never while hungry or thirsty: then food and water work comes first.
@@ -580,6 +581,46 @@ function sleepJob(game: Game, p: Pawn): Job | null {
   // No spot found: sleep where you stand.
   return { kind: "sleep", stage: 0, target: { layer: p.layer, x: p.x, y: p.y } };
 }
+
+// ---------------------------------------------------------------- jobs: bed rest
+
+/** Pain and blood loss above which a survivor who can still walk goes to bed (user: "badly hurt needs to rest"). */
+const REST_PAIN = 0.4, REST_BLOOD = 0.3;
+/** ...and below which they get up again. */
+const UP_PAIN = 0.2, UP_BLOOD = 0.15;
+
+export function needsBedRest(game: Game, p: Pawn, resting = false): boolean {
+  if (p.robot || p.health.downed || p.faction !== "colony") return false;
+  const pn = pain(game, p), bl = p.health.bloodLoss;
+  return resting ? pn > UP_PAIN || bl > UP_BLOOD : pn > REST_PAIN || bl > REST_BLOOD;
+}
+
+/** Go to a free bed and lie there while badly hurt. A bed heals faster, and doctors find the patient there. */
+export function bedRestJob(game: Game, p: Pawn): Job | null {
+  const bed = findBed(game, p);
+  if (bed === null || !reserve(game, `thing:${bed}`, p)) return null;
+  const t = game.things.get(bed)!;
+  return { kind: "bedrest", stage: 0, target: { layer: t.layer, x: t.x, y: t.y } };
+}
+
+registerJob("bedrest", (game, p, job) => {
+  if (job.stage === 0) {
+    if (!goTo(game, p, job.target!)) return "fail";
+    job.stage = 1;
+  }
+  if (job.stage === 1) {
+    if (!atGoal(p)) return "run";
+    p.asleep = true;
+    job.stage = 2;
+  }
+  // Get up for water or food (when there is food), or once well enough.
+  const hungry = p.needs.hunger < 0.25 && (game.tick + p.id) % 30 === 0 && findItem(game, p, (d) => game.reg.items.list[d].category === "food") !== null;
+  if (p.needs.thirst < 0.25 || hungry || !needsBedRest(game, p, true)) {
+    p.asleep = false;
+    return "done";
+  }
+  return "run";
+});
 
 registerJob("sleep", (game, p, job) => {
   if (job.stage === 0) {
