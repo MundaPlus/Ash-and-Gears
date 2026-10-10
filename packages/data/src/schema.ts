@@ -213,6 +213,22 @@ export const ItemDef = z.object({
       kind: z.enum(["cut", "blunt", "gunshot", "arrow", "bite", "burn"]),
     })
     .optional(),
+  /**
+   * Armor (N2): worn on the body (torso and arms, half on the legs) or the head. Each value is the share
+   * of that damage kind it stops (0..1). `move` slows the wearer (1 = no change).
+   */
+  armor: z
+    .object({
+      slot: z.enum(["body", "head"]),
+      cut: z.number().min(0).max(0.9).default(0),
+      blunt: z.number().min(0).max(0.9).default(0),
+      gunshot: z.number().min(0).max(0.9).default(0),
+      arrow: z.number().min(0).max(0.9).default(0),
+      bite: z.number().min(0).max(0.9).default(0),
+      burn: z.number().min(0).max(0.9).default(0),
+      move: z.number().positive().max(1).default(1),
+    })
+    .optional(),
   /** Medicine: wound tending quality. */
   medicine: z.number().min(0).max(1).optional(),
   /** Hydration per unit (water). */

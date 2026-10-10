@@ -15,6 +15,7 @@ export * from "./links.ts";
 export * from "./designations.ts";
 export * from "./construction.ts";
 export * from "./hauling.ts";
+export * from "./gear.ts";
 export * from "./rooms.ts";
 export * from "./weather.ts";
 export * from "./farming.ts";

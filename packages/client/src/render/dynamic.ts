@@ -271,7 +271,10 @@ export class DynamicRenderer {
     };
     const reach = (dx: number, dy: number) => {
       let x = t.x + dx, y = t.y + dy;
-      for (let k = 0; k < 4 && doorAt(x, y); k++) (x += dx), (y += dy);
+      for (let k = 0; k < 4 && doorAt(x, y); k++) {
+        x += dx;
+        y += dy;
+      }
       return wallAt(x, y);
     };
     const n = reach(0, -1), sth = reach(0, 1), e = reach(1, 0), w = reach(-1, 0);

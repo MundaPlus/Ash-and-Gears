@@ -3,6 +3,8 @@
  * Each job is a small state machine. A driver returns "run", "done" or "fail" every tick.
  * Work jobs (build, haul, mine...) register through registerJob/registerWorkGiver in later milestones.
  */
+import { armorMove } from "./gear.ts";
+import { urgentBillJob } from "./bills.ts";
 import type { Game } from "./game.ts";
 import { dropItems, takeFromStack } from "./items.ts";
 import { NO_THING, type ItemStack, type Thing } from "./map.ts";
@@ -84,7 +86,7 @@ export function moveSpeed(game: Game, p: Pawn): number {
   if (p.carrying) s *= 0.9;
   // A robot out of charge crawls on its last reserve, at a fifth of its speed.
   if (p.robot && (p.charge ?? 1) <= 0) s *= ROBOT_CRAWL;
-  return s * traitMult(game, p, (t) => t.moveSpeed);
+  return s * traitMult(game, p, (t) => t.moveSpeed) * armorMove(game, p);
 }
 
 /**
@@ -256,6 +258,7 @@ export function think(game: Game, p: Pawn): void {
     if (r === "idle") return;
     if (r && startJob(game, p, r)) return;
     if (workPriority(p, "haul") > 0 && startJob(game, p, haulJob(game, p, true))) return;
+  if (workPriority(p, "haul") > 0 && startJob(game, p, urgentBillJob(game, p))) return;
     for (const w of workOrder(p)) for (const g of workGivers) if (g.workType === w && startJob(game, p, g.give(game, p))) return;
     if ((p.charge ?? 1) < 0.9) {
       const rest = robotJob(game, { ...p, charge: 0.1 } as Pawn);
@@ -284,7 +287,7 @@ export function think(game: Game, p: Pawn): void {
   }
   if (n.thirst < 0.45 && startJob(game, p, drinkJob(game, p, false))) return;
   if (n.hunger < 0.4 && startJob(game, p, eatJob(game, p, false))) return;
-  if (p.weapon === null && startJob(game, p, equipJob(game, p))) return;
+  if (startJob(game, p, equipJob(game, p))) return;
   // Recreation: in joy hours until fun is full; in "any" hours when bored; in work hours only when joyless.
   // Never while hungry or thirsty: then food and water work comes first.
   const needy = n.hunger < 0.3 || n.thirst < 0.3;
@@ -292,6 +295,7 @@ export function think(game: Game, p: Pawn): void {
   if (wantFun && startJob(game, p, relaxJob(game, p))) return;
   // "Haul now" stacks come before all other work for anyone who hauls.
   if (workPriority(p, "haul") > 0 && startJob(game, p, haulJob(game, p, true))) return;
+  if (workPriority(p, "haul") > 0 && startJob(game, p, urgentBillJob(game, p))) return;
   for (const w of workOrder(p))
     for (const g of workGivers) if (g.workType === w && startJob(game, p, g.give(game, p))) return;
   // Nothing to do: take an order you gave yourself, or give yourself one (salvage junk or cut dead wood near home).

@@ -225,6 +225,220 @@
   "value": 60
  },
  {
+  "id": "hunting_rifle",
+  "color": "#84603f",
+  "glyph": "R",
+  "category": "weapon",
+  "stack": 1,
+  "weapon": {
+   "dmg": 16,
+   "cooldown": 95,
+   "range": 26,
+   "accuracy": 0.15,
+   "kind": "gunshot"
+  },
+  "value": 120
+ },
+ {
+  "id": "nail_gun",
+  "color": "#d6ab6b",
+  "glyph": "n",
+  "category": "weapon",
+  "stack": 1,
+  "weapon": {
+   "dmg": 6,
+   "cooldown": 22,
+   "range": 9,
+   "accuracy": 0.05,
+   "kind": "gunshot"
+  },
+  "value": 90
+ },
+ {
+  "id": "assault_rifle",
+  "color": "#3a2e26",
+  "glyph": "A",
+  "category": "weapon",
+  "stack": 1,
+  "weapon": {
+   "dmg": 10,
+   "cooldown": 24,
+   "range": 20,
+   "accuracy": 0.08,
+   "kind": "gunshot"
+  },
+  "value": 220
+ },
+ {
+  "id": "flamer",
+  "color": "#d9742e",
+  "glyph": "F",
+  "category": "weapon",
+  "stack": 1,
+  "weapon": {
+   "dmg": 13,
+   "cooldown": 45,
+   "range": 6,
+   "accuracy": 0.3,
+   "kind": "burn"
+  },
+  "value": 180
+ },
+ {
+  "id": "energy_rifle",
+  "color": "#9fd14a",
+  "glyph": "E",
+  "category": "weapon",
+  "stack": 1,
+  "weapon": {
+   "dmg": 22,
+   "cooldown": 60,
+   "range": 28,
+   "accuracy": 0.2,
+   "kind": "burn"
+  },
+  "value": 400
+ },
+ {
+  "id": "rag_armor",
+  "color": "#b0834e",
+  "glyph": "[",
+  "category": "apparel",
+  "stack": 1,
+  "armor": {
+   "slot": "body",
+   "cut": 0.12,
+   "blunt": 0.15,
+   "gunshot": 0.05,
+   "arrow": 0.08,
+   "bite": 0.15,
+   "burn": 0.05
+  },
+  "value": 15
+ },
+ {
+  "id": "scrap_vest",
+  "color": "#6b2b1a",
+  "glyph": "V",
+  "category": "apparel",
+  "stack": 1,
+  "armor": {
+   "slot": "body",
+   "cut": 0.3,
+   "blunt": 0.2,
+   "gunshot": 0.2,
+   "arrow": 0.25,
+   "bite": 0.3,
+   "burn": 0.1,
+   "move": 0.97
+  },
+  "value": 45
+ },
+ {
+  "id": "plate_vest",
+  "color": "#56616d",
+  "glyph": "P",
+  "category": "apparel",
+  "stack": 1,
+  "armor": {
+   "slot": "body",
+   "cut": 0.45,
+   "blunt": 0.35,
+   "gunshot": 0.35,
+   "arrow": 0.45,
+   "bite": 0.45,
+   "burn": 0.2,
+   "move": 0.93
+  },
+  "value": 110
+ },
+ {
+  "id": "plate_helmet",
+  "color": "#56616d",
+  "glyph": "h",
+  "category": "apparel",
+  "stack": 1,
+  "armor": {
+   "slot": "head",
+   "cut": 0.45,
+   "blunt": 0.35,
+   "gunshot": 0.35,
+   "arrow": 0.45,
+   "bite": 0.45,
+   "burn": 0.2
+  },
+  "value": 50
+ },
+ {
+  "id": "combat_armor",
+  "color": "#4a5a3a",
+  "glyph": "C",
+  "category": "apparel",
+  "stack": 1,
+  "armor": {
+   "slot": "body",
+   "cut": 0.6,
+   "blunt": 0.5,
+   "gunshot": 0.55,
+   "arrow": 0.6,
+   "bite": 0.6,
+   "burn": 0.35,
+   "move": 0.96
+  },
+  "value": 260
+ },
+ {
+  "id": "combat_helmet",
+  "color": "#4a5a3a",
+  "glyph": "c",
+  "category": "apparel",
+  "stack": 1,
+  "armor": {
+   "slot": "head",
+   "cut": 0.6,
+   "blunt": 0.5,
+   "gunshot": 0.55,
+   "arrow": 0.6,
+   "bite": 0.6,
+   "burn": 0.35
+  },
+  "value": 110
+ },
+ {
+  "id": "power_armor",
+  "color": "#3d4a52",
+  "glyph": "M",
+  "category": "apparel",
+  "stack": 1,
+  "armor": {
+   "slot": "body",
+   "cut": 0.75,
+   "blunt": 0.7,
+   "gunshot": 0.7,
+   "arrow": 0.75,
+   "bite": 0.75,
+   "burn": 0.55
+  },
+  "value": 600
+ },
+ {
+  "id": "power_helmet",
+  "color": "#3d4a52",
+  "glyph": "m",
+  "category": "apparel",
+  "stack": 1,
+  "armor": {
+   "slot": "head",
+   "cut": 0.75,
+   "blunt": 0.7,
+   "gunshot": 0.7,
+   "arrow": 0.75,
+   "bite": 0.75,
+   "burn": 0.55
+  },
+  "value": 220
+ },
+ {
   "id": "bandage",
   "color": "#f0f2f4",
   "glyph": "+",

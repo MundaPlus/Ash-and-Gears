@@ -92,6 +92,8 @@ User: "add structures with the same number of stories to the surface so we can g
 
 ### N2 — Weapon and armor tiers through research
 
+Status: done (2026-10-10). New research: rifling, advanced_weapons, energy_weapons, scrap_armor, plate_armor, composite_armor, power_armor. Armor: `ItemDef.armor` (slot body/head, share stopped per damage kind, `move`); `Pawn.armor`; `gear.ts`. Survivors swap to gear at least 15% better (checked every 600 ticks). Raiders get guns and armor by day. Print art for every piece and vest/helmet overlays on people (pixel style shows no overlay).
+
 User: "we need research for weapons and armors of different tiers."
 
 | Tier | Weapons (research) | Armor (research) |

@@ -58,13 +58,14 @@ export interface SaveFile {
   bonds?: [string, string][];
 }
 
-export type SavedPawn = Omit<Pawn, "skills" | "traits" | "backstory" | "memories" | "situational" | "creature" | "weapon" | "job" | "path" | "goal" | "carrying"> & {
+export type SavedPawn = Omit<Pawn, "skills" | "traits" | "backstory" | "memories" | "situational" | "creature" | "weapon" | "armor" | "job" | "path" | "goal" | "carrying"> & {
   skills: Record<string, { level: number; xp: number; passion: number }>;
   traits: string[];
   backstory?: [string, string];
   memories: { thought: string; expires: number }[];
   creature: string;
   weapon: string | null;
+  armor?: string[];
   carrying: { def: string; count: number; contaminated?: boolean } | null;
 };
 
@@ -304,6 +305,7 @@ export function pawnOut(game: Game, p: Pawn): SavedPawn {
     memories: p.memories.map((m) => ({ thought: reg.thoughts.list[m.thought].id, expires: m.expires })),
     creature: reg.content.creatures[p.creature].id,
     weapon: p.weapon !== null ? reg.items.list[p.weapon].id : null,
+    armor: p.armor.map((a) => reg.items.list[a].id),
     carrying: p.carrying ? { def: reg.items.list[p.carrying.def].id, count: p.carrying.count, ...(p.carrying.contaminated ? { contaminated: true } : {}) } : null,
   } as unknown as SavedPawn;
 }
@@ -322,6 +324,8 @@ export function pawnIn(game: Game, sp: SavedPawn): Pawn {
     needs: { ...sp.needs, fun: sp.needs.fun ?? 0.7 },
     creature: Math.max(0, reg.content.creatures.findIndex((c) => c.id === sp.creature)),
     weapon: sp.weapon && reg.items.has(sp.weapon) ? reg.items.idx(sp.weapon) : null,
+    // Saves from before armor (N2) have none.
+    armor: (sp.armor ?? []).filter((a) => reg.items.has(a)).map((a) => reg.items.idx(a)),
     carrying: null,
     job: null,
     path: null,

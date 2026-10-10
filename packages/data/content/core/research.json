@@ -261,5 +261,64 @@
   "prereqs": [
    "power_grid"
   ]
+ },
+ {
+  "id": "rifling",
+  "cost": 2600,
+  "tier": 2,
+  "prereqs": [
+   "gunsmithing",
+   "smelting"
+  ]
+ },
+ {
+  "id": "advanced_weapons",
+  "cost": 4200,
+  "tier": 3,
+  "prereqs": [
+   "rifling",
+   "plastics"
+  ]
+ },
+ {
+  "id": "energy_weapons",
+  "cost": 6500,
+  "tier": 4,
+  "prereqs": [
+   "advanced_weapons",
+   "electronics"
+  ]
+ },
+ {
+  "id": "scrap_armor",
+  "cost": 1600,
+  "tier": 1
+ },
+ {
+  "id": "plate_armor",
+  "cost": 2400,
+  "tier": 2,
+  "prereqs": [
+   "scrap_armor",
+   "smelting"
+  ]
+ },
+ {
+  "id": "composite_armor",
+  "cost": 4000,
+  "tier": 3,
+  "prereqs": [
+   "plate_armor",
+   "plastics"
+  ]
+ },
+ {
+  "id": "power_armor",
+  "cost": 6500,
+  "tier": 4,
+  "prereqs": [
+   "composite_armor",
+   "robotics"
+  ]
  }
 ]

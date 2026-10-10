@@ -611,6 +611,19 @@ async function boot() {
       const st = game.items.get(it)!;
       const name = t(`item.${game.reg.items.list[st.def].id}`);
       lines.push(t("inspect.items", { count: st.count, item: st.contaminated ? `${name} (${t("item.contaminated")})` : name }));
+      // Weapons and armor: what they do (N2).
+      const idef = game.reg.items.list[st.def];
+      if (idef.weapon) {
+        const w = idef.weapon;
+        lines.push(t("inspect.weapon", { dmg: w.dmg, kind: t(`dmg.${w.kind}`), range: w.range <= 1.5 ? 1 : w.range, rate: Math.round((60 * TICKS_PER_SECOND) / w.cooldown) }));
+      }
+      if (idef.armor) {
+        const a = idef.armor;
+        const pct = (v: number) => Math.round(v * 100);
+        lines.push(t(`inspect.armor_slot_${a.slot}`));
+        lines.push(t("inspect.armor", { cut: pct(a.cut), blunt: pct(a.blunt), gunshot: pct(a.gunshot), arrow: pct(a.arrow), bite: pct(a.bite), burn: pct(a.burn) }));
+        if (a.move < 1) lines.push(t("inspect.armor_move", { pct: pct(a.move) }));
+      }
       // A manual: which research it opens.
       const opens = game.reg.content.research.filter((r) => r.blueprint === game.reg.items.list[st.def].id);
       if (opens.length) lines.push(t("inspect.unlocks", { project: opens.map((r) => t(`research.${r.id}`)).join(", ") }));
@@ -793,6 +806,7 @@ async function boot() {
       drafted: p.drafted,
       downed: p.health.downed,
       weapon: p.weapon !== null ? game.reg.items.list[p.weapon].id : null,
+      armor: p.armor.map((a) => game.reg.items.list[a].id),
       bloodLoss: p.health.bloodLoss,
       pain: sim.pain(game, p),
       injuries: p.health.injuries.map((i) => ({ part: i.part, kind: i.kind, dmg: Math.round(i.dmg), tended: i.tended > 0 })),

@@ -32,6 +32,23 @@ const jug = (water: Ink): Draw => (p) => {
   p.shape(Print.rect(22, 30, 20, 18, 5), { fill: water, line: 1.4, shift: 0.5 });
 };
 
+/** A vest seen from the front, laid flat: two shoulders, a neck cut, and plates when `plated`. */
+const vest = (fill: Ink, trim: Ink, plated: boolean): Draw => (p) => {
+  drop(p, 20, 7);
+  p.shape([[16, 14], [26, 14], [32, 22], [38, 14], [48, 14], [50, 48], [14, 48]], { fill, tone: { ink: "soot", amount: 0.2 }, line: true });
+  if (plated) {
+    p.shape(Print.rect(20, 26, 10, 18, 2), { fill: trim, line: 1.4 });
+    p.shape(Print.rect(34, 26, 10, 18, 2), { fill: trim, line: 1.4 });
+  } else for (const y of [24, 32, 40]) p.line([[18, y], [46, y]], trim, 1.2);
+};
+/** A round helmet with a brim and a visor band. */
+const helmet = (fill: Ink, band: Ink): Draw => (p) => {
+  drop(p, 18, 6);
+  p.shape([[14, 40], [16, 24], [24, 16], [40, 16], [48, 24], [50, 40]], { fill, tone: { ink: "soot", amount: 0.25 }, line: true });
+  p.shape(Print.rect(12, 38, 40, 6, 2), { fill, line: 1.8 });
+  p.shape(Print.rect(20, 28, 24, 5, 2), { fill: band, line: 1.4 });
+};
+
 const ITEMS: Partial<Record<string, Draw>> = {
   scrap: (p) => {
     drop(p);
@@ -142,6 +159,46 @@ const ITEMS: Partial<Record<string, Draw>> = {
     p.shape(Print.rect(12, 32, 40, 5, 2), { fill: "slate", line: 1.6 });
     p.shape([[14, 36], [24, 36], [20, 48], [12, 46]], { fill: "ochreDark", line: 1.8 });
   },
+  hunting_rifle: (p) => {
+    drop(p);
+    p.shape(Print.capsule([10, 30], [50, 24], 2.4), { fill: "slateDark", line: 1.8 });
+    p.shape([[34, 26], [54, 22], [56, 30], [40, 34]], { fill: "ochreDark", tone: { ink: "hair", amount: 0.3 }, line: 1.8 });
+    p.shape(Print.rect(26, 20, 10, 4, 1.5), { fill: "slate", line: 1.4 }); // scope
+  },
+  nail_gun: (p) => {
+    drop(p);
+    p.shape(Print.rect(14, 22, 30, 12, 3), { fill: "ochre", tone: { ink: "ochreDark", amount: 0.3 }, line: 2 });
+    p.shape(Print.rect(42, 25, 8, 6, 1.5), { fill: "slateDark", line: 1.6 });
+    p.shape([[20, 34], [30, 34], [28, 48], [18, 48]], { fill: "soot", line: 1.8 });
+    p.shape(Print.rect(30, 34, 10, 9, 1.5), { fill: "slate", line: 1.4 }); // nail strip
+  },
+  assault_rifle: (p) => {
+    drop(p);
+    p.shape(Print.rect(10, 24, 44, 8, 2), { fill: "soot", line: 2 });
+    p.shape([[28, 32], [36, 32], [38, 46], [30, 46]], { fill: "slateDark", line: 1.8 }); // magazine
+    p.shape([[10, 26], [4, 30], [6, 38], [14, 32]], { fill: "slateDark", line: 1.8 }); // stock
+    p.shape(Print.rect(22, 19, 12, 5, 1.5), { fill: "slate", line: 1.4 });
+  },
+  flamer: (p) => {
+    drop(p);
+    p.shape(Print.ellipse(22, 34, 10, 12), { fill: "rust", tone: { ink: "rustDark", amount: 0.4 }, line: true }); // tank
+    p.shape(Print.capsule([28, 30], [54, 22], 2.6), { fill: "slateDark", line: 1.8 });
+    p.shape(Print.ellipse(55, 21, 3, 3), { fill: "glow", line: 1.2 });
+  },
+  energy_rifle: (p) => {
+    drop(p);
+    p.shape([[8, 30], [16, 22], [52, 22], [56, 28], [52, 34], [16, 34]], { fill: "tealDark", tone: { ink: "soot", amount: 0.25 }, line: 2 });
+    p.shape(Print.rect(22, 25, 22, 6, 2), { fill: "glow", tone: { ink: "teal", amount: 0.3 }, line: 1.2 });
+    p.shape([[24, 34], [32, 34], [30, 46], [22, 46]], { fill: "slateDark", line: 1.8 });
+  },
+  rag_armor: vest("ochre", "ochreDark", false),
+  scrap_vest: vest("rustDark", "slate", true),
+  plate_vest: vest("slate", "slateDark", true),
+  combat_armor: vest("tealDark", "soot", true),
+  power_armor: vest("slateDark", "glow", true),
+  plate_helmet: helmet("slate", "slateDark"),
+  combat_helmet: helmet("tealDark", "soot"),
+  power_helmet: helmet("slateDark", "glow"),
   bandage: (p) => {
     drop(p, 14, 6);
     p.shape(Print.ellipse(32, 32, 14, 12), { fill: "bone", tone: { ink: "paper", amount: 0.4 }, line: true });

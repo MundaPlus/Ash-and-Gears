@@ -22,6 +22,8 @@ interface View {
   shadow: Sprite;
   /** Salvage Print: facing 0 S, 1 E, 2 N, 3 W (kept while standing). */
   dir: number;
+  /** Worn armor drawn over the body (vest, helmet); children of the body so they move and turn with it. */
+  gear: Sprite[];
 }
 
 export class PawnRenderer {
@@ -107,9 +109,12 @@ export class PawnRenderer {
     flag.visible = false;
     // Health bar for hostiles and hurt survivors.
     const hp = new Graphics();
+    const gear = [new Sprite(), new Sprite()];
+    for (const g of gear) g.visible = false;
+    body.addChild(...gear);
     root.addChild(shadow, body, label, zzz, flag, hp);
     this.root.addChild(root);
-    return { root, body, label, zzz, flag, hp, shadow, dir: 0 };
+    return { root, body, label, zzz, flag, hp, shadow, dir: 0, gear };
   }
 
   update(timeSec: number, zoom: number) {
@@ -179,9 +184,21 @@ export class PawnRenderer {
         v.body.width = TILE;
         v.body.height = TILE * (1 + h);
         if (!p.health.downed && !p.asleep) v.body.y = 0;
+        // Armor over the body, body first, then the helmet (N2).
+        const isHead = (a: number) => (this.game.reg.items.list[a].armor?.slot === "head" ? 1 : 0);
+        const worn = [...p.armor].sort((a, b) => isHead(a) - isHead(b));
+        v.gear.forEach((g, k) => {
+          const set = worn[k] !== undefined ? this.tex.people!.armor[this.game.reg.items.list[worn[k]].id] : undefined;
+          g.visible = !!set;
+          if (set) {
+            g.texture = set[v.dir];
+            g.anchor.copyFrom(v.body.anchor);
+          }
+        });
       }
       else {
-        // Pixel style: one square texture, mirrored for left and right.
+        // Pixel style: one square texture, mirrored for left and right (no armor drawn).
+        for (const g of v.gear) g.visible = false;
         v.body.anchor.set(0.5, 0.5);
         v.body.width = v.body.height = TILE;
         v.body.scale.x = Math.abs(v.body.scale.x) * p.facing * sz;

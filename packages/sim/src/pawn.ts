@@ -101,6 +101,8 @@ export interface Pawn {
   order: Order | null;
   /** Equipped weapon (item index), or null for fists / natural attack. */
   weapon: number | null;
+  /** Worn armor (item indices): at most one for the body and one for the head (N2). */
+  armor: number[];
   /** Ticks until the next attack. */
   cooldown: number;
   /** Raid or pack this hostile belongs to. */
@@ -266,6 +268,7 @@ export function makeSurvivor(game: Game, layer: number, x: number, y: number, us
     drafted: false,
     order: null,
     weapon: null,
+    armor: [],
     cooldown: 0,
     group: null,
   };

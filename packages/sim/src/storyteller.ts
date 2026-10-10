@@ -61,6 +61,18 @@ function weight(game: Game, kind: EventKind): number {
   }
 }
 
+/** Raider armor by day (N2): rags early, scrap vests, then plate and later combat armor for some. */
+function raiderArmor(game: Game, day: number): number[] {
+  const r = game.aiRng.next();
+  const pick: string[] =
+    day >= 60 && r < 0.3 ? ["combat_armor", "combat_helmet"]
+    : day >= 35 && r < 0.45 ? ["plate_vest", "plate_helmet"]
+    : day >= 20 && r < 0.6 ? ["scrap_vest"]
+    : day >= 8 && r < 0.5 ? ["rag_armor"]
+    : [];
+  return pick.filter((id) => game.reg.items.has(id)).map((id) => game.reg.items.idx(id));
+}
+
 /** Spawn point on a walkable map edge tile, away from home. */
 export function edgeSpawn(game: Game): { x: number; y: number } {
   const { w, h } = game.map;
@@ -81,6 +93,9 @@ function spawnGroup(game: Game, kind: "raid" | "rad_rats" | "glow_hounds", size:
   // Early raiders carry mostly melee junk; guns get common as the days go by.
   const day = game.tick / game.ticksPerDay;
   const weapons = day < 15 ? ["pipe", "pipe", "machete", "machete", "pipe_pistol"] : ["pipe", "machete", "pipe_pistol", "pipe_pistol", "crossbow", "scrap_shotgun"];
+  // Better guns show up late (N2).
+  if (day >= 30) weapons.push("hunting_rifle", "nail_gun");
+  if (day >= 55) weapons.push("assault_rifle", "hunting_rifle");
   for (let i = 0; i < size; i++) {
     let x = at.x, y = at.y;
     for (let k = 0; k < 10; k++) {
@@ -99,6 +114,7 @@ function spawnGroup(game: Game, kind: "raid" | "rad_rats" | "glow_hounds", size:
       equipRaider(game, p, faction);
       if (day < 15) p.weapon = melee;
     }
+    if (kind === "raid") p.armor = raiderArmor(game, day);
     game.pawns.set(p.id, p);
   }
   // Later raiders carry hacking gear: a third of raids take over one colony robot (B6).
