@@ -1,6 +1,7 @@
 # Changelog
 
 ## 2026-10-10
+- Doors (Salvage Print) follow the wall line through neighboring doors to the first wall on each side. Walls at both ends of one line decide the direction. Before, a wall touching a double door from the side turned it the wrong way (`packages/client/src/render/dynamic.ts`) — user report: double doors in left and right walls.
 - Music (user: more songs, longer, they change too often, show the song): 10 new generated songs of 3 to 4 minutes (the generator gives long songs more sections, because YuE2 stops when the sections run out). A song now plays to its end, even when day turns to night or danger shows up. Then 12 to 30 quiet seconds pass, and the next song fits the mood of that moment. Only combat cuts in at once. The song name shows left of the calendar (hidden on phones) (`packages/client/src/audio.ts`, `ui/Hud.tsx`, `ui/store.ts`, `main.ts`, `style.css`, `music.*` keys in `en.json`, `tools/audio/comfy-music.ts`, `packages/client/public/music/`).
 - Songs stream from their files (one `<audio>` element per playing song). Before, every song was decoded into memory at start: about 0.4 GB for 13 songs, and 1.3 GB with the new ones (`packages/client/src/audio.ts`) — possible cause of the local freeze report.
 - Doors (Salvage Print) count wall plans as walls when they choose their direction. A door built before its walls now stands the right way between the planned walls (`packages/client/src/render/dynamic.ts`) — user report.
