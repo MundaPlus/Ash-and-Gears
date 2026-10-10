@@ -82,8 +82,8 @@ describe("weapon and armor tiers (N2)", () => {
   });
 });
 
-describe("water at the well comes first", () => {
-  it("a busy colony still fills the well's jugs when water runs low", () => {
+describe("water at the well comes first within hauling", () => {
+  it("a hauler fills the well's jugs before other hauling, even with salvage all around", () => {
     const g = newGame("busywell");
     const { x: hx, y: hy } = g.home;
     clearArea(g, hx - 6, hy - 6, 2);
@@ -96,6 +96,10 @@ describe("water at the well comes first", () => {
         g.spawnThing("scrap_pile", 0, hx + 8 + dx, hy + dy);
         designate(g, "salvage", 0, hx + 8 + dx, hy + dy);
       }
+    // The player's say: one survivor hauls first (priority 1). The rest salvage.
+    const [hauler] = colony(g);
+    hauler.work = { ...hauler.work, haul: 1 };
+    delete hauler.noWork;
     run(g, 6);
     expect(countItems(g, "clean_water")).toBeGreaterThanOrEqual(5);
   });

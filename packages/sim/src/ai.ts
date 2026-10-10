@@ -4,8 +4,6 @@
  * Work jobs (build, haul, mine...) register through registerJob/registerWorkGiver in later milestones.
  */
 import { armorMove } from "./gear.ts";
-import { urgentBillJob } from "./bills.ts";
-import { refuelJob } from "./power.ts";
 import type { Game } from "./game.ts";
 import { dropItems, takeFromStack } from "./items.ts";
 import { NO_THING, type ItemStack, type Thing } from "./map.ts";
@@ -14,7 +12,7 @@ import { isRoofed } from "./rooms.ts";
 import type { Pos } from "./path.ts";
 import { addMemory, addRad, hasTraitFlag, traitMult, type Job, type Pawn } from "./pawn.ts";
 import { isContaminatedThing } from "./weather.ts";
-import { workOrder, workPriority } from "./worktypes.ts";
+import { workOrder, workPriority, type WorkType } from "./worktypes.ts";
 import { haulJob } from "./hauling.ts";
 import { DIRS4 } from "./logistics.ts";
 import { relaxJob, slotNow } from "./recreation.ts";
@@ -210,6 +208,10 @@ export function tickPawns(game: Game): void {
         continue;
       }
     }
+    if (p.job && (game.tick + p.id) % PREEMPT_EVERY === 0 && preemptWork(game, p)) {
+      tickMove(game, p);
+      continue;
+    }
     if (p.job) {
       const driver = drivers.get(p.job.kind);
       const r: JobResult = driver ? driver(game, p, p.job) : "fail";
@@ -250,6 +252,49 @@ function startJob(game: Game, p: Pawn, job: Job | null): boolean {
   return true;
 }
 
+/** Orders a survivor gave itself: any real work takes over. */
+function startIdle(game: Game, p: Pawn, job: Job | null): boolean {
+  if (job) job.workType = "idle";
+  return startJob(game, p, job);
+}
+
+/** Take the first job any giver of this work type offers. The job remembers its work type. */
+function startWork(game: Game, p: Pawn, w: string): boolean {
+  for (const g of workGivers) {
+    if (g.workType !== w) continue;
+    const job = g.give(game, p);
+    if (job) {
+      job.workType = w;
+      p.job = job;
+      return true;
+    }
+  }
+  return false;
+}
+
+/** Ticks between two looks for more important work while working. */
+const PREEMPT_EVERY = 60;
+
+/**
+ * While working, look now and then for work that ranks higher (better priority number, or the same
+ * number and an earlier column). If there is some, drop the current job and take it.
+ */
+function preemptWork(game: Game, p: Pawn): boolean {
+  const cur = p.job?.workType;
+  if (!cur || p.drafted || p.mentalBreak) return false;
+  const order = workOrder(p);
+  const rank = cur === "idle" ? order.length : order.indexOf(cur as WorkType);
+  for (const w of order.slice(0, Math.max(0, rank))) {
+    if (!workGivers.some((g) => g.workType === w && g.give(game, p))) {
+      continue;
+    }
+    // Found: drop the old job (its reservations go too), then take the new one fresh.
+    endJob(game, p, false);
+    if (startWork(game, p, w)) return true;
+  }
+  return false;
+}
+
 /** The decision tree. Order matters: survival first, then schedule, then work, then idle. */
 export function think(game: Game, p: Pawn): void {
   const n = p.needs;
@@ -259,8 +304,7 @@ export function think(game: Game, p: Pawn): void {
     if (r === "idle") return;
     if (r && startJob(game, p, r)) return;
     if (workPriority(p, "haul") > 0 && startJob(game, p, haulJob(game, p, true))) return;
-  if (workPriority(p, "haul") > 0 && (startJob(game, p, urgentBillJob(game, p)) || startJob(game, p, refuelJob(game, p, 0.25)))) return;
-    for (const w of workOrder(p)) for (const g of workGivers) if (g.workType === w && startJob(game, p, g.give(game, p))) return;
+    for (const w of workOrder(p)) if (startWork(game, p, w)) return;
     if ((p.charge ?? 1) < 0.9) {
       const rest = robotJob(game, { ...p, charge: 0.1 } as Pawn);
       if (rest && rest !== "idle" && startJob(game, p, rest)) return;
@@ -288,7 +332,6 @@ export function think(game: Game, p: Pawn): void {
   }
   if (n.thirst < 0.45 && startJob(game, p, drinkJob(game, p, false))) return;
   if (n.hunger < 0.4 && startJob(game, p, eatJob(game, p, false))) return;
-  if (needsBedRest(game, p) && startJob(game, p, bedRestJob(game, p))) return;
   if (startJob(game, p, equipJob(game, p))) return;
   // Recreation: in joy hours until fun is full; in "any" hours when bored; in work hours only when joyless.
   // Never while hungry or thirsty: then food and water work comes first.
@@ -297,12 +340,11 @@ export function think(game: Game, p: Pawn): void {
   if (wantFun && startJob(game, p, relaxJob(game, p))) return;
   // "Haul now" stacks come before all other work for anyone who hauls.
   if (workPriority(p, "haul") > 0 && startJob(game, p, haulJob(game, p, true))) return;
-  if (workPriority(p, "haul") > 0 && (startJob(game, p, urgentBillJob(game, p)) || startJob(game, p, refuelJob(game, p, 0.25)))) return;
-  for (const w of workOrder(p))
-    for (const g of workGivers) if (g.workType === w && startJob(game, p, g.give(game, p))) return;
+  // Work (user: the priorities decide every choice): best priority number first, then column order.
+  for (const w of workOrder(p)) if (startWork(game, p, w)) return;
   // Nothing to do: take an order you gave yourself, or give yourself one (salvage junk or cut dead wood near home).
-  if (startJob(game, p, ownWorkJob(game, p))) return;
-  if (findOwnWork(game, p) && startJob(game, p, ownWorkJob(game, p))) return;
+  if (startIdle(game, p, ownWorkJob(game, p))) return;
+  if (findOwnWork(game, p) && startIdle(game, p, ownWorkJob(game, p))) return;
   startJob(game, p, wanderJob(game, p, false));
 }
 

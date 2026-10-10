@@ -45,6 +45,8 @@ export interface Job {
   until?: number;
   /** Job-specific extra data. */
   data?: Record<string, number | string | boolean>;
+  /** The work type this job came from ("idle" for orders a survivor gave itself). Higher work may take over. */
+  workType?: string;
 }
 
 export interface MentalBreak {

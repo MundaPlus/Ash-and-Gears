@@ -259,6 +259,8 @@ export function refuelJob(game: Game, p: Pawn, below = 0.5, want: (t: Thing) => 
 }
 
 registerWorkGiver({ workType: "haul", give: (game, p) => refuelJob(game, p) });
+// Within hauling, a fire or generator running low comes first.
+registerWorkGiver({ workType: "haul", give: (game, p) => refuelJob(game, p, 0.25) }, true);
 
 /**
  * Cooks light their own fire (user report: "the campfire never gets refueled, and cooks make no meals").

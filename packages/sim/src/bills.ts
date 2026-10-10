@@ -153,6 +153,7 @@ for (const wt of ["cook", "craft", "haul"] as WorkType[]) registerWorkGiver({ wo
 export function urgentBillJob(game: Game, p: Pawn): Job | null {
   return billJob(game, p, "haul", true);
 }
+registerWorkGiver({ workType: "haul", give: urgentBillJob }, true);
 
 /** Inputs still missing for the current input slot. */
 function missingNow(r: RecipeDef, job: Job): number {
