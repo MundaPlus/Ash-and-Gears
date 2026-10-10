@@ -7,7 +7,9 @@ import { Texture } from "pixi.js";
 import type { Registry } from "@wc/sim";
 import { INK_SETS, Print, type Ink } from "./kit.ts";
 import { doorTile, floorTile, terrainEdgeTile, terrainTile, wallTile } from "./ground.ts";
-import { battery, bed, bench, conveyor, person, PERSON_HEADROOM, RAIDER, type Facing, type Look } from "./sprites.ts";
+import { person, PERSON_HEADROOM, RAIDER, type Facing, type Look } from "./sprites.ts";
+import { lineTile, PRINT_THINGS } from "./things.ts";
+import { creatureTile, itemTile } from "./items.ts";
 import type { TextureSet } from "../textures.ts";
 
 /** Texture pixels per tile. 80 keeps the halftone dot grid whole across tiles. */
@@ -48,12 +50,7 @@ function tex(w: number, h: number, inks: Record<Ink, string>, seed: number, draw
 }
 
 /** Things with a print drawing: id -> draw (local units, the thing's own footprint). */
-const THINGS: Partial<Record<string, (p: Print) => void>> = {
-  scrap_bed: (p) => bed(p),
-  scrap_bench: (p) => bench(p),
-  battery: (p) => battery(p, 0.75),
-  conveyor: (p) => conveyor(p, 0),
-};
+const THINGS = PRINT_THINGS;
 
 /** Turn a drawing by quarter turns inside its footprint (w x h tiles before turning). */
 function turned(w: number, h: number, rot: number, inks: Record<Ink, string>, seed: number, draw: (p: Print) => void): Texture {
@@ -100,11 +97,26 @@ export function applyPrint(set: TextureSet, reg: Registry, palette: string): Tex
     }),
   );
   const thingsTurned = set.thingsTurned.map((t, i) => thingsRot[1][i] ?? t);
+  // Wires and pipes join their neighbors; stubs are the wire ends under a machine.
+  const lines = reg.things.list.map((d, i) => (set.lines[i] ? Array.from({ length: 16 }, (_, m) => tex(1, 1, inks, i * 16 + m, (p) => lineTile(p, d.pipe ? "pipe" : "wire", m))) : null));
+  const stubs = set.stubs.length ? set.stubs.map((_, m) => tex(1, 1, inks, m, (p) => m && lineTile(p, "wire", m))) : set.stubs;
   const frames = (look: Look, seed: number) => FACINGS.map((f) => [0, 1, 2].map((fr) => tex(1, 1 + PERSON_HEADROOM, inks, seed, (p) => person(p, f, fr, look), PERSON_HEADROOM)));
   const people: PrintPeople = {
     survivors: set.survivors.map((_, k) => frames(survivorLook(k), 100 + k)),
     raiders: RAIDER_LOOKS.map((l, k) => frames(l, 200 + k)),
     headroom: PERSON_HEADROOM,
   };
-  return { ...set, terrain, terrainEdges, floors, walls, things, thingsRot, thingsTurned, people };
+  const items = reg.items.list.map((d, i) => {
+    let ok = false;
+    const t = tex(1, 1, inks, i, (p) => (ok = itemTile(p, d.id)));
+    return ok ? t : set.items[i];
+  });
+  const creatures = Object.fromEntries(
+    Object.entries(set.creatures).map(([id, old]) => {
+      let ok = false;
+      const t = tex(1, 1, inks, id.length, (p) => (ok = creatureTile(p, id)));
+      return [id, ok ? t : old];
+    }),
+  );
+  return { ...set, terrain, terrainEdges, floors, walls, things, thingsRot, thingsTurned, lines, stubs, items, creatures, people };
 }
