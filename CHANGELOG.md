@@ -1,6 +1,7 @@
 # Changelog
 
 ## 2026-10-11
+- Make queue: every workbench has a queue of up to 5 orders ("Components x3"), done in order before the keep-in-stock bills. A "Make..." button opens the Make window: click a recipe to queue one (Shift+click for five), change counts, move orders up, remove them. Benches and research desks have a "Research" button that opens the research menu (`packages/sim/src/bills.ts` `queueAdd`, `queueSet`, `queueUp`; `map.ts`; `packages/client/src/ui/MakeWindow.tsx`, `Hud.tsx`, `store.ts`, `main.ts`, `style.css`; i18n; test `packages/sim/test/queue.test.ts`) — user request.
 - Fix: a pawn could stand inside a solid thing (a robot on a wind turbine). Every 30 ticks, anyone on a blocked tile is moved to the nearest free tile (`packages/sim/src/ai.ts` `unstick`; test in `packages/sim/test/robots.test.ts`) — user report.
 - README rewritten for GitHub: hero screenshot, features, screenshot table, controls, saves, run and publish steps, development and layout; images in `docs/images/` (hero, four gallery shots, a 1280x640 social preview) (`README.md`, `docs/images/`).
 - A robot with no charge left crawls at a fifth of its speed to the nearest bay, even one without power, and waits there; it charges as soon as the bay has power or stored charge. Repairs need power too. A charging robot is no longer cut off by the 6-hour job limit (`packages/sim/src/robots.ts`, `ai.ts`; test in `packages/sim/test/robots.test.ts`) — user request.

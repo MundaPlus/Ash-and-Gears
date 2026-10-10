@@ -430,6 +430,8 @@ async function boot() {
     let title = L.floor[i] ? t(`floor.${game.reg.floors.list[L.floor[i] - 1].id}`) : t(`terrain.${td.id}`);
     const th = L.thing[i];
     let bills: { benchId: number; recipe: string; target: number; stock: number }[] | undefined;
+    let make: { benchId: number; queue: { recipe: string; left: number }[]; recipes: { id: string; inputs: string }[] } | undefined;
+    let researchLink = false;
     let crafter: { thingId: number; current: string | null; options: string[] } | undefined;
     let filter: { thingId: number; current: string | null; options: string[] } | undefined;
     let power: { thingId: number; priority?: number; switchOn?: boolean } | undefined;
@@ -443,6 +445,14 @@ async function boot() {
       if ((thing.contamUntil ?? 0) > game.tick) lines.push(t("inspect.contaminated"));
       if (def.bench)
         bills = recipesFor(game, def.id).map((r) => ({ benchId: thing.id, recipe: r.id, target: billTarget(game, thing, r), stock: stockOf(game, r) }));
+      // Benches get a make queue; desks and benches a shortcut to the research menu.
+      if (def.bench && recipesFor(game, def.id).length)
+        make = {
+          benchId: thing.id,
+          queue: (thing.queue ?? []).map((o) => ({ ...o })),
+          recipes: recipesFor(game, def.id).map((r) => ({ id: r.id, inputs: r.inputs.map((i) => `${i.count} ${i.item ? t(`item.${i.item}`) : t(`tag.${i.tag}`)}`).join(", ") })),
+        };
+      researchLink = !!def.bench || !!def.research;
       if (def.grave && thing.filled) lines.push(t("inspect.grave_filled"));
       if (def.burns) {
         lines.push(t("inspect.fuel", { v: Math.round(thing.fuel ?? 0), max: def.burns.capacity, item: t(`item.${def.burns.item}`) }));
@@ -520,9 +530,24 @@ async function boot() {
     const stockpile = zoneHere?.kind === "stockpile" ? { zoneId: zoneHere.id, allow: [...zoneHere.allow], priority: sim.zonePriority(zoneHere) } : undefined;
     const ta = sim.tileActions(game, renderer.layer, x, y);
     const actionsUi = ta.actions.length ? { list: ta.actions as string[], first: ta.first } : undefined;
-    store.set({ inspect: { title, lines, bills, crafter, filter, power, prisonBed, actions: actionsUi, stockpile } });
+    store.set({ inspect: { title, lines, bills, crafter, filter, power, prisonBed, actions: actionsUi, stockpile, make, researchLink } });
   }
   let inspected: { x: number; y: number } | null = null;
+  actions.queueAdd = (benchId, recipe, n) => {
+    const b = game.things.get(benchId);
+    if (b) sim.queueAdd(game, b, recipe, n);
+    if (inspected) inspectTile(inspected.x, inspected.y);
+  };
+  actions.queueSet = (benchId, index, left) => {
+    const b = game.things.get(benchId);
+    if (b) sim.queueSet(b, index, left);
+    if (inspected) inspectTile(inspected.x, inspected.y);
+  };
+  actions.queueUp = (benchId, index) => {
+    const b = game.things.get(benchId);
+    if (b) sim.queueUp(b, index);
+    if (inspected) inspectTile(inspected.x, inspected.y);
+  };
   actions.setBillTarget = (benchId, recipe, n) => {
     setBillTarget(game, benchId, recipe, n);
     if (inspected) inspectTile(inspected.x, inspected.y);

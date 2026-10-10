@@ -48,6 +48,8 @@ export interface Thing {
   forPrisoners?: boolean;
   /** Power switch turned off. */
   off?: boolean;
+  /** Benches: up to 5 "make" orders, done in order before stock bills. */
+  queue?: { recipe: string; left: number }[];
   /** Graves: a corpse lies here. */
   filled?: boolean;
   /** Consumer priority set by the player (1 keep on longest .. 3 cut first); default from the def. */

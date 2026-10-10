@@ -281,3 +281,19 @@ body.cinematic #ui { display: none; }
 .colonist.robot .nick { font-weight: 600; }
 /* Mod list checkboxes in the game's rust tone. */
 .mods input[type="checkbox"] { accent-color: #d9742e; }
+
+/* Make window (bench queue of 5) and bench buttons. */
+.benchbtns { display: flex; gap: 6px; margin: 6px 0; }
+.makewin { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 30; width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 120px); overflow: auto;
+  background: #241e19; border: 1px solid #84603f; padding: 12px 14px; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6); }
+.makewin header { display: flex; justify-content: space-between; align-items: center; }
+.makewin h3 { margin: 0; }
+.makewin .recipes { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px; margin: 8px 0; }
+.makewin .recipes button { display: grid; gap: 2px; text-align: left; }
+.makewin .recipes small { color: #b0834e; font-size: 11px; }
+.makewin .queue { margin: 4px 0; padding-left: 22px; display: grid; gap: 4px; }
+.makewin .queue li { display: flex; gap: 6px; align-items: center; }
+.makewin .queue li span { flex: 1; }
+.makewin .queue .num { min-width: 22px; text-align: center; }
+.makewin .queue button { padding: 2px 9px; min-width: 0; min-height: 0; line-height: 1.4; }
+.makewin .queue li { padding: 2px 0; border-bottom: 1px dashed #3d3128; }

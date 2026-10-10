@@ -1023,5 +1023,14 @@
   "inspect.bank_charging": "charging",
   "inspect.bank_full": "full",
   "inspect.bank_on_bank": "running on it now (no power from the network)",
-  "inspect.bank_empty": "empty and not charging"
+  "inspect.bank_empty": "empty and not charging",
+  "make.open": "Make…",
+  "make.research": "Research",
+  "make.title": "Make at this bench",
+  "make.queue": "Queue",
+  "make.queue_empty": "Nothing queued. Click a recipe to add it.",
+  "make.full": "The queue is full (5 orders).",
+  "make.hint": "Click a recipe to queue one; Shift+click for five. Orders are done in order, before the keep-in-stock bills.",
+  "make.close": "Close",
+  "tag.raw_food": "raw food"
 }

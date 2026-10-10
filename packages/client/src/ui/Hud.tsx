@@ -6,12 +6,14 @@ import { PawnPanel } from "./PawnPanel.tsx";
 import { actions, useStore } from "./store.ts";
 import { Toasts } from "./Toasts.tsx";
 import { Toolbar } from "./Toolbar.tsx";
+import { MakeWindow } from "./MakeWindow.tsx";
 import { GameMenu } from "./Screens.tsx";
 
 /** Item categories a stockpile can take (same list as the sim). */
 const STOCK_CATEGORIES = ["resource", "food", "water", "medicine", "weapon", "apparel", "blueprint", "misc"];
 
 export function Hud() {
+  const [makeOpen, setMakeOpen] = useState(false);
   const [folded, setFolded] = useState<Record<string, boolean>>(() => {
     try {
       return JSON.parse(localStorage.getItem("wc-fold") ?? "{}");
@@ -168,6 +170,21 @@ export function Hud() {
               ))}
             </div>
           )}
+          {(s.inspect.make || s.inspect.researchLink) && (
+            <div class="row benchbtns">
+              {s.inspect.make && (
+                <button class="primary" data-testid="open-make" onClick={() => setMakeOpen(true)}>
+                  {t("make.open")} {s.inspect.make.queue.length > 0 && <small>({s.inspect.make.queue.length}/5)</small>}
+                </button>
+              )}
+              {s.inspect.researchLink && (
+                <button data-testid="open-research" onClick={() => actions.openMenu("research")}>
+                  {t("make.research")}
+                </button>
+              )}
+            </div>
+          )}
+          {makeOpen && s.inspect.make && <MakeWindow make={s.inspect.make} onClose={() => setMakeOpen(false)} />}
           {s.inspect.bills && s.inspect.bills.length > 0 && (
             <div class="bills" data-testid="bills">
               <h3>{t("bills.title")}</h3>
