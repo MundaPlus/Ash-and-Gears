@@ -212,3 +212,8 @@ body.cinematic #ui { display: none; }
 .trademenu .neg, .worldmenu .neg { color: #ff8a70; }
 .worldmenu .pos { color: #9fd14a; }
 .caravanbanner { position: fixed; left: 50%; transform: translateX(-50%); bottom: 64px; background: rgba(27, 23, 20, 0.92); border: 1px solid #e3c25a; padding: 6px 10px; display: flex; gap: 10px; align-items: center; z-index: 5; max-width: calc(100vw - 32px); }
+
+/* Tile actions in the inspect panel (F = default) */
+.tileactions { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.tileactions button { display: inline-flex; gap: 6px; align-items: center; }
+.tileactions kbd { font: 600 11px monospace; border: 1px solid currentColor; border-bottom-width: 2px; padding: 0 4px; }

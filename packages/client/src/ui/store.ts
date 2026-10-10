@@ -8,6 +8,8 @@ export interface Inspect {
   bills?: { benchId: number; recipe: string; target: number; stock: number }[];
   /** Auto-crafter: recipe choice. */
   crafter?: { thingId: number; current: string | null; options: string[] };
+  /** Things to do on this tile (buttons); `first` is what the F key does. */
+  actions?: { list: string[]; first: string | null };
   /** Beds: for prisoners or not. */
   prisonBed?: { thingId: number; on: boolean };
   /** Power consumers: priority; switches: on or off. */
@@ -223,6 +225,7 @@ export const actions = {
   setLayer: (_l: number) => {},
   togglePowerOverlay: () => {},
   setCapture: (_pawn: number, _on: boolean) => {},
+  tileAction: (_action: string) => {},
   sendExpedition: (_site: number, _pawns: number[], _outpost: boolean) => {},
   trade: (_buy: Record<string, number>, _sell: Record<string, number>) => {},
   release: (_pawn: number) => {},

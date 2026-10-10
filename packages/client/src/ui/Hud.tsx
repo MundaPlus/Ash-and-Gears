@@ -101,6 +101,16 @@ export function Hud() {
           {s.inspect.lines.map((l) => (
             <p key={l}>{l}</p>
           ))}
+          {s.inspect.actions && (
+            <div class="tileactions" data-testid="tile-actions">
+              {s.inspect.actions.list.map((a) => (
+                <button key={a} class={s.inspect!.actions!.first === a ? "on" : ""} data-testid={`act-${a}`} onClick={() => actions.tileAction(a)}>
+                  {t(`action.${a}`)}
+                  {s.inspect!.actions!.first === a && <kbd>F</kbd>}
+                </button>
+              ))}
+            </div>
+          )}
           {s.inspect.bills && s.inspect.bills.length > 0 && (
             <div class="bills" data-testid="bills">
               <h3>{t("bills.title")}</h3>

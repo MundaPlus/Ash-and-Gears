@@ -253,6 +253,11 @@ async function boot() {
     sim.setResearch(game, id);
     store.set({ research: researchRows() });
   };
+  actions.tileAction = (a) => {
+    if (!inspected) return;
+    if (sim.doTileAction(game, renderer.layer, inspected.x, inspected.y, a as sim.TileAction)) audio.play("click");
+    inspectTile(inspected.x, inspected.y);
+  };
   actions.setCapture = (id, on) => {
     const p = game.pawns.get(id);
     if (p) sim.setCapture(game, p, on);
@@ -455,7 +460,9 @@ async function boot() {
       const name = t(`item.${game.reg.items.list[st.def].id}`);
       lines.push(t("inspect.items", { count: st.count, item: st.contaminated ? `${name} (${t("item.contaminated")})` : name }));
     }
-    store.set({ inspect: { title, lines, bills, crafter, filter, power, prisonBed } });
+    const ta = sim.tileActions(game, renderer.layer, x, y);
+    const actionsUi = ta.actions.length ? { list: ta.actions as string[], first: ta.first } : undefined;
+    store.set({ inspect: { title, lines, bills, crafter, filter, power, prisonBed, actions: actionsUi } });
   }
   let inspected: { x: number; y: number } | null = null;
   actions.setBillTarget = (benchId, recipe, n) => {
@@ -623,6 +630,7 @@ async function boot() {
     } else if (e.key === "1" || e.key === "2" || e.key === "3") actions.setSpeed(Number(e.key));
     else if ((e.key === "q" || e.key === "e") && tools.spec) actions.rotateTool(e.key === "e" ? 1 : -1);
     else if (e.key === "p" || e.key === "P") actions.togglePowerOverlay();
+    else if ((e.key === "f" || e.key === "F") && store.state.inspect?.actions?.first) actions.tileAction(store.state.inspect.actions.first);
     else if (e.key === "r" || e.key === "R") {
       if (selected !== null) actions.toggleDraft(selected);
     } else if (e.key === "PageUp") actions.setLayer(renderer.layer - 1);
