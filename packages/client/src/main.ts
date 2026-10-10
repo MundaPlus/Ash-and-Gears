@@ -833,7 +833,7 @@ async function boot() {
     }
   });
 
-  let fpsFrames = 0, fpsTime = 0, uiTime = 0, clock = 0, lastFxTick = game.tick;
+  let fpsFrames = 0, fpsTime = 0, uiTime = 0, inspectTime = 0, clock = 0, lastFxTick = game.tick;
   /** Next work sound time per worker (UI clock seconds). */
   const workBeat = new Map<number, number>();
   // A new story game opens with the storyline and its first chapter.
@@ -925,6 +925,12 @@ async function boot() {
     fpsFrames++;
     fpsTime += dt;
     uiTime += dt;
+    inspectTime += dt;
+    // An open inspect panel follows its tile live (charge, fuel, stock, progress), twice a second.
+    if (inspectTime > 0.5) {
+      inspectTime = 0;
+      if (inspected && store.state.inspect) inspectTile(inspected.x, inspected.y);
+    }
     if (uiTime > 0.2) {
       const tm = game.time;
       const pad = (v: number) => String(v).padStart(2, "0");
