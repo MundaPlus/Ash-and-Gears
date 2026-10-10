@@ -12,7 +12,7 @@ import type { Pawn } from "./pawn.ts";
 import { skillLevel } from "./pawn.ts";
 import { isRoofed, tempAt } from "./rooms.ts";
 import { registerTask, workJob } from "./work.ts";
-import { isContaminatedThing } from "./weather.ts";
+import { CONTAM_CHANCE, isContaminatedThing } from "./weather.ts";
 
 const GROW_EVERY = 60;
 export const SOW_WORK = 40;
@@ -53,7 +53,9 @@ registerTask("sow", {
     const t = job.target!;
     const plant = game.spawnThing(job.data!.crop as string, t.layer, t.x, t.y);
     plant.growth = 0;
-    if (t.layer === 0 && !isRoofed(game, 0, t.x, t.y) && game.soilContamUntil > game.tick) plant.contamUntil = game.soilContamUntil;
+    // Seeds in open soil after a cloud: the same chance as a crop under the open sky.
+    if (t.layer === 0 && !isRoofed(game, 0, t.x, t.y) && game.soilContamUntil > game.tick && game.aiRng.chance(CONTAM_CHANCE.rad_cloud.open))
+      plant.contamUntil = game.soilContamUntil;
   },
 });
 

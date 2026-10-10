@@ -9,12 +9,16 @@ import { NO_THING, type ItemStack } from "./map.ts";
 import { isSleepTime, tickNeeds } from "./needs.ts";
 import { isRoofed } from "./rooms.ts";
 import type { Pos } from "./path.ts";
-import { addMemory, addRad, hasTraitFlag, type Job, type Pawn } from "./pawn.ts";
+import { addMemory, addRad, hasTraitFlag, traitMult, type Job, type Pawn } from "./pawn.ts";
 import { isContaminatedThing } from "./weather.ts";
 import { workOrder } from "./worktypes.ts";
 import { moving, tickHealthHourly } from "./health.ts";
 import { draftedTick, fleeFrom, hostileTick, selfDefense, updateGroups } from "./hostile.ts";
-import { equipJob, inBed } from "./medical.ts";
+import { equipJob, inBed, rushToDowned } from "./medical.ts";
+import { fluidNetOf, LITERS_PER_DRINK, netDraw, tapHasWater } from "./fluids.ts";
+import { prisonerTick } from "./prison.ts";
+import { robotJob, tickRobot } from "./robots.ts";
+import { traderTick } from "./factions.ts";
 
 /** Tiles per tick at walk cost 1 (3 tiles per real second at 1x). */
 export const WALK_SPEED = 0.15;
@@ -68,7 +72,7 @@ export function moveSpeed(game: Game, p: Pawn): number {
   let s = WALK_SPEED * game.reg.content.creatures[p.creature].speed * moving(game, p);
   if (p.needs.rest < 0.05) s *= 0.7;
   if (p.carrying) s *= 0.9;
-  return s;
+  return s * traitMult(game, p, (t) => t.moveSpeed);
 }
 
 /** Advance along the path. Plans again if the next tile became blocked. */
@@ -98,10 +102,12 @@ function tickMove(game: Game, p: Pawn): void {
 export function tickPawns(game: Game): void {
   const hourly = game.tick % Math.round(game.ticksPerHour) === 0;
   if (game.tick % 30 === 0) updateGroups(game);
+  if (game.tick % 30 === 15) rushToDowned(game);
   for (const p of [...game.pawns.values()]) {
     if (!game.pawns.has(p.id)) continue;
     if (p.cooldown > 0) p.cooldown--;
-    if (p.faction === "colony") tickNeeds(game, p);
+    if (p.robot) tickRobot(game, p);
+    else if (p.faction === "colony" || p.faction === "prisoner") tickNeeds(game, p);
     if (hourly) {
       tickHealthHourly(game, p, inBed(game, p));
       if (!game.pawns.has(p.id)) continue;
@@ -110,6 +116,16 @@ export function tickPawns(game: Game): void {
       if (p.job) endJob(game, p, false);
       p.path = null;
       p.drafted = false;
+      continue;
+    }
+    if (p.faction === "trader") {
+      traderTick(game, p);
+      tickMove(game, p);
+      continue;
+    }
+    if (p.faction === "prisoner" || p.faction === "visitor") {
+      prisonerTick(game, p);
+      tickMove(game, p);
       continue;
     }
     if (p.faction !== "colony") {
@@ -127,7 +143,9 @@ export function tickPawns(game: Game): void {
       tickMove(game, p);
       continue;
     }
-    if (p.mentalBreak && p.job && !p.job.data?.sulk && p.job.kind !== "eat" && p.job.kind !== "drink") endJob(game, p, false);
+    // Sulking survivors keep only eating, drinking and the alarm care for a downed friend (rescue, feed, tend).
+    const breakKeeps = p.job && ["eat", "drink", "rescue", "feed", "tend"].includes(p.job.kind);
+    if (p.mentalBreak && p.job && !p.job.data?.sulk && !breakKeeps) endJob(game, p, false);
     // A radiation cloud is coming: drop idle or outdoor work and think again (that finds shelter).
     // Eating and drinking finish first: cutting them off would loop (drink, interrupted, drink...).
     const keep = p.job?.kind === "shelter" || p.job?.kind === "eat" || p.job?.kind === "drink";
@@ -189,6 +207,19 @@ function startJob(game: Game, p: Pawn, job: Job | null): boolean {
 /** The decision tree. Order matters: survival first, then schedule, then work, then idle. */
 export function think(game: Game, p: Pawn): void {
   const n = p.needs;
+  if (p.robot) {
+    // Robots: charge when low or hurt, else work; idle robots wait at a bay or wander.
+    const r = robotJob(game, p);
+    if (r === "idle") return;
+    if (r && startJob(game, p, r)) return;
+    for (const w of workOrder(p)) for (const g of workGivers) if (g.workType === w && startJob(game, p, g.give(game, p))) return;
+    if ((p.charge ?? 1) < 0.9) {
+      const rest = robotJob(game, { ...p, charge: 0.1 } as Pawn);
+      if (rest && rest !== "idle" && startJob(game, p, rest)) return;
+    }
+    startJob(game, p, wanderJob(game, p, false));
+    return;
+  }
   if (p.mentalBreak) {
     // Sulking survivors still eat and drink when it gets urgent.
     if (n.thirst < 0.2 && startJob(game, p, drinkJob(game, p, true))) return;
@@ -307,7 +338,11 @@ registerJob("eat", (game, p, job) => {
 /** Water things (wells) that a pawn can drink from. */
 function findWaterThing(game: Game, p: Pawn): Pos | null {
   const wells = [...game.things.values()]
-    .filter((t) => game.reg.things.list[t.def].water && !isReserved(game, `tile:${t.layer},${t.x},${t.y}`, p))
+    .filter((t) => {
+      const d = game.reg.things.list[t.def];
+      // A tap only counts when its pipes hold clean water.
+      return d.water && (d.fluid?.role !== "tap" || tapHasWater(game, t)) && !isReserved(game, `tile:${t.layer},${t.x},${t.y}`, p);
+    })
     .sort((a, b) => dist2(p, a) - dist2(p, b));
   for (const w of wells.slice(0, 6)) if (game.path.canReachAdjacent(p, w)) return { layer: w.layer, x: w.x, y: w.y };
   return null;
@@ -350,7 +385,16 @@ registerJob("drink", (game, p, job) => {
       const t = job.target!;
       const L = game.map.layers[t.layer];
       const th = L.thing[L.i(t.x, t.y)];
-      if (th !== NO_THING && game.reg.things.list[game.things.get(th)!.def].water) {
+      if (th !== NO_THING && game.reg.things.list[game.things.get(th)!.def].fluid?.role === "tap") {
+        // A tap gives what its pipes hold, up to a full drink.
+        const net = fluidNetOf(game, game.things.get(th)!);
+        const liters = net ? netDraw(game, net, "clean_water", (1 - p.needs.thirst) * LITERS_PER_DRINK) : 0;
+        if (liters <= 0) return "fail";
+        job.data = { hydration: liters / LITERS_PER_DRINK, source: "clean", glowing: false };
+        job.until = game.tick + Math.round(game.ticksPerHour * 0.2);
+        job.stage = 2;
+        return "run";
+      } else if (th !== NO_THING && game.reg.things.list[game.things.get(th)!.def].water) {
         const well = game.things.get(th)!;
         source = game.reg.things.list[well.def].water!;
         glowing = isContaminatedThing(game, well);
@@ -382,7 +426,7 @@ function findBed(game: Game, p: Pawn): number | null {
   if (own === undefined) p.bedId = null;
   const owned = new Set([...game.pawns.values()].map((o) => o.bedId));
   const beds = [...game.things.values()]
-    .filter((t) => game.reg.things.list[t.def].bed && !owned.has(t.id) && !isReserved(game, `thing:${t.id}`, p))
+    .filter((t) => game.reg.things.list[t.def].bed && !t.forPrisoners && !owned.has(t.id) && !isReserved(game, `thing:${t.id}`, p))
     .sort((a, b) => dist2(p, a) - dist2(p, b));
   for (const b of beds) {
     if (!game.path.canReach(p, b)) continue;

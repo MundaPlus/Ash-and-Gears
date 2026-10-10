@@ -1,0 +1,562 @@
+{
+  "_doc": "AI sprite list. size = [w, h] in pixels at 32 px per tile. texture = fill the whole tile (walls, floors). neg = extra negative prompt. own_style = the prompt is complete, the shared style is not added (textures, items that need a plain look).",
+  "style": "pixel art game sprite, single object, centered, simple readable shapes, thick dark outline, flat colors, post-apocalyptic, plain white background",
+  "sprites": {
+    "survivor": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 12,
+      "prompt": "chibi proportions, big head, short body, survivor with patched jacket, scarf and backpack, full body standing, front view",
+      "neg": "realistic proportions, tall, thin"
+    },
+    "raider": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 10,
+      "prompt": "chibi proportions, big head, short body, wasteland raider in studded leather vest, red bandana, goggles, metal shoulder pad, cargo pants, full body standing, front view",
+      "neg": "realistic proportions, tall, thin, shirtless, bare chest"
+    },
+    "rad_rat": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "prompt": "mutant radioactive rat with glowing green spots, side view"
+    },
+    "glowcorn_plant": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "prompt": "mutant corn plant with glowing green cobs, side view"
+    },
+    "car_wreck": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "prompt": "rusted wrecked car, three quarter top-down view"
+    },
+    "canned_food": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "own_style": true,
+      "prompt": "pixel art game item icon, a single tin can of food, cylindrical metal can with a plain paper label printed with a picture of beans, slightly dented and rusty, front view, flat colors, dark outline, plain white background",
+      "neg": "face, eyes, mouth, teeth, character, creature, monster"
+    },
+    "scrap_bed": {
+      "size": [
+        64,
+        64
+      ],
+      "tries": 4,
+      "prompt": "double bed seen from directly above, top-down view, rusty metal frame, worn mattress, two pillows at the top, patched blanket"
+    },
+    "scrap_bench": {
+      "size": [
+        64,
+        32
+      ],
+      "tries": 4,
+      "prompt": "rusty scrap metal workbench with tools, three quarter top-down view"
+    },
+    "scrap_generator": {
+      "size": [
+        64,
+        32
+      ],
+      "tries": 4,
+      "prompt": "small diesel generator made of scrap with exhaust pipe, three quarter top-down view"
+    },
+    "scrap_wall": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "texture": true,
+      "own_style": true,
+      "prompt": "pixel art seamless square texture tile, wall made of rusty corrugated metal sheets with rivets and patches, flat front view, the texture fills the whole square edge to edge, flat colors, no background",
+      "neg": "face, eyes, mouth, teeth, character, creature, monster, object, frame"
+    },
+    "scrap_pile": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "prompt": "pile of rusty scrap metal junk, pipes and sheets, three quarter top-down view"
+    },
+    "loot_crate": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "prompt": "old military supply crate, worn green paint, three quarter top-down view"
+    },
+    "dead_tree": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "prompt": "dead leafless tree, dry twisted branches, side view"
+    },
+    "mutant_shrub": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "prompt": "mutant desert shrub with fleshy purple leaves and small glowing buds, side view"
+    },
+    "bedroll": {
+      "size": [
+        32,
+        64
+      ],
+      "tries": 4,
+      "prompt": "sleeping bag bedroll lying on the ground seen from directly above, top-down view, patched green fabric, small pillow at the top"
+    },
+    "table": {
+      "size": [
+        64,
+        32
+      ],
+      "tries": 4,
+      "prompt": "long rough table made of planks and scrap metal, three quarter top-down view"
+    },
+    "chair": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "prompt": "simple wooden chair patched with scrap metal, three quarter top-down view"
+    },
+    "campfire": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "prompt": "small campfire with burning logs in a ring of stones, three quarter top-down view"
+    },
+    "stove": {
+      "size": [
+        64,
+        32
+      ],
+      "tries": 4,
+      "prompt": "cooking stove made of an old oil barrel with a chimney pipe and a pot on top, three quarter top-down view"
+    },
+    "scrub_potato_plant": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "prompt": "small potato plant with dusty green leaves and a few potatoes showing at the soil, side view"
+    },
+    "fiber_weed_plant": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "prompt": "tall wild fibrous grass weed with long thin pale stalks, side view"
+    },
+    "well": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "prompt": "old stone water well with a wooden roof, rope and bucket, three quarter top-down view"
+    },
+    "rain_collector": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "prompt": "rain water collector: a rusty barrel with a wide metal funnel on top, three quarter top-down view"
+    },
+    "sandbags": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "prompt": "short row of stacked sandbags, three quarter top-down view"
+    },
+    "scrap_turret": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "prompt": "small automatic gun turret made of scrap on a tripod base, three quarter top-down view"
+    },
+    "old_safe": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "prompt": "old heavy steel safe with a dial, rusty, three quarter top-down view"
+    },
+    "research_desk": {
+      "size": [
+        64,
+        32
+      ],
+      "tries": 4,
+      "prompt": "desk with an old computer monitor, papers and books, three quarter top-down view"
+    },
+    "battery": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "prompt": "large rusty electric battery bank box with cables and a charge gauge, three quarter top-down view"
+    },
+    "lamp": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "prompt": "standing street lamp post made of scrap with a glowing bulb, side view"
+    },
+    "powered_bench": {
+      "size": [
+        64,
+        32
+      ],
+      "tries": 4,
+      "prompt": "electric workbench with a drill press and a vice, cables, three quarter top-down view"
+    },
+    "smelter": {
+      "size": [
+        64,
+        32
+      ],
+      "tries": 4,
+      "prompt": "small brick smelting furnace with glowing orange molten metal, chimney, three quarter top-down view"
+    },
+    "loader": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "prompt": "small mechanical robot arm on a metal base, three quarter top-down view"
+    },
+    "auto_crafter": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "prompt": "automatic assembling machine, metal box with gears and a hatch, three quarter top-down view"
+    },
+    "glow_hound": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "prompt": "mutant hound dog with patchy fur and glowing green eyes and glowing spots, side view",
+      "neg": "realistic, cute"
+    },
+    "scrap": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "own_style": true,
+      "prompt": "pixel art game item icon, a small pile of rusty scrap metal pieces, single object, centered, flat colors, dark outline, plain white background",
+      "neg": "face, eyes, mouth, teeth, character, creature, monster, multiple objects"
+    },
+    "wood": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "own_style": true,
+      "prompt": "pixel art game item icon, a small stack of wooden logs, single object, centered, flat colors, dark outline, plain white background",
+      "neg": "face, eyes, mouth, teeth, character, creature, monster, multiple objects"
+    },
+    "stone": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "own_style": true,
+      "prompt": "pixel art game item icon, a small pile of grey stone blocks, single object, centered, flat colors, dark outline, plain white background",
+      "neg": "face, eyes, mouth, teeth, character, creature, monster, multiple objects"
+    },
+    "coal": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "own_style": true,
+      "prompt": "pixel art game item icon, a small pile of black coal lumps, single object, centered, flat colors, dark outline, plain white background",
+      "neg": "face, eyes, mouth, teeth, character, creature, monster, multiple objects"
+    },
+    "cloth": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "own_style": true,
+      "prompt": "pixel art game item icon, a folded stack of patched cloth fabric, single object, centered, flat colors, dark outline, plain white background",
+      "neg": "face, eyes, mouth, teeth, character, creature, monster, multiple objects"
+    },
+    "components": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "own_style": true,
+      "prompt": "pixel art game item icon, a few mechanical parts: gears, springs and a small circuit board, single object, centered, flat colors, dark outline, plain white background",
+      "neg": "face, eyes, mouth, teeth, character, creature, monster, multiple objects"
+    },
+    "steel": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "own_style": true,
+      "prompt": "pixel art game item icon, a stack of shiny steel ingots, single object, centered, flat colors, dark outline, plain white background",
+      "neg": "face, eyes, mouth, teeth, character, creature, monster, multiple objects"
+    },
+    "dirty_water": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "own_style": true,
+      "prompt": "pixel art game item icon, a plastic bottle of murky brown water, single object, centered, flat colors, dark outline, plain white background",
+      "neg": "face, eyes, mouth, teeth, character, creature, monster, multiple objects"
+    },
+    "clean_water": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "own_style": true,
+      "prompt": "pixel art game item icon, a plastic bottle of clear blue water, single object, centered, flat colors, dark outline, plain white background",
+      "neg": "face, eyes, mouth, teeth, character, creature, monster, multiple objects"
+    },
+    "glowcorn": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "own_style": true,
+      "prompt": "pixel art game item icon, an ear of corn with glowing green kernels, single object, centered, flat colors, dark outline, plain white background",
+      "neg": "face, eyes, mouth, teeth, character, creature, monster, multiple objects"
+    },
+    "scrub_potato": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "own_style": true,
+      "prompt": "pixel art game item icon, a few small dusty brown potatoes, single object, centered, flat colors, dark outline, plain white background",
+      "neg": "face, eyes, mouth, teeth, character, creature, monster, multiple objects"
+    },
+    "simple_meal": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "own_style": true,
+      "prompt": "pixel art game item icon, a tin bowl of hot stew, single object, centered, flat colors, dark outline, plain white background",
+      "neg": "face, eyes, mouth, teeth, character, creature, monster, multiple objects"
+    },
+    "mutant_meat": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "own_style": true,
+      "prompt": "pixel art game item icon, a raw chunk of pink meat with green spots, single object, centered, flat colors, dark outline, plain white background",
+      "neg": "face, eyes, mouth, teeth, character, creature, monster, multiple objects"
+    },
+    "pipe": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "own_style": true,
+      "prompt": "pixel art game item icon, a rusty metal pipe club, single object, centered, flat colors, dark outline, plain white background",
+      "neg": "face, eyes, mouth, teeth, character, creature, monster, multiple objects"
+    },
+    "machete": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "own_style": true,
+      "prompt": "pixel art game item icon, a rusty machete blade with a taped handle, single object, centered, flat colors, dark outline, plain white background",
+      "neg": "face, eyes, mouth, teeth, character, creature, monster, multiple objects"
+    },
+    "sledgehammer": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "own_style": true,
+      "prompt": "pixel art game item icon, a heavy sledgehammer, single object, centered, flat colors, dark outline, plain white background",
+      "neg": "face, eyes, mouth, teeth, character, creature, monster, multiple objects"
+    },
+    "pipe_pistol": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "own_style": true,
+      "prompt": "pixel art game item icon, a crude homemade pistol made of pipes, single object, centered, flat colors, dark outline, plain white background",
+      "neg": "face, eyes, mouth, teeth, character, creature, monster, multiple objects"
+    },
+    "crossbow": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "own_style": true,
+      "prompt": "pixel art game item icon, a homemade crossbow made of scrap, single object, centered, flat colors, dark outline, plain white background",
+      "neg": "face, eyes, mouth, teeth, character, creature, monster, multiple objects"
+    },
+    "scrap_shotgun": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "own_style": true,
+      "prompt": "pixel art game item icon, a crude double barrel shotgun made of scrap, single object, centered, flat colors, dark outline, plain white background",
+      "neg": "face, eyes, mouth, teeth, character, creature, monster, multiple objects"
+    },
+    "bandage": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "own_style": true,
+      "prompt": "pixel art game item icon, a rolled white cloth bandage, single object, centered, flat colors, dark outline, plain white background",
+      "neg": "face, eyes, mouth, teeth, character, creature, monster, multiple objects"
+    },
+    "factory_manual": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "own_style": true,
+      "prompt": "pixel art game item icon, an old worn technical manual book with a gear on the cover, single object, centered, flat colors, dark outline, plain white background",
+      "neg": "face, eyes, mouth, teeth, character, creature, monster, multiple objects"
+    },
+    "wood_wall": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "texture": true,
+      "own_style": true,
+      "prompt": "pixel art seamless square texture tile, wall made of rough wooden planks and beams with nails, flat front view, the texture fills the whole square edge to edge, flat colors, no background",
+      "neg": "face, eyes, mouth, teeth, character, creature, monster, object, frame, border"
+    },
+    "stone_wall": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "texture": true,
+      "own_style": true,
+      "prompt": "pixel art seamless square texture tile, wall made of rough grey stone blocks with mortar, flat front view, the texture fills the whole square edge to edge, flat colors, no background",
+      "neg": "face, eyes, mouth, teeth, character, creature, monster, object, frame, border"
+    },
+    "ruin_wall": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "texture": true,
+      "own_style": true,
+      "prompt": "pixel art seamless square texture tile, crumbling old concrete and brick wall with cracks and exposed rebar, flat front view, the texture fills the whole square edge to edge, flat colors, no background",
+      "neg": "face, eyes, mouth, teeth, character, creature, monster, object, frame, border"
+    },
+    "wood_floor": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "texture": true,
+      "own_style": true,
+      "prompt": "pixel art seamless square texture tile, worn wooden floor planks seen from above, top-down view, the texture fills the whole square edge to edge, flat colors, no background",
+      "neg": "face, eyes, mouth, teeth, character, creature, monster, object, frame, border"
+    },
+    "scrap_tiles": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "texture": true,
+      "own_style": true,
+      "prompt": "pixel art seamless square texture tile, floor of mismatched rusty metal plates with rivets seen from above, top-down view, the texture fills the whole square edge to edge, flat colors, no background",
+      "neg": "face, eyes, mouth, teeth, character, creature, monster, object, frame, border"
+    },
+    "stone_tiles": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "texture": true,
+      "own_style": true,
+      "prompt": "pixel art seamless square texture tile, floor of square grey stone tiles seen from above, top-down view, the texture fills the whole square edge to edge, flat colors, no background",
+      "neg": "face, eyes, mouth, teeth, character, creature, monster, object, frame, border"
+    }
+  }
+}

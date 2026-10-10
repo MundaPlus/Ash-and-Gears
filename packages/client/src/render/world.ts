@@ -5,6 +5,13 @@
  */
 import { Container, Sprite, Texture } from "pixi.js";
 import { CHUNK, NO_THING, type Game } from "@wc/sim";
+import { WALL_E, WALL_N, WALL_S, WALL_W } from "@wc/data";
+
+/** Tiles wide and high of a thing def with a rotation (1 and 3 swap them). */
+function sizeOf(g: Game, def: number, rot = 0): [number, number] {
+  const [w, h] = g.reg.things.list[def].footprint;
+  return rot % 2 ? [h, w] : [w, h];
+}
 import { TILE, variantAt, type TextureSet } from "./textures.ts";
 
 /** Below this zoom the overview texture replaces the chunks. */
@@ -14,6 +21,8 @@ interface Chunk {
   cx: number;
   cy: number;
   root: Container;
+  /** Items, things and marks of this chunk. Kept above all ground, so big things can reach into the next chunk. */
+  top: Container;
   version: number;
 }
 
@@ -35,14 +44,21 @@ export class WorldRenderer {
       lr.visible = L.index === 0;
       this.root.addChild(lr);
       this.layerRoots.push(lr);
+      const ground = new Container();
+      const tops = new Container();
+      lr.addChild(ground, tops);
       const list: Chunk[] = [];
       for (let cy = 0; cy < Math.ceil(h / CHUNK); cy++)
         for (let cx = 0; cx < Math.ceil(w / CHUNK); cx++) {
           const root = new Container();
           root.position.set(cx * CHUNK * TILE, cy * CHUNK * TILE);
           root.visible = false;
-          lr.addChild(root);
-          list.push({ cx, cy, root, version: -1 });
+          ground.addChild(root);
+          const top = new Container();
+          top.position.copyFrom(root.position);
+          top.visible = false;
+          tops.addChild(top);
+          list.push({ cx, cy, root, top, version: -1 });
         }
       this.chunks.push(list);
       const ov = new Sprite(Texture.EMPTY);
@@ -72,14 +88,14 @@ export class WorldRenderer {
     ov.visible = far;
     if (far) {
       if (this.overviewVersion[this.layer] !== this.game.mapVersion) this.buildOverview(this.layer);
-      for (const c of this.chunks[this.layer]) c.root.visible = false;
+      for (const c of this.chunks[this.layer]) c.root.visible = c.top.visible = false;
       return;
     }
     const span = CHUNK * TILE;
     for (const c of this.chunks[this.layer]) {
       const x0 = c.cx * span, y0 = c.cy * span;
       const vis = x0 < view.x + view.w && x0 + span > view.x && y0 < view.y + view.h && y0 + span > view.y;
-      c.root.visible = vis;
+      c.root.visible = c.top.visible = vis;
       if (vis) {
         const L = this.game.map.layers[this.layer];
         const v = L.chunkVersion[c.cy * L.chunksX + c.cx];
@@ -91,6 +107,7 @@ export class WorldRenderer {
   private buildChunk(l: number, c: Chunk, version: number) {
     const g = this.game, L = g.map.layers[l];
     c.root.removeChildren().forEach((ch) => ch.destroy());
+    c.top.removeChildren().forEach((ch) => ch.destroy());
     const things: Sprite[] = [];
     const items: Sprite[] = [];
     const overlays: Sprite[] = [];
@@ -113,14 +130,28 @@ export class WorldRenderer {
           overlays.push(zs);
         }
         const bpId = L.blueprint[i];
-        if (bpId !== NO_THING) {
-          const bp = g.blueprints.get(bpId)!;
-          const bs = new Sprite(bp.kind === "floor" ? this.tex.floors[bp.def] : this.tex.things[bp.def]);
+        const bpHere = bpId !== NO_THING ? g.blueprints.get(bpId)! : null;
+        // A big plan draws once, from its top-left tile.
+        if (bpHere && bpHere.x === x && bpHere.y === y) {
+          const bp = bpHere;
+          const [bw, bh] = bp.kind === "thing" ? sizeOf(g, bp.def, bp.rot) : [1, 1];
+          const turnedBp = bp.kind === "thing" && bp.rot && bp.rot % 2 ? this.tex.thingsTurned[bp.def] : null;
+          const bs = new Sprite(bp.kind === "floor" ? this.tex.floors[bp.def] : (turnedBp ?? this.tex.things[bp.def]));
           bs.position.copyFrom(s.position);
-          bs.width = bs.height = TILE;
+          bs.width = bw * TILE;
+          bs.height = bh * TILE;
           bs.tint = 0xa8d0ff;
           bs.alpha = Object.values(bp.need).some((n) => n > 0) ? 0.55 : 0.8;
           overlays.push(bs);
+        }
+        // A room that waits for its roof: a faint hatch, until a survivor builds it.
+        if (L.index === 0 && L.roofWant[i] && !L.roof[i]) {
+          const rs = new Sprite(Texture.WHITE);
+          rs.position.copyFrom(s.position);
+          rs.width = rs.height = TILE;
+          rs.tint = 0x7fb0e0;
+          rs.alpha = 0.22;
+          marks.push(rs);
         }
         const d = L.desig[i];
         if (d) {
@@ -140,10 +171,13 @@ export class WorldRenderer {
           items.push(t);
         }
         const th = L.thing[i];
-        if (th !== NO_THING) {
+        // A big thing draws once, from its top-left tile.
+        if (th !== NO_THING && g.things.get(th)!.x === x && g.things.get(th)!.y === y) {
           const thing = g.things.get(th)!;
-          const t = new Sprite(this.tex.things[thing.def]);
+          const turnedBig = thing.rot && thing.rot % 2 ? this.tex.thingsTurned[thing.def] : null;
+          const t = new Sprite(turnedBig ?? this.tex.things[thing.def]);
           const def = g.reg.things.list[thing.def];
+          const [fw, fh] = sizeOf(g, thing.def, thing.rot);
           if (def.crop) {
             // Crops grow in size; contaminated ones glow green.
             const sc = 0.35 + 0.65 * Math.min(1, thing.growth ?? 0);
@@ -158,17 +192,51 @@ export class WorldRenderer {
             t.rotation = ((thing.rot ?? 0) * Math.PI) / 2;
             t.position.set(s.x + TILE / 2, s.y + TILE / 2);
           } else {
-            t.width = t.height = TILE;
+            // Walls join with walls and doors; wires with wires and powered things; sandbags turn in a column.
+            const near = (test: (d: (typeof g.reg.things.list)[number]) => boolean) => {
+              const at = (nx: number, ny: number) => {
+                if (!L.inBounds(nx, ny)) return false;
+                const o = L.thing[L.i(nx, ny)];
+                return o !== NO_THING && test(g.reg.things.list[g.things.get(o)!.def]);
+              };
+              return (at(x, y - 1) ? WALL_N : 0) | (at(x + 1, y) ? WALL_E : 0) | (at(x, y + 1) ? WALL_S : 0) | (at(x - 1, y) ? WALL_W : 0);
+            };
+            const joined = this.tex.walls[thing.def];
+            const line = this.tex.lines[thing.def];
+            const turned = this.tex.turned[thing.def];
+            const d0 = def;
+            if (joined) t.texture = joined[near((d) => d.wall)];
+            else if (line) {
+              // Wires join wires and reach into machines next to them. Belts are left alone (no comb under a belt line).
+              // Pipes join pipes and fluid machines.
+              t.texture = def.pipe ? line[near((d) => d.pipe || !!d.fluid)] : line[near((d) => !!d.conduit || (!!d.power && !d.belt))];
+            }
+            else if (d0.power && !d0.belt && this.tex.stubs.length) {
+              // A machine next to wires: the wire runs in under it, to its middle.
+              const m = near((d) => !!d.conduit);
+              if (m) {
+                const st = new Sprite(this.tex.stubs[m]);
+                st.width = st.height = TILE;
+                st.position.copyFrom(s.position);
+                things.push(st);
+              }
+            } else if (turned) {
+              const m = near((d) => d.id === def.id);
+              if (m & (WALL_N | WALL_S) && !(m & (WALL_E | WALL_W))) t.texture = turned;
+            }
+            t.width = fw * TILE;
+            t.height = fh * TILE;
             t.position.copyFrom(s.position);
+            if (def.switch && thing.off) t.tint = 0x707070;
           }
           things.push(t);
         }
       }
-    // Items and things after all terrain, so tall sprites are never covered by the next row of ground.
-    for (const t of overlays) c.root.addChild(t);
-    for (const t of items) c.root.addChild(t);
-    for (const t of things) c.root.addChild(t);
-    for (const t of marks) c.root.addChild(t);
+    // Zones, plans, items, things and marks go on top of every chunk's ground (big plans reach over chunk edges).
+    for (const t of overlays) c.top.addChild(t);
+    for (const t of items) c.top.addChild(t);
+    for (const t of things) c.top.addChild(t);
+    for (const t of marks) c.top.addChild(t);
     c.version = version;
   }
 

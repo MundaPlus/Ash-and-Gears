@@ -1,7 +1,8 @@
 /**
  * A simple scripted player for headless playtests. It does what a new player would do in the first
  * days: a stockpile, a farm, a walled room with beds and a campfire, salvage and wood cutting,
- * a research desk, power and a lamp once researched, and drafting during attacks.
+ * a chest for food, a research desk, power and a lamp once researched, more farms as the colony grows, sandbags
+ * in front of the door, and in an attack everyone drafts and gathers behind the sandbags.
  */
 import {
   canPlace,
@@ -9,6 +10,7 @@ import {
   designate,
   fertilityAt,
   NO_THING,
+  orderMove,
   placeBlueprint,
   researchState,
   setDrafted,
@@ -19,6 +21,9 @@ import {
 interface Plan {
   room?: { x: number; y: number; size: number };
   stage: number;
+  farms: number;
+  /** Enemies were near at the last check (to give gather orders once per attack). */
+  alarm: boolean;
 }
 
 const RESEARCH_ORDER = ["rain_catchers", "scrap_power", "electric_lights", "field_medicine", "batteries", "turret_wiring", "gunsmithing", "powered_tools", "smelting", "conveyors"];
@@ -68,7 +73,7 @@ function fertileSquare(game: Game, size: number): { x: number; y: number }[] {
 }
 
 export function makeAutoplayer(game: Game) {
-  const plan: Plan = { stage: 0 };
+  const plan: Plan = { stage: 0, farms: 1, alarm: false };
   return function act() {
     const { x: hx, y: hy } = game.home;
     // Fight: draft everyone while enemies are around.
@@ -77,6 +82,12 @@ export function makeAutoplayer(game: Game) {
       (e) => e.faction !== "colony" && !e.health.downed && cols.some((c) => Math.hypot(c.x - e.x, c.y - e.y) < 20),
     );
     for (const p of game.pawns.values()) if (p.faction === "colony" && p.drafted !== enemies) setDrafted(game, p, enemies);
+    if (enemies && !plan.alarm && plan.room && plan.stage >= 3) {
+      // Gather in the row between the door and the sandbags, so everyone fights together from cover.
+      const r = plan.room;
+      cols.filter((c) => c.drafted).forEach((c, i) => orderMove(game, c, { layer: 0, x: r.x + 1 + (i % 5), y: r.y + 7 }));
+    }
+    plan.alarm = enemies;
     if (game.tick % Math.round(game.ticksPerHour * 2) !== 0) return;
 
     if (plan.stage === 0) {
@@ -115,6 +126,8 @@ export function makeAutoplayer(game: Game) {
       for (let i = 0; i < 3; i++) placeBlueprint(game, "thing", "bedroll", 0, x0 + 1 + i * 2, y0 + 1);
       // A well inside the room stays clean when a radiation cloud passes.
       placeBlueprint(game, "thing", "well", 0, x0 + 5, y0 + 5);
+      // A chest in the room keeps food away from rats.
+      placeBlueprint(game, "thing", "scrap_chest", 0, x0 + 1, y0 + 5);
       plan.stage = 2;
       return;
     }
@@ -127,7 +140,19 @@ export function makeAutoplayer(game: Game) {
           break;
         }
       placeBlueprint(game, "thing", "scrap_bench", 0, r.x + 7, r.y + 4);
+      // Sandbags two tiles south of the door, with a gap in front of it.
+      for (const dx of [0, 1, 2, 4, 5, 6]) placeBlueprint(game, "thing", "sandbags", 0, r.x + dx, r.y + 8);
       plan.stage = 3;
+    }
+    // More farms as the colony grows: potatoes keep for a month, corn grows fast.
+    const day = game.tick / game.ticksPerDay;
+    if (plan.stage >= 3 && plan.farms === 1 && day > 3) {
+      createZone(game, "grow", 0, fertileSquare(game, 6), undefined, "scrub_potato_plant");
+      plan.farms = 2;
+    }
+    if (plan.stage >= 3 && plan.farms === 2 && cols.length >= 5) {
+      createZone(game, "grow", 0, fertileSquare(game, 6), undefined, "glowcorn_plant");
+      plan.farms = 3;
     }
     if (plan.stage >= 3) {
       if (!game.research.current) {
@@ -138,7 +163,7 @@ export function makeAutoplayer(game: Game) {
       if (plan.stage === 3 && game.research.done.has("electric_lights") && plan.room) {
         const r = plan.room;
         // Generator, wire and lamp in a row outside the west wall (wires cannot pass through walls).
-        placeBlueprint(game, "thing", "scrap_generator", 0, r.x - 4, r.y + 3);
+        placeBlueprint(game, "thing", "scrap_generator", 0, r.x - 5, r.y + 3);
         placeBlueprint(game, "thing", "wire", 0, r.x - 3, r.y + 3);
         placeBlueprint(game, "thing", "lamp", 0, r.x - 2, r.y + 3);
         plan.stage = 4;

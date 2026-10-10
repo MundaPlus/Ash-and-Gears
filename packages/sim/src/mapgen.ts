@@ -1,5 +1,6 @@
 /**
  * Home map generator. Surface: a ruined town on dry land. Layer 1: rock with caves and seams.
+ * Layer 2 (A4): deeper rock with fewer caves and an old bunker of sealed rooms with lockers.
  * All randomness comes from the game seed, so one seed always makes the same map.
  */
 import type { Game } from "./game.ts";
@@ -19,6 +20,7 @@ export function generateHomeMap(game: Game): void {
   const rng = game.rng.fork("mapgen");
   generateSurface(game, rng.fork("surface"));
   for (let l = 1; l < game.map.layers.length; l++) generateUnderground(game, l, rng.fork(`under${l}`));
+  if (game.map.layers.length > 2) placeBunker(game, 2, rng.fork("bunker"));
   placeStairs(game, rng.fork("stairs"));
 }
 
@@ -210,6 +212,10 @@ function areaFree(layer: Layer, r: Rect): boolean {
 
 function generateUnderground(game: Game, l: number, rng: Rng) {
   const layer = game.map.layers[l];
+  // Deeper layers have fewer caves and richer seams.
+  const caveAt = l >= 2 ? 0.68 : 0.6;
+  const coalAt = l >= 2 ? 0.66 : 0.7;
+  const junkAt = l >= 2 ? 0.7 : 0.74;
   const cave = new Noise2D(rng.fork("cave"));
   const coal = new Noise2D(rng.fork("coal"));
   const junk = new Noise2D(rng.fork("junk"));
@@ -217,9 +223,9 @@ function generateUnderground(game: Game, l: number, rng: Rng) {
   for (let y = 0; y < layer.h; y++) {
     for (let x = 0; x < layer.w; x++) {
       let t = "rock";
-      if (cave.fbm(x, y, 26, 5) > 0.6) t = wet.fbm(x, y, 14) < 0.22 ? "sludge" : "cave_floor";
-      else if (coal.fbm(x, y, 12) > 0.7) t = "coal_seam";
-      else if (junk.fbm(x, y, 10) > 0.74) t = "scrap_vein";
+      if (cave.fbm(x, y, 26, 5) > caveAt) t = wet.fbm(x, y, 14) < 0.22 ? "sludge" : "cave_floor";
+      else if (coal.fbm(x, y, 12) > coalAt) t = "coal_seam";
+      else if (junk.fbm(x, y, 10) > junkAt) t = "scrap_vein";
       setT(game, layer, x, y, t);
     }
   }
@@ -256,4 +262,42 @@ function placeStairs(game: Game, rng: Rng) {
     for (let x = -3; x <= 3; x++)
       if (x * x + y * y <= 10 && low.inBounds(sx + x, sy + y)) setT(game, low, sx + x, sy + y, "cave_floor");
   game.spawnThing("stairs_up", 1, sx, sy);
+}
+
+/**
+ * The old bunker: 3 x 2 rooms (6 x 5 inside) with bunker walls, doors between rooms and one door
+ * out on the west side, two lockers per room. It sits 15-30 tiles from the map center.
+ */
+function placeBunker(game: Game, l: number, rng: Rng) {
+  const layer = game.map.layers[l];
+  const RW = 7, RH = 6, COLS = 3, ROWS = 2;
+  const w = COLS * RW + 1, h = ROWS * RH + 1;
+  const ang = rng.next() * Math.PI * 2, dist = 15 + rng.next() * 15;
+  const x0 = Math.max(2, Math.min(layer.w - w - 2, Math.round((layer.w >> 1) + Math.cos(ang) * dist - w / 2)));
+  const y0 = Math.max(2, Math.min(layer.h - h - 2, Math.round((layer.h >> 1) + Math.sin(ang) * dist - h / 2)));
+  for (let y = y0; y < y0 + h; y++)
+    for (let x = x0; x < x0 + w; x++) {
+      setT(game, layer, x, y, "bunker_floor");
+      const th = layer.thing[layer.i(x, y)];
+      if (th !== NO_THING) game.removeThing(th);
+    }
+  const door = (x: number, y: number) => {
+    const th = layer.thing[layer.i(x, y)];
+    if (th !== NO_THING) game.removeThing(th);
+    game.spawnThing("bunker_door", l, x, y);
+  };
+  for (let y = y0; y < y0 + h; y++)
+    for (let x = x0; x < x0 + w; x++) if ((x - x0) % RW === 0 || (y - y0) % RH === 0) game.spawnThing("bunker_wall", l, x, y);
+  for (let r = 0; r < ROWS; r++)
+    for (let c = 0; c < COLS; c++) {
+      const rx = x0 + c * RW, ry = y0 + r * RH;
+      // Doors east and south to the next room.
+      if (c < COLS - 1) door(rx + RW, ry + 3);
+      if (r < ROWS - 1) door(rx + 3, ry + RH);
+      for (let k = 0; k < 2; k++) {
+        const lx = rx + 1 + rng.int(0, RW - 3), ly = ry + 1 + rng.int(0, RH - 3);
+        if (layer.thing[layer.i(lx, ly)] === NO_THING) game.spawnThing("bunker_locker", l, lx, ly);
+      }
+    }
+  door(x0, y0 + 3);
 }

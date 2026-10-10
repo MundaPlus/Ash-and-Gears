@@ -2,7 +2,10 @@
  * Rooms, roofs and temperature (spec 03, "Rooms" and "Temperature").
  * A room is a 4-connected area bounded by walls, doors or solid rock.
  * On the surface, an area that touches the map edge (or is huge) is "outdoors".
- * Enclosed surface rooms get a roof automatically. Underground counts as roofed everywhere.
+ * Enclosed surface rooms need a roof. Survivors build it tile by tile (construction work).
+ * Underground counts as roofed everywhere.
+ * A room is "sealed" when no door opens straight to the outside. Two doors in a row
+ * (an airlock) or a door into a closed hall keep radiation out.
  */
 import type { Game } from "./game.ts";
 import { NO_THING } from "./map.ts";
@@ -16,6 +19,8 @@ export interface Room {
   insulation: number;
   /** Degrees Celsius. */
   temp: number;
+  /** No door of this room opens straight to outdoors. */
+  sealed: boolean;
 }
 
 /** Bigger enclosed areas count as outdoors (no roof). */
@@ -101,23 +106,58 @@ export function ensureRooms(game: Game): void {
         outdoor,
         insulation: insN ? insSum / insN : 1,
         temp: prev && !prev.outdoor ? prev.temp : outdoorTemp(game, L.index),
+        sealed: !outdoor,
       });
     }
-    // Roofs: enclosed surface rooms, and the walls around them. Underground is always roofed.
+    // A door unseals the enclosed rooms it touches when it opens straight to outdoors, or when
+    // it leads into a second door that is not set between walls (a real airlock has walls at its sides).
+    const isDoor = (i: number) => L.thing[i] !== NO_THING && game.reg.things.list[game.things.get(L.thing[i])!.def].door;
+    const isSolidWall = (i: number) => i >= 0 && isBoundary(game, L.index, i) && !isDoor(i);
+    const step = (i: number, k: number) => {
+      const x = i % w;
+      return k === 0 ? (x > 0 ? i - 1 : -1) : k === 1 ? (x < w - 1 ? i + 1 : -1) : k === 2 ? (i >= w ? i - w : -1) : i + w < n ? i + w : -1;
+    };
+    for (let i = 0; i < n; i++) {
+      if (!isDoor(i)) continue;
+      const rooms: Room[] = [];
+      let leak = false;
+      for (let k = 0; k < 4; k++) {
+        const nb = step(i, k);
+        if (nb < 0) continue;
+        if (L.room[nb] !== -1) {
+          const r = fresh.get(L.room[nb])!;
+          if (r.outdoor) leak = true;
+          else rooms.push(r);
+        } else if (isDoor(nb)) {
+          // Second door: its two sides across the passage must be walls.
+          const sides = k < 2 ? [step(nb, 2), step(nb, 3)] : [step(nb, 0), step(nb, 1)];
+          if (!sides.every(isSolidWall)) leak = true;
+        }
+      }
+      if (leak) for (const r of rooms) r.sealed = false;
+    }
+    // Roofs: enclosed surface rooms and the walls around them need one. Underground is always roofed.
     const enclosed = (r: number) => r !== -1 && !fresh.get(r)!.outdoor;
     for (let i = 0; i < n; i++) {
-      let roofed: boolean;
-      if (L.index > 0) roofed = true;
-      else if (L.room[i] !== -1) roofed = enclosed(L.room[i]);
+      let want: boolean;
+      if (L.index > 0) want = true;
+      else if (L.room[i] !== -1) want = enclosed(L.room[i]);
       else {
         const x = i % w;
-        roofed = (x > 0 && enclosed(L.room[i - 1])) || (x < w - 1 && enclosed(L.room[i + 1])) || (i >= w && enclosed(L.room[i - w])) || (i + w < n && enclosed(L.room[i + w]));
+        want = (x > 0 && enclosed(L.room[i - 1])) || (x < w - 1 && enclosed(L.room[i + 1])) || (i >= w && enclosed(L.room[i - w])) || (i + w < n && enclosed(L.room[i + w]));
       }
-      const v = roofed ? 1 : 0;
-      if (L.roof[i] !== v) {
-        L.roof[i] = v;
+      L.roofWant[i] = want ? 1 : 0;
+      if (L.index > 0) {
+        if (!L.roof[i]) L.roof[i] = 1;
+        continue;
+      }
+      // A roof falls in when its room opens up.
+      if (!want && L.roof[i]) {
+        L.roof[i] = 0;
         L.touch(i % w, Math.floor(i / w));
       }
+      if (want && !L.roof[i]) game.roofTodo.add(i);
+      else game.roofTodo.delete(i);
     }
   }
   game.rooms = fresh;
@@ -137,6 +177,52 @@ export function roomAt(game: Game, layer: number, x: number, y: number): Room | 
 export function tempAt(game: Game, layer: number, x: number, y: number): number {
   const r = roomAt(game, layer, x, y);
   return r ? r.temp : outdoorTemp(game, layer);
+}
+
+/** Build the roof on one surface tile (the "roof" work task calls this). */
+export function setRoof(game: Game, x: number, y: number, on: boolean): void {
+  const L = game.map.layers[0];
+  const i = L.i(x, y);
+  L.roof[i] = on ? 1 : 0;
+  if (on || !L.roofWant[i]) game.roofTodo.delete(i);
+  else game.roofTodo.add(i);
+  L.touch(x, y);
+  game.mapVersion++;
+}
+
+/** Give every enclosed room its roof at once (map generation, showcase, old saves). */
+export function completeRoofs(game: Game): void {
+  ensureRooms(game);
+  const L = game.map.layers[0];
+  for (const i of game.roofTodo) {
+    L.roof[i] = 1;
+    L.touch(i % L.w, Math.floor(i / L.w));
+  }
+  game.roofTodo.clear();
+  game.mapVersion++;
+}
+
+/**
+ * How much radiation and toxic rain reach a tile.
+ * "open": no roof. "leaky": roofed, but a door opens to the outside. "sealed": safe.
+ */
+export type Exposure = "open" | "leaky" | "sealed";
+
+export function exposureAt(game: Game, layer: number, x: number, y: number): Exposure {
+  if (layer > 0) return "sealed";
+  const L = game.map.layers[0];
+  const i = L.i(x, y);
+  if (!L.roof[i]) return "open";
+  const r = game.rooms.get(L.room[i]);
+  if (!r || r.outdoor || !r.sealed) return "leaky";
+  return roomFullyRoofed(game, r) ? "sealed" : "leaky";
+}
+
+/** True if no tile of the room still waits for its roof. */
+function roomFullyRoofed(game: Game, r: Room): boolean {
+  const L = game.map.layers[r.layer];
+  for (const i of game.roofTodo) if (L.room[i] === r.id) return false;
+  return true;
 }
 
 export function isRoofed(game: Game, layer: number, x: number, y: number): boolean {

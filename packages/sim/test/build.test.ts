@@ -90,11 +90,30 @@ describe("construction", () => {
     clearArea(g, hx - 10, hy - 10, 3);
     g.spawnThing("scrap_bed", 0, hx - 10, hy - 10);
     const scrap0 = countItems(g, "scrap"), cloth0 = countItems(g, "cloth");
-    expect(designate(g, "salvage", 0, hx - 10, hy - 10)).toBe(true);
+    // Salvage never takes your own buildings; deconstruct does.
+    expect(designate(g, "salvage", 0, hx - 10, hy - 10)).toBe(false);
+    expect(designate(g, "deconstruct", 0, hx - 10, hy - 10)).toBe(true);
     run(g, 10);
     expect(thingId(g, 0, hx - 10, hy - 10)).toBeNull();
     expect(countItems(g, "scrap") - scrap0).toBe(11);
     expect(countItems(g, "cloth") - cloth0).toBe(3);
+  });
+});
+
+describe("blueprint replacing", () => {
+  it("a door blueprint replaces a wall blueprint and refunds what was delivered", () => {
+    const g = smallGame("replace");
+    const { x, y } = g.home;
+    clearArea(g, x - 6, y - 6, 2);
+    const wall = placeBlueprint(g, "thing", "scrap_wall", 0, x - 6, y - 6)!;
+    wall.need[g.reg.items.idx("scrap")] = 2; // 3 of 5 already delivered
+    const scrap0 = countItems(g, "scrap");
+    const door = placeBlueprint(g, "thing", "scrap_door", 0, x - 6, y - 6);
+    expect(door).not.toBeNull();
+    expect(g.blueprints.has(wall.id)).toBe(false);
+    expect(countItems(g, "scrap")).toBe(scrap0 + 3);
+    // The same blueprint again is not a change.
+    expect(placeBlueprint(g, "thing", "scrap_door", 0, x - 6, y - 6)).toBeNull();
   });
 });
 

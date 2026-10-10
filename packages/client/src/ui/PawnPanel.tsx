@@ -42,6 +42,19 @@ export function PawnPanel() {
         </button>
       )}
       {p.drafted && <p class="hint">{t("pawn.draft_hint")}</p>}
+      {p.faction === "raiders" && p.downed && (
+        <button class={`draft ${p.capture ? "on" : ""}`} data-testid="capture" onClick={() => actions.setCapture(p.id, !p.capture)}>
+          {t(p.capture ? "prison.cancel_capture" : "prison.capture")}
+        </button>
+      )}
+      {p.faction === "prisoner" && (
+        <>
+          <p class="sub">{p.resistance > 0 ? t("prison.resistance", { n: Math.ceil(p.resistance) }) : t("prison.ready")}</p>
+          <button class="draft" data-testid="release" onClick={() => actions.release(p.id)}>
+            {t("prison.release")}
+          </button>
+        </>
+      )}
       <h3>{t("pawn.health")}</h3>
       <Bar value={1 - p.bloodLoss} label={t("pawn.blood")} />
       <Bar value={1 - p.pain} label={t("pawn.pain")} />
@@ -60,7 +73,8 @@ export function PawnPanel() {
           </li>
         ))}
       </ul>
-      {p.faction !== "colony" ? null : (
+      {p.robot && <Bar value={p.charge} label={t("pawn.charge")} />}
+      {p.faction !== "colony" || p.robot ? null : (
         <>
       <Bar value={p.mood / 100} label={t("pawn.mood")} />
       <h3>{t("pawn.needs")}</h3>
@@ -76,6 +90,34 @@ export function PawnPanel() {
           </li>
         ))}
       </ul>
+      {p.backstory.length > 0 && (
+        <>
+          <h3>{t("backstory.title")}</h3>
+          <ul class="traits">
+            {p.backstory.map((b) => (
+              <li key={b} title={t(`backstory.${b}.desc`)}>
+                {t(`backstory.${b}`)}
+              </li>
+            ))}
+          </ul>
+          {p.noWork.length > 0 && <p class="hint">{t("backstory.no_work", { list: p.noWork.map((w) => t(`work.${w}`)).join(", ") })}</p>}
+        </>
+      )}
+      {p.relations.length > 0 && (
+        <>
+          <h3>{t("rel.title")}</h3>
+          <ul class="thoughts" data-testid="relations">
+            {p.relations.map((r) => (
+              <li key={r.nick}>
+                <span>
+                  {r.nick} · {t(`rel.${r.label}`)}
+                </span>
+                <b class={r.opinion >= 0 ? "pos" : "neg"}>{r.opinion > 0 ? `+${r.opinion}` : r.opinion}</b>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
       <h3>{t("pawn.thoughts")}</h3>
       <ul class="thoughts">
         {p.thoughts.map((th, i) => (

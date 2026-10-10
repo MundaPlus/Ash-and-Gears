@@ -146,5 +146,54 @@
   "id": "wanderer_joined",
   "mood": 3,
   "hours": 48
+ },
+ {
+  "id": "had_chat",
+  "mood": 2,
+  "hours": 6,
+  "stack": 3
+ },
+ {
+  "id": "had_argument",
+  "mood": -3,
+  "hours": 6,
+  "stack": 3
+ },
+ {
+  "id": "has_friend",
+  "mood": 3
+ },
+ {
+  "id": "has_rival",
+  "mood": -4
+ },
+ {
+  "id": "has_lover",
+  "mood": 6
+ },
+ {
+  "id": "lover_died",
+  "mood": -20,
+  "hours": 240
+ },
+ {
+  "id": "family_died",
+  "mood": -15,
+  "hours": 168
+ },
+ {
+  "id": "friend_died",
+  "mood": -10,
+  "hours": 120
+ },
+ {
+  "id": "rival_died",
+  "mood": 3,
+  "hours": 48
+ },
+ {
+  "id": "rescued",
+  "mood": 4,
+  "hours": 48
  }
 ]

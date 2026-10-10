@@ -5,7 +5,7 @@
 import { atGoal, findItem, goTo, isReserved, reserve } from "./ai.ts";
 import { registerJob, registerWorkGiver } from "./jobs.ts";
 import type { Game } from "./game.ts";
-import { canHoldItem, dropItems, stackLimit, takeFromStack } from "./items.ts";
+import { canHoldItem, chestCount, dropItems, putInChest, stackLimit, takeFromStack } from "./items.ts";
 import { NO_THING, type Zone } from "./map.ts";
 import type { Pos } from "./path.ts";
 import type { Job, Pawn } from "./pawn.ts";
@@ -96,9 +96,19 @@ function accepts(game: Game, z: Zone | null, def: number, contaminated: boolean)
   return z.allow.includes(game.reg.items.list[def].category);
 }
 
-/** Nearest stockpile tile that can take this item. */
+/** Nearest stockpile tile or chest with room that can take this item. */
 function findStorage(game: Game, p: Pawn, from: Pos, def: number, contaminated: boolean): Pos | null {
   let best: Pos | null = null, bestD = Infinity;
+  // Chests take anything while they have room.
+  for (const t of game.things.values()) {
+    const cap = game.reg.things.list[t.def].chest;
+    if (!cap || chestCount(game, t) >= cap || isReserved(game, `tile:${t.layer},${t.x},${t.y}`, p)) continue;
+    const d = (t.x - from.x) ** 2 + (t.y - from.y) ** 2 + (t.layer !== from.layer ? 900 : 0);
+    if (d < bestD) {
+      best = { layer: t.layer, x: t.x, y: t.y };
+      bestD = d;
+    }
+  }
   for (const z of game.zones.values()) {
     if (!accepts(game, z, def, contaminated)) continue;
     const L = game.map.layers[z.layer];
@@ -121,8 +131,9 @@ function findStorage(game: Game, p: Pawn, from: Pos, def: number, contaminated: 
 registerWorkGiver({
   workType: "haul",
   give(game, p) {
-    if (!game.zones.size) return null;
-    const stack = findItem(game, p, () => true, (s) => !accepts(game, zoneAt(game, s.layer, s.x, s.y), s.def, !!s.contaminated));
+    if (!game.zones.size && ![...game.things.values()].some((t) => game.reg.things.list[t.def].chest)) return null;
+    // Loose items only: stacks in a chest or on a stockpile that takes them are stored already.
+    const stack = findItem(game, p, () => true, (s) => s.chest === undefined && !accepts(game, zoneAt(game, s.layer, s.x, s.y), s.def, !!s.contaminated));
     if (stack === null) return null;
     const s = game.items.get(stack)!;
     const dest = findStorage(game, p, s, s.def, !!s.contaminated);
@@ -149,6 +160,14 @@ registerJob("haul", (game, p, job: Job) => {
     job.stage = 2;
   }
   if (!atGoal(p)) return "run";
+  // Into a chest when the target is one; what does not fit goes on the ground.
+  const L = game.map.layers[job.target!.layer];
+  const tid = L.thing[L.i(job.target!.x, job.target!.y)];
+  const chest = tid !== NO_THING && game.reg.things.list[game.things.get(tid)!.def].chest ? game.things.get(tid)! : null;
+  if (chest && p.carrying) {
+    p.carrying.count -= putInChest(game, chest, p.carrying.def, p.carrying.count, !!p.carrying.contaminated, p.carrying.contamUntil);
+    if (p.carrying.count <= 0) p.carrying = null;
+  }
   dropCarried(game, p);
   return "done";
 });

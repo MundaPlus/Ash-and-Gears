@@ -154,6 +154,25 @@ describe("fights", () => {
     expect([patient.x, patient.y]).toEqual([x - 6, y - 6]);
     expect(untendedInjuries(patient).length).toBe(0);
   });
+
+  it("a doctor drops their job and rushes to a downed survivor", () => {
+    const g = newGame("alarm");
+    const { x, y } = g.home;
+    clearArea(g, x - 6, y - 6, 2);
+    g.spawnThing("scrap_bed", 0, x - 6, y - 6);
+    const [patient, doctor, ...rest] = colonists(g);
+    for (const o of rest) o.work.doctor = 0;
+    // The doctor is busy with a long job (asleep on the ground) when the patient goes down.
+    doctor.needs.rest = 0.05;
+    doctor.job = { kind: "sleep", stage: 0, target: { layer: 0, x: doctor.x, y: doctor.y } };
+    damage(g, patient, 20, "gunshot", "l_leg");
+    damage(g, patient, 20, "gunshot", "r_leg");
+    patient.health.bloodLoss = 0.65;
+    damage(g, patient, 1, "cut", "torso");
+    expect(patient.health.downed).toBe(true);
+    for (let i = 0; i < 40; i++) g.step();
+    expect(doctor.job?.kind).toBe("rescue");
+  });
 });
 
 describe("fire", () => {

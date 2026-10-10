@@ -52,11 +52,21 @@ export class ToolController implements ToolHandler {
 
   set(spec: ToolSpec | null) {
     this.spec = spec;
+    this.hovered = null;
     this.cancel();
   }
 
   private tileAt(wx: number, wy: number): Tile {
     return { x: Math.floor(wx / TILE), y: Math.floor(wy / TILE) };
+  }
+
+  private hovered: Tile | null = null;
+
+  hover(wx: number, wy: number) {
+    const t = this.tileAt(wx, wy);
+    if (this.start || (this.hovered && this.hovered.x === t.x && this.hovered.y === t.y)) return;
+    this.hovered = t;
+    this.draw();
   }
 
   down(wx: number, wy: number) {
@@ -83,6 +93,7 @@ export class ToolController implements ToolHandler {
   cancel() {
     this.start = this.end = null;
     this.preview.clear();
+    if (this.hovered) this.draw();
   }
 
   /** Tiles covered by the current drag, by tool shape. */
@@ -91,6 +102,9 @@ export class ToolController implements ToolHandler {
     const x0 = Math.min(a.x, b.x), x1 = Math.max(a.x, b.x), y0 = Math.min(a.y, b.y), y1 = Math.max(a.y, b.y);
     const out: Tile[] = [];
     const spec = this.spec!;
+    // Big things go down one at a time, where the mouse lets go.
+    const [sw, sh] = this.size();
+    if (sw * sh > 1) return [{ x: b.x, y: b.y }];
     const isWall = spec.kind === "build" && spec.defKind === "thing" && this.game.reg.things.get(spec.def).wall;
     const fill = spec.kind !== "build" || spec.defKind === "floor";
     if (fill) {
@@ -106,9 +120,20 @@ export class ToolController implements ToolHandler {
     return out;
   }
 
+  /** Belts turn to face a way; big non-square things turn to lie the other way. R turns both. */
   rotatable(): boolean {
     const s = this.spec;
-    return s?.kind === "build" && s.defKind === "thing" && this.game.reg.things.get(s.def).rotatable;
+    if (s?.kind !== "build" || s.defKind !== "thing") return false;
+    const d = this.game.reg.things.get(s.def);
+    return d.rotatable || d.footprint[0] !== d.footprint[1];
+  }
+
+  /** Footprint of the thing being placed, after rotation (1x1 for other tools). */
+  size(): [number, number] {
+    const s = this.spec;
+    if (s?.kind !== "build" || s.defKind !== "thing") return [1, 1];
+    const [w, h] = this.game.reg.things.get(s.def).footprint;
+    return this.rot % 2 ? [h, w] : [w, h];
   }
 
   private valid(t: Tile): boolean {
@@ -118,7 +143,7 @@ export class ToolController implements ToolHandler {
     const i = L.i(t.x, t.y);
     switch (s.kind) {
       case "build":
-        return canPlace(g, s.defKind, s.def, l, t.x, t.y);
+        return canPlace(g, s.defKind, s.def, l, t.x, t.y, this.rotatable() ? this.rot : undefined);
       case "order":
         return canDesignate(g, s.desig, l, t.x, t.y);
       case "cancel":
@@ -132,15 +157,24 @@ export class ToolController implements ToolHandler {
 
   private draw() {
     this.preview.clear();
-    if (!this.start || !this.spec) return;
+    if (!this.spec) return;
+    if (!this.start) {
+      // Not dragging: outline the tile under the mouse, green if the tool works there.
+      if (!this.hovered) return;
+      const t = this.hovered, ok = this.valid(t);
+      const [hw, hh] = this.size();
+      this.preview.rect(t.x * TILE, t.y * TILE, hw * TILE, hh * TILE).stroke({ width: 2, color: ok ? 0x9fd14a : 0xc2453a, alpha: 0.95 });
+      return;
+    }
     const DIRS: [number, number][] = [[1, 0], [0, 1], [-1, 0], [0, -1]];
     for (const t of this.tiles()) {
       const ok = this.valid(t);
+      const [pw, ph] = this.size();
       this.preview
-        .rect(t.x * TILE + 1, t.y * TILE + 1, TILE - 2, TILE - 2)
+        .rect(t.x * TILE + 1, t.y * TILE + 1, pw * TILE - 2, ph * TILE - 2)
         .fill({ color: ok ? 0x9fd14a : 0xc2453a, alpha: 0.25 })
         .stroke({ width: 1, color: ok ? 0x9fd14a : 0xc2453a, alpha: 0.8 });
-      if (this.rotatable()) {
+      if (this.rotatable() && pw * ph === 1) {
         const [dx, dy] = DIRS[this.rot];
         const cx = t.x * TILE + TILE / 2, cy = t.y * TILE + TILE / 2;
         this.preview.moveTo(cx - dx * 8, cy - dy * 8).lineTo(cx + dx * 10, cy + dy * 10).stroke({ width: 3, color: 0xe3c25a });

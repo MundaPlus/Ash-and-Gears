@@ -63,6 +63,63 @@
   ]
  },
  {
+  "id": "plumbing",
+  "cost": 2000,
+  "tier": 1,
+  "prereqs": [
+   "scrap_power"
+  ]
+ },
+ {
+  "id": "water_purification",
+  "cost": 2600,
+  "tier": 2,
+  "prereqs": [
+   "plumbing"
+  ]
+ },
+ {
+  "id": "biofuel",
+  "cost": 1800,
+  "tier": 1,
+  "prereqs": [
+   "plumbing"
+  ]
+ },
+ {
+  "id": "power_grid",
+  "cost": 2000,
+  "tier": 2,
+  "prereqs": [
+   "batteries"
+  ]
+ },
+ {
+  "id": "renewables",
+  "cost": 3000,
+  "tier": 2,
+  "prereqs": [
+   "power_grid",
+   "smelting"
+  ]
+ },
+ {
+  "id": "deep_digging",
+  "cost": 2400,
+  "tier": 2,
+  "prereqs": [
+   "smelting"
+  ]
+ },
+ {
+  "id": "belt_logistics",
+  "cost": 2800,
+  "tier": 2,
+  "prereqs": [
+   "conveyors"
+  ]
+ },
+ {
   "id": "auto_crafting",
   "cost": 4800,
   "tier": 2,
@@ -76,5 +133,43 @@
   "id": "field_medicine",
   "cost": 1200,
   "tier": 0
+ },
+ {
+  "id": "plastics",
+  "cost": 3200,
+  "tier": 2,
+  "prereqs": [
+   "biofuel",
+   "smelting"
+  ],
+  "blueprint": "plastics_manual"
+ },
+ {
+  "id": "electronics",
+  "cost": 3600,
+  "tier": 2,
+  "prereqs": [
+   "plastics",
+   "powered_tools"
+  ],
+  "blueprint": "electronics_manual"
+ },
+ {
+  "id": "assembling",
+  "cost": 5000,
+  "tier": 3,
+  "prereqs": [
+   "electronics",
+   "auto_crafting"
+  ],
+  "blueprint": "assembler_schematic"
+ },
+ {
+  "id": "robotics",
+  "cost": 4500,
+  "tier": 3,
+  "prereqs": [
+   "electronics"
+  ]
  }
 ]

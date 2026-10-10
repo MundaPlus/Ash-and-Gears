@@ -5,6 +5,7 @@
  */
 import { t } from "@wc/data";
 import { useEffect, useState } from "preact/hooks";
+import { ART_SIZES } from "../render/textures.ts";
 import { listSlots, type SlotInfo } from "../storage.ts";
 import { actions, useStore } from "./store.ts";
 
@@ -197,7 +198,7 @@ export function GameMenu() {
               ))}
             </div>
             <div class="choices">
-              {(["16", "32"] as const).map((z) => (
+              {ART_SIZES.map((z) => (
                 <button key={z} class={s.art.size === z ? "on" : ""} data-testid={`px-${z}`} onClick={() => actions.setArt({ size: z })}>
                   <b>{t(`settings.px_${z}`)}</b>
                 </button>

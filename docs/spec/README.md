@@ -16,5 +16,6 @@ Status: APPROVED v1.0 (2026-10-09).
 | [09-audio-art](09-audio-art.md) | Art direction, texel pipeline, adaptive music, SFX |
 | [10-tech-architecture](10-tech-architecture.md) | Stack, repo, sim design, saves, mods, 0.0.0.0 servers, tests |
 | [11-roadmap](11-roadmap.md) | Gates, demo milestones, later phases, risks |
+| [12-alpha-plan](12-alpha-plan.md) | Plan after the demo: name, Alpha decisions and milestones |
 
 Each file ends with a **Demo subset** section. It defines what the first playable demo contains.

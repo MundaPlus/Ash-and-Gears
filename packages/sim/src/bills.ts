@@ -10,6 +10,9 @@ import { registerCleanup, registerJob, registerWorkGiver } from "./jobs.ts";
 import type { Game } from "./game.ts";
 import { countItems, dropItems } from "./items.ts";
 import type { Thing } from "./map.ts";
+import { benchFeedsOut } from "./logistics.ts";
+import { fluidNetOf, netAdd, netAmount, netDraw, totalFluid } from "./fluids.ts";
+import { makeRobot, robotCount } from "./robots.ts";
 import { pickUp } from "./hauling.ts";
 import { learn, workSpeed, skillLevel, type Job, type Pawn } from "./pawn.ts";
 import type { WorkType } from "./worktypes.ts";
@@ -38,6 +41,8 @@ export function recipesFor(game: Game, benchDefId: string): RecipeDef[] {
 
 /** Units in stock of the recipe's first output (on the ground anywhere, not carried). */
 export function stockOf(game: Game, r: RecipeDef): number {
+  if (r.spawn) return robotCount(game, r.spawn);
+  if (r.fluidOut) return totalFluid(game, r.fluidOut.kind);
   const [item] = Object.keys(r.output);
   return countItems(game, item);
 }
@@ -75,9 +80,15 @@ function billJob(game: Game, p: Pawn, workType: WorkType): Job | null {
       const enough = r.inputs.every((inp) => {
         let n = 0;
         for (const s of game.items.values()) if (s.layer >= 0 && !s.contaminated && matchesInput(game, inp, s.def)) n += s.count;
+        for (const [k, v] of Object.entries(bench.buffer ?? {})) if (matchesInput(game, inp, Number(k))) n += v;
         return n >= inp.count;
       });
       if (!enough) continue;
+      // Fluid inputs come from the bench's own pipes.
+      if (r.fluidIn) {
+        const net = fluidNetOf(game, bench);
+        if (!net || netAmount(game, net, r.fluidIn.kind) < r.fluidIn.liters) continue;
+      }
       if (!reserve(game, `thing:${bench.id}`, p)) continue;
       return { kind: "bill", stage: 0, targetId: bench.id, data: { recipe: r.id, input: 0, have: 0, work: r.work } };
     }
@@ -85,7 +96,9 @@ function billJob(game: Game, p: Pawn, workType: WorkType): Job | null {
   return null;
 }
 
-for (const wt of ["cook", "craft", "haul"] as WorkType[]) registerWorkGiver({ workType: wt, give: (game, p) => billJob(game, p, wt) });
+// Haul-type bills (water from the well) come before plain hauling, or a big salvage pile keeps
+// everyone carrying junk while the colony goes thirsty.
+for (const wt of ["cook", "craft", "haul"] as WorkType[]) registerWorkGiver({ workType: wt, give: (game, p) => billJob(game, p, wt) }, wt === "haul");
 
 /** Inputs still missing for the current input slot. */
 function missingNow(r: RecipeDef, job: Job): number {
@@ -113,13 +126,25 @@ registerJob("bill", (game, p, job) => {
 
   if (job.stage === 0) {
     if (job.data!.src === undefined) {
+      useBuffer(game, bench, r, job);
       // Skip filled slots; when all are filled, start working.
       while ((job.data!.input as number) < r.inputs.length && missingNow(r, job) <= 0) {
         job.data!.input = (job.data!.input as number) + 1;
         job.data!.have = 0;
+        useBuffer(game, bench, r, job);
       }
       if ((job.data!.input as number) >= r.inputs.length) {
         if (!goTo(game, p, bench, true)) return "fail";
+        // Take the fluid now; the cleanup gives it back if the job stops early.
+        if (r.fluidIn && !job.data!.fluid) {
+          const net = fluidNetOf(game, bench);
+          const got = net ? netDraw(game, net, r.fluidIn.kind, r.fluidIn.liters) : 0;
+          if (got < r.fluidIn.liters) {
+            if (net && got > 0) netAdd(game, net, r.fluidIn.kind, got);
+            return "fail";
+          }
+          job.data!.fluid = got;
+        }
         job.stage = 2;
         return "run";
       }
@@ -159,16 +184,60 @@ registerJob("bill", (game, p, job) => {
   if ((job.data!.work as number) > 0) return "run";
   // Water from a contaminated well is contaminated too.
   const cont = isContaminatedThing(game, bench);
-  for (const [item, n] of Object.entries(r.output)) dropItems(game, item, n, p.layer, p.x, p.y, cont, bench.contamUntil);
+  // A robot rolls out of the bay.
+  if (r.spawn) {
+    const bot = makeRobot(game, r.spawn, bench.layer, bench.x, bench.y);
+    game.pawns.set(bot.id, bot);
+    game.message("msg.robot_built", { kind: r.spawn, name: bot.nick }, "info");
+  }
+  // Fluids go into the bench's own pipe network (what does not fit is lost).
+  if (r.fluidOut) {
+    const net = fluidNetOf(game, bench);
+    if (net) netAdd(game, net, r.fluidOut.kind, r.fluidOut.liters);
+  }
+  // A belt, chest or arm on the output side takes the products; else they go next to the worker.
+  const out = !cont && benchFeedsOut(game, bench);
+  for (const [item, n] of Object.entries(r.output)) {
+    if (!out) dropItems(game, item, n, p.layer, p.x, p.y, cont, bench.contamUntil);
+    else {
+      const def = game.reg.items.idx(item);
+      bench.out = { ...(bench.out ?? {}), [def]: (bench.out?.[def] ?? 0) + n };
+    }
+  }
   job.data!.done = true;
   return "done";
 });
 
-/** If a bill job ends early, put the used inputs back on the ground. */
+/** If a bill job ends early, put the used inputs back: carried ones on the ground, buffered ones in the bench. */
 registerCleanup("bill", (game, p, job) => {
   if (job.data?.done) return;
+  const bench = game.things.get(job.targetId!);
+  const r = game.reg.content.recipes.find((x) => x.id === job.data?.recipe);
+  if (bench && r?.fluidIn && typeof job.data?.fluid === "number") {
+    const net = fluidNetOf(game, bench);
+    if (net) netAdd(game, net, r.fluidIn.kind, job.data.fluid);
+  }
   for (const [k, v] of Object.entries(job.data ?? {})) {
-    if (!k.startsWith("u") || typeof v !== "number" || v <= 0) continue;
-    dropItems(game, Number(k.slice(1)), v, p.layer, p.x, p.y);
+    if (typeof v !== "number" || v <= 0 || k === "fluid") continue;
+    if (k.startsWith("u")) dropItems(game, Number(k.slice(1)), v, p.layer, p.x, p.y);
+    else if (k.startsWith("b") && bench) {
+      const def = Number(k.slice(1));
+      bench.buffer = { ...(bench.buffer ?? {}), [def]: (bench.buffer?.[def] ?? 0) + v };
+    }
   }
 });
+
+/** Fill the job's current input slot from the bench's input buffer (what belts and arms brought). */
+function useBuffer(game: Game, bench: Thing, r: RecipeDef, job: Job): void {
+  const idx = job.data!.input as number;
+  if (!bench.buffer || idx >= r.inputs.length) return;
+  const inp = r.inputs[idx];
+  for (const [k, v] of Object.entries(bench.buffer)) {
+    const missing = inp.count - (job.data!.have as number);
+    if (missing <= 0 || v <= 0 || !matchesInput(game, inp, Number(k))) continue;
+    const n = Math.min(v, missing);
+    bench.buffer[Number(k)] -= n;
+    job.data!.have = (job.data!.have as number) + n;
+    job.data![`b${k}`] = ((job.data![`b${k}`] as number) ?? 0) + n;
+  }
+}

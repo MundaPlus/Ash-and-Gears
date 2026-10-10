@@ -7,6 +7,8 @@ import { createZone } from "./hauling.ts";
 import { dropItems } from "./items.ts";
 import { NO_THING } from "./map.ts";
 import { makeSurvivor } from "./pawn.ts";
+import { makeRobot } from "./robots.ts";
+import { completeRoofs } from "./rooms.ts";
 
 export function buildShowcase(game: Game): void {
   const { x: hx, y: hy } = game.home;
@@ -23,11 +25,11 @@ export function buildShowcase(game: Game): void {
       }
       game.setTerrain(0, x, y, "dirt");
     }
-  for (const r of ["scrap_power", "batteries", "electric_lights", "powered_tools", "smelting", "turret_wiring", "conveyors", "auto_crafting", "rain_catchers", "field_medicine", "gunsmithing"])
+  for (const r of ["scrap_power", "batteries", "electric_lights", "powered_tools", "smelting", "turret_wiring", "conveyors", "auto_crafting", "rain_catchers", "field_medicine", "gunsmithing", "belt_logistics", "plumbing", "water_purification", "biofuel", "power_grid", "renewables", "deep_digging", "robotics"])
     game.research.done.add(r);
 
   const put = (id: string, x: number, y: number, rot?: number) => {
-    if (L.inBounds(x, y) && L.thing[L.i(x, y)] === NO_THING) return game.spawnThing(id, 0, x, y, rot);
+    if (game.fits(game.reg.things.idx(id), 0, x, y, rot)) return game.spawnThing(id, 0, x, y, rot);
     return null;
   };
 
@@ -39,10 +41,14 @@ export function buildShowcase(game: Game): void {
       if (edge) put(x === rx + 5 && y === ry + rh - 1 ? "scrap_door" : "stone_wall", x, y);
       else L.floor[L.i(x, y)] = game.reg.floors.idx("wood_floor") + 1;
     }
+  // Airlock: a second door set between two walls outside the first one.
+  put("stone_wall", rx + 4, ry + rh);
+  put("scrap_door", rx + 5, ry + rh);
+  put("stone_wall", rx + 6, ry + rh);
   for (let i = 0; i < 4; i++) put("scrap_bed", rx + 1 + i * 2, ry + 1);
   put("table", rx + 4, ry + 4);
   put("chair", rx + 3, ry + 4);
-  put("chair", rx + 5, ry + 4);
+  put("chair", rx + 6, ry + 4);
   put("campfire", rx + 8, ry + 5);
   put("well", rx + 9, ry + 1);
   put("research_desk", rx + 1, ry + 5);
@@ -52,9 +58,10 @@ export function buildShowcase(game: Game): void {
   if (gen) gen.fuel = 30;
   const bat = put("battery", rx - 3, ry + 8);
   if (bat) bat.charge = 1600;
-  for (let x = rx - 2; x <= rx + 3; x++) put("wire", x, ry + 9);
+  for (let x = rx - 3; x <= rx + 3; x++) put("wire", x, ry + 9);
   put("lamp", rx + 4, ry + 9);
-  for (let x = rx + 5; x <= rx + 12; x++) put("wire", x, ry + 10);
+  // The turret line drops from the lamp, so lamp, bench and turret share the generator.
+  for (let x = rx + 4; x <= rx + 12; x++) put("wire", x, ry + 10);
   put("scrap_turret", rx + 13, ry + 10);
   for (let y = ry + 8; y <= ry + 12; y++) put("sandbags", rx + 15, y);
 
@@ -78,7 +85,12 @@ export function buildShowcase(game: Game): void {
   for (let i = 1; i <= 6; i++) put("conveyor", fx + i, fy, 0);
   const crafter = put("auto_crafter", fx + 7, fy, 0);
   if (crafter) crafter.recipe = "make_components";
-  for (let i = 8; i <= 10; i++) put("conveyor", fx + i, fy, 0);
+  // Components go on: a splitter sends every other packet north, a robot arm lifts the rest into a chest.
+  put("conveyor", fx + 8, fy, 0);
+  put("belt_splitter", fx + 9, fy, 0);
+  put("conveyor", fx + 10, fy, 0);
+  put("robot_arm", fx + 11, fy, 0);
+  put("scrap_chest", fx + 12, fy);
   put("wire", fx, fy + 1);
   for (let i = 1; i <= 7; i++) put("wire", fx + i, fy + 1);
   const gen2 = put("scrap_generator", fx + 8, fy + 1);
@@ -102,13 +114,48 @@ export function buildShowcase(game: Game): void {
   stock.forEach(([item, n], k) => dropItems(game, item, n, 0, hx + 4 + (k % 6), hy + 8 + Math.floor(k / 6)));
   put("rain_collector", hx + 11, hy + 9);
 
+  // Waterworks (A2, A3): pump at a sludge pool, tank, purifier, tap; solar power with a battery and poles.
+  for (let y = hy - 12; y <= hy - 10; y++) for (let x = hx - 17; x <= hx - 16; x++) game.setTerrain(0, x, y, "sludge");
+  put("water_pump", hx - 15, hy - 11);
+  put("pipe", hx - 14, hy - 11);
+  const tank = put("water_tank", hx - 13, hy - 11);
+  if (tank) tank.liquid = { water: 220 };
+  put("pipe", hx - 12, hy - 11);
+  put("water_purifier", hx - 11, hy - 11, 3);
+  const pipe2 = put("pipe", hx - 10, hy - 11);
+  if (pipe2) pipe2.liquid = { clean_water: 10 };
+  const tap = put("water_tap", hx - 9, hy - 11);
+  if (tap) tap.liquid = { clean_water: 5 };
+  put("solar_panel", hx - 16, hy - 13);
+  const bat2 = put("battery", hx - 17, hy - 13);
+  if (bat2) bat2.charge = 2000;
+  put("power_pole", hx - 14, hy - 13);
+  put("power_pole", hx - 11, hy - 13);
+  put("wire", hx - 11, hy - 12);
+
+  // Robots (A7): a powered robot bay with a robot and a hauler drone.
+  put("robot_bay", hx + 12, hy - 8);
+  put("solar_panel", hx + 14, hy - 8);
+  put("wind_turbine", hx + 14, hy - 6);
+  const bat3 = put("battery", hx + 16, hy - 8);
+  if (bat3) bat3.charge = 2400;
+  for (const kind of ["robot", "hauler_drone"]) {
+    const bot = makeRobot(game, kind, 0, hx + 11, hy - 5);
+    game.pawns.set(bot.id, bot);
+  }
+
   // Two more survivors, so the base looks lived in.
   const used = new Set([...game.pawns.values()].flatMap((p) => [p.first, p.nick]));
   for (let i = 0; i < 2; i++) {
-    const p = makeSurvivor(game, 0, hx + i, hy - 1, used);
+    // A free tile near home (the airlock walls stand just south of the house).
+    const sy = hy + 1;
+    let sx = hx + i;
+    for (let k = 0; k < 20 && !game.walkable(0, sx, sy); k++) sx++;
+    const p = makeSurvivor(game, 0, sx, sy, used);
     p.weapon = game.reg.items.idx(i ? "crossbow" : "pipe_pistol");
     game.pawns.set(p.id, p);
   }
+  completeRoofs(game);
   game.goals = { shelter: true, water: true, lights: true };
   game.message("msg.showcase", {}, "info");
 }

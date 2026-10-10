@@ -26,7 +26,7 @@ Each milestone ends with: tests green, a headless scenario run, Playwright scree
 
 | Phase | Content |
 |---|---|
-| Alpha | Full survivor systems, relationships, raiders + factions, world map, expeditions, trade, outposts, 2nd underground layer, tech tier 2–3 |
+| Alpha | See [12-alpha-plan](12-alpha-plan.md): demo polish, belt logistics, pipes, power grid, tech tiers 2–3, survivors (traits, relationships, prisoners), robots, then world map, expeditions, factions and trade |
 | Beta | Three storylines, scenarios, tier 4 robots, full music, mod loader UI, Capacitor mobile app |
 | 1.0 | Balance, polish, more languages, optional Steam build, optional cloud saves |
 

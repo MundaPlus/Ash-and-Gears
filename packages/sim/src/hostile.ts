@@ -3,6 +3,7 @@
  * and enemies (raiders, rad-rats, glow-hounds). See spec 06.
  */
 import { atGoal, endJob, goTo } from "./ai.ts";
+import { sharedEvent } from "./social.ts";
 import { attack, attackOf, dist, hostile, inAttackRange, isMelee, nearestHostile } from "./combat.ts";
 import type { Game } from "./game.ts";
 import { pain } from "./health.ts";
@@ -118,7 +119,7 @@ function nearestEdge(game: Game, p: Pawn): Pos {
   return opts[0];
 }
 
-function leave(game: Game, p: Pawn) {
+export function leave(game: Game, p: Pawn) {
   if (p.layer !== 0 || p.x <= 0 || p.y <= 0 || p.x >= game.map.w - 1 || p.y >= game.map.h - 1) {
     game.pawns.delete(p.id);
     return;
@@ -149,7 +150,14 @@ function nearestColonist(game: Game, p: Pawn): Pawn | null {
 
 /** Group morale: a group flees once half of it is dead or down. */
 export function updateGroups(game: Game): void {
+  const defended = [...game.pawns.values()].some((p) => p.faction === "colony" && !p.health.downed);
   for (const g of game.groups.values()) {
+    // Nobody left standing: the attackers take what they want and go.
+    if (defended) g.beatenAt = undefined;
+    else if (g.beatenAt === undefined) {
+      g.beatenAt = game.tick;
+      game.message(`msg.${g.kind}_won`, {}, "bad");
+    }
     const members = [...game.pawns.values()].filter((p) => p.group === g.id);
     const fighting = members.filter((p) => !p.health.downed).length;
     // Rats scatter after losing a third; raiders and hounds after losing half.
@@ -164,6 +172,7 @@ export function updateGroups(game: Game): void {
       if (g.kind === "raid" && [...game.pawns.values()].some((p) => p.faction === "colony")) {
         game.story.raidsSurvived++;
         for (const p of game.pawns.values()) if (p.faction === "colony") addMemory(game, p, "survived_raid");
+        sharedEvent(game, 4);
       }
     }
   }
@@ -178,7 +187,8 @@ export function hostileTick(game: Game, p: Pawn): void {
   const stayHours = creature.behavior === "food_swarm" ? 8 : creature.behavior === "hunter" ? 10 : 18;
   // No group (its raid already ended, e.g. this one got up again after being downed): go home.
   const orphan = p.group !== null && !group;
-  const overstayed = orphan || (!!group && game.tick - group.arrived > stayHours * game.ticksPerHour);
+  const beaten = group?.beatenAt !== undefined && game.tick - group.beatenAt > game.ticksPerHour;
+  const overstayed = orphan || beaten || (!!group && game.tick - group.arrived > stayHours * game.ticksPerHour);
   // Animals bolt once badly hurt; raiders hold on a little longer.
   const painLimit = creature.behavior === "human" ? 0.6 : 0.4;
   if (overstayed || group?.fleeing || pain(game, p) > painLimit || (creature.behavior === "hunter" && daylight && game.tick - (group?.arrived ?? 0) > game.ticksPerHour * 3)) {
@@ -192,7 +202,8 @@ export function hostileTick(game: Game, p: Pawn): void {
     let food: { layer: number; x: number; y: number; id: number } | null = null;
     let bestD = Infinity;
     for (const s of game.items.values()) {
-      if (s.layer !== p.layer || game.reg.items.list[s.def].category !== "food") continue;
+      // Chests keep rats out.
+      if (s.layer !== p.layer || s.chest !== undefined || game.reg.items.list[s.def].category !== "food") continue;
       const d = dist(p, s);
       if (d < bestD) {
         bestD = d;

@@ -42,7 +42,7 @@ export const BuildInfo = z.object({
   /** Work ticks at work speed 1. */
   work: z.number().int().positive(),
   /** Build menu group. */
-  menu: z.enum(["structure", "furniture", "production", "power", "defense", "floor"]),
+  menu: z.enum(["structure", "furniture", "production", "power", "water", "defense", "floor"]),
   /** Research project that unlocks it (M6). */
   research: id.optional(),
 });
@@ -63,6 +63,10 @@ export const ThingDef = z.object({
   yield: z.record(id, z.number().int().positive()).optional(),
   /** Chance (0..1) of a loot roll when salvaged. */
   lootChance: z.number().min(0).max(1).default(0),
+  /** Always dropped when salvaged, item -> [min, max] (old-world lockers, A4). */
+  drops: z.record(id, z.tuple([z.number().int().min(0), z.number().int().positive()])).optional(),
+  /** Chance (0..1) to find a blueprint the colony still needs when salvaged (A4). */
+  blueprintChance: z.number().min(0).max(1).default(0),
   /** Stairs link this layer offset: -1 = up, +1 = down. */
   stairs: z.number().int().optional(),
   build: BuildInfo.optional(),
@@ -110,20 +114,58 @@ export const ThingDef = z.object({
       use: z.number().min(0).default(0),
       store: z.number().min(0).default(0),
       fuel: z.object({ item: id, perHour: z.number().positive(), capacity: z.number().int().positive() }).optional(),
+      /** Output follows the sun (day, weather) or the wind (A3). */
+      source: z.enum(["solar", "wind"]).optional(),
+      /** Consumers: 1 = keep on longest, 3 = cut first when power runs short (A3). */
+      priority: z.number().int().min(1).max(3).default(2),
     })
     .optional(),
   /** Wires: carry power, nothing else. */
   conduit: z.boolean().default(false),
+  /** Power pole: links to other poles up to this many tiles away (A3). */
+  pole: z.number().positive().optional(),
+  /** Power switch: a wire piece that carries power only while on (A3). */
+  switch: z.boolean().default(false),
   /** Conveyor belt: moves items one tile toward its facing. Value = tiles per in-game hour. */
   belt: z.number().positive().optional(),
+  /**
+   * Belt kinds: "split" sends packets in turn to front, left and right; "sort" sends its filter item
+   * forward and the rest to the right; "tunnel_in" sends packets under the ground to the next
+   * "tunnel_out" with the same facing, at most TUNNEL_REACH tiles ahead.
+   */
+  beltKind: z.enum(["split", "sort", "tunnel_in", "tunnel_out"]).optional(),
   /** Loader: moves items from the tile behind it to the tile in front of it. */
   loader: z.boolean().default(false),
+  /** Robot arm: a loader that can be set to move only one item. */
+  arm: z.boolean().default(false),
+  /** Pipe: carries fluids between fluid things that touch it (spec 12, A2). */
+  pipe: z.boolean().default(false),
+  /**
+   * Fluid role (A2). pump: rate L/h from a water tile next to it (needs power); tank: holds capacity L;
+   * purifier: rate L/h of water from its input side to clean water on its output side (needs power);
+   * tap: survivors drink clean water from its network; machine: a bench on the pipes whose bills use or make fluids.
+   */
+  fluid: z
+    .object({
+      role: z.enum(["pump", "tank", "purifier", "tap", "machine"]),
+      rate: z.number().positive().optional(),
+      capacity: z.number().positive().optional(),
+    })
+    .optional(),
+  /** Storage chest: holds up to this many items of any kind. Belts and arms fill and empty it. */
+  chest: z.number().int().positive().optional(),
   /** Auto-crafter: runs a recipe without a survivor while powered. */
   autoCrafter: z.boolean().default(false),
+  /** Robot bay: robots charge and get repaired here while it has power (A7). */
+  robotBay: z.boolean().default(false),
+  /** Auto-crafter work speed multiplier (the assembler is faster, A4). */
+  crafterSpeed: z.number().positive().default(1),
   /** Work speed multiplier for bills done here (when powered, if it uses power). */
   benchSpeed: z.number().positive().default(1),
   /** Can be rotated when placed (belts, loaders, crafters). */
   rotatable: z.boolean().default(false),
+  /** Tiles covered [width, height] with no rotation. The thing's x,y is the top-left tile. Rotation 1 or 3 swaps them. */
+  footprint: z.tuple([z.number().int().min(1).max(4), z.number().int().min(1).max(4)]).default([1, 1]),
   /** Research desk: survivors research here. */
   research: z.number().positive().optional(),
   /** Turret: shoots hostiles on its own. */
@@ -139,6 +181,8 @@ export const ItemDef = z.object({
   category: z.enum(["resource", "food", "water", "medicine", "weapon", "apparel", "blueprint", "misc"]),
   /** Nutrition per unit (food). */
   nutrition: z.number().min(0).default(0),
+  /** Trade value per unit (A9). */
+  value: z.number().min(0).default(1),
   /** Raw food: cooking input, mood penalty when eaten raw. */
   raw: z.boolean().default(false),
   /** Days until it rots at full rate (warm). Absent = never rots. */
@@ -182,6 +226,12 @@ export const RecipeDef = z.object({
   /** Inputs by item id, or by tag "raw_food". */
   inputs: z.array(z.object({ item: id.optional(), tag: z.enum(["raw_food"]).optional(), count: z.number().int().positive() })),
   output: z.record(id, z.number().int().positive()),
+  /** Fluid made instead of (or with) items: liters go into the bench's pipe network (A2). */
+  fluidOut: z.object({ kind: z.enum(["fuel"]), liters: z.number().positive() }).optional(),
+  /** Makes a robot instead of items: the creature id of the new colony robot (A7). */
+  spawn: id.optional(),
+  /** Fluid used: liters taken from the bench's pipe network when the work starts (A4). */
+  fluidIn: z.object({ kind: z.enum(["fuel", "water", "clean_water"]), liters: z.number().positive() }).optional(),
   work: z.number().int().positive(),
   skill: id.optional(),
   /** Default "keep this many in stock" target. "per_colonist" multiplies by colony size. */
@@ -202,7 +252,7 @@ export const CreatureDef = z.object({
   speed: z.number().positive().default(1),
   /** Natural attack (bite, claws). Humans use weapons or fists. */
   attack: z.object({ dmg: z.number(), cooldown: z.number().int(), range: z.number(), accuracy: z.number().default(0), kind: z.string() }),
-  behavior: z.enum(["human", "food_swarm", "hunter"]),
+  behavior: z.enum(["human", "food_swarm", "hunter", "machine"]),
   /** Meat dropped when killed. */
   meat: z.number().int().min(0).default(0),
 });
@@ -234,8 +284,45 @@ export const TraitDef = z.object({
   /** Free-form behavior flags that systems check, e.g. "night_owl". */
   flags: z.array(z.string()).default([]),
   conflicts: z.array(id).default([]),
+  /** Walking speed multiplier (A5). */
+  moveSpeed: z.number().positive().default(1),
+  /** How fast hunger, thirst and rest go down (A5). */
+  needMult: z.object({ hunger: z.number().positive().default(1), thirst: z.number().positive().default(1), rest: z.number().positive().default(1) }).default({ hunger: 1, thirst: 1, rest: 1 }),
+  /** Pain multiplier: below 1 shrugs off wounds (A5). */
+  painMult: z.number().min(0).default(1),
+  /** How much good talks raise this survivor's opinions (A5). */
+  opinionGain: z.number().min(0).default(1),
+  /** How much others warm to this survivor in talks (A5). */
+  likability: z.number().min(0).default(1),
 });
 export type TraitDef = z.infer<typeof TraitDef>;
+
+/** Backstory (A5): one from before the war (childhood) and one from after (adulthood). */
+export const BackstoryDef = z.object({
+  id,
+  stage: z.enum(["childhood", "adulthood"]),
+  skillBonus: z.record(id, z.number().int()).default({}),
+  /** Work types this survivor will not do. */
+  workDisabled: z.array(z.string()).default([]),
+});
+export type BackstoryDef = z.infer<typeof BackstoryDef>;
+
+/** A faction of the wasteland (A9). */
+export const FactionDef = z.object({
+  id,
+  kind: z.enum(["raider", "trader", "cult"]),
+  /** Goodwill toward the colony at the start, -100..100. */
+  goodwill: z.number().min(-100).max(100),
+  /** Weapons its raiders carry. */
+  weapons: z.array(id).default([]),
+  /** Traits its raiders have. */
+  traits: z.array(id).default([]),
+  /** Raid size multiplier. */
+  raidSize: z.number().positive().default(1),
+  /** What its traders sell: item -> [min, max] per caravan. */
+  sells: z.record(id, z.tuple([z.number().int().min(0), z.number().int().positive()])).default({}),
+});
+export type FactionDef = z.infer<typeof FactionDef>;
 
 export const ThoughtDef = z.object({
   id,
@@ -264,6 +351,8 @@ export const Content = z.object({
   research: z.array(ResearchDef),
   skills: z.array(SkillDef),
   traits: z.array(TraitDef),
+  backstories: z.array(BackstoryDef),
+  factions: z.array(FactionDef),
   thoughts: z.array(ThoughtDef),
   names: NameLists,
   /** Loot table for salvage rolls: item id -> [min, max]. */

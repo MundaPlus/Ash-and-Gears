@@ -1,4 +1,4 @@
-# Wasteland Colony (working title)
+# Ash & Gears
 
 A post-apocalyptic colony sim with progressive automation: RimWorld-style survivors, Factorio-style machines, dark humor. Runs in the browser on PC and phone.
 

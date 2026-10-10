@@ -8,7 +8,7 @@ import { GameMenu } from "./Screens.tsx";
 
 export function Hud() {
   const s = useStore();
-  const layerName = s.layer <= 1 ? t(`layer.${s.layer}`) : t("layer.n", { n: s.layer });
+  const layerName = s.layer <= 2 ? t(`layer.${s.layer}`) : t("layer.n", { n: s.layer });
   return (
     <>
       <div class="topleft">
@@ -32,6 +32,11 @@ export function Hud() {
               {g.done ? "✔" : "○"} {t(`goal.${g.id}`)}
             </p>
           ))}
+          {s.goalHint && (
+            <p class="hint" data-testid="goal-hint">
+              {t(s.goalHint)}
+            </p>
+          )}
         </aside>
       )}
       <PawnPanel />
@@ -77,6 +82,9 @@ export function Hud() {
         >
           ▼
         </button>
+        <button data-testid="power-overlay" class={s.powerOverlay ? "on" : ""} onClick={() => actions.togglePowerOverlay()} title={t("overlay.power")} aria-label={t("overlay.power")}>
+          ⚡
+        </button>
       </div>
 
       {(s.weather === "rad_cloud" || s.radWarning !== null) && (
@@ -119,6 +127,45 @@ export function Hud() {
               {s.inspect.crafter.options.map((r) => (
                 <button key={r} class={s.inspect!.crafter!.current === r ? "on" : ""} onClick={() => actions.setCrafterRecipe(s.inspect!.crafter!.thingId, r)}>
                   {t(`recipe.${r}`)}
+                </button>
+              ))}
+            </div>
+          )}
+          {s.inspect.prisonBed && (
+            <div class="bills" data-testid="prison-bed">
+              <button class={s.inspect.prisonBed.on ? "on" : ""} onClick={() => actions.setPrisonBed(s.inspect!.prisonBed!.thingId, !s.inspect!.prisonBed!.on)}>
+                {t(s.inspect.prisonBed.on ? "prison.bed_on" : "prison.bed_off")}
+              </button>
+            </div>
+          )}
+          {s.inspect.power && (
+            <div class="bills" data-testid="power">
+              {s.inspect.power.switchOn !== undefined && (
+                <button class={s.inspect.power.switchOn ? "on" : ""} onClick={() => actions.setSwitch(s.inspect!.power!.thingId, !s.inspect!.power!.switchOn)}>
+                  {t(s.inspect.power.switchOn ? "power.switch_on" : "power.switch_off")}
+                </button>
+              )}
+              {s.inspect.power.priority !== undefined && (
+                <>
+                  <h3>{t("power.priority")}</h3>
+                  {[1, 2, 3].map((n) => (
+                    <button key={n} class={s.inspect!.power!.priority === n ? "on" : ""} onClick={() => actions.setPriority(s.inspect!.power!.thingId, n)}>
+                      {t(`power.priority.${n}`)}
+                    </button>
+                  ))}
+                </>
+              )}
+            </div>
+          )}
+          {s.inspect.filter && (
+            <div class="bills" data-testid="filter">
+              <h3>{t("filter.title")}</h3>
+              <button class={s.inspect.filter.current === null ? "on" : ""} onClick={() => actions.setFilter(s.inspect!.filter!.thingId, null)}>
+                {t("filter.any")}
+              </button>
+              {s.inspect.filter.options.map((id) => (
+                <button key={id} class={s.inspect!.filter!.current === id ? "on" : ""} onClick={() => actions.setFilter(s.inspect!.filter!.thingId, id)}>
+                  {t(`item.${id}`)}
                 </button>
               ))}
             </div>

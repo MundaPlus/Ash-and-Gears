@@ -5,7 +5,8 @@
 import { isReserved } from "./ai.ts";
 import { registerWorkGiver } from "./jobs.ts";
 import type { Game } from "./game.ts";
-import { dropItems } from "./items.ts";
+import { countItems, dropItems } from "./items.ts";
+import { spillContents } from "./logistics.ts";
 import { Desig, NO_THING, type DesigKind } from "./map.ts";
 import { skillLevel, type Job, type Pawn } from "./pawn.ts";
 import { registerTask, workJob, type WorkType } from "./work.ts";
@@ -24,8 +25,11 @@ export function canDesignate(game: Game, kind: DesigKind, layer: number, x: numb
     case "cut":
       return thing?.kind === "plant";
     case "salvage":
-      // Ruins and wrecks are salvaged; player-built things are deconstructed. Stairs stay.
-      return !!thing && thing.kind !== "plant" && thing.kind !== "stairs" && (!!thing.build || !!thing.yield);
+      // Only ruins, wrecks and junk. A drag over the base never takes it apart. Stairs stay.
+      return !!thing && thing.kind !== "plant" && thing.kind !== "stairs" && !thing.build && !!thing.yield;
+    case "deconstruct":
+      // Player-built things, with a separate order.
+      return !!thing && thing.kind !== "stairs" && !!thing.build;
   }
 }
 
@@ -137,6 +141,7 @@ registerTask("salvage", {
     const L = game.map.layers[t.layer];
     const def = game.thingDefAt(t.layer, t.x, t.y)!;
     undesignate(game, t.layer, t.x, t.y);
+    spillContents(game, game.things.get(L.thing[L.i(t.x, t.y)])!);
     game.removeThing(L.thing[L.i(t.x, t.y)]);
     const lvl = skillLevel(game, p, "scavenging");
     if (def.build) {
@@ -148,12 +153,47 @@ registerTask("salvage", {
       return;
     }
     dropYield(game, def.yield, yieldMult(lvl), t.layer, t.x, t.y);
+    for (const [item, [lo, hi]] of Object.entries(def.drops ?? {})) {
+      const n = game.aiRng.int(lo, hi);
+      if (n > 0) dropItems(game, item, n, t.layer, t.x, t.y);
+    }
+    // A blueprint the colony still needs: not researched yet and not in stock.
+    if (def.blueprintChance > 0 && game.aiRng.chance(def.blueprintChance)) {
+      const wanted = game.reg.content.research
+        .filter((r) => r.blueprint && !game.research.done.has(r.id) && countItems(game, r.blueprint) < 1)
+        .map((r) => r.blueprint!);
+      if (wanted.length) {
+        const item = game.aiRng.pick(wanted);
+        dropItems(game, item, 1, t.layer, t.x, t.y);
+        game.message("msg.blueprint_found", { name: p.nick, item }, "info");
+      }
+    }
     if (game.aiRng.chance(def.lootChance * (1 + lvl / 20))) {
       const loot = Object.entries(game.reg.content.loot);
       const [item, [lo, hi]] = game.aiRng.pick(loot);
       const n = game.aiRng.int(lo, hi);
       dropItems(game, item, n, t.layer, t.x, t.y);
       game.message("msg.loot_found", { name: p.nick, count: n, item });
+    }
+  },
+});
+
+registerTask("deconstruct", {
+  skill: "construction",
+  xp: 0.3,
+  total: (game, job) => Math.ceil((game.thingDefAt(job.target!.layer, job.target!.x, job.target!.y)?.build?.work ?? 2) / 2),
+  valid: (game, job) => desigAt(game, job) === Desig.deconstruct && !!game.thingDefAt(job.target!.layer, job.target!.x, job.target!.y)?.build,
+  complete: (game, _p, job) => {
+    const t = job.target!;
+    const L = game.map.layers[t.layer];
+    const def = game.thingDefAt(t.layer, t.x, t.y)!;
+    undesignate(game, t.layer, t.x, t.y);
+    spillContents(game, game.things.get(L.thing[L.i(t.x, t.y)])!);
+    game.removeThing(L.thing[L.i(t.x, t.y)]);
+    // Get 75% of the materials back.
+    for (const [item, n] of Object.entries(def.build!.cost)) {
+      const back = Math.floor(n * 0.75);
+      if (back > 0) dropItems(game, item, back, t.layer, t.x, t.y);
     }
   },
 });
@@ -165,6 +205,7 @@ const GIVERS: [WorkType, DesigKind][] = [
   ["salvage", "salvage"],
   ["construct", "clear"],
   ["grow", "cut"],
+  ["construct", "deconstruct"],
 ];
 
 function nearestDesignated(game: Game, p: Pawn, kind: DesigKind): Job | null {

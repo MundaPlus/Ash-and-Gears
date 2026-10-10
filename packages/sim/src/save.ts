@@ -3,12 +3,15 @@
  * (so content order and mods can change), typed arrays are base64. Running jobs and reservations
  * are dropped on load; survivors simply think again. Each format change adds a migration step.
  */
+import type { Expedition, WorldMap } from "./world.ts";
+import type { Caravan } from "./factions.ts";
 import type { Content } from "@wc/data";
 import { Game, type GameOptions } from "./game.ts";
 import type { Blueprint, ItemStack, Thing, Zone } from "./map.ts";
 import type { Pawn } from "./pawn.ts";
+import { completeRoofs } from "./rooms.ts";
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;
 
 type Arr = string; // base64 of a typed array
 
@@ -23,7 +26,7 @@ export interface SaveFile {
   /** Content id tables used by the index arrays below. */
   terrainIds: string[];
   floorIds: string[];
-  layers: { terrain: Arr; floor: Arr; zone: Arr; desig: Arr }[];
+  layers: { terrain: Arr; floor: Arr; zone: Arr; desig: Arr; roof?: Arr }[];
   things: (Omit<Thing, "def"> & { def: string })[];
   items: (Omit<ItemStack, "def"> & { def: string })[];
   pawns: SavedPawn[];
@@ -44,11 +47,18 @@ export interface SaveFile {
   rooms: { cells: number[]; temp: number }[];
   deaths: Game["deaths"];
   goals: Record<string, boolean>;
+  opinions?: [string, number][];
+  world?: WorldMap | null;
+  goodwill?: Record<string, number>;
+  caravan?: Caravan | null;
+  expeditions?: (Omit<Expedition, "pawns"> & { pawns: SavedPawn[] })[];
+  bonds?: [string, string][];
 }
 
-type SavedPawn = Omit<Pawn, "skills" | "traits" | "memories" | "situational" | "creature" | "weapon" | "job" | "path" | "goal" | "carrying"> & {
+export type SavedPawn = Omit<Pawn, "skills" | "traits" | "backstory" | "memories" | "situational" | "creature" | "weapon" | "job" | "path" | "goal" | "carrying"> & {
   skills: Record<string, { level: number; xp: number; passion: number }>;
   traits: string[];
+  backstory?: [string, string];
   memories: { thought: string; expires: number }[];
   creature: string;
   weapon: string | null;
@@ -80,6 +90,8 @@ function intoTyped(target: Uint8Array | Int32Array, b64: string) {
 
 export function saveGame(game: Game): SaveFile {
   const reg = game.reg;
+  /** Item index keys -> item id keys. */
+  const itemMapOut = (r: Record<number, number>) => Object.fromEntries(Object.entries(r).map(([k, v]) => [reg.items.list[Number(k)].id, v]));
   return {
     version: SAVE_VERSION,
     savedAt: new Date().toISOString(),
@@ -90,22 +102,10 @@ export function saveGame(game: Game): SaveFile {
     aiRng: [...game.aiRng.s],
     terrainIds: reg.terrain.list.map((t) => t.id),
     floorIds: reg.floors.list.map((f) => f.id),
-    layers: game.map.layers.map((L) => ({ terrain: toB64(L.terrain), floor: toB64(L.floor), zone: toB64(L.zone), desig: toB64(L.desig) })),
-    things: [...game.things.values()].map((t) => ({ ...t, def: reg.things.list[t.def].id, ...(t.buffer ? { buffer: Object.fromEntries(Object.entries(t.buffer).map(([k, v]) => [reg.items.list[Number(k)].id, v])) } : {}), ...(t.cargo ? { cargo: { ...t.cargo, def: reg.items.list[t.cargo.def].id as unknown as number } } : {}) })),
+    layers: game.map.layers.map((L) => ({ terrain: toB64(L.terrain), floor: toB64(L.floor), zone: toB64(L.zone), desig: toB64(L.desig), roof: toB64(L.roof) })),
+    things: [...game.things.values()].map((t) => ({ ...t, def: reg.things.list[t.def].id, ...(t.buffer ? { buffer: itemMapOut(t.buffer) } : {}), ...(t.out ? { out: itemMapOut(t.out) } : {}), ...(t.filter !== undefined ? { filter: reg.items.list[t.filter].id as unknown as number } : {}), ...(t.cargo ? { cargo: { ...t.cargo, def: reg.items.list[t.cargo.def].id as unknown as number } } : {}) })),
     items: [...game.items.values()].map((s) => ({ ...s, def: reg.items.list[s.def].id })),
-    pawns: [...game.pawns.values()].map((p) => ({
-      ...p,
-      job: undefined,
-      path: undefined,
-      goal: undefined,
-      situational: undefined,
-      skills: Object.fromEntries(reg.skills.list.map((s, i) => [s.id, { ...p.skills[i] }])),
-      traits: p.traits.map((t) => reg.traits.list[t].id),
-      memories: p.memories.map((m) => ({ thought: reg.thoughts.list[m.thought].id, expires: m.expires })),
-      creature: reg.content.creatures[p.creature].id,
-      weapon: p.weapon !== null ? reg.items.list[p.weapon].id : null,
-      carrying: p.carrying ? { def: reg.items.list[p.carrying.def].id, count: p.carrying.count, ...(p.carrying.contaminated ? { contaminated: true } : {}) } : null,
-    })) as unknown as SavedPawn[],
+    pawns: [...game.pawns.values()].map((p) => pawnOut(game, p)),
     blueprints: [...game.blueprints.values()].map((b) => ({
       ...b,
       def: b.kind === "thing" ? reg.things.list[b.def].id : reg.floors.list[b.def].id,
@@ -132,6 +132,12 @@ export function saveGame(game: Game): SaveFile {
     }),
     deaths: [...game.deaths],
     goals: { ...game.goals },
+    opinions: [...game.opinions],
+    world: game.world,
+    goodwill: { ...game.goodwill },
+    caravan: game.caravan,
+    expeditions: game.expeditions.map((e) => ({ ...e, pawns: e.pawns.map((p) => pawnOut(game, p)) })),
+    bonds: [...game.bonds],
   };
 }
 
@@ -140,7 +146,8 @@ export function saveGame(game: Game): SaveFile {
 /** Upgrade old saves step by step. */
 export function migrate(data: SaveFile): SaveFile {
   if (data.version > SAVE_VERSION) throw new Error(`save is from a newer version (${data.version})`);
-  // Future: if (data.version === 1) { ...; data.version = 2; }
+  // Version 1 had automatic roofs and did not store them. loadGame builds them all.
+  if (data.version === 1) data.version = 2;
   return data;
 }
 
@@ -148,6 +155,7 @@ export function loadGame(content: Content, raw: SaveFile): Game {
   const data = migrate(raw);
   const game = new Game(content, data.opts);
   const reg = game.reg;
+  const itemMapIn = (r: Record<string, number>) => Object.fromEntries(Object.entries(r).map(([k, v]) => [reg.items.idx(k), v]));
   const idOr = (table: { has(id: string): boolean; idx(id: string): number }, id: string, what: string) => {
     if (!table.has(id)) throw new Error(`save uses unknown ${what}: ${id}`);
     return table.idx(id);
@@ -168,15 +176,18 @@ export function loadGame(content: Content, raw: SaveFile): Game {
     for (let k = 0; k < L.floor.length; k++) if (L.floor[k]) L.floor[k] = floorMap[L.floor[k] - 1];
     intoTyped(L.zone, l.zone);
     intoTyped(L.desig, l.desig);
+    if (l.roof) intoTyped(L.roof, l.roof);
   });
 
   for (const t of data.things) {
     const thing: Thing = { ...(t as unknown as Thing), def: idOr(reg.things, t.def, "thing") };
-    if (t.buffer) thing.buffer = Object.fromEntries(Object.entries(t.buffer).map(([k, v]) => [reg.items.idx(k), v]));
+    if (t.buffer) thing.buffer = itemMapIn(t.buffer);
+    if (t.out) thing.out = itemMapIn(t.out);
+    if (t.filter !== undefined) thing.filter = reg.items.idx(t.filter as unknown as string);
     if (t.cargo) thing.cargo = { ...t.cargo, def: reg.items.idx(t.cargo.def as unknown as string) };
     game.things.set(thing.id, thing);
     const L = game.map.layers[thing.layer];
-    L.thing[L.i(thing.x, thing.y)] = thing.id;
+    for (const f of game.footprint(thing.def, thing.x, thing.y, thing.rot)) L.thing[L.i(f.x, f.y)] = thing.id;
   }
   for (const s of data.items) {
     const st: ItemStack = { ...s, def: idOr(reg.items, s.def, "item") };
@@ -187,21 +198,7 @@ export function loadGame(content: Content, raw: SaveFile): Game {
     }
   }
   for (const sp of data.pawns) {
-    const p = {
-      ...(sp as unknown as Pawn),
-      skills: reg.skills.list.map((s) => (sp.skills[s.id] ? { ...sp.skills[s.id] } : { level: 0, xp: 0, passion: 0 }) as Pawn["skills"][number]),
-      traits: sp.traits.filter((t) => reg.traits.has(t)).map((t) => reg.traits.idx(t)),
-      memories: sp.memories.filter((m) => reg.thoughts.has(m.thought)).map((m) => ({ thought: reg.thoughts.idx(m.thought), expires: m.expires })),
-      situational: [],
-      creature: Math.max(0, content.creatures.findIndex((c) => c.id === sp.creature)),
-      weapon: sp.weapon && reg.items.has(sp.weapon) ? reg.items.idx(sp.weapon) : null,
-      carrying: null,
-      job: null,
-      path: null,
-      goal: null,
-      asleep: false,
-      thinkCooldown: 0,
-    } as Pawn;
+    const p = pawnIn(game, sp);
     game.pawns.set(p.id, p);
     // Whatever was carried lands at the pawn's feet.
     if (sp.carrying && reg.items.has(sp.carrying.def)) {
@@ -242,6 +239,12 @@ export function loadGame(content: Content, raw: SaveFile): Game {
   for (const [k, v] of data.fires) game.fires.set(k, v);
   game.deaths.push(...data.deaths);
   game.goals = { ...(data.goals ?? {}) };
+  for (const [k, v] of data.opinions ?? []) game.opinions.set(k, v);
+  game.world = data.world ?? null;
+  game.goodwill = { ...(data.goodwill ?? {}) };
+  game.caravan = data.caravan ?? null;
+  game.expeditions = (data.expeditions ?? []).map((e) => ({ ...e, pawns: e.pawns.map((sp) => pawnIn(game, sp)) }));
+  for (const [k, v] of data.bonds ?? []) game.bonds.set(k, v as "family" | "lover");
   game.story.raidsSurvived ??= 0;
 
   // Rebuild derived state, then give rooms their saved temperatures.
@@ -251,6 +254,7 @@ export function loadGame(content: Content, raw: SaveFile): Game {
   game.powerVersion++;
   game.mapVersion++;
   game.rebuildDerived();
+  if (!data.layers[0].roof) completeRoofs(game);
   for (const r of data.rooms) {
     const [layer, i] = r.cells;
     if (i < 0) continue;
@@ -276,4 +280,44 @@ export async function unpackSave(bytes: Uint8Array): Promise<SaveFile> {
     return JSON.parse(await new Response(stream).text());
   }
   return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+/** A pawn as saved data (ids instead of indexes; no job or path). Also used for pawns on expeditions. */
+export function pawnOut(game: Game, p: Pawn): SavedPawn {
+  const reg = game.reg;
+  return {
+    ...p,
+    job: undefined,
+    path: undefined,
+    goal: undefined,
+    situational: undefined,
+    skills: Object.fromEntries(reg.skills.list.map((s, i) => [s.id, { ...p.skills[i] }])),
+    traits: p.traits.map((t) => reg.traits.list[t].id),
+    backstory: p.backstory ? [reg.backstories.list[p.backstory[0]].id, reg.backstories.list[p.backstory[1]].id] : undefined,
+    memories: p.memories.map((m) => ({ thought: reg.thoughts.list[m.thought].id, expires: m.expires })),
+    creature: reg.content.creatures[p.creature].id,
+    weapon: p.weapon !== null ? reg.items.list[p.weapon].id : null,
+    carrying: p.carrying ? { def: reg.items.list[p.carrying.def].id, count: p.carrying.count, ...(p.carrying.contaminated ? { contaminated: true } : {}) } : null,
+  } as unknown as SavedPawn;
+}
+
+/** A saved pawn back into a live one (what it carried is not restored here). */
+export function pawnIn(game: Game, sp: SavedPawn): Pawn {
+  const reg = game.reg;
+  return {
+    ...(sp as unknown as Pawn),
+    skills: reg.skills.list.map((s) => (sp.skills[s.id] ? { ...sp.skills[s.id] } : { level: 0, xp: 0, passion: 0 }) as Pawn["skills"][number]),
+    traits: sp.traits.filter((t) => reg.traits.has(t)).map((t) => reg.traits.idx(t)),
+    backstory: sp.backstory && sp.backstory.every((b) => reg.backstories.has(b)) ? [reg.backstories.idx(sp.backstory[0]), reg.backstories.idx(sp.backstory[1])] : undefined,
+    memories: sp.memories.filter((m) => reg.thoughts.has(m.thought)).map((m) => ({ thought: reg.thoughts.idx(m.thought), expires: m.expires })),
+    situational: [],
+    creature: Math.max(0, reg.content.creatures.findIndex((c) => c.id === sp.creature)),
+    weapon: sp.weapon && reg.items.has(sp.weapon) ? reg.items.idx(sp.weapon) : null,
+    carrying: null,
+    job: null,
+    path: null,
+    goal: null,
+    asleep: false,
+    thinkCooldown: 0,
+  } as Pawn;
 }

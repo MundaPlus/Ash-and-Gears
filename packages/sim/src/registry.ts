@@ -2,7 +2,7 @@
  * Content registry. Turns string ids into small numbers for the typed arrays.
  * Saves store string ids, so content order may change between versions and mods.
  */
-import type { Content, FloorDef, ItemDef, SkillDef, TerrainDef, ThingDef, ThoughtDef, TraitDef } from "@wc/data";
+import type { Content, FloorDef, ItemDef, SkillDef, TerrainDef, ThingDef, ThoughtDef, TraitDef, BackstoryDef } from "@wc/data";
 
 export class Table<T extends { id: string }> {
   readonly list: T[];
@@ -38,6 +38,7 @@ export class Registry {
   readonly floors: Table<FloorDef>;
   readonly skills: Table<SkillDef>;
   readonly traits: Table<TraitDef>;
+  readonly backstories: Table<BackstoryDef>;
   readonly thoughts: Table<ThoughtDef>;
 
   constructor(readonly content: Content) {
@@ -47,6 +48,7 @@ export class Registry {
     this.floors = new Table(content.floors);
     this.skills = new Table(content.skills);
     this.traits = new Table(content.traits);
+    this.backstories = new Table(content.backstories);
     this.thoughts = new Table(content.thoughts);
   }
 }

@@ -14,6 +14,7 @@ import {
   NEEDS,
   NO_THING,
   pawnName,
+  exposureAt,
   roomAt,
   tempAt,
   TICKS_PER_SECOND,
@@ -28,16 +29,17 @@ import { Camera } from "./input/camera.ts";
 import { PawnRenderer } from "./render/pawns.ts";
 import { FxRenderer } from "./render/fx.ts";
 import { DynamicRenderer } from "./render/dynamic.ts";
-import { makeTextures, TILE, type ArtSettings } from "./render/textures.ts";
+import { loadAiArt } from "./render/aiArt.ts";
+import { ART_SIZES, makeTextures, TILE, type ArtSettings } from "./render/textures.ts";
 import { WorldRenderer } from "./render/world.ts";
 import { Hud } from "./ui/Hud.tsx";
-import { actions, store, type BuildOption, type ColonistSummary, type PawnDetail, type WorkRow } from "./ui/store.ts";
+import { actions, store, type BuildOption, type ColonistSummary, type PawnDetail, type WorkRow, type WorldUi, type CaravanUi } from "./ui/store.ts";
 
 /** Most sim ticks per frame, so a slow frame cannot snowball. */
 const MAX_TICKS_PER_FRAME = 12;
 const TOAST_SEC = 7;
 /** Big events pause the game so the player can react (spec 06). */
-const AUTO_PAUSE = new Set(["msg.raid", "msg.glow_hounds", "msg.rad_rats", "msg.rad_warning", "msg.downed", "msg.died"]);
+const AUTO_PAUSE = new Set(["msg.raid", "msg.raid_faction", "msg.glow_hounds", "msg.rad_rats", "msg.rad_warning", "msg.downed", "msg.died"]);
 
 const hex = (n: number) => `#${n.toString(16).padStart(6, "0")}`;
 
@@ -58,7 +60,8 @@ function loadArt(params: URLSearchParams): ArtSettings {
     saved = {};
   }
   const palette = params.get("palette") ?? saved.palette ?? "rust";
-  const size = (params.get("px") ?? saved.size ?? "16") === "32" ? "32" : "16";
+  const want = params.get("px") ?? saved.size ?? "16";
+  const size = ART_SIZES.find((z) => z === want) ?? "16";
   return { palette, size };
 }
 
@@ -114,7 +117,8 @@ async function boot() {
   host.appendChild(app.canvas);
 
   const art: ArtSettings = loadArt(params);
-  let tex = makeTextures(game.reg, art);
+  const ai = await loadAiArt();
+  let tex = makeTextures(game.reg, art, ai);
   const world = new Container();
   app.stage.addChild(world);
   const renderer = new WorldRenderer(game, tex);
@@ -167,7 +171,7 @@ async function boot() {
     else if (spec?.kind === "cancel") label = t("tool.cancel");
     else if (spec?.kind === "zone" && spec.zone === "grow") label = t("tool.zone", { name: t("zone.grow", { crop: t(`thing.${spec.crop}`) }) });
     else if (spec?.kind === "zone") label = t("tool.zone", { name: t(`zone.${spec.zone}`) });
-    const rot = spec?.kind === "build" && spec.defKind === "thing" && game.reg.things.get(spec.def).rotatable;
+    const rot = tools.rotatable();
     store.set({ toolLabel: label ? `${label} · ${t("tool.hint")}${rot ? ` ${t("tool.rotate_hint")} ⟳` : ""}` : null, menu: null });
   };
   actions.rotateTool = (d) => {
@@ -181,7 +185,7 @@ async function boot() {
     } catch {
       // storage blocked: the setting lasts for this session only
     }
-    tex = makeTextures(game.reg, art);
+    tex = makeTextures(game.reg, art, ai);
     renderer.setTextures(tex);
     pawnsR.setTextures(tex);
     store.set({ art: { ...art } });
@@ -249,6 +253,38 @@ async function boot() {
     sim.setResearch(game, id);
     store.set({ research: researchRows() });
   };
+  actions.setCapture = (id, on) => {
+    const p = game.pawns.get(id);
+    if (p) sim.setCapture(game, p, on);
+  };
+  actions.release = (id) => {
+    const p = game.pawns.get(id);
+    if (p) sim.release(game, p);
+  };
+  actions.setPrisonBed = (thingId, on) => {
+    const th = game.things.get(thingId);
+    if (th) sim.setPrisonBed(game, th, on);
+    if (inspected) inspectTile(inspected.x, inspected.y);
+  };
+  actions.togglePowerOverlay = () => {
+    dyn.powerOverlay = !dyn.powerOverlay;
+    store.set({ powerOverlay: dyn.powerOverlay });
+  };
+  actions.setPriority = (thingId, n) => {
+    const th = game.things.get(thingId);
+    if (th) th.priority = n;
+    if (inspected) inspectTile(inspected.x, inspected.y);
+  };
+  actions.setSwitch = (thingId, on) => {
+    const th = game.things.get(thingId);
+    if (th) sim.setSwitch(game, th, on);
+    if (inspected) inspectTile(inspected.x, inspected.y);
+  };
+  actions.setFilter = (thingId, item) => {
+    const th = game.things.get(thingId);
+    if (th) sim.setFilter(game, th, item);
+    if (inspected) inspectTile(inspected.x, inspected.y);
+  };
   actions.setCrafterRecipe = (thingId, recipe) => {
     const th = game.things.get(thingId);
     if (th) sim.setCrafterRecipe(game, th, recipe);
@@ -278,7 +314,7 @@ async function boot() {
   };
   actions.setWork = (id, work, value) => {
     const p = game.pawns.get(id);
-    if (p) p.work[work] = value;
+    if (p && !p.noWork?.includes(work)) p.work[work] = value;
     store.set({ workRows: workRows() });
   };
 
@@ -333,15 +369,27 @@ async function boot() {
     if (td.fertility > 0) lines.push(t("inspect.fertility", { v: Math.round(td.fertility * 100) }));
     if (td.water) lines.push(t("inspect.water", { v: td.water }));
     const room = roomAt(game, renderer.layer, x, y);
-    lines.push(room && !room.outdoor ? t("inspect.room", { size: room.size }) : t("inspect.outdoors"));
+    if (room && !room.outdoor) {
+      lines.push(t("inspect.room", { size: room.size }));
+      // Shelter: roof progress, then how well it keeps radiation out.
+      const exp = exposureAt(game, renderer.layer, x, y);
+      lines.push(t(`inspect.shelter_${exp}`));
+    } else lines.push(t("inspect.outdoors"));
     lines.push(t("inspect.temp", { v: Math.round(tempAt(game, renderer.layer, x, y)) }));
     const bp = L.blueprint[i] !== NO_THING ? game.blueprints.get(L.blueprint[i]) : undefined;
     if (bp) lines.push(t("inspect.blueprint", { name: t(bp.kind === "floor" ? `floor.${game.reg.floors.list[bp.def].id}` : `thing.${game.reg.things.list[bp.def].id}`) }));
+    if (bp) {
+      const need = Object.entries(bp.need).filter(([, n]) => n > 0).map(([k, n]) => `${n} × ${t(`item.${game.reg.items.list[Number(k)].id}`)}`);
+      if (need.length) lines.push(t("inspect.needs", { list: need.join(", ") }));
+    }
     if (L.desig[i]) lines.push(t("inspect.order", { name: t(`order.${DESIG_KINDS[L.desig[i] - 1]}`) }));
-    let title = t(`terrain.${td.id}`);
+    let title = L.floor[i] ? t(`floor.${game.reg.floors.list[L.floor[i] - 1].id}`) : t(`terrain.${td.id}`);
     const th = L.thing[i];
     let bills: { benchId: number; recipe: string; target: number; stock: number }[] | undefined;
     let crafter: { thingId: number; current: string | null; options: string[] } | undefined;
+    let filter: { thingId: number; current: string | null; options: string[] } | undefined;
+    let power: { thingId: number; priority?: number; switchOn?: boolean } | undefined;
+    let prisonBed: { thingId: number; on: boolean } | undefined;
     if (th !== NO_THING) {
       const thing = game.things.get(th)!;
       const def = game.reg.things.list[thing.def];
@@ -356,6 +404,8 @@ async function boot() {
         if (p.fuel) lines.push(t("inspect.fuel", { v: Math.round(thing.fuel ?? 0), max: p.fuel.capacity, item: t(`item.${p.fuel.item}`) }));
         if (p.store) lines.push(t("inspect.charge", { v: Math.round(thing.charge ?? 0), max: p.store }));
         if (p.use) lines.push(sim.isPowered(game, thing) ? t("inspect.powered", { w: p.use }) : t("inspect.unpowered", { w: p.use }));
+        if (p.produce && p.source) lines.push(t("inspect.output", { w: Math.round(p.produce * sim.sourceFactor(game, thing, p.source)) }));
+        if (p.use) power = { thingId: thing.id, priority: sim.priorityOf(game, thing) };
         const net = game.nets[game.netOf.get(thing.id) ?? -1];
         if (net) lines.push(t("inspect.net", { produce: Math.round(net.produce), use: Math.round(net.use), stored: Math.round(net.stored) }));
       }
@@ -364,6 +414,39 @@ async function boot() {
         crafter = { thingId: thing.id, current: r?.id ?? null, options: recipesFor(game, def.id).filter((x) => x.inputs.every((i) => i.item)).map((x) => x.id) };
         if (r) lines.push(t("inspect.crafter", { have: r.inputs.map((i) => `${thing.buffer?.[game.reg.items.idx(i.item!)] ?? 0}/${i.count} ${t(`item.${i.item}`)}`).join(", "), pct: Math.round(((thing.work ?? 0) / r.work) * 100) }));
       }
+      const contents = (r?: Record<number, number>) =>
+        Object.entries(r ?? {}).filter(([, n]) => n > 0).map(([k, n]) => `${n} × ${t(`item.${game.reg.items.list[Number(k)].id}`)}`).join(", ");
+      if (def.chest) {
+        const inside: Record<number, number> = {};
+        for (const st of sim.chestStacks(game, thing)) inside[st.def] = (inside[st.def] ?? 0) + st.count;
+        lines.push(`${t("chest.title")} (${sim.chestCount(game, thing)}/${def.chest}): ${contents(inside) || t("chest.empty")}`);
+      }
+      if (def.autoCrafter && contents(thing.out)) lines.push(`${t("chest.title")}: ${contents(thing.out)}`);
+      if (def.switch) power = { thingId: thing.id, switchOn: !thing.off };
+      if (def.bed) prisonBed = { thingId: thing.id, on: !!thing.forPrisoners };
+      if (def.pipe || (def.fluid && def.fluid.role !== "purifier")) {
+        const net = sim.fluidNetOf(game, thing);
+        if (net)
+          lines.push(t("inspect.fluids", { water: Math.round(sim.netAmount(game, net, "water")), clean: Math.round(sim.netAmount(game, net, "clean_water")), fuel: Math.round(sim.netAmount(game, net, "fuel")), room: Math.round(sim.netRoom(game, net)) }));
+        if (def.fluid?.role === "pump" && !sim.pumpSource(game, thing)) lines.push(t("inspect.pump_dry"));
+      }
+      if (def.fluid?.role === "purifier") {
+        const r = thing.rot ?? 0;
+        lines.push(t("bench.sides", { in: t(`dir.${(r + 3) % 4}`), out: t(`dir.${(r + 1) % 4}`) }));
+      }
+      if (def.bench) {
+        // Directions: 0 east, 1 south, 2 west, 3 north. Output side is south when not turned.
+        const r = thing.rot ?? 0;
+        lines.push(t("bench.sides", { in: t(`dir.${(r + 3) % 4}`), out: t(`dir.${(r + 1) % 4}`) }));
+        if (contents(thing.buffer)) lines.push(t("bench.buffer", { list: contents(thing.buffer) }));
+        if (contents(thing.out)) lines.push(t("bench.out", { list: contents(thing.out) }));
+      }
+      if (def.arm || def.beltKind === "sort")
+        filter = {
+          thingId: thing.id,
+          current: thing.filter !== undefined ? game.reg.items.list[thing.filter].id : null,
+          options: game.reg.items.list.filter((d) => d.id !== "corpse").map((d) => d.id),
+        };
     }
     inspected = { x, y };
     const it = L.item[i];
@@ -372,7 +455,7 @@ async function boot() {
       const name = t(`item.${game.reg.items.list[st.def].id}`);
       lines.push(t("inspect.items", { count: st.count, item: st.contaminated ? `${name} (${t("item.contaminated")})` : name }));
     }
-    store.set({ inspect: { title, lines, bills, crafter } });
+    store.set({ inspect: { title, lines, bills, crafter, filter, power, prisonBed } });
   }
   let inspected: { x: number; y: number } | null = null;
   actions.setBillTarget = (benchId, recipe, n) => {
@@ -383,13 +466,65 @@ async function boot() {
   const jobKey = (p: Pawn) =>
     p.mentalBreak ? "job.sulk" : p.job?.kind === "work" ? `task.${p.job.data!.task}` : `job.${p.job?.kind ?? "none"}`;
 
+  let worldProblem: string | null = null;
+  function worldUi(): WorldUi {
+    const w = sim.ensureWorld(game);
+    return {
+      w: w.w,
+      h: w.h,
+      biome: w.biome.map((b) => sim.BIOMES[b]),
+      home: w.home,
+      sites: w.sites.map((s) => {
+        const need = sim.suppliesNeeded(game, s, 1);
+        return { id: s.id, x: s.x, y: s.y, kind: s.kind, richness: s.richness, danger: s.danger, travel: sim.travelHours(game, s), outpost: s.outpost ? Object.values(s.outpost.stock).reduce((a, b) => a + b, 0) : null, food: need.food, water: need.water };
+      }),
+      expeditions: game.expeditions.map((e) => ({
+        id: e.id,
+        site: w.sites.find((s) => s.id === e.siteId)?.kind ?? "",
+        stage: e.stage,
+        hoursLeft: Math.max(0, Math.ceil((e.until - game.tick) / game.ticksPerHour)),
+        names: e.pawns.map((p) => p.nick),
+      })),
+      free: [...game.pawns.values()].filter((p) => p.faction === "colony" && !p.robot && !p.health.downed && !p.drafted).map((p) => ({ id: p.id, nick: p.nick })),
+      outpostCost: Object.entries(sim.OUTPOST_COST).map(([item, n]) => ({ item, n })),
+      factions: game.reg.content.factions.map((f) => ({ id: f.id, goodwill: Math.round(sim.goodwill(game, f.id)), relation: sim.relationOf(game, f.id) })),
+      problem: worldProblem,
+    };
+  }
+  let tradeProblem: string | null = null;
+  function caravanUi(): CaravanUi | null {
+    const c = game.caravan;
+    if (!c) return null;
+    const ids = new Set([...Object.keys(c.stock), ...game.reg.items.list.filter((d) => d.value > 0 && d.category !== "blueprint" && sim.countItems(game, d.id) > 0).map((d) => d.id)]);
+    return {
+      faction: c.faction,
+      hoursLeft: Math.max(0, Math.ceil((c.leaveAt - game.tick) / game.ticksPerHour)),
+      markup: sim.markup(game, c.faction),
+      rows: [...ids].map((id) => ({ id, yours: sim.countItems(game, id), theirs: c.stock[id] ?? 0, value: game.reg.items.get(id).value })),
+      problem: tradeProblem,
+    };
+  }
+  actions.trade = (buy, sell) => {
+    const p = sim.trade(game, buy, sell);
+    tradeProblem = p ? `trade.problem.${p}` : null;
+    store.set({ caravan: caravanUi() });
+  };
+  actions.sendExpedition = (siteId, ids, outpost) => {
+    const site = sim.ensureWorld(game).sites.find((s) => s.id === siteId);
+    const pawns = ids.map((id) => game.pawns.get(id)).filter((p): p is sim.Pawn => !!p);
+    const problem = site ? sim.canLaunch(game, site, pawns, outpost) : "no_people";
+    worldProblem = problem ? `world.problem.${problem}` : null;
+    if (!problem) sim.launchExpedition(game, siteId, ids, outpost);
+    store.set({ world: worldUi() });
+  };
   function workRows(): WorkRow[] {
     return [...game.pawns.values()].map((p) => ({
       id: p.id,
       nick: p.nick,
       color: hex(PawnRenderer.colorOf(p)),
       work: { ...p.work },
-      skills: Object.fromEntries(game.reg.skills.list.map((s, i) => [s.id, p.skills[i].level])),
+      skills: Object.fromEntries(game.reg.skills.list.map((s) => [s.id, sim.skillLevel(game, p, s.id)])),
+      noWork: p.noWork ?? [],
     }));
   }
 
@@ -426,8 +561,19 @@ async function boot() {
       pain: sim.pain(game, p),
       injuries: p.health.injuries.map((i) => ({ part: i.part, kind: i.kind, dmg: Math.round(i.dmg), tended: i.tended > 0 })),
       missing: [...p.health.missing],
-      skills: game.reg.skills.list.map((s, i) => ({ id: s.id, level: p.skills[i].level, passion: p.skills[i].passion })),
+      // Shown levels include trait and backstory bonuses.
+      skills: game.reg.skills.list.map((s, i) => ({ id: s.id, level: sim.skillLevel(game, p, s.id), passion: p.skills[i].passion })),
       traits: p.traits.map((ti) => game.reg.traits.list[ti].id),
+      robot: !!p.robot,
+      charge: p.charge ?? 1,
+      capture: !!p.capture,
+      resistance: p.resistance ?? 0,
+      backstory: (p.backstory ?? []).map((b) => game.reg.backstories.list[b].id),
+      noWork: p.noWork ?? [],
+      relations: [...game.pawns.values()]
+        .filter((o) => o.faction === "colony" && !o.robot && o.id !== p.id)
+        .map((o) => ({ nick: o.nick, opinion: Math.round(sim.opinion(game, p, o)), label: sim.relationLabel(game, p, o) }))
+        .sort((a, b) => b.opinion - a.opinion),
       thoughts: thoughts.filter((th) => !th.id.startsWith("trait_")),
     };
   }
@@ -460,6 +606,9 @@ async function boot() {
       if (typeof params.part === "string") params.part = t(`part.${params.part}`);
       if (typeof params.cause === "string") params.cause = t(`cause.${params.cause}`);
       if (typeof params.project === "string") params.project = t(`research.${params.project}`);
+      if (typeof params.faction === "string") params.faction = t(`fac.${params.faction}`);
+      if (typeof params.site === "string") params.site = t(`site.${params.site}`);
+      if (typeof params.kind === "string") params.kind = t(`pawn.${params.kind}`);
       toasts.push({ id: toastId++, text: t(m.key, params), level: m.level, until: now + TOAST_SEC });
     }
     toasts = toasts.slice(-4);
@@ -473,6 +622,7 @@ async function boot() {
       actions.togglePause();
     } else if (e.key === "1" || e.key === "2" || e.key === "3") actions.setSpeed(Number(e.key));
     else if ((e.key === "q" || e.key === "e") && tools.spec) actions.rotateTool(e.key === "e" ? 1 : -1);
+    else if (e.key === "p" || e.key === "P") actions.togglePowerOverlay();
     else if (e.key === "r" || e.key === "R") {
       if (selected !== null) actions.toggleDraft(selected);
     } else if (e.key === "PageUp") actions.setLayer(renderer.layer - 1);
@@ -511,9 +661,9 @@ async function boot() {
     // Weather on the surface: a pulsing green haze for the radiation cloud, falling streaks for rain.
     weatherFx.clear();
     const wk = game.weather.kind;
-    if (renderer.layer === 0 && wk === "rad_cloud")
-      weatherFx.rect(0, 0, app.screen.width, app.screen.height).fill({ color: 0x9fd14a, alpha: 0.13 + 0.05 * Math.sin(clock * 1.5) });
-    if (renderer.layer === 0 && (wk === "rain" || wk === "rad_cloud")) {
+    if (renderer.layer === 0 && (wk === "rad_cloud" || wk === "toxic_rain"))
+      weatherFx.rect(0, 0, app.screen.width, app.screen.height).fill({ color: 0x9fd14a, alpha: (wk === "rad_cloud" ? 0.13 : 0.06) + 0.05 * Math.sin(clock * 1.5) });
+    if (renderer.layer === 0 && (wk === "rain" || wk === "rad_cloud" || wk === "toxic_rain")) {
       const W = app.screen.width, H = app.screen.height;
       for (const d of drops) {
         d[1] = (d[1] + dt * d[2] * (paused ? 0 : 1.6)) % 1;
@@ -528,6 +678,7 @@ async function boot() {
     const recentFight = game.fx.some((f) => game.tick - f.tick < 120);
     audio.mood = hostiles && recentFight ? "combat" : hostiles || game.weather.kind === "rad_cloud" || game.weather.next?.kind === "rad_cloud" ? "tense" : darkness(game.hourOfDay) > 0.5 ? "night" : "calm";
     audio.tier = Math.max(0, ...game.reg.content.research.filter((r) => game.research.done.has(r.id)).map((r) => r.tier));
+    audio.day = game.time.day;
     audio.update();
     const v = camera.view;
     for (const f of game.fx) {
@@ -568,10 +719,16 @@ async function boot() {
         season: t(`season.${tm.season}`, { year: tm.year }),
         weather: game.weather.kind,
         goals: sim.GOALS.map((id) => ({ id, done: !!game.goals[id] })),
+        goalHint: (() => {
+          const next = sim.GOALS.find((id) => !game.goals[id]);
+          return next ? sim.goalHint(game, next) : null;
+        })(),
         radWarning: game.weather.next?.kind === "rad_cloud" ? Math.max(0, Math.ceil((game.weather.next.at - game.tick) / game.ticksPerHour)) : null,
         fps: fpsTime > 1 ? Math.round(fpsFrames / fpsTime) : store.state.fps,
         colonists: colonists(),
         ...(store.state.menu === "work" ? { workRows: workRows() } : {}),
+        ...(store.state.menu === "world" ? { world: worldUi() } : {}),
+        caravan: store.state.menu === "trade" || !!game.caravan !== !!store.state.caravan || (game.caravan && store.state.caravan && Math.ceil((game.caravan.leaveAt - game.tick) / game.ticksPerHour) !== store.state.caravan.hoursLeft) ? caravanUi() : store.state.caravan,
         ...(store.state.menu === "research" ? { research: researchRows() } : {}),
         ...(store.state.menu === "build" ? { buildOptions: buildRows() } : {}),
         pawn: sel ? pawnDetail(sel) : null,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadCoreContent } from "@wc/data";
-import { countItems, createZone, dropItems, Game, NO_THING, roomAt, scheduleRadCloud, tickWeather, type Pawn } from "../src/index.ts";
+import { completeRoofs, contaminate, countItems, createZone, dropItems, exposureAt, Game, NO_THING, roomAt, scheduleRadCloud, tickWeather, type Pawn } from "../src/index.ts";
 
 const content = loadCoreContent();
 const newGame = (seed: string) => Game.create(content, { seed, mapSize: 96, storyteller: "none" });
@@ -77,9 +77,14 @@ describe("radiation cloud", () => {
     const { x: hx, y: hy } = g.home;
     clearArea(g, hx - 8, hy - 8, 4);
     spawnRoom(g, hx - 11, hy - 11, 6);
-    g.step(); // build rooms
+    // A second door outside the first makes an airlock, so the room is sealed.
+    g.spawnThing("scrap_door", 0, hx - 9, hy - 5);
+    g.spawnThing("scrap_wall", 0, hx - 10, hy - 5);
+    g.spawnThing("scrap_wall", 0, hx - 8, hy - 5);
+    completeRoofs(g);
     const room = roomAt(g, 0, hx - 9, hy - 9)!;
     expect(room.outdoor).toBe(false);
+    expect(exposureAt(g, 0, hx - 9, hy - 9)).toBe("sealed");
     const [inside, outside] = [...g.pawns.values()] as Pawn[];
     // No Rad-Hardened trait in this test, so doses are exact.
     inside.traits = [];
@@ -108,8 +113,65 @@ describe("radiation cloud", () => {
     const inStack = g.items.get(L.item[L.i(hx - 9, hy - 9)])!;
     const outStack = g.items.get(L.item[L.i(hx + 6, hy + 6)])!;
     expect(inStack.contaminated).toBeFalsy();
-    expect(outStack.contaminated).toBe(true);
-    expect(g.openWaterContamUntil).toBeGreaterThan(g.tick);
+    expect(outStack).toBeTruthy();
+  });
+
+  it("contaminates only by chance: open sky most, one door less, an airlock never", () => {
+    const g = newGame("chance");
+    const { x: hx, y: hy } = g.home;
+    clearArea(g, hx, hy, 12);
+    // Two rooms with a 6x6 inside each. Room A has one door, room B an airlock.
+    spawnRoom(g, hx - 10, hy - 10, 8);
+    spawnRoom(g, hx + 2, hy - 10, 8);
+    g.spawnThing("scrap_door", 0, hx + 4, hy - 2);
+    completeRoofs(g);
+    // The outer door needs walls at its sides before the airlock counts.
+    expect(exposureAt(g, 0, hx + 5, hy - 7)).toBe("leaky");
+    g.spawnThing("scrap_wall", 0, hx + 3, hy - 2);
+    g.spawnThing("scrap_wall", 0, hx + 5, hy - 2);
+    g.step();
+    expect(exposureAt(g, 0, hx - 7, hy - 7)).toBe("leaky");
+    expect(exposureAt(g, 0, hx + 5, hy - 7)).toBe("sealed");
+    const fill = (x0: number, y0: number, w: number, h: number) => {
+      for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) dropItems(g, "canned_food", 5, 0, x, y);
+    };
+    fill(hx - 9, hy - 9, 6, 6);
+    fill(hx + 3, hy - 9, 6, 6);
+    fill(hx - 10, hy + 2, 20, 6);
+    contaminate(g, "rad_cloud");
+    const L = g.map.layers[0];
+    const share = (x0: number, y0: number, w: number, h: number) => {
+      let n = 0, bad = 0;
+      for (let y = y0; y < y0 + h; y++)
+        for (let x = x0; x < x0 + w; x++) {
+          const s = g.items.get(L.item[L.i(x, y)]);
+          if (!s) continue;
+          n++;
+          if (s.contaminated) bad++;
+        }
+      return bad / n;
+    };
+    const open = share(hx - 10, hy + 2, 20, 6);
+    const leaky = share(hx - 9, hy - 9, 6, 6);
+    expect(open).toBeGreaterThan(0.4);
+    expect(open).toBeLessThan(0.8);
+    expect(leaky).toBeLessThan(open);
+    expect(share(hx + 3, hy - 9, 6, 6)).toBe(0);
+  });
+
+  it("survivors build the roof of a new room", () => {
+    const g = newGame("roof");
+    const { x: hx, y: hy } = g.home;
+    clearArea(g, hx - 8, hy - 8, 4);
+    spawnRoom(g, hx - 11, hy - 11, 6);
+    g.step();
+    const L = g.map.layers[0];
+    expect(L.roof[L.i(hx - 9, hy - 9)]).toBe(0);
+    expect(exposureAt(g, 0, hx - 9, hy - 9)).toBe("open");
+    expect(g.roofTodo.size).toBe(32); // 4x4 inside + 16 side walls; corners need none
+    run(g, 24);
+    expect(g.roofTodo.size).toBe(0);
+    expect(exposureAt(g, 0, hx - 9, hy - 9)).toBe("leaky");
   });
 });
 

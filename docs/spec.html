@@ -85,8 +85,8 @@ footer { grid-column: 2; color: var(--muted); font-size: 14px; padding-top: 24px
       <li>Gate 3 · Demo review</li>
     </ol>
   </header>
-  <nav class="toc" aria-label="Chapters"><p>Chapters</p><ol><li><a href="#s00"><span class="n">00</span>Overview</a></li><li><a href="#s01"><span class="n">01</span>Survivors (colonists)</a></li><li><a href="#s02"><span class="n">02</span>World</a></li><li><a href="#s03"><span class="n">03</span>Building</a></li><li><a href="#s04"><span class="n">04</span>Economy, food and water</a></li><li><a href="#s05"><span class="n">05</span>Automation and tech</a></li><li><a href="#s06"><span class="n">06</span>Combat and threats</a></li><li><a href="#s07"><span class="n">07</span>Story, scenarios and endings</a></li><li><a href="#s08"><span class="n">08</span>UI and UX</a></li><li><a href="#s09"><span class="n">09</span>Art and audio</a></li><li><a href="#s10"><span class="n">10</span>Technical architecture</a></li><li><a href="#s11"><span class="n">11</span>Roadmap</a></li></ol></nav>
-  <main><section id="s00"><p class="chap">Chapter 00</p><h2>Overview</h2><p>Status: DRAFT v0.1 (2026-10-09). Code name: <code>wasteland-colony</code>. Title: picked later.</p>
+  <nav class="toc" aria-label="Chapters"><p>Chapters</p><ol><li><a href="#s00"><span class="n">00</span>Overview</a></li><li><a href="#s01"><span class="n">01</span>Survivors (colonists)</a></li><li><a href="#s02"><span class="n">02</span>World</a></li><li><a href="#s03"><span class="n">03</span>Building</a></li><li><a href="#s04"><span class="n">04</span>Economy, food and water</a></li><li><a href="#s05"><span class="n">05</span>Automation and tech</a></li><li><a href="#s06"><span class="n">06</span>Combat and threats</a></li><li><a href="#s07"><span class="n">07</span>Story, scenarios and endings</a></li><li><a href="#s08"><span class="n">08</span>UI and UX</a></li><li><a href="#s09"><span class="n">09</span>Art and audio</a></li><li><a href="#s10"><span class="n">10</span>Technical architecture</a></li><li><a href="#s11"><span class="n">11</span>Roadmap</a></li><li><a href="#s12"><span class="n">12</span>Plan after the demo (Alpha)</a></li></ol></nav>
+  <main><section id="s00"><p class="chap">Chapter 00</p><h2>Overview</h2><p>Status: APPROVED v1.0 (2026-10-09). Code name: <code>wasteland-colony</code>. Title: picked later.</p>
 <h3 id="s00-1">Elevator pitch</h3>
 <p>The bombs fell. The survivors joked about it. Lead a small group of survivors in a ruined world. Build a home in the rubble. Keep them fed, sane and alive. Salvage the old world's machines. Slowly let the machines do the work. Then reach for a bigger goal: light, rescue or the stars.</p>
 <h3 id="s00-2">Inspirations</h3>
@@ -566,8 +566,12 @@ footer { grid-column: 2; color: var(--muted); font-size: 14px; padding-top: 24px
 <td>Dirt (none), wood planks, scrap tiles, concrete, sterile tiles</td>
 </tr>
 <tr>
+<td>Orders</td>
+<td>Salvage takes only ruins, wrecks and junk. Deconstruct is a separate order for your own buildings (75% of materials back)</td>
+</tr>
+<tr>
 <td>Roofs</td>
-<td>Auto-added over enclosed rooms up to 6 tiles from a wall. Can be removed</td>
+<td>An enclosed room needs a roof. Survivors build it tile by tile (construction work, no materials). It falls in if the room opens</td>
 </tr>
 <tr>
 <td>Supports</td>
@@ -601,8 +605,8 @@ footer { grid-column: 2; color: var(--muted); font-size: 14px; padding-top: 24px
 </ul>
 <h3 id="s03-5">Air and radiation shelter</h3>
 <ul>
-<li>A room is <strong>sealed</strong> if it is enclosed, roofed and has no open door to outside.</li>
-<li>During a radiation cloud: outdoors and unsealed rooms get radiation. Sealed rooms stay clean.</li>
+<li>A room is <strong>sealed</strong> if it is enclosed, fully roofed and no door opens straight to outside. Two doors in a row (an airlock) count as sealed when the outer door sits between two walls. A door into a closed hall also counts.</li>
+<li>After a radiation cloud or toxic rain: things outdoors have a high chance to be contaminated, things in unsealed rooms a low chance. Sealed rooms stay clean (see 04).</li>
 <li>Late tech: air filters let a room stay clean even with its door used often.</li>
 </ul>
 <h3 id="s03-6">Furniture and production buildings</h3>
@@ -628,7 +632,7 @@ footer { grid-column: 2; color: var(--muted); font-size: 14px; padding-top: 24px
 <li>Some ruins collapse when salvaged too fast (small danger).</li>
 </ul>
 <aside class="demo"><span class="tag">In the first demo</span>
-<p>Build, deconstruct, salvage, mine, clear rubble, harvest. Scrap/wood/stone walls, doors, floors, auto-roof. Rooms + types (bedroom, kitchen, storage, workshop). Temperature (simple). Sealed rooms vs radiation. Stockpile + growing zones. Beds, table, chair, lamp, 4 workbenches.</p></aside></section><section id="s04"><p class="chap">Chapter 04</p><h2>Economy, food and water</h2><h3 id="s04-1">Resources (base)</h3>
+<p>Build, deconstruct, salvage, mine, clear rubble, harvest. Scrap/wood/stone walls, doors, floors, roofs built by survivors, airlocks. Rooms + types (bedroom, kitchen, storage, workshop). Temperature (simple). Sealed rooms vs radiation. Stockpile + growing zones. Beds, table, chair, lamp, 4 workbenches.</p></aside></section><section id="s04"><p class="chap">Chapter 04</p><h2>Economy, food and water</h2><h3 id="s04-1">Resources (base)</h3>
 <div class="tbl"><table>
 <thead>
 <tr>
@@ -771,10 +775,40 @@ footer { grid-column: 2; color: var(--muted); font-size: 14px; padding-top: 24px
 <ul>
 <li>Storyteller event. Duration: a few hours to days in-game.</li>
 <li>During the cloud: all survivors outside take rad dose per tick.</li>
-<li><strong>Contamination</strong>: when the cloud ends, the following become <em>contaminated</em> for <strong>one season</strong>:</li>
-<li>Crops in outdoor growing zones (and soil of those zones).</li>
-<li>Food and water items stored outside or in unsealed rooms.</li>
-<li>Open water sources (pools, rain collectors, wells without cover).</li>
+<li><strong>Contamination</strong>: when the cloud ends, each of the following has a <strong>chance</strong> to become <em>contaminated</em> for <strong>one season</strong>:</li>
+<li>Crops (and seeds sown later in open soil that season).</li>
+<li>Food and water stacks.</li>
+<li>Water sources (pools as one roll, rain collectors, wells).</li>
+<li>The chance depends on shelter:</li>
+</ul>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Shelter</th>
+<th>Radiation cloud</th>
+<th>Toxic rain</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Open sky (no roof)</td>
+<td>60%</td>
+<td>30%</td>
+</tr>
+<tr>
+<td>Roofed, a door opens straight outside</td>
+<td>20%</td>
+<td>8%</td>
+</tr>
+<tr>
+<td>Sealed (roof + airlock: two doors in a row, the outer one between walls; or a door into a closed hall)</td>
+<td>0%</td>
+<td>0%</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li><strong>Toxic rain</strong> (weather, after day 3): small rad dose outside, rain collectors give contaminated water, and the same chance rolls when it stops, for <strong>half a season</strong>.</li>
 <li>Items in <strong>sealed rooms</strong> stay clean. This is the main reason to build sealed storage.</li>
 <li>Contaminated food/water can be eaten in desperation (rad dose) or cleaned (purifier, decon shower for items — tier 2).</li>
 <li>Warning: storyteller gives a short alert (half a day) before most clouds. Hard storytellers sometimes do not.</li>
@@ -1503,7 +1537,7 @@ assets/       manifest, raw generated art, packed atlases, audio
 <tbody>
 <tr>
 <td>Alpha</td>
-<td>Full survivor systems, relationships, raiders + factions, world map, expeditions, trade, outposts, 2nd underground layer, tech tier 2–3</td>
+<td>See <a href="12-alpha-plan.md">12-alpha-plan</a>: demo polish, belt logistics, pipes, power grid, tech tiers 2–3, survivors (traits, relationships, prisoners), robots, then world map, expeditions, factions and trade</td>
 </tr>
 <tr>
 <td>Beta</td>
@@ -1541,6 +1575,139 @@ assets/       manifest, raw generated art, packed atlases, audio
 <td>Ask before install. Procedural SFX and simple music as fallback</td>
 </tr>
 </tbody>
-</table></div></section></main>
+</table></div></section><section id="s12"><p class="chap">Chapter 12</p><h2>Plan after the demo (Alpha)</h2><p>Decided in the post-demo interview on 2026-10-10.</p>
+<h3 id="s12-1">Decisions</h3>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Decision</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Name</td>
+<td><strong>Ash &amp; Gears</strong> (repo <code>ash-and-gears</code>). "Wasteland Colony" was the working title</td>
+</tr>
+<tr>
+<td>Before Alpha</td>
+<td>A short polish pass on the demo (one milestone)</td>
+</tr>
+<tr>
+<td>Alpha focus</td>
+<td>Deeper automation first, then deeper survivors, then the world map</td>
+</tr>
+<tr>
+<td>Automation parts</td>
+<td>Belt logistics, pipes and fluids, power grid, drones and robots — all four</td>
+</tr>
+<tr>
+<td>Machines vs survivors</td>
+<td>Full factory late game: late tiers can run almost alone, survivors become managers and fighters</td>
+</tr>
+<tr>
+<td>Robots</td>
+<td>A workforce with limits: robots take jobs like survivors (haul, build, craft, mine), need power and repair, fight badly and cannot doctor</td>
+</tr>
+<tr>
+<td>Survivor systems</td>
+<td>Relationships, recruiting and prisoners, traits and backstories. (Mental-break variety and social fights later)</td>
+</tr>
+<tr>
+<td>World map, expeditions, factions</td>
+<td>Late Alpha, after automation and survivors</td>
+</tr>
+<tr>
+<td>Combat</td>
+<td>Fair but dangerous: small early raids, downed survivors usually live if treated, deaths come from bad choices</td>
+</tr>
+<tr>
+<td>Check-ins</td>
+<td>Only at the end of Alpha (like the demo). Claude runs all dev cycles alone</td>
+</tr>
+<tr>
+<td>Publishing</td>
+<td>LAN only for now (0.0.0.0:4173)</td>
+</tr>
+<tr>
+<td>Art</td>
+<td>Keep the selector (16 px, hybrid, 32 px) and the three palettes</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="s12-2">Milestones</h3>
+<p>Each milestone ends like the demo ones: tests green, headless playtests on several seeds, screenshots checked, Chrome play session, commit, CHANGELOG entry.</p>
+<div class="tbl"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Milestone</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P1</td>
+<td>Demo polish</td>
+<td>Combat balance (smaller early raids, downed survivors survive if treated, doctors rush to the downed, better autoplay fighter), first-hour hints, UX fixes, rename to Ash &amp; Gears, new Gitea repo</td>
+</tr>
+<tr>
+<td>A1</td>
+<td>Belt logistics</td>
+<td>Splitters, filter belts, underground belts, robot arms (inserters) that move items between belts, chests and machines; input and output sides on big machines; storage chests</td>
+</tr>
+<tr>
+<td>A2</td>
+<td>Pipes and fluids</td>
+<td>Pipes, pump on water, tanks, purifier (dirty or contaminated to clean water), taps in rooms, fuel liquid for generators; simple flow model</td>
+</tr>
+<tr>
+<td>A3</td>
+<td>Power grid</td>
+<td>Power poles with range, switches, solar and wind, battery banks, priorities and blackouts, a power overlay</td>
+</tr>
+<tr>
+<td>A4</td>
+<td>Tech tiers 2–3</td>
+<td>Bigger research tree, blueprints found by salvage and deep digging, steel and plastic chains, the second underground layer (old bunker), tier-3 machines</td>
+</tr>
+<tr>
+<td>A5</td>
+<td>Survivors I</td>
+<td>Traits (about 30) and backstories (pre-war and post-war) that set skills and quirks; relationships: opinions from talks and shared events, friends, rivals, lovers, family</td>
+</tr>
+<tr>
+<td>A6</td>
+<td>Survivors II</td>
+<td>Capture downed raiders, prison rooms, warden work, persuasion, recruiting wanderers and prisoners</td>
+</tr>
+<tr>
+<td>A7</td>
+<td>Robots</td>
+<td>Robot bay, charging, repair; robot workers with work priorities like survivors; hauling drones; late-tier full factory</td>
+</tr>
+<tr>
+<td>A8</td>
+<td>World map + expeditions</td>
+<td>World map, travel, scavenging sites, blueprint finds, outposts</td>
+</tr>
+<tr>
+<td>A9</td>
+<td>Factions + trade</td>
+<td>Named factions with goodwill, traders, raid variety, simple diplomacy</td>
+</tr>
+<tr>
+<td>A10</td>
+<td>Alpha delivery</td>
+<td>Updated presentation page with clips, LAN build, Alpha review with the user</td>
+</tr>
+</tbody>
+</table></div>
+<h3 id="s12-3">Open items (decide during the work, no check-in needed)</h3>
+<ul>
+<li>Exact tier list and research costs for tiers 2–3.</li>
+<li>Fluid model detail (per-tile pressure vs network pools). Default: network pools, like power.</li>
+<li>Robot art: hand-pixeled like the rest.</li>
+</ul></section></main>
   <footer>Source: <code>docs/spec/</code> in the project folder. Chapters 01–09 end with a yellow box. It lists what the first playable demo contains.</footer>
 </div>

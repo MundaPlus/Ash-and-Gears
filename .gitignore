@@ -5,3 +5,6 @@ dist/
 .env.*
 *.log
 node_modules/
+
+# AI sprite pipeline: big raw model pictures stay local
+art/ai/*/raw_*.png

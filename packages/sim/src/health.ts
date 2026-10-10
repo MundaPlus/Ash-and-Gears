@@ -4,7 +4,8 @@
  */
 import type { Game } from "./game.ts";
 import { dropItems } from "./items.ts";
-import { addMemory, pawnName, type Pawn } from "./pawn.ts";
+import { addMemory, pawnName, traitMult, type Pawn } from "./pawn.ts";
+import { onDeath } from "./social.ts";
 
 export const PARTS = ["head", "torso", "l_arm", "r_arm", "l_leg", "r_leg"] as const;
 export type PartId = (typeof PARTS)[number];
@@ -60,9 +61,11 @@ export function partDamage(p: Pawn, part: PartId): number {
 
 /** 0..1 pain from all injuries. */
 export function pain(game: Game, p: Pawn): number {
+  // Machines feel no pain: they keep going until a part breaks.
+  if (p.robot) return 0;
   let s = 0;
   for (const i of p.health.injuries) s += i.dmg * (KIND[i.kind]?.pain ?? 1);
-  return Math.min(1, s / (90 * game.reg.content.creatures[p.creature].hp));
+  return Math.min(1, (s * traitMult(game, p, (t) => t.painMult)) / (90 * game.reg.content.creatures[p.creature].hp));
 }
 
 /** Hours until an untended wound stops bleeding on its own. */
@@ -70,11 +73,17 @@ const CLOT_HOURS = 8;
 
 /** Bleeding in blood-loss per in-game hour. Wounds clot over time; tending stops most bleeding. */
 export function bleedRate(p: Pawn): number {
+  // Machines do not bleed.
+  if (p.robot) return 0;
   let r = 0;
   for (const i of p.health.injuries) {
     const b = (KIND[i.kind]?.bleed ?? 0) * i.dmg * Math.max(0, 1 - (i.age ?? 0) / CLOT_HOURS);
     r += i.tended ? b * (1 - i.tended) * 0.25 : b;
   }
+  // Fair but dangerous (spec 12): lying still halves bleeding, and near death the body slows it
+  // again, so a rescue after the fight usually comes in time.
+  if (p.health.downed) r *= 0.5;
+  if (p.health.bloodLoss > 0.8) r *= 0.5;
   return r;
 }
 
@@ -127,7 +136,19 @@ export function damage(game: Game, p: Pawn, dmg: number, kind: string, part?: Pa
 function checkParts(game: Game, p: Pawn, part: PartId, kind: string) {
   if (!game.pawns.has(p.id)) return;
   if (partDamage(p, part) < partMax(game, p, part)) return updateDowned(game, p);
-  if (VITAL.includes(part)) return kill(game, p, kind);
+  if (VITAL.includes(part)) {
+    // Fair but dangerous (spec 12): a survivor who is still standing goes down instead of dying,
+    // unless the single blow is huge. A second bad hit, or one while downed, still kills.
+    const last = p.health.injuries[p.health.injuries.length - 1];
+    const max = partMax(game, p, part);
+    if (p.faction === "colony" && !p.health.downed && last && last.part === part && last.dmg < max * 0.6) {
+      last.dmg = Math.max(0, last.dmg - (partDamage(p, part) - (max - 0.5)));
+      p.health.downed = true;
+      game.message("msg.downed", { name: p.nick }, "bad");
+      return;
+    }
+    return kill(game, p, kind);
+  }
   // A destroyed limb is lost for good.
   p.health.missing.push(part);
   p.health.injuries = p.health.injuries.filter((i) => i.part !== part);
@@ -153,12 +174,15 @@ export function kill(game: Game, p: Pawn, cause: string): void {
   for (const [k, v] of game.reservations) if (v === p.id) game.reservations.delete(k);
   const creature = game.reg.content.creatures[p.creature];
   if (creature.behavior === "human") dropItems(game, "corpse", 1, p.layer, p.x, p.y);
+  else if (creature.behavior === "machine") dropItems(game, "scrap", 8, p.layer, p.x, p.y);
   else if (creature.meat > 0) dropItems(game, "mutant_meat", creature.meat, p.layer, p.x, p.y);
   if (p.weapon !== null) dropItems(game, p.weapon, 1, p.layer, p.x, p.y);
   if (p.carrying) dropItems(game, p.carrying.def, p.carrying.count, p.layer, p.x, p.y);
-  if (p.faction === "colony") {
+  if (p.faction === "colony" && p.robot) game.message("msg.robot_destroyed", { name: p.nick }, "bad");
+  else if (p.faction === "colony") {
     game.message("msg.died", { name: pawnName(p), cause }, "bad");
     for (const o of game.pawns.values()) if (o.faction === "colony") addMemory(game, o, "colonist_died");
+    onDeath(game, p);
   }
   game.deaths.push({ id: p.id, name: p.nick, faction: p.faction, tick: game.tick, cause });
 }
@@ -171,7 +195,7 @@ export function tickHealthHourly(game: Game, p: Pawn, inBed: boolean): void {
   for (const i of h.injuries) i.age = (i.age ?? 0) + 1;
   if (h.bloodLoss >= 1) return kill(game, p, "blood_loss");
 
-  if (p.faction === "colony" || p.faction === "raiders") {
+  if (p.faction === "colony" || p.faction === "raiders" || p.faction === "prisoner") {
     // Torso has 40 HP: about 3 days without food, under 2 days without water.
     if (p.needs.hunger <= 0) damage(game, p, 0.5, "starvation", "torso");
     if (p.needs.thirst <= 0) damage(game, p, 1, "dehydration", "torso");
@@ -198,4 +222,10 @@ export function untendedInjuries(p: Pawn): Injury[] {
 
 export function addInPainThought(game: Game, p: Pawn, out: string[]): void {
   if (pain(game, p) > 0.3) out.push("in_pain");
+}
+
+/** Dead by the body's own rules (for pawns away from the map, where kill() does not run). */
+export function isFatal(game: Game, p: Pawn): boolean {
+  if (p.health.bloodLoss >= 1) return true;
+  return VITAL.some((part) => partDamage(p, part) >= partMax(game, p, part));
 }

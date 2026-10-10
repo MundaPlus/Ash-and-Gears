@@ -131,7 +131,10 @@ button.on { background: var(--rust); color: var(--ink); border-color: var(--rust
 .goals h3 { margin: 0 0 4px; font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--dim); }
 .goals p { margin: 2px 0; font-size: 13px; }
 .goals p.done { color: var(--good); text-decoration: line-through; }
-.toasts { top: calc(env(safe-area-inset-top, 0px) + 190px); }
+/* Messages sit bottom right, above the layer box, so they never hide behind the goals panel. */
+.toasts { top: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 64px); }
+#ui, #game { user-select: none; -webkit-user-select: none; }
+#ui input, #ui textarea { user-select: text; -webkit-user-select: text; }
 
 .screen { position: fixed; inset: 0; display: grid; place-items: center; overflow-y: auto; padding: 16px; z-index: 10; pointer-events: auto; }
 .screen.title { background: radial-gradient(ellipse at 50% 30%, #3a2e26 0%, #1b1714 70%); }
@@ -186,3 +189,26 @@ button.primary { background: var(--rust); color: var(--ink); border-color: var(-
 
 /* Clean view for trailers: ?cinematic=1 */
 body.cinematic #ui { display: none; }
+
+/* Next-step help under the goals (first hour). */
+.goals .hint { margin-top: 6px; padding-top: 6px; border-top: 1px dashed rgba(239, 216, 164, 0.25); color: #e3c25a; font-size: 12px; }
+
+/* World map (A8) */
+.worldmenu { max-width: min(560px, calc(100vw - 32px)); }
+.worldmenu .worldmap { width: 100%; height: auto; display: block; border: 1px solid #3a2e26; margin: 6px 0; }
+.worldmenu .site { cursor: pointer; }
+.worldmenu .team { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 6px 0; }
+.worldmenu .neg { color: #ff8a70; }
+@media (max-width: 420px) {
+  .toolbar button { font-size: 12px; padding-left: 4px; padding-right: 4px; }
+}
+
+/* Trade (A9) */
+.trademenu { max-width: min(620px, calc(100vw - 32px)); }
+.trademenu table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.trademenu td, .trademenu th { padding: 2px 4px; text-align: left; }
+.trademenu td button { min-width: 22px; padding: 0 4px; }
+.trademenu td b { display: inline-block; min-width: 26px; text-align: center; }
+.trademenu .neg, .worldmenu .neg { color: #ff8a70; }
+.worldmenu .pos { color: #9fd14a; }
+.caravanbanner { position: fixed; left: 50%; transform: translateX(-50%); bottom: 64px; background: rgba(27, 23, 20, 0.92); border: 1px solid #e3c25a; padding: 6px 10px; display: flex; gap: 10px; align-items: center; z-index: 5; max-width: calc(100vw - 32px); }

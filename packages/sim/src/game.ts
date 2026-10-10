@@ -11,15 +11,20 @@ import { Rng } from "./rng.ts";
 import { tickPawns } from "./ai.ts";
 import { setupStart } from "./start.ts";
 import "./systems.ts";
-import { ensureRooms, tickTemperature, type Room } from "./rooms.ts";
+import { completeRoofs, ensureRooms, tickTemperature, type Room } from "./rooms.ts";
 import { tickWeather, type WeatherKind } from "./weather.ts";
 import { tickFarming } from "./farming.ts";
 import { tickRot } from "./rot.ts";
 import { tickTurrets } from "./combat.ts";
 import { tickStoryteller, type StoryState } from "./storyteller.ts";
+import { tickConstruction } from "./construction.ts";
 import { tickFire } from "./fire.ts";
 import { ensureNets, tickPower, type PowerNet } from "./power.ts";
 import { tickLogistics } from "./logistics.ts";
+import { ensureFluidNets, tickFluids, type FluidNet } from "./fluids.ts";
+import { tickSocial, type Bond } from "./social.ts";
+import { tickWorld, type Expedition, type WorldMap } from "./world.ts";
+import type { Caravan } from "./factions.ts";
 import { tickGoals } from "./goals.ts";
 
 /** Sim ticks per real second at 1x speed. */
@@ -46,7 +51,7 @@ export interface GameOptions {
 export const DEFAULT_OPTIONS: GameOptions = {
   seed: "wasteland",
   mapSize: 200,
-  layers: 2,
+  layers: 3,
   dayLengthSec: 360,
   seasonDays: 15,
   radCloudScale: 1,
@@ -69,6 +74,8 @@ export class Game {
   readonly zones = new Map<number, Zone>();
   /** Node ids (layer * w * h + tile) that carry a player order. */
   readonly desigTiles = new Set<number>();
+  /** Surface tile indices that need a roof and have none yet. */
+  readonly roofTodo = new Set<number>();
   rooms = new Map<number, Room>();
   roomsVersion = -1;
   /** Extra degrees from weather. */
@@ -83,11 +90,24 @@ export class Game {
   openWaterContamUntil = 0;
   soilContamUntil = 0;
   /** Pawns that died: for messages, stats and tests. */
+  /** World map (A8), made on first use. */
+  world: WorldMap | null = null;
+  /** Goodwill per faction id; missing = the faction's start value (A9). */
+  goodwill: Record<string, number> = {};
+  /** Trader caravan near home, if any (A9). */
+  caravan: Caravan | null = null;
+  /** Teams away from the home map (A8). */
+  expeditions: Expedition[] = [];
+  /** Opinions "a>b" -> what a thinks of b (A5). */
+  readonly opinions = new Map<string, number>();
+  /** Bonds "a:b" (smaller id first) -> family or lover (A5). */
+  readonly bonds = new Map<string, Bond>();
   readonly deaths: { id: number; name: string; faction: string; tick: number; cause: string }[] = [];
   /** Visual effects for the renderer (shots, hits). Old entries are dropped. */
   readonly fx: { kind: "shot" | "melee" | "turret"; layer: number; from: { x: number; y: number }; to: { x: number; y: number }; hit: boolean; tick: number }[] = [];
   /** Raids and packs: id -> state. */
-  readonly groups = new Map<number, { id: number; kind: string; size: number; fleeing: boolean; arrived: number }>();
+  /** Hostile groups. `beatenAt`: tick when the last standing survivor went down (the group leaves soon after). */
+  readonly groups = new Map<number, { id: number; kind: string; size: number; fleeing: boolean; arrived: number; beatenAt?: number }>();
   /** Burning tiles: node id -> intensity 0..1. */
   readonly fires = new Map<number, number>();
   readonly story: StoryState = { points: 0, lastThreat: 0, lastGood: 0, log: [], raidsSurvived: 0 };
@@ -105,6 +125,13 @@ export class Game {
   wallVersion = 0;
   /** Layers whose walls changed since rooms were last built. */
   readonly wallDirty = new Set<number>();
+  /** Bumped when pipes or fluid things change. Fluid nets are rebuilt when it changes. */
+  fluidVersion = 0;
+  fluidNets: FluidNet[] = [];
+  readonly fluidNetOf = new Map<number, number>();
+  fluidNetsVersion = -1;
+  /** Tick of the last "blackout" message (one per half day at most). */
+  lastBlackoutMsg = -1e9;
   /** Bumped when power things or wires change. Power nets are rebuilt when it changes. */
   powerVersion = 0;
   nets: PowerNet[] = [];
@@ -148,10 +175,11 @@ export class Game {
     this.nextId = n;
   }
 
-  /** Rebuild caches that saves do not store (rooms, roofs, power nets). */
+  /** Rebuild caches that saves do not store (rooms, roofs wanted, power nets). */
   rebuildDerived(): void {
     ensureRooms(this);
     ensureNets(this);
+    ensureFluidNets(this);
   }
 
   message(key: string, params: Record<string, string | number> = {}, level: "info" | "warn" | "bad" = "info") {
@@ -164,7 +192,8 @@ export class Game {
     const g = new Game(content, opts);
     generateHomeMap(g);
     setupStart(g);
-    ensureRooms(g);
+    // Ruins that still stand closed keep their old roofs.
+    completeRoofs(g);
     // Start at 07:00, so the first look at the world is in daylight.
     g.tick = Math.round((g.ticksPerDay * 7) / 24);
     g.story.lastThreat = g.tick;
@@ -201,15 +230,32 @@ export class Game {
     };
   }
 
+  /** Tiles a thing of this def covers with its top-left at x,y. Rotation 1 or 3 swaps width and height. */
+  footprint(def: number, x: number, y: number, rot = 0): { x: number; y: number }[] {
+    const [fw, fh] = this.reg.things.list[def].footprint;
+    const [w, h] = rot % 2 ? [fh, fw] : [fw, fh];
+    const out = [];
+    for (let dy = 0; dy < h; dy++) for (let dx = 0; dx < w; dx++) out.push({ x: x + dx, y: y + dy });
+    return out;
+  }
+
+  /** True if every tile of the footprint is on the map and has no thing. */
+  fits(def: number, layer: number, x: number, y: number, rot = 0): boolean {
+    const L = this.map.layers[layer];
+    return this.footprint(def, x, y, rot).every((t) => L.inBounds(t.x, t.y) && L.thing[L.i(t.x, t.y)] === NO_THING);
+  }
+
   spawnThing(defId: string, layer: number, x: number, y: number, rot?: number): Thing {
     const L = this.map.layers[layer];
-    const i = L.i(x, y);
-    if (L.thing[i] !== NO_THING) throw new Error(`tile ${layer}:${x},${y} is taken`);
     const def = this.reg.things.idx(defId);
+    if (!this.fits(def, layer, x, y, rot)) throw new Error(`tile ${layer}:${x},${y} is taken`);
     const t: Thing = { id: this.nextId++, def, layer, x, y, hp: this.reg.things.list[def].hp, ...(rot !== undefined ? { rot } : {}) };
     this.things.set(t.id, t);
-    L.thing[i] = t.id;
-    L.touch(x, y);
+    for (const f of this.footprint(def, x, y, rot)) {
+      L.thing[L.i(f.x, f.y)] = t.id;
+      L.touch(f.x, f.y);
+      this.touchAround(layer, f.x, f.y);
+    }
     this.mapVersion++;
     const d = this.reg.things.list[def];
     if (d.blocks || d.stairs) this.pathVersion++;
@@ -218,15 +264,25 @@ export class Game {
       this.wallDirty.add(layer);
     }
     if (d.power || d.conduit) this.powerVersion++;
+    if (d.pipe || d.fluid) this.fluidVersion++;
     return t;
+  }
+
+  /** Redraw the four neighbors too (walls, wires and sandbags join with them, maybe across a chunk edge). */
+  private touchAround(layer: number, x: number, y: number): void {
+    const L = this.map.layers[layer];
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (L.inBounds(x + dx, y + dy)) L.touch(x + dx, y + dy);
   }
 
   removeThing(id: number): void {
     const t = this.things.get(id);
     if (!t) return;
     const L = this.map.layers[t.layer];
-    L.thing[L.i(t.x, t.y)] = NO_THING;
-    L.touch(t.x, t.y);
+    for (const f of this.footprint(t.def, t.x, t.y, t.rot)) {
+      if (L.thing[L.i(f.x, f.y)] === id) L.thing[L.i(f.x, f.y)] = NO_THING;
+      L.touch(f.x, f.y);
+      this.touchAround(t.layer, f.x, f.y);
+    }
     this.things.delete(id);
     this.mapVersion++;
     const d = this.reg.things.list[t.def];
@@ -236,6 +292,7 @@ export class Game {
       this.wallDirty.add(t.layer);
     }
     if (d.power || d.conduit) this.powerVersion++;
+    if (d.pipe || d.fluid) this.fluidVersion++;
   }
 
   /** True if a pawn can stand on this tile. */
@@ -284,9 +341,13 @@ export class Game {
     tickRot(this);
     tickStoryteller(this);
     tickFire(this);
+    tickConstruction(this);
     tickPower(this);
     tickLogistics(this);
+    tickFluids(this);
     tickPawns(this);
+    tickSocial(this);
+    tickWorld(this);
     tickTurrets(this);
     tickGoals(this);
   }

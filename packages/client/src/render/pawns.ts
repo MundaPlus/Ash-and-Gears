@@ -42,10 +42,12 @@ export class PawnRenderer {
   }
 
   private textureFor(p: Pawn) {
+    if (p.robot) return this.tex.creatures[this.game.reg.content.creatures[p.creature].id] ?? this.tex.raiders[0];
     if (p.faction === "colony") return this.tex.survivors[p.id % this.tex.survivors.length];
     const creature = this.game.reg.content.creatures[p.creature];
-    if (creature.behavior === "human") return this.tex.raider;
-    return this.tex.creatures[creature.id] ?? this.tex.raider;
+    const raider = this.tex.raiders[p.id % this.tex.raiders.length];
+    if (creature.behavior === "human") return raider;
+    return this.tex.creatures[creature.id] ?? raider;
   }
 
   /** New textures (palette or size changed). */
@@ -76,7 +78,7 @@ export class PawnRenderer {
     body.anchor.set(0.5, 0.5);
     body.width = body.height = TILE;
     shadow.width = shadow.height = TILE;
-    const labelColor = p.faction === "colony" ? 0xefd8a4 : 0xff8a70;
+    const labelColor = p.faction === "colony" ? 0xefd8a4 : p.faction === "prisoner" || p.faction === "visitor" || p.faction === "trader" ? 0xe3c25a : 0xff8a70;
     const label = new Text({ text: p.nick, style: { fontFamily: "monospace", fontSize: 11, fill: labelColor, stroke: { color: 0x1b1714, width: 3 } } });
     label.anchor.set(0.5, 0);
     label.position.set(0, 14);
@@ -142,6 +144,19 @@ export class PawnRenderer {
         this.ring.visible = true;
         this.ring.position.set(pos.x, pos.y + 4);
       }
+    }
+    // Name labels of survivors close together: push the later ones down so none overlap.
+    const placed: { x: number; y: number; w: number; h: number }[] = [];
+    const shown = [...this.views.values()].filter((v) => v.root.visible && v.label.visible).sort((a, b) => a.root.y - b.root.y || a.root.x - b.root.x);
+    for (const v of shown) {
+      v.label.y = 14;
+      const w = v.label.width, h = v.label.height;
+      const box = { x: v.root.x - w / 2, y: v.root.y + 14, w, h };
+      for (let tries = 0; tries < 4 && placed.some((o) => box.x < o.x + o.w && o.x < box.x + box.w && box.y < o.y + o.h && o.y < box.y + box.h); tries++) {
+        box.y += h - 2;
+        v.label.y += h - 2;
+      }
+      placed.push(box);
     }
     if (this.selected === null || !this.game.pawns.get(this.selected) || this.game.pawns.get(this.selected)!.layer !== this.layer)
       this.ring.visible = false;

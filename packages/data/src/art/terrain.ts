@@ -25,6 +25,7 @@ const R: Record<string, Recipe> = {
   scrap_vein: { base: 1, speckle: [[2, 0.05]], pattern: "veins", patternIdx: [9, 10, 14] },
   rough_floor: { base: 2, speckle: [[3, 0.06], [1, 0.05]] },
   cave_floor: { base: 1, speckle: [[2, 0.1], [3, 0.015]] },
+  bunker_floor: { base: 13, speckle: [[14, 0.05], [3, 0.02]], pattern: "tiles", patternIdx: [3, 1] },
 };
 
 function rng(seed: number) {

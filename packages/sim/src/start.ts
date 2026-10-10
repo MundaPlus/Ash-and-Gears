@@ -1,4 +1,5 @@
 /** Starting colony: survivors and supplies at the map center. */
+import { makeFamily } from "./social.ts";
 import type { Game } from "./game.ts";
 import { dropItems } from "./items.ts";
 import { addMemory, makeSurvivor } from "./pawn.ts";
@@ -6,7 +7,7 @@ import { addMemory, makeSurvivor } from "./pawn.ts";
 export const START_SUPPLIES: Record<string, number> = {
   canned_food: 36,
   clean_water: 30,
-  scrap: 40,
+  scrap: 70,
   wood: 40,
   cloth: 10,
 };
@@ -25,6 +26,7 @@ export function setupStart(game: Game, survivors = 3): void {
     addMemory(game, p, "survived_the_end");
     game.pawns.set(p.id, p);
   }
+  makeFamily(game, [...game.pawns.values()].filter((p) => p.faction === "colony"));
   let ox = 3;
   for (const [item, n] of Object.entries(START_SUPPLIES)) {
     dropItems(game, item, n, 0, cx + ox, cy + 3);

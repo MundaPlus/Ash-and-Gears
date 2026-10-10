@@ -25,8 +25,10 @@ export interface WorkGiver {
   give(game: Game, p: Pawn): Job | null;
 }
 export const workGivers: WorkGiver[] = [];
-export function registerWorkGiver(g: WorkGiver): void {
-  workGivers.push(g);
+/** `first` puts the giver ahead of the ones already registered (it is asked first). */
+export function registerWorkGiver(g: WorkGiver, first = false): void {
+  if (first) workGivers.unshift(g);
+  else workGivers.push(g);
 }
 
 /** Work types that have at least one giver (the ones that matter right now). */

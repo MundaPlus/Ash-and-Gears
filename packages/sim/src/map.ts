@@ -34,6 +34,20 @@ export interface Thing {
   recipe?: string;
   buffer?: Record<number, number>;
   work?: number;
+  /** Auto-crafter: finished products waiting to go out (item index -> count). */
+  out?: Record<number, number>;
+  /** Sorter belts and robot arms: the one item they handle (item index). */
+  filter?: number;
+  /** Splitter: which output gets the next packet. */
+  splitNext?: number;
+  /** Bed for prisoners (A6). */
+  forPrisoners?: boolean;
+  /** Power switch turned off. */
+  off?: boolean;
+  /** Consumer priority set by the player (1 keep on longest .. 3 cut first); default from the def. */
+  priority?: number;
+  /** Pipes, tanks, pumps, taps: liters of each fluid held here ("water", "clean_water"). */
+  liquid?: Record<string, number>;
 }
 
 /** A stack of one item type lying on a tile or carried by a pawn. */
@@ -51,12 +65,14 @@ export interface ItemStack {
   contamUntil?: number;
   /** Rot progress 0..1 for food that rots. */
   rot?: number;
+  /** Inside this chest (thing id). Chest stacks sit at the chest's tile but not in the tile's item slot. */
+  chest?: number;
 }
 
 /** Player orders on tiles. */
-export const Desig = { none: 0, salvage: 1, mine: 2, clear: 3, cut: 4 } as const;
+export const Desig = { none: 0, salvage: 1, mine: 2, clear: 3, cut: 4, deconstruct: 5 } as const;
 export type DesigKind = Exclude<keyof typeof Desig, "none">;
-export const DESIG_KINDS: DesigKind[] = ["salvage", "mine", "clear", "cut"];
+export const DESIG_KINDS: DesigKind[] = ["salvage", "mine", "clear", "cut", "deconstruct"];
 
 export interface Blueprint {
   id: number;
@@ -92,8 +108,10 @@ export class Layer {
   readonly item: Int32Array;
   /** Floor index + 1, or 0 for no floor. */
   readonly floor: Uint8Array;
-  /** 1 if the tile has a roof. Underground tiles always count as roofed. */
+  /** 1 if the tile has a built roof. Underground tiles always count as roofed. */
   readonly roof: Uint8Array;
+  /** 1 if the tile needs a roof (enclosed surface room or its walls). Survivors build it. */
+  readonly roofWant: Uint8Array;
   /** Room id (see rooms.ts), or -1 for walls and solid rock. */
   readonly room: Int32Array;
   /** Zone id, or NO_THING. */
@@ -116,6 +134,7 @@ export class Layer {
     this.item = new Int32Array(w * h).fill(NO_THING);
     this.floor = new Uint8Array(w * h);
     this.roof = new Uint8Array(w * h);
+    this.roofWant = new Uint8Array(w * h);
     this.room = new Int32Array(w * h).fill(-1);
     this.zone = new Int32Array(w * h).fill(NO_THING);
     this.blueprint = new Int32Array(w * h).fill(NO_THING);
