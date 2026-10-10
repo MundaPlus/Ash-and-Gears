@@ -23,7 +23,10 @@ import {
 } from "@wc/sim";
 import { ToolController } from "./input/tools.ts";
 import * as sim from "@wc/sim";
-import { Audio } from "./audio.ts";
+import { Audio, type Sfx } from "./audio.ts";
+
+/** The work sound for each kind of work task. */
+const WORK_SFX: Record<string, Sfx> = { build: "build", roof: "build", deconstruct: "salvage", salvage: "salvage", mine: "mine", clear: "mine", cut: "chop", harvest: "rustle", sow: "rustle" };
 import { downloadBytes, listSlots, readSlot, writeSlot } from "./storage.ts";
 import { TitleScreen } from "./ui/Screens.tsx";
 import { Camera } from "./input/camera.ts";
@@ -831,6 +834,8 @@ async function boot() {
   });
 
   let fpsFrames = 0, fpsTime = 0, uiTime = 0, clock = 0, lastFxTick = game.tick;
+  /** Next work sound time per worker (UI clock seconds). */
+  const workBeat = new Map<number, number>();
   // A new story game opens with the storyline and its first chapter.
   const firstBeat = sim.currentBeat(game);
   if (firstBeat && game.plot.line && game.plot.beat === 0 && game.tick - game.plot.beatStart < game.ticksPerHour * 2)
@@ -896,15 +901,24 @@ async function boot() {
     }
     if (game.fx.length) lastFxTick = game.fx[game.fx.length - 1].tick;
     if (game.weather.kind === "rad_cloud" && renderer.layer === 0 && !paused && Math.random() < 0.25 * speed) audio.play("geiger", 0.5, Math.random() * 2 - 1);
-    // Work sounds for survivors on screen.
-    if (!paused && Math.random() < 0.08 * speed) {
+    // Work sounds: a soft sound per kind of work, in a steady rhythm (every 0.7 s per worker) for the two
+    // workers nearest the middle of the screen.
+    if (!paused) {
+      const workers: { p: sim.Pawn; task: string; d: number; px: number }[] = [];
       for (const p of game.pawns.values()) {
         const task = p.job?.kind === "work" && p.job.stage === 2 ? (p.job.data?.task as string) : null;
         if (!task || p.layer !== renderer.layer) continue;
         const px = (p.x + 0.5) * TILE, py = (p.y + 0.5) * TILE;
         if (px < v.x || py < v.y || px > v.x + v.w || py > v.y + v.h) continue;
-        audio.play(task === "mine" || task === "clear" ? "pick" : "hammer", 0.35, (px - (v.x + v.w / 2)) / (v.w / 2));
-        break;
+        workers.push({ p, task, px, d: Math.hypot(px - (v.x + v.w / 2), py - (v.y + v.h / 2)) });
+      }
+      workers.sort((a, b) => a.d - b.d);
+      for (const w of workers.slice(0, 2)) {
+        const next = workBeat.get(w.p.id) ?? 0;
+        if (clock < next) continue;
+        workBeat.set(w.p.id, clock + 0.7 / Math.min(speed, 2) + Math.random() * 0.1);
+        const sound: Sfx | null = WORK_SFX[w.task] ?? "build";
+        if (sound) audio.play(sound, 0.4, (w.px - (v.x + v.w / 2)) / (v.w / 2));
       }
     }
 
