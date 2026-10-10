@@ -1,6 +1,9 @@
 # Changelog
 
 ## 2026-10-11
+- Fix: the showcase cleared its yard and removed the surface stairs down in some seeds, leaving the cave stairs up with nothing above. It now keeps stairs (`packages/sim/src/showcase.ts`) — user report.
+- Showcase: a way down to the old bunker: dug stairs in the caves next to the stairs from the surface, and a tunnel on the bunker layer around the bunker to its outer door (`packages/sim/src/showcase.ts` `wayToBunker`; test in `packages/sim/test/deep.test.ts`) — user question "how do I get to the bunker?".
+- Stairs (Salvage Print) are easy to spot: a light frame round a dark pit, pale steps and a big rust arrow (`packages/client/src/render/print/things.ts`).
 - Wall corners (Salvage Print): every wall tile now has the same thickness both ways (a core with arms to joined neighbors), so corners, T-joins and crossings line up without notches or poking corners; the front face is a darker band inside the wall's bottom edge with a short shadow below; ink lines only on open edges (`packages/client/src/render/print/ground.ts` `wallTile`) — user report.
 - Car wreck redrawn from above, nose to the right: tires at the sides, hood, cracked windshield, dented roof, rear window, a missing door, rust holes. Wrecks on new maps face all four ways (the direction comes from the position, so maps stay the same) (`packages/client/src/render/print/things.ts`, `packages/sim/src/mapgen.ts`) — user report.
 - Doors (Salvage Print): drawn live as two jambs and two leaves about as thick as the wall; the leaves slide into the jambs with easing, open fast, stay open a moment after someone passes, then close more slowly; doors in north-south walls stand upright. The pixel style keeps its look with the same timing (`packages/client/src/render/dynamic.ts` `printDoor`, `print/textures.ts`, `main.ts`) — user report.

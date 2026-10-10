@@ -120,14 +120,18 @@ const ash_willow_plant: Draw = (p) => {
   for (const x of [16, 26, 38, 48]) p.line([[x, 22], [x - 2, 36]], "tealDark", 1.4);
 };
 
+/** Stairs from above: a light frame round a dark pit, pale steps, and a big arrow (down or up). Easy to spot. */
 const stairs = (down: boolean, dug = false): Draw => (p) => {
-  p.shape(Print.rect(6, 6, 52, 52, 3), { fill: dug ? "ochreDark" : "slate", tone: { ink: "soot", amount: 0.25 }, line: true });
+  shadow(p, 4, 4, 56, 56, 4);
+  p.shape(Print.rect(4, 4, 56, 56, 4), { fill: dug ? "ochre" : "bone", tone: { ink: dug ? "ochreDark" : "paper", amount: 0.3 }, line: true });
+  p.shape(Print.rect(11, 11, 42, 42, 2), { fill: "soot", line: 2 });
   for (let k = 0; k < 5; k++) {
-    const y = 10 + k * 9;
-    const shade = down ? 0.1 + k * 0.15 : 0.7 - k * 0.15;
-    p.shape(Print.rect(10, y, 44, 7, 1), { fill: dug ? "ochre" : "slateDark", tone: { ink: "soot", amount: shade }, line: 1.4 });
+    const y = 13 + k * 8;
+    // Down: the steps get darker into the pit; up: lighter toward the top.
+    const amount = down ? 0.15 + k * 0.17 : 0.83 - k * 0.17;
+    p.shape(Print.rect(13, y, 38, 6, 1), { fill: dug ? "ochreDark" : "slate", tone: { ink: "soot", amount }, line: 1.2 });
   }
-  p.shape(down ? [[26, 26], [38, 26], [32, 36]] : [[26, 36], [38, 36], [32, 26]], { fill: "bone", line: 1.6 });
+  p.shape(down ? [[22, 24], [42, 24], [32, 42]] : [[22, 40], [42, 40], [32, 22]], { fill: "rust", line: 2.2 });
 };
 const bunker_locker: Draw = (p) => {
   box(p, 10, 8, 44, 46, "slate", "slateDark", 3);
