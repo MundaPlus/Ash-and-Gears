@@ -15,7 +15,7 @@ import {
 
 const content = loadCoreContent();
 // Normal day length: work is measured in ticks, so short days would make building take more in-game hours.
-const smallGame = (seed: string) => Game.create(content, { seed, mapSize: 96, storyteller: "none" });
+const smallGame = (seed: string) => Game.create(content, { seed, mapSize: 96, storyteller: "none", idleWork: false });
 const run = (g: Game, hours: number) => {
   for (let i = 0, n = Math.round(hours * g.ticksPerHour); i < n; i++) g.step();
 };

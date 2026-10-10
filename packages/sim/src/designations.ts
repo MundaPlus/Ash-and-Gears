@@ -10,6 +10,7 @@ import { spillContents } from "./logistics.ts";
 import { Desig, NO_THING, type DesigKind } from "./map.ts";
 import { skillLevel, type Job, type Pawn } from "./pawn.ts";
 import { registerTask, workJob, type WorkType } from "./work.ts";
+import { workPriority } from "./worktypes.ts";
 
 /** Can this order go on this tile? */
 export function canDesignate(game: Game, kind: DesigKind, layer: number, x: number, y: number): boolean {
@@ -51,6 +52,7 @@ export function undesignate(game: Game, layer: number, x: number, y: number): vo
   if (!L.desig[i]) return;
   L.desig[i] = 0;
   game.desigTiles.delete(layer * L.w * L.h + i);
+  game.autoDesig.delete(layer * L.w * L.h + i);
   L.touch(x, y);
   game.mapVersion++;
 }
@@ -218,7 +220,9 @@ function nearestDesignated(game: Game, p: Pawn, kind: DesigKind): Job | null {
     if (game.map.layers[layer].desig[i] !== code) continue;
     const x = i % w, y = Math.floor(i / w);
     if (isReserved(game, `tile:${layer},${x},${y}`, p)) continue;
-    cands.push({ layer, x, y, d: (x - p.x) ** 2 + (y - p.y) ** 2 + (layer !== p.layer ? 900 : 0) });
+    // The player's own orders first; orders a survivor gave itself when idle come after them.
+    const own = game.autoDesig.has(n) ? 1e7 : 0;
+    cands.push({ layer, x, y, d: own + (x - p.x) ** 2 + (y - p.y) ** 2 + (layer !== p.layer ? 900 : 0) });
   }
   cands.sort((a, b) => a.d - b.d);
   for (const c of cands.slice(0, 20)) {
@@ -233,6 +237,55 @@ function nearestDesignated(game: Game, p: Pawn, kind: DesigKind): Job | null {
 
 for (const [workType, kind] of GIVERS) {
   registerWorkGiver({ workType, give: (game, p) => (game.desigTiles.size ? nearestDesignated(game, p, kind) : null) });
+}
+
+// ---------------------------------------------------------------- idle survivors find their own work
+
+/** How far from home idle survivors look for work (tiles). */
+const OWN_WORK_RANGE = 30;
+/** Self-chosen orders per survivor at most. */
+const OWN_ORDERS_PER_PAWN = 2;
+/** Ticks between two searches by the same survivor. */
+const OWN_WORK_EVERY = 120;
+const ownWorkTried = new WeakMap<Game, Map<number, number>>();
+
+/**
+ * An idle survivor (nothing the work givers offer) gives itself an order: salvage ruins and junk near
+ * home, or cut dead trees and shrubs (first when wood runs low). Only work types the survivor does.
+ * Returns true when it placed an order (the next think picks it up).
+ */
+export function findOwnWork(game: Game, p: Pawn): boolean {
+  if (p.layer !== 0 || p.robot || game.opts.idleWork === false) return false;
+  // Look at most every few seconds per survivor (the search walks every thing on the map).
+  const tried = ownWorkTried.get(game) ?? new Map<number, number>();
+  ownWorkTried.set(game, tried);
+  if (game.tick - (tried.get(p.id) ?? -1e9) < OWN_WORK_EVERY) return false;
+  tried.set(p.id, game.tick);
+  const colonists = [...game.pawns.values()].filter((o) => o.faction === "colony" && !o.robot).length;
+  if (game.autoDesig.size >= OWN_ORDERS_PER_PAWN * Math.max(1, colonists)) return false;
+  const woodLow = countItems(game, "wood") < 50;
+  const kinds: [DesigKind, WorkType][] = woodLow ? [["cut", "grow"], ["salvage", "salvage"]] : [["salvage", "salvage"], ["cut", "grow"]];
+  const L = game.map.layers[0];
+  const h = game.home;
+  for (const [kind, wt] of kinds) {
+    if (workPriority(p, wt) <= 0) continue;
+    let best: { x: number; y: number; d: number } | null = null;
+    for (const t of game.things.values()) {
+      if (t.layer !== 0 || Math.abs(t.x - h.x) > OWN_WORK_RANGE || Math.abs(t.y - h.y) > OWN_WORK_RANGE) continue;
+      const def = game.reg.things.list[t.def];
+      // Cut only wild plants, never crops in a grow zone.
+      if (kind === "cut" && (def.kind !== "plant" || def.crop)) continue;
+      if (kind === "salvage" && def.kind === "plant") continue;
+      if (L.desig[L.i(t.x, t.y)] || !canDesignate(game, kind, 0, t.x, t.y)) continue;
+      const d = (t.x - p.x) ** 2 + (t.y - p.y) ** 2;
+      if (!best || d < best.d) best = { x: t.x, y: t.y, d };
+    }
+    if (best && game.path.canReachAdjacent(p, { layer: 0, x: best.x, y: best.y }) && designate(game, kind, 0, best.x, best.y)) {
+      game.autoDesig.add(L.i(best.x, best.y));
+      return true;
+    }
+  }
+  return false;
 }
 
 /** Items that only story sites give (never found by random salvage). */

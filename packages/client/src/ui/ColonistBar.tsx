@@ -43,7 +43,7 @@ export function ColonistBar() {
             </span>
             {c.warn && (
               <em class="warn">
-                {t(c.warn === "downed" || c.warn === "drafted" ? `pawn.${c.warn}` : `thought.${c.warn}`)}
+                {t(c.warn === "downed" || c.warn === "drafted" || c.warn === "idle" ? `pawn.${c.warn}` : `thought.${c.warn}`)}
               </em>
             )}
           </button>
