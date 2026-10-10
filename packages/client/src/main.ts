@@ -31,7 +31,7 @@ import { PawnRenderer } from "./render/pawns.ts";
 import { FxRenderer } from "./render/fx.ts";
 import { DynamicRenderer } from "./render/dynamic.ts";
 import { loadAiArt } from "./render/aiArt.ts";
-import { ART_SIZES, makeTextures, TILE, type ArtSettings } from "./render/textures.ts";
+import { ART_SIZES, ART_STYLES, makeTextures, TILE, type ArtSettings } from "./render/textures.ts";
 import { WorldRenderer } from "./render/world.ts";
 import { Hud } from "./ui/Hud.tsx";
 import { actions, store, type BuildOption, type ColonistSummary, type PawnDetail, type WorkRow, type WorldUi, type CaravanUi, type StoryUi, type EndingUi } from "./ui/store.ts";
@@ -54,7 +54,7 @@ function darkness(hour: number): number {
   return 1 - (hour - 4) / 3;
 }
 
-/** Art settings: URL (?palette=ash&px=32) wins, then saved choice, then rust/16. */
+/** Art settings: URL (?style=pixel&palette=ash&px=32) wins, then saved choice, then Salvage Print, rust, 16. */
 function loadArt(params: URLSearchParams): ArtSettings {
   let saved: Partial<ArtSettings>;
   try {
@@ -65,7 +65,9 @@ function loadArt(params: URLSearchParams): ArtSettings {
   const palette = params.get("palette") ?? saved.palette ?? "rust";
   const want = params.get("px") ?? saved.size ?? "16";
   const size = ART_SIZES.find((z) => z === want) ?? "16";
-  return { palette, size };
+  const wantStyle = params.get("style") ?? saved.style ?? "print";
+  const style = ART_STYLES.find((s) => s === wantStyle) ?? "print";
+  return { style, palette, size };
 }
 
 /** Game options from the URL (new-game screen, tests). */

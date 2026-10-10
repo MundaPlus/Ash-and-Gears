@@ -1067,5 +1067,9 @@
   "where.assembler_schematic": "Most often in old-world lockers in the bunker deep below (research Deep digging, then dig stairs down from the caves). Sometimes in loot crates in the ruins.",
   "where.reactor_manual": "Found at a story location in the storyline Keep the Lights On.",
   "where.bus_manual": "Found at a story location in the storyline The Last Bus.",
-  "inspect.unlocks": "Unlocks research: {project}"
+  "inspect.unlocks": "Unlocks research: {project}",
+  "style.print": "Salvage Print",
+  "style.print.desc": "Drawn like a worn two-color print. Sharp at every zoom.",
+  "style.pixel": "Pixel 16",
+  "style.pixel.desc": "Hand-pixeled 16 px art."
 }
