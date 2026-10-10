@@ -1012,5 +1012,6 @@
   "stockpile.prio_1": "Low",
   "stockpile.prio_2": "Normal",
   "stockpile.prio_3": "High",
-  "stockpile.prio_4": "Critical"
+  "stockpile.prio_4": "Critical",
+  "alert.drafted_needs": "{name} is drafted and needs food or water. Release them, or they only take a quick bite when it gets critical."
 }

@@ -3,6 +3,7 @@ import { loadCoreContent } from "@wc/data";
 import {
   attackOf,
   bleedRate,
+  computeAlerts,
   canSee,
   damage,
   dropItems,
@@ -13,8 +14,10 @@ import {
   NO_THING,
   orderAttack,
   pain,
+  setDrafted,
   startFire,
   untendedInjuries,
+  WORK_TYPES,
   type Pawn,
 } from "../src/index.ts";
 
@@ -215,3 +218,31 @@ describe("storyteller", () => {
 
 void pain;
 void ({} as Pawn);
+
+describe("drafted needs and feeding the downed", () => {
+  it("a drafted survivor with critical thirst and no enemy near takes a drink and stays drafted", () => {
+    const g = Game.create(loadCoreContent(), { seed: "drafted-drink", mapSize: 96, storyteller: "none" });
+    const p = [...g.pawns.values()].find((q) => q.faction === "colony")!;
+    setDrafted(g, p, true);
+    p.needs.thirst = 0.12;
+    expect(computeAlerts(g).some((a) => a.key === "alert.drafted_needs")).toBe(true);
+    for (let i = 0; i < g.ticksPerHour * 3; i++) g.step();
+    expect(p.needs.thirst).toBeGreaterThan(0.3);
+    expect(p.drafted).toBe(true);
+  });
+
+  it("a doctor brings water to a downed survivor even with no jugs and no clean well", () => {
+    const g = Game.create(loadCoreContent(), { seed: "feed-downed", mapSize: 96, storyteller: "none" });
+    for (const s of [...g.items.values()]) if (g.reg.items.list[s.def].category === "water") g.items.delete(s.id);
+    const L = g.map.layers[0];
+    for (let i = 0; i < L.item.length; i++) if (L.item[i] !== -1 && !g.items.has(L.item[i])) L.item[i] = -1;
+    const [patient, doc] = [...g.pawns.values()].filter((q) => q.faction === "colony");
+    for (const q of g.pawns.values()) q.work = Object.fromEntries(WORK_TYPES.map((w) => [w, w === "doctor" ? 1 : 0]));
+    g.spawnThing("well", 0, g.home.x + 6, g.home.y + 6);
+    patient.health.downed = true;
+    patient.needs.thirst = 0.1;
+    doc.needs.thirst = 1;
+    for (let i = 0; i < g.ticksPerHour * 4; i++) g.step();
+    expect(patient.needs.thirst).toBeGreaterThan(0.1);
+  });
+});

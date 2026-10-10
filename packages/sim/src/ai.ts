@@ -16,6 +16,10 @@ import { haulJob } from "./hauling.ts";
 import { relaxJob, slotNow } from "./recreation.ts";
 import { moving, tickHealthHourly } from "./health.ts";
 import { draftedTick, fleeFrom, hostileTick, selfDefense, updateGroups } from "./hostile.ts";
+import { nearestHostile } from "./combat.ts";
+
+/** Drafted survivors break off for a drink or a meal below this need level. */
+const DRAFTED_CRITICAL = 0.15;
 import { equipJob, inBed, rushToDowned } from "./medical.ts";
 import { fluidNetOf, LITERS_PER_DRINK, netDraw, tapHasWater } from "./fluids.ts";
 import { prisonerTick } from "./prison.ts";
@@ -136,7 +140,19 @@ export function tickPawns(game: Game): void {
       continue;
     }
     if (p.drafted) {
-      draftedTick(game, p);
+      // Drafted survivors stay put, but when thirst or hunger gets critical and no enemy is close,
+      // they take a quick drink or meal and stay drafted (else a long stand-off kills them).
+      const n = p.needs;
+      const critical = n.thirst < DRAFTED_CRITICAL || n.hunger < DRAFTED_CRITICAL;
+      if (!p.job && critical && p.order?.kind !== "attack" && (game.tick + p.id) % 30 === 0 && !nearestHostile(game, p, "colony", 8)) {
+        const j = n.thirst <= n.hunger ? (drinkJob(game, p, true) ?? eatJob(game, p, true)) : (eatJob(game, p, true) ?? drinkJob(game, p, true));
+        if (j) startJob(game, p, j);
+      }
+      if (p.job && (p.job.kind === "eat" || p.job.kind === "drink")) {
+        const driver = drivers.get(p.job.kind)!;
+        const r = driver(game, p, p.job);
+        if (r !== "run") endJob(game, p, r === "fail");
+      } else draftedTick(game, p);
       tickMove(game, p);
       continue;
     }
