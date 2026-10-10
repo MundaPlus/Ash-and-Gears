@@ -3,7 +3,7 @@
  * Drawn with one Graphics object over the chunk layer.
  */
 import { Graphics } from "pixi.js";
-import { DIRS4, isPowered, poleLinks, type Game } from "@wc/sim";
+import { DIRS4, isPowered, poleLinks, sourceFactor, type Game } from "@wc/sim";
 import { TILE } from "./textures.ts";
 
 /** Overlay colors for power networks. */
@@ -21,10 +21,27 @@ export class DynamicRenderer {
     this.lights.blendMode = "add";
   }
 
+  /** How far each door is open (0..1), eased each frame. */
+  private doorOpen = new Map<number, number>();
+  private lastTime = 0;
+
   update(timeSec: number, view: { x: number; y: number; w: number; h: number }, darkness: number, toScreen: (x: number, y: number) => { x: number; y: number }, zoom: number) {
     const g = this.gfx, game = this.game;
     g.clear();
     this.lights.clear();
+    const dt = Math.min(0.2, Math.max(0, timeSec - this.lastTime));
+    this.lastTime = timeSec;
+    // Who uses what right now: benches and desks being worked at, tiles walked on.
+    const inUse = new Set<number>();
+    const walked = new Set<string>();
+    for (const p of game.pawns.values()) {
+      if (p.layer !== this.layer) continue;
+      walked.add(`${p.x},${p.y}`);
+      const next = p.path?.[0];
+      if (next && next.layer === p.layer && p.moveT > 0.4) walked.add(`${next.x},${next.y}`);
+      const j = p.job;
+      if (j?.targetId !== undefined && ((j.kind === "bill" && j.stage === 2) || (j.kind === "research" && j.stage >= 1))) inUse.add(j.targetId);
+    }
     for (const t of game.things.values()) {
       if (t.layer !== this.layer) continue;
       const px = t.x * TILE, py = t.y * TILE;
@@ -39,6 +56,53 @@ export class DynamicRenderer {
         const hue = net === undefined ? 0x777777 : NET_COLORS[net % NET_COLORS.length];
         for (const f of game.footprint(t.def, t.x, t.y, t.rot)) g.rect(f.x * TILE, f.y * TILE, TILE, TILE).fill({ color: hue, alpha: 0.35 });
         if (d.power?.use && !isPowered(game, t)) g.rect(px + 1, py + 1, TILE - 2, TILE - 2).stroke({ width: 2, color: 0xff4a3a });
+      }
+      const [fw, fh] = t.rot && t.rot % 2 ? [d.footprint[1], d.footprint[0]] : d.footprint;
+      const cx = px + (fw * TILE) / 2, cy = py + (fh * TILE) / 2;
+      const seed = t.id * 0.37;
+      // Doors slide open while someone passes, then close again.
+      if (d.door) {
+        const want = walked.has(`${t.x},${t.y}`) ? 1 : 0;
+        const o = (this.doorOpen.get(t.id) ?? 0) + (want - (this.doorOpen.get(t.id) ?? 0)) * Math.min(1, dt * 10);
+        this.doorOpen.set(t.id, o);
+        if (o > 0.02) {
+          const col = parseInt(d.color.slice(1), 16);
+          g.rect(px + 3, py + 3, TILE - 6, TILE - 6).fill({ color: 0x1b1714, alpha: 0.9 * o });
+          const w = ((TILE - 6) / 2) * (1 - o);
+          g.rect(px + 3, py + 3, w, TILE - 6).fill(col).rect(px + TILE - 3 - w, py + 3, w, TILE - 6).fill(col);
+        }
+      }
+      // Benches in use: sparks at workbenches, smoke at fires and furnaces, a blinking screen at the desk.
+      if (inUse.has(t.id)) {
+        if (d.research) {
+          if (Math.sin(timeSec * 6) > -0.2) g.rect(px + 7, py + 9, 7, 6).fill({ color: 0x9fd14a, alpha: 0.75 });
+        } else if (d.id === "stove" || d.id === "campfire" || d.id === "smelter" || d.id === "fuel_still" || d.id === "refinery") this.puffs(g, cx, cy - 4, timeSec, seed, 0xd0d6dc);
+        else if (d.water) this.drops(g, cx, cy, timeSec, seed);
+        else this.sparks(g, cx, cy, timeSec, seed);
+      }
+      // Machines that run on their own.
+      if (d.power?.fuel && (t.fuel ?? 0) > 0) this.puffs(g, px + fw * TILE - 6, py + 2, timeSec, seed, 0x56616d);
+      if (d.autoCrafter && isPowered(game, t) && (t.work ?? 0) > 0) this.gear(g, cx, cy, timeSec * (d.crafterSpeed ?? 1) * 4);
+      if (d.fluid?.role === "pump" && isPowered(game, t)) this.drops(g, cx, cy, timeSec, seed);
+      if (d.robotBay && isPowered(game, t)) {
+        const charging = [...game.pawns.values()].some((p) => p.job?.kind === "charge" && p.job.targetId === t.id && p.job.stage === 2);
+        if (charging && Math.sin(timeSec * 5) > 0) g.rect(px + 4, py + 4, 4, 4).fill(0x9fd14a);
+      }
+      // Batteries show their charge as a bar.
+      if (d.power?.store) {
+        const k = Math.max(0, Math.min(1, (t.charge ?? 0) / d.power.store));
+        g.rect(px + 4, py + TILE - 7, TILE - 8, 4).fill(0x1b1714);
+        if (k > 0) g.rect(px + 5, py + TILE - 6, (TILE - 10) * k, 2).fill(k < 0.2 ? 0xff4a3a : 0x9fd14a);
+      }
+      // Wind turbines: blades turn with the wind.
+      if (d.power?.source === "wind") {
+        const a = timeSec * (1 + 4 * sourceFactor(game, t, "wind"));
+        for (let k = 0; k < 3; k++) {
+          const ang = a + (k * Math.PI * 2) / 3;
+          g.moveTo(cx, cy).lineTo(cx + Math.cos(ang) * TILE * 0.85, cy + Math.sin(ang) * TILE * 0.85).stroke({ width: 5, color: 0x1b1714 });
+          g.moveTo(cx, cy).lineTo(cx + Math.cos(ang) * TILE * 0.8, cy + Math.sin(ang) * TILE * 0.8).stroke({ width: 3, color: 0xd0d6dc });
+        }
+        g.circle(cx, cy, 4).fill(0x6f8088).stroke({ width: 1, color: 0x1b1714 });
       }
       // Direction arrow on rotatable things.
       if (d.rotatable) {
@@ -70,5 +134,38 @@ export class DynamicRenderer {
         for (let k = 10; k >= 1; k--) this.lights.circle(s.x, s.y, (r * k) / 10).fill({ color: 0xffb060, alpha: 0.028 * darkness * flick });
       }
     }
+  }
+
+  /** Smoke or steam: three puffs rising and fading. */
+  private puffs(g: Graphics, x: number, y: number, t: number, seed: number, color: number) {
+    for (let k = 0; k < 3; k++) {
+      const ph = (t * 0.7 + k / 3 + seed) % 1;
+      g.circle(x + Math.sin(ph * 6 + seed) * 3, y - ph * 18, 2 + ph * 3).fill({ color, alpha: 0.55 * (1 - ph) });
+    }
+  }
+
+  /** Work sparks: a few bright pixels that flash. */
+  private sparks(g: Graphics, x: number, y: number, t: number, seed: number) {
+    for (let k = 0; k < 4; k++) {
+      if (Math.sin(t * 17 + k * 1.9 + seed * 7) < 0.55) continue;
+      const ox = Math.sin(k * 12.9 + seed + Math.floor(t * 4)) * 8, oy = Math.cos(k * 7.3 + seed + Math.floor(t * 4)) * 6;
+      g.rect(x + ox, y + oy - 4, 2, 2).fill(k % 2 ? 0xffd27a : 0xffffff);
+    }
+  }
+
+  /** Water: drops falling and a ring spreading. */
+  private drops(g: Graphics, x: number, y: number, t: number, seed: number) {
+    const ph = (t * 1.2 + seed) % 1;
+    g.circle(x, y, 2 + ph * 7).stroke({ width: 1, color: 0x9ec9e8, alpha: 1 - ph });
+    g.rect(x - 1, y - 10 + ph * 8, 2, 3).fill({ color: 0x9ec9e8, alpha: 1 - ph });
+  }
+
+  /** A turning gear mark for machines at work. */
+  private gear(g: Graphics, x: number, y: number, a: number) {
+    for (let k = 0; k < 4; k++) {
+      const ang = a + (k * Math.PI) / 2;
+      g.moveTo(x, y).lineTo(x + Math.cos(ang) * 6, y + Math.sin(ang) * 6).stroke({ width: 2, color: 0xe3c25a });
+    }
+    g.circle(x, y, 2).fill(0x1b1714);
   }
 }

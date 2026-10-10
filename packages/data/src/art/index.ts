@@ -17,6 +17,14 @@ export const PALETTES: Record<string, string[]> = {
 };
 
 /** Shirt color ramps for survivors (replace indices 8, 9, 10 of the survivor sprite). */
+/** Hair colors per survivor: [dark, light] palette indexes replacing 3 and 4 (brown, black, blond, grey, red). */
+export const HAIRS: [number, number][] = [
+  [3, 4],
+  [1, 2],
+  [4, 6],
+  [14, 7],
+  [8, 10],
+];
 export const SHIRTS: [number, number, number][] = [
   [8, 9, 10],
   [11, 12, 12],
@@ -35,14 +43,23 @@ export const WALL_N = 1, WALL_E = 2, WALL_S = 4, WALL_W = 8;
 
 /**
  * A 16x16 wall grid joined to its neighbors (mask of WALL_* bits).
- * A wall below hides this tile's front face (rows 12-15), so a vertical run reads as one wall.
+ * A wall below hides this tile's front face: the tile shows only the top surface, so a vertical run
+ * reads as one wall with no stripes between tiles.
  * A wall to a side or above removes the outline on that side.
  */
 export function wallVariant(grid: number[][], mask: number): number[][] {
   const g = grid.map((r) => [...r]);
   const n = g.length;
-  if (mask & WALL_S) for (let y = 12; y < n; y++) g[y] = [...grid[y - 11]];
-  if (mask & WALL_N) g[0] = [...g[1]];
+  // The top surface (rows 1-4) repeats every 4 rows, so it tiles cleanly down a vertical run.
+  const band = (y: number) => [...grid[1 + (y % 4)]];
+  if (mask & WALL_S) {
+    // A wall continues below: no front face here, only the top surface.
+    for (let y = 1; y < n; y++) g[y] = band(y);
+    if (mask & WALL_N) g[0] = band(0);
+  } else if (mask & WALL_N) {
+    // Bottom end of a vertical run: the top surface continues, then the front face as drawn.
+    for (let y = 0; y < 6; y++) g[y] = band(y);
+  }
   for (const row of g) {
     if (mask & WALL_E) row[n - 1] = row[n - 2];
     if (mask & WALL_W) row[0] = row[1];
@@ -94,6 +111,43 @@ const BIG_ART: Record<string, { turn?: boolean; cols?: [number, number]; rows?: 
     ],
   },
   // A double bed (2x2): two pillows, drawn whole at 32x32.
+  // Wind turbine (2x2): a pad with the tower top; the blades are drawn turning on top of it.
+  wind_turbine: {
+    grid: [
+      "................................",
+      "................................",
+      "..0000000000000000000000000000..",
+      "..0655456666555466665555466650..",
+      "..0564665555664655556664555560..",
+      "..0546665555646655556646555560..",
+      "..0466665555466655556466555560..",
+      "..0566665554666655554666555560..",
+      "..0655556646555566645555666640..",
+      "..0655556466555566465555666450..",
+      "..0655554666555564665555664650..",
+      "..0655546666555546665555646650..",
+      "..0566465555600000056666455560..",
+      "..056466555500eeee006664555560..",
+      "..05466655550ee77ee06646555560..",
+      "..04666655550e7777e06466555560..",
+      "..06555566640e7777e04555666650..",
+      "..06555566460ee77ee05555666640..",
+      "..065555646600eeee005555666450..",
+      "..0655554666500000065555664650..",
+      "..0566645555666645556666545560..",
+      "..0566465555666455556666455560..",
+      "..0564665555664655556664555560..",
+      "..0546665555646655556646555560..",
+      "..0455556666455566665455666650..",
+      "..0655556664555566664555666650..",
+      "..0655556646555566645555666640..",
+      "..0655556466555566465555666450..",
+      "..0566664555666654556666554560..",
+      "..0000000000000000000000000000..",
+      "................................",
+      "................................",
+    ],
+  },
   scrap_bed: {
     grid: [
       "................................",
@@ -130,12 +184,12 @@ const BIG_ART: Record<string, { turn?: boolean; cols?: [number, number]; rows?: 
       "................................",
     ],
   },
-  table: { cols: [4, 12] },
-  scrap_bench: { cols: [6, 10] },
-  stove: { cols: [4, 12] },
-  research_desk: { cols: [11, 13] },
-  powered_bench: { cols: [3, 11] },
-  smelter: { cols: [5, 9] },
+  table: { cols: [6, 10] },
+  scrap_bench: { cols: [7, 9] },
+  stove: { cols: [7, 9] },
+  research_desk: { cols: [7, 9] },
+  powered_bench: { cols: [12, 14] },
+  smelter: { cols: [10, 12] },
   scrap_generator: { cols: [4, 8] },
 };
 

@@ -7,7 +7,7 @@
  * characters in "hybrid" and "32".
  */
 import { Texture } from "pixi.js";
-import { CREATURES, FLOORS, ITEMS, PALETTES, parseGrid, scale2x, SHIRTS, terrainGrid, TERRAIN_VARIANTS, THINGS, lineVariant, rotateGrid, thingGrid, TURN_IN_LINE, wallVariant } from "@wc/data";
+import { CREATURES, FLOORS, HAIRS, ITEMS, PALETTES, parseGrid, scale2x, SHIRTS, terrainGrid, TERRAIN_VARIANTS, THINGS, lineVariant, rotateGrid, thingGrid, TURN_IN_LINE, wallVariant } from "@wc/data";
 import type { Registry } from "@wc/sim";
 import { aiTexture, aiWallTextures, type AiArt } from "./aiArt.ts";
 
@@ -142,7 +142,12 @@ export function makeTextures(reg: Registry, art: ArtSettings, ai: AiArt = new Ma
   const aiPeople = aiDetail("survivor");
   const survivors = aiPeople?.length
     ? aiPeople.map((c) => aiTexture(c, palette))
-    : SHIRTS.map(([a, b, c]) => gridTexture(survivorGrid, colors, { 8: a, 9: b, 10: c }));
+    : // Twelve looks: each shirt with a hair color (survivor k wears shirt k % 6, like the UI swatch).
+      Array.from({ length: SHIRTS.length * 2 }, (_, k) => {
+        const [a, b, c] = SHIRTS[k % SHIRTS.length];
+        const [h1, h2] = HAIRS[(k * 3) % HAIRS.length];
+        return gridTexture(survivorGrid, colors, { 8: a, 9: b, 10: c, 3: h1, 4: h2 });
+      });
   const aiRaiders = aiDetail("raider");
   const raiders = aiRaiders?.length ? aiRaiders.map((c) => aiTexture(c, palette)) : [gridTexture(prepDetail(CREATURES.raider), colors)];
   const creatures: Record<string, Texture> = {};

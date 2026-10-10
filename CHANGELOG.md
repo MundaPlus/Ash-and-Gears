@@ -1,6 +1,12 @@
 # Changelog
 
 ## 2026-10-11
+- 16 px art pass (the user prefers the 16 px look): refined survivor and raider sprites (clear face with eyes, collar, sleeves with hands, belt, pants, boots), and hair color now varies per survivor (12 looks: 6 shirts × hair colors) (`packages/data/src/art/items.ts`, `src/art/index.ts` `HAIRS`, `packages/client/src/render/textures.ts`).
+- 16 px things redrawn top-down (only people, plants and trees stay side view): table, chair, campfire, workbench, stove, research desk, powered bench, smelter, generator, well, rain collector, turret, lamp, battery, pump, water tank, solar panel, wind turbine, power pole, robot arm, chest, bunker locker, car wreck, loot crate, old safe; repeat bands for wide things adjusted (`packages/data/src/art/things.ts`, `src/art/index.ts`).
+- Fix: vertical wall runs had a stripe at every tile (each tile drew its own front face). Tiles with a wall below now repeat only the top surface; the bottom tile keeps the front face (`packages/data/src/art/index.ts` `wallVariant`).
+- Doors slow walkers by 25% (`packages/sim/src/game.ts` `walkCost`).
+- Animations: doors slide open while someone passes; benches in use show sparks, smoke or steam, the research desk screen blinks, wells show water; fueled generators smoke, working auto-crafters show a turning gear, powered pumps ripple, a robot bay blinks while charging; batteries show a charge bar; wind turbines are 2x2 with turning blades (`packages/client/src/render/dynamic.ts`, `packages/data/content/core/things.json`, `src/art/index.ts`).
+- Stopped the AI art work (32 px top-down and terrain runs) after the user chose the 16 px look; the AI tries and prompts are back to the committed state. The 32 px option stays.
 - Music: each mood has a pool of songs and the game rotates through it, keeping a song until it ends; seven more song styles for the YuE2 generator (second western, folk, tech, night, tense and combat tracks, and a desert blues track) (`packages/client/src/audio.ts`, `tools/audio/comfy-music.ts`) — the user asked for more songs.
 - AI art: top-down prompts for all furniture, machines and objects (35 ids, including the newer things that had only hand art); old side-view tries removed (`tools/art/ai/sprites.json`, `art/ai/`) — the user asked for top-down art except people.
 

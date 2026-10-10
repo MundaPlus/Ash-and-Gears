@@ -72,7 +72,7 @@ describe("power grid (A3)", () => {
     const panel = g.spawnThing("solar_panel", 0, x0, y0);
     const lamp = g.spawnThing("lamp", 0, x0 + 2, y0);
     const turbine = g.spawnThing("wind_turbine", 0, x0 + 6, y0);
-    const lamp2 = g.spawnThing("lamp", 0, x0 + 7, y0);
+    const lamp2 = g.spawnThing("lamp", 0, x0 + 8, y0);
     g.weather.kind = "clear";
     // Run to noon, then to midnight.
     while (Math.abs(g.hourOfDay - 12) > 0.2) g.step();

@@ -308,9 +308,12 @@ export class Game {
     const td = this.reg.terrain.list[L.terrain[i]];
     if (td.walkCost === 0) return 0;
     const th = L.thing[i];
-    if (th !== NO_THING && this.reg.things.list[this.things.get(th)!.def].blocks) return 0;
+    const thd = th !== NO_THING ? this.reg.things.list[this.things.get(th)!.def] : null;
+    if (thd?.blocks) return 0;
     const fl = L.floor[i];
-    return fl ? this.reg.floors.list[fl - 1].walkCost : td.walkCost;
+    const base = fl ? this.reg.floors.list[fl - 1].walkCost : td.walkCost;
+    // Opening a door takes a moment: walkers go 25% slower through it.
+    return thd?.door ? base / 0.75 : base;
   }
 
   /** Def of the thing on a tile, if any. */

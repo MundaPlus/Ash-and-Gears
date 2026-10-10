@@ -631,6 +631,7 @@
  },
  {
   "id": "wind_turbine",
+  "footprint": [2, 2],
   "kind": "furniture",
   "color": "#a6b0ba",
   "glyph": "Y",
