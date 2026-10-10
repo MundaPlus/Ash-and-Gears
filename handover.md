@@ -10,6 +10,15 @@ The user wants a full post-apocalyptic colony + automation game (RimWorld + Fact
   - N3 sim part: `Zone.allowItems`, `zoneTakes`, `setZoneItem`, `setZoneFilter` (`hauling.ts`, `tileactions.ts`, `map.ts`).
 - Checks at the end: 127 unit tests pass, 14 e2e pass, build OK.
 
+## First: restart the running services
+Do this at the start of the new session, before any other work:
+1. `cd /home/marko/git_projects/game && git checkout develop && git pull --ff-only origin develop`
+2. `npm install` (only if `package-lock.json` changed)
+3. `npm run build` (the preview serves `packages/client/dist`)
+4. `systemctl --user restart wasteland-colony` — systemd user service, vite preview on 0.0.0.0:4173 from `packages/client` (unit file `~/.config/systemd/user/wasteland-colony.service`)
+5. Check: `systemctl --user status wasteland-colony --no-pager` shows "active (running)", and `curl -s -o /dev/null -w "%{http_code}" http://192.168.31.215:4173/` gives 200.
+6. GitHub Pages needs no restart: it deploys on every push to GitHub `main`.
+
 ## Current state
 - Working tree clean after the last commit. Preview service at http://192.168.31.215:4173/ (LAN); live on https://mundaplus.github.io/Ash-and-Gears/ (deploys from GitHub `main`).
 - The user's own saved game gets the stairs and bunker route on its next load (ensureLinks in loadGame).
