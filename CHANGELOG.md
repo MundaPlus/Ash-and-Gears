@@ -1,6 +1,9 @@
 # Changelog
 
 ## 2026-10-11
+- Auto-crafter: each recipe button shows what it needs and what it makes ("12 Scrap → 3 Components"); the chosen recipe keeps its have/needed line (`packages/client/src/main.ts`, `ui/Hud.tsx`, `ui/store.ts`, `style.css`) — user request.
+- Plan: N3 stockpile filters per item, for loaders and automation (`docs/spec/14-next-phase.md`) — user request.
+- Plan: two new features in `docs/spec/14-next-phase.md`: N1 surface buildings with upper floors and sealed rooms with enemies; N2 weapon and armor tiers through research. Handover written for the next session (`handover.md`) — user requests.
 - New order "Remove floor" (Orders menu, F marker, tile action): a builder takes up a built floor in half its build work and gets 75% of the materials back (`packages/sim/src/designations.ts` task `unfloor`, `map.ts` `Desig.unfloor`, `tileactions.ts`; `packages/client/src/ui/Toolbar.tsx`, `render/textures.ts`; i18n; test in `packages/sim/test/build.test.ts`) — user request.
 - Grow and shrink zones: the inspect panel of any zone tile has "Grow zone" (the zone tool for that kind and crop; drag next to the zone and the new tiles join it) and "Shrink zone" (the remove tool) (`packages/client/src/ui/Hud.tsx`, `store.ts`, `main.ts`; i18n) — user request.
 - The inspect panel shows what rides on a belt piece ("On the belt: 3 × Scrap") or that it is empty; it updates live (`packages/client/src/main.ts`; i18n) — user report.

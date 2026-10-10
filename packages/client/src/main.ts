@@ -497,7 +497,7 @@ async function boot() {
     let bills: { benchId: number; recipe: string; target: number; stock: number }[] | undefined;
     let make: { benchId: number; queue: { recipe: string; left: number }[]; recipes: { id: string; inputs: string }[] } | undefined;
     let researchLink = false;
-    let crafter: { thingId: number; current: string | null; options: string[] } | undefined;
+    let crafter: { thingId: number; current: string | null; options: string[]; needs?: Record<string, string> } | undefined;
     let filter: { thingId: number; current: string | null; options: string[] } | undefined;
     let power: { thingId: number; priority?: number; switchOn?: boolean } | undefined;
     let prisonBed: { thingId: number; on: boolean } | undefined;
@@ -544,7 +544,15 @@ async function boot() {
       }
       if (def.autoCrafter) {
         const r = sim.crafterRecipe(game, thing);
-        crafter = { thingId: thing.id, current: r?.id ?? null, options: recipesFor(game, def.id).filter((x) => x.inputs.every((i) => i.item)).map((x) => x.id) };
+        const opts = recipesFor(game, def.id).filter((x) => x.inputs.every((i) => i.item));
+        // Each recipe button says what it needs and what it makes.
+        const needs = Object.fromEntries(
+          opts.map((x) => [
+            x.id,
+            `${x.inputs.map((i) => `${i.count} ${t(`item.${i.item}`)}`).join(" + ")} → ${Object.entries(x.output).map(([it, n]) => `${n} ${t(`item.${it}`)}`).join(" + ")}`,
+          ]),
+        );
+        crafter = { thingId: thing.id, current: r?.id ?? null, options: opts.map((x) => x.id), needs };
         if (r) lines.push(t("inspect.crafter", { have: r.inputs.map((i) => `${thing.buffer?.[game.reg.items.idx(i.item!)] ?? 0}/${i.count} ${t(`item.${i.item}`)}`).join(", "), pct: Math.round(((thing.work ?? 0) / r.work) * 100) }));
       }
       const contents = (r?: Record<number, number>) =>

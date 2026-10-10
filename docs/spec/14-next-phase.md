@@ -74,3 +74,44 @@ Installable web app (manifest, service worker, offline cache of the build), touc
 | S5 | Done: all 38 items, creatures and robots; effects keep their animated overlays |
 | S6 | Done: Salvage Print is the default (user request), switch in Settings, README and presentation screenshots and clips retaken |
 | Phone app | Next |
+
+## New requests (2026-10-11, after v0.4.0)
+
+### N1 — Surface buildings with upper floors, and sealed rooms with enemies
+
+User: "add structures with the same number of stories to the surface so we can go up the same number of floors; rooms with closed doors that have enemies, like rats, dogs, hostile bots, turrets."
+
+| Area | Decision (proposal) |
+|---|---|
+| Layers | Today: layer 0 surface, 1 caves, 2 deep (bunker). Add upper layers for buildings: a ruined tower on the surface has stairs up to floor 2 and 3. Layers above the surface are mostly empty air; only the tower footprint has floors and walls. Pathing already links layers through stairs |
+| Ruined tower | Map generation places 1–2 ruined towers (e.g. 12x10) near the map edge, 2–3 stories, with stairs up on each floor; walls with gaps; loot crates and lockers upstairs |
+| Sealed rooms | Some rooms have closed, locked doors (a new "sealed door" that survivors open with a work order, or break). Inside wait enemies that wake when the door opens: rad-rats, glow-hounds, hostile robots (raider-faction robot kinds), a powered turret (hostile faction turret) |
+| Reward | Rooms hold better loot (manuals, components, weapons), so opening them is a choice |
+| UI | Layer buttons show "Floor 2/3" above the surface; the layer bar lists all layers |
+| Bunker | The deep bunker gets the same sealed rooms and enemies |
+
+### N2 — Weapon and armor tiers through research
+
+User: "we need research for weapons and armors of different tiers."
+
+| Tier | Weapons (research) | Armor (research) |
+|---|---|---|
+| 0 | pipe, machete, crossbow (no research) | rags (cloth) |
+| 1 | pipe pistol, scrap shotgun (Gunsmithing) | scrap vest (Scrap armor) |
+| 2 | hunting rifle, nail gun (Rifling) | plated vest + helmet (Plate armor) |
+| 3 | assault rifle, flamer (Advanced weapons) | combat armor (Composite armor, needs plastics) |
+| 4 | rail gun / energy rifle (Energy weapons, needs electronics) | powered armor (Power armor, needs robotics) |
+
+Needs: an apparel/armor slot on pawns (body and head), armor values that reduce damage by type (cut, blunt, gunshot, bite, burn), crafting recipes at the workbench / powered bench / assembler, equip logic (survivors pick the best they may use), print art for each piece and a small overlay on people.
+
+### Order
+
+N2 first (smaller, uses existing combat), then N1 (map generation, new layers, sealed rooms, hostile machines). The phone app moves after these.
+
+### N3 — Stockpile filters per item
+
+User: "the stockpile zones need more granularity if I want to use them for loaders and automation."
+
+Today a stockpile takes whole categories (resources, food, ...). Add item-level filters: in the stockpile panel each category opens a list of its items with on/off toggles; a stockpile can take only scrap, for example, next to a loader. Sim: `Zone.allowItems?: string[]` (when set, items decide; categories stay for the quick view); `accepts()` checks items first; haul list and stockpile priority use the same check. Keep a "copy filter" / "paste filter" pair of buttons for many small stockpiles.
+
+Updated order: N3 (small, helps automation now), N2, then N1, then the phone app.
