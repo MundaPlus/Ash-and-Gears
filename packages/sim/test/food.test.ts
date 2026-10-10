@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadCoreContent } from "@wc/data";
-import { completeRoofs, contaminate, countItems, createZone, dropItems, exposureAt, Game, NO_THING, roomAt, scheduleRadCloud, tickWeather, type Pawn } from "../src/index.ts";
+import { WORK_TYPES, completeRoofs, contaminate, countItems, createZone, dropItems, exposureAt, Game, NO_THING, roomAt, scheduleRadCloud, tickWeather, type Pawn } from "../src/index.ts";
 
 const content = loadCoreContent();
 const newGame = (seed: string) => Game.create(content, { seed, mapSize: 96, storyteller: "none" });
@@ -57,6 +57,21 @@ describe("cooking and water", () => {
     // Target is 2 meals per survivor (6). Survivors may eat some meals as they appear.
     expect(countItems(g, "simple_meal")).toBeGreaterThanOrEqual(3);
     expect(countItems(g, "glowcorn") + countItems(g, "scrub_potato")).toBeLessThan(80);
+  });
+
+  it("a cook who does no hauling lights the cold campfire and cooks", () => {
+    const g = newGame("coldfire");
+    const { x: hx, y: hy } = g.home;
+    clearArea(g, hx - 6, hy - 6, 3);
+    const fire = g.spawnThing("campfire", 0, hx - 6, hy - 6);
+    fire.fuel = 0;
+    dropItems(g, "wood", 30, 0, hx - 4, hy - 8);
+    dropItems(g, "glowcorn", 50, 0, hx - 3, hy - 3);
+    // Cooking only: nobody hauls, so nobody else refuels the fire.
+    for (const p of g.pawns.values()) p.work = Object.fromEntries(WORK_TYPES.map((w) => [w, w === "cook" ? 1 : 0]));
+    run(g, 12);
+    expect(fire.fuel ?? 0).toBeGreaterThan(0);
+    expect(countItems(g, "simple_meal")).toBeGreaterThanOrEqual(2);
   });
 
   it("survivors fill water jugs at a well", () => {

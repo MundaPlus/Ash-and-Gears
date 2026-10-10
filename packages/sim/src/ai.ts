@@ -5,6 +5,7 @@
  */
 import { armorMove } from "./gear.ts";
 import { urgentBillJob } from "./bills.ts";
+import { refuelJob } from "./power.ts";
 import type { Game } from "./game.ts";
 import { dropItems, takeFromStack } from "./items.ts";
 import { NO_THING, type ItemStack, type Thing } from "./map.ts";
@@ -258,7 +259,7 @@ export function think(game: Game, p: Pawn): void {
     if (r === "idle") return;
     if (r && startJob(game, p, r)) return;
     if (workPriority(p, "haul") > 0 && startJob(game, p, haulJob(game, p, true))) return;
-  if (workPriority(p, "haul") > 0 && startJob(game, p, urgentBillJob(game, p))) return;
+  if (workPriority(p, "haul") > 0 && (startJob(game, p, urgentBillJob(game, p)) || startJob(game, p, refuelJob(game, p, 0.25)))) return;
     for (const w of workOrder(p)) for (const g of workGivers) if (g.workType === w && startJob(game, p, g.give(game, p))) return;
     if ((p.charge ?? 1) < 0.9) {
       const rest = robotJob(game, { ...p, charge: 0.1 } as Pawn);
@@ -295,7 +296,7 @@ export function think(game: Game, p: Pawn): void {
   if (wantFun && startJob(game, p, relaxJob(game, p))) return;
   // "Haul now" stacks come before all other work for anyone who hauls.
   if (workPriority(p, "haul") > 0 && startJob(game, p, haulJob(game, p, true))) return;
-  if (workPriority(p, "haul") > 0 && startJob(game, p, urgentBillJob(game, p))) return;
+  if (workPriority(p, "haul") > 0 && (startJob(game, p, urgentBillJob(game, p)) || startJob(game, p, refuelJob(game, p, 0.25)))) return;
   for (const w of workOrder(p))
     for (const g of workGivers) if (g.workType === w && startJob(game, p, g.give(game, p))) return;
   // Nothing to do: take an order you gave yourself, or give yourself one (salvage junk or cut dead wood near home).
