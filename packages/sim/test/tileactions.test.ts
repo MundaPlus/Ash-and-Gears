@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadCoreContent } from "@wc/data";
-import { doTileAction, Game, NO_THING, placeBlueprint, tileActions } from "../src/index.ts";
+import { createZone, doTileAction, dropItems, Game, NO_THING, placeBlueprint, setZoneAllow, tileActions } from "../src/index.ts";
 
 const content = loadCoreContent();
 const newGame = () => Game.create(content, { seed: "actions", mapSize: 96, storyteller: "none" });
@@ -34,5 +34,20 @@ describe("tile actions", () => {
     expect(tileActions(g, 0, x - 6, y - 6).first).toBe("cancel_plan");
     doTileAction(g, 0, x - 6, y - 6, "cancel_plan");
     expect(L.blueprint[L.i(x - 6, y - 6)]).toBe(NO_THING);
+  });
+
+  it("survivors leave forbidden stacks alone, and stockpile filters keep categories out", () => {
+    const g = newGame();
+    const { x, y } = g.home;
+    const L = g.map.layers[0];
+    for (const p of g.pawns.values()) p.work = { haul: 1 };
+    const zone = createZone(g, "stockpile", 0, [{ x: x + 3, y: y - 3 }, { x: x + 4, y: y - 3 }]);
+    dropItems(g, "stone", 10, 0, x - 3, y + 3);
+    expect(doTileAction(g, 0, x - 3, y + 3, "forbid")).toBe(true);
+    expect(tileActions(g, 0, x - 3, y + 3).actions).toContain("allow");
+    for (let i = 0, n = g.ticksPerHour * 4; i < n; i++) g.step();
+    expect(L.item[L.i(x - 3, y + 3)]).not.toBe(NO_THING);
+    setZoneAllow(g, zone.id, "resource", false);
+    expect(g.zones.get(zone.id)!.allow).not.toContain("resource");
   });
 });

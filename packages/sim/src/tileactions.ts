@@ -9,7 +9,7 @@ import type { Game } from "./game.ts";
 import { removeZoneTiles } from "./hauling.ts";
 import { NO_THING, type DesigKind } from "./map.ts";
 
-export type TileAction = DesigKind | "cancel_plan" | "cancel_order" | "remove_zone";
+export type TileAction = DesigKind | "cancel_plan" | "cancel_order" | "remove_zone" | "forbid" | "allow";
 
 /** Actions possible on a tile, the default one first (or none is default when `first` is null). */
 export function tileActions(game: Game, layer: number, x: number, y: number): { actions: TileAction[]; first: TileAction | null } {
@@ -20,6 +20,8 @@ export function tileActions(game: Game, layer: number, x: number, y: number): { 
   if (L.blueprint[i] !== NO_THING) actions.push("cancel_plan");
   if (L.desig[i]) actions.push("cancel_order");
   else for (const k of ["mine", "salvage", "cut", "clear", "deconstruct"] as DesigKind[]) if (canDesignate(game, k, layer, x, y)) actions.push(k);
+  const stack = L.item[i] !== NO_THING ? game.items.get(L.item[i]) : undefined;
+  if (stack) actions.push(stack.forbidden ? "allow" : "forbid");
   if (L.zone[i] !== NO_THING) actions.push("remove_zone");
   const first = actions.find((a) => a !== "deconstruct" && a !== "remove_zone") ?? null;
   return { actions, first };
@@ -39,6 +41,16 @@ export function doTileAction(game: Game, layer: number, x: number, y: number, a:
       if (!L.desig[i]) return false;
       undesignate(game, layer, x, y);
       return true;
+    case "forbid":
+    case "allow": {
+      const s = L.item[i] !== NO_THING ? game.items.get(L.item[i]) : undefined;
+      if (!s) return false;
+      if (a === "forbid") s.forbidden = true;
+      else delete s.forbidden;
+      L.touch(x, y);
+      game.mapVersion++;
+      return true;
+    }
     case "remove_zone":
       if (L.zone[i] === NO_THING) return false;
       removeZoneTiles(game, layer, [{ x, y }]);
@@ -46,4 +58,11 @@ export function doTileAction(game: Game, layer: number, x: number, y: number, a:
     default:
       return designate(game, a, layer, x, y);
   }
+}
+
+/** Stockpile filter: let a category in, or keep it out. */
+export function setZoneAllow(game: Game, zoneId: number, category: string, on: boolean): void {
+  const z = game.zones.get(zoneId);
+  if (!z || z.kind !== "stockpile") return;
+  z.allow = on ? [...new Set([...z.allow, category])] : z.allow.filter((c) => c !== category);
 }

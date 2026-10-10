@@ -10,6 +10,8 @@ export interface Inspect {
   crafter?: { thingId: number; current: string | null; options: string[] };
   /** Things to do on this tile (buttons); `first` is what the F key does. */
   actions?: { list: string[]; first: string | null };
+  /** Stockpile under the tile: which item categories it takes. */
+  stockpile?: { zoneId: number; allow: string[] };
   /** Beds: for prisoners or not. */
   prisonBed?: { thingId: number; on: boolean };
   /** Power consumers: priority; switches: on or off. */
@@ -238,6 +240,7 @@ export const actions = {
   togglePowerOverlay: () => {},
   setCapture: (_pawn: number, _on: boolean) => {},
   tileAction: (_action: string) => {},
+  setZoneAllow: (_zone: number, _category: string, _on: boolean) => {},
   jumpTo: (_at: { layer: number; x: number; y: number }) => {},
   sendExpedition: (_site: number, _pawns: number[], _outpost: boolean) => {},
   trade: (_buy: Record<string, number>, _sell: Record<string, number>) => {},

@@ -50,6 +50,8 @@ export interface TextureSet {
   raiders: Texture[];
   creatures: Record<string, Texture>;
   shadow: Texture;
+  /** Red cross for forbidden item stacks. */
+  forbid: Texture;
 }
 
 function gridTexture(grid: number[][], colors: string[], remap?: Record<number, number>): Texture {
@@ -183,7 +185,20 @@ export function makeTextures(reg: Registry, art: ArtSettings, ai: AiArt = new Ma
     g.ellipse(16, 29, 9, 3, 0, 0, Math.PI * 2);
     g.fill();
   });
-  return { terrain, terrainEdges, terrainLayers, things, walls, lines, stubs, turned, thingsTurned, items, floors, desig, survivors, raiders, creatures, shadow };
+  const forbid = drawn(16, (g) => {
+    g.strokeStyle = "#1b1714";
+    g.lineWidth = 5;
+    g.beginPath();
+    g.moveTo(3, 3);
+    g.lineTo(13, 13);
+    g.moveTo(13, 3);
+    g.lineTo(3, 13);
+    g.stroke();
+    g.strokeStyle = "#ff4a3a";
+    g.lineWidth = 2.5;
+    g.stroke();
+  });
+  return { forbid, terrain, terrainEdges, terrainLayers, things, walls, lines, stubs, turned, thingsTurned, items, floors, desig, survivors, raiders, creatures, shadow };
 }
 
 /** Stable variant per tile so the ground does not repeat. */

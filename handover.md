@@ -17,8 +17,12 @@ The user wants a full post-apocalyptic colony + automation game (RimWorld + Fact
 - Backstory work limits only on 3 of 24 backstories (more made colonies too weak).
 - Caravans are 20% of good events; faction raids normal size.
 
+## After the Alpha review (2026-10-11)
+- User feedback: gameplay and music fine; wants more songs (done: 13 songs in mood pools); prefers the **16 px** look (32 px AI art stays as an option, no more work on it); everything top-down except people, plants and trees (done in 16 px); seamless vertical walls (done); door animation and 25% door slowdown (done); machine/bench animations (done); battery 1x2 with charge bar, wind turbine 2x2 (done); better 16 px terrain and floors (done); QoL: inspect tile actions with F as default (done).
+- Own QoL picks done: alerts list, clickable messages, menu keys (B O Z J T M), forbid/allow stacks, stockpile filters, Dark Reader lock.
+
 ## Next steps
-1. Present the Alpha to the user and collect feedback (review). Do not start Beta work before that.
+1. Show the user the 16 px pass and QoL changes; collect more feedback. Do not start Beta work before the user says so.
 2. Open points to mention: glow hound AI art does not glow; no tactical expedition maps; diplomacy is gifts only; wanderers still join on their own; Chrome extension window was hidden (headless Playwright used for checks).
 
 ## Key files

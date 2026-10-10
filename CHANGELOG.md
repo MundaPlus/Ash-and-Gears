@@ -1,6 +1,7 @@
 # Changelog
 
 ## 2026-10-11
+- Quality of life: item stacks can be forbidden (survivors and bills leave them alone; belts and arms still move them) with a red cross mark; forbid/allow is a tile action (F when nothing else). Stockpile tiles show the stockpile filter in the inspect panel: toggle resources, food, water, medicine, weapons, clothes, blueprints, other (`packages/sim/src/tileactions.ts` `setZoneAllow`, `ai.ts` `findItem`, `bills.ts`, `map.ts`; `packages/client/src/render/world.ts`, `textures.ts`, `main.ts`, `ui/Hud.tsx`, `ui/store.ts`; `packages/data/i18n/en.json`; test in `packages/sim/test/tileactions.test.ts`).
 - Quality of life: an alerts list under the goals (food or water for less than 2 days, missing beds, idle survivors, untended wounds, machines without power); click an alert to move the camera there (`packages/sim/src/alerts.ts`; `packages/client/src/ui/Hud.tsx`, `main.ts`, `store.ts`, `style.css`; test `packages/sim/test/alerts.test.ts`).
 - Quality of life: messages about raids, packs, downed and dead survivors, wanderers, caravans, captures, robots and finds carry a place; click the message to move the camera there (also to another layer) (`packages/sim/src/game.ts` `message(..., at)`, storyteller, health, prison, bills, designations, factions; `packages/client/src/ui/Toasts.tsx`).
 - Quality of life: keys for the toolbar menus: B build, O orders, Z zones, J work, T research, M world map (tooltips show them); the world and trade panels fill at once when opened (`packages/client/src/main.ts`, `ui/Toolbar.tsx`).

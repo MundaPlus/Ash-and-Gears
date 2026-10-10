@@ -184,6 +184,13 @@ export class WorldRenderer {
           t.position.set(s.x + TILE * 0.075, s.y + TILE * 0.1);
           if (st.contaminated) t.tint = 0xb8ff6a;
           items.push(t);
+          // Forbidden stacks: a small red cross in the corner.
+          if (st.forbidden) {
+            const fx = new Sprite(this.tex.forbid);
+            fx.width = fx.height = TILE / 2;
+            fx.position.set(s.x + TILE / 2, s.y);
+            marks.push(fx);
+          }
         }
         const th = L.thing[i];
         // A big thing draws once, from its top-left tile.

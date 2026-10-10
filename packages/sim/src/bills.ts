@@ -79,7 +79,7 @@ function billJob(game: Game, p: Pawn, workType: WorkType): Job | null {
       // All inputs must exist somewhere before starting.
       const enough = r.inputs.every((inp) => {
         let n = 0;
-        for (const s of game.items.values()) if (s.layer >= 0 && !s.contaminated && matchesInput(game, inp, s.def)) n += s.count;
+        for (const s of game.items.values()) if (s.layer >= 0 && !s.contaminated && !s.forbidden && matchesInput(game, inp, s.def)) n += s.count;
         for (const [k, v] of Object.entries(bench.buffer ?? {})) if (matchesInput(game, inp, Number(k))) n += v;
         return n >= inp.count;
       });

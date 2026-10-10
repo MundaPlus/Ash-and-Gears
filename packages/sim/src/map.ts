@@ -65,6 +65,8 @@ export interface ItemStack {
   contamUntil?: number;
   /** Rot progress 0..1 for food that rots. */
   rot?: number;
+  /** Forbidden by the player: survivors leave it alone (belts and arms still move it). */
+  forbidden?: boolean;
   /** Inside this chest (thing id). Chest stacks sit at the chest's tile but not in the tile's item slot. */
   chest?: number;
 }

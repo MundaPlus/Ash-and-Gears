@@ -255,6 +255,10 @@ async function boot() {
     sim.setResearch(game, id);
     store.set({ research: researchRows() });
   };
+  actions.setZoneAllow = (zoneId, category, on) => {
+    sim.setZoneAllow(game, zoneId, category, on);
+    if (inspected) inspectTile(inspected.x, inspected.y);
+  };
   actions.jumpTo = (at) => {
     if (at.layer !== renderer.layer) actions.setLayer(at.layer);
     camera.centerOn((at.x + 0.5) * TILE, (at.y + 0.5) * TILE);
@@ -466,9 +470,11 @@ async function boot() {
       const name = t(`item.${game.reg.items.list[st.def].id}`);
       lines.push(t("inspect.items", { count: st.count, item: st.contaminated ? `${name} (${t("item.contaminated")})` : name }));
     }
+    const zoneHere = L.zone[i] !== sim.NO_THING ? game.zones.get(L.zone[i]) : undefined;
+    const stockpile = zoneHere?.kind === "stockpile" ? { zoneId: zoneHere.id, allow: [...zoneHere.allow] } : undefined;
     const ta = sim.tileActions(game, renderer.layer, x, y);
     const actionsUi = ta.actions.length ? { list: ta.actions as string[], first: ta.first } : undefined;
-    store.set({ inspect: { title, lines, bills, crafter, filter, power, prisonBed, actions: actionsUi } });
+    store.set({ inspect: { title, lines, bills, crafter, filter, power, prisonBed, actions: actionsUi, stockpile } });
   }
   let inspected: { x: number; y: number } | null = null;
   actions.setBillTarget = (benchId, recipe, n) => {

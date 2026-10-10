@@ -6,6 +6,9 @@ import { Toasts } from "./Toasts.tsx";
 import { Toolbar } from "./Toolbar.tsx";
 import { GameMenu } from "./Screens.tsx";
 
+/** Item categories a stockpile can take (same list as the sim). */
+const STOCK_CATEGORIES = ["resource", "food", "water", "medicine", "weapon", "apparel", "blueprint", "misc"];
+
 export function Hud() {
   const s = useStore();
   const layerName = s.layer <= 2 ? t(`layer.${s.layer}`) : t("layer.n", { n: s.layer });
@@ -152,6 +155,19 @@ export function Hud() {
                   {t(`recipe.${r}`)}
                 </button>
               ))}
+            </div>
+          )}
+          {s.inspect.stockpile && (
+            <div class="bills" data-testid="stockpile">
+              <h3>{t("stockpile.title")}</h3>
+              {STOCK_CATEGORIES.map((c) => {
+                const on = s.inspect!.stockpile!.allow.includes(c);
+                return (
+                  <button key={c} class={on ? "on" : ""} onClick={() => actions.setZoneAllow(s.inspect!.stockpile!.zoneId, c, !on)}>
+                    {t(`category.${c}`)}
+                  </button>
+                );
+              })}
             </div>
           )}
           {s.inspect.prisonBed && (

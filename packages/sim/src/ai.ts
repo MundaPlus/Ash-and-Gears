@@ -257,7 +257,7 @@ export function findItem(
   extra?: (s: ItemStack) => boolean,
 ): number | null {
   const cands = [...game.items.values()].filter(
-    (s) => s.layer >= 0 && match(s.def, !!s.contaminated) && !isReserved(game, `item:${s.id}`, p) && (!extra || extra(s)),
+    (s) => s.layer >= 0 && !s.forbidden && match(s.def, !!s.contaminated) && !isReserved(game, `item:${s.id}`, p) && (!extra || extra(s)),
   );
   cands.sort((a, b) => dist2(p, a) - dist2(p, b));
   for (const s of cands.slice(0, 12)) if (game.path.canReach(p, s)) return s.id;
