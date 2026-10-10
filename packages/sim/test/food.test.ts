@@ -190,6 +190,29 @@ describe("radiation cloud", () => {
   });
 });
 
+describe("shelter from radiation clouds", () => {
+  it("survivors pass a leaky room and wait out the cloud in a room with an airlock", () => {
+    const g = newGame("airlock");
+    const { x: hx, y: hy } = g.home;
+    clearArea(g, hx, hy, 14);
+    // Close by: a roofed room whose door opens straight outside (leaky).
+    spawnRoom(g, hx + 2, hy - 3, 6);
+    // Further away: the same room with an airlock (sealed).
+    spawnRoom(g, hx - 13, hy - 3, 6);
+    g.spawnThing("scrap_door", 0, hx - 11, hy + 3);
+    g.spawnThing("scrap_wall", 0, hx - 12, hy + 3);
+    g.spawnThing("scrap_wall", 0, hx - 10, hy + 3);
+    completeRoofs(g);
+    expect(exposureAt(g, 0, hx + 4, hy - 1)).toBe("leaky");
+    expect(exposureAt(g, 0, hx - 11, hy - 1)).toBe("sealed");
+    g.step();
+    scheduleRadCloud(g, 1);
+    run(g, 3);
+    expect(g.weather.kind).toBe("rad_cloud");
+    for (const p of g.pawns.values()) if (p.faction === "colony") expect(exposureAt(g, p.layer, p.x, p.y)).toBe("sealed");
+  });
+});
+
 describe("rot", () => {
   it("survivors run for shelter when a cloud is coming", () => {
     const g = newGame("shelter");

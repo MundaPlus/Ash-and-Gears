@@ -8,7 +8,7 @@ import type { Game } from "./game.ts";
 import { dropItems, takeFromStack } from "./items.ts";
 import { NO_THING, type ItemStack, type Thing } from "./map.ts";
 import { isSleepTime, tickNeeds } from "./needs.ts";
-import { isRoofed } from "./rooms.ts";
+import { exposureAt, isRoofed } from "./rooms.ts";
 import type { Pos } from "./path.ts";
 import { addMemory, addRad, hasTraitFlag, traitMult, type Job, type Pawn } from "./pawn.ts";
 import { isContaminatedThing } from "./weather.ts";
@@ -693,15 +693,39 @@ export function radDanger(game: Game): boolean {
   return w.kind === "rad_cloud" || (w.next?.kind === "rad_cloud" && w.next.at - game.tick < 2 * game.ticksPerHour);
 }
 
-export function sheltered(game: Game, p: Pawn): boolean {
-  return game.map.layers[p.layer].underground || isRoofed(game, p.layer, p.x, p.y);
+/**
+ * How well a tile keeps a radiation cloud out (user: "strive to be in a room with an airlock, or the
+ * bunker"): 2 sealed (an airlock or a closed hall) or underground, 1 roofed but a door opens outside,
+ * 0 open sky.
+ */
+export function shelterRank(game: Game, layer: number, x: number, y: number): number {
+  if (game.map.layers[layer].underground) return 2;
+  const e = exposureAt(game, layer, x, y);
+  return e === "sealed" ? 2 : e === "leaky" ? 1 : 0;
 }
 
-/** Nearest roofed tile by walking distance (breadth-first), else the cave under the stairs. */
+/** Survivors who found nothing better stay put for a while (no dropping work again and again). */
+const noBetterShelter = new WeakMap<Game, Map<number, number>>();
+
+export function sheltered(game: Game, p: Pawn): boolean {
+  if (shelterRank(game, p.layer, p.x, p.y) >= 2) return true;
+  return (noBetterShelter.get(game)?.get(p.id) ?? -1) > game.tick;
+}
+
+/**
+ * The best shelter in reach: a sealed room on this floor (searched outward by walking), else underground
+ * through the stairs (caves, bunker), else any roof. Only a better place than where the survivor stands.
+ */
 function shelterJob(game: Game, p: Pawn): Job | null {
+  const here = shelterRank(game, p.layer, p.x, p.y);
   const L = game.map.layers[p.layer];
   const seen = new Set<number>([L.i(p.x, p.y)]);
   let frontier: [number, number][] = [[p.x, p.y]];
+  let roofed: Pos | null = null;
+  const take = (pos: Pos): Job => {
+    reserve(game, `tile:${pos.layer},${pos.x},${pos.y}`, p);
+    return { kind: "shelter", stage: 0, target: pos };
+  };
   for (let steps = 0; steps < 80 && frontier.length; steps++) {
     const next: [number, number][] = [];
     for (const [x, y] of frontier) {
@@ -711,17 +735,32 @@ function shelterJob(game: Game, p: Pawn): Job | null {
         const i = L.i(nx, ny);
         if (seen.has(i)) continue;
         seen.add(i);
-        if (isRoofed(game, p.layer, nx, ny) && !isReserved(game, `tile:${p.layer},${nx},${ny}`, p)) {
-          reserve(game, `tile:${p.layer},${nx},${ny}`, p);
-          return { kind: "shelter", stage: 0, target: { layer: p.layer, x: nx, y: ny } };
+        if (!isReserved(game, `tile:${p.layer},${nx},${ny}`, p)) {
+          const r = shelterRank(game, p.layer, nx, ny);
+          if (r === 2) return take({ layer: p.layer, x: nx, y: ny });
+          if (r === 1 && !roofed) roofed = { layer: p.layer, x: nx, y: ny };
         }
         next.push([nx, ny]);
       }
     }
     frontier = next;
   }
-  const stairs = [...game.things.values()].find((t) => game.reg.things.list[t.def].id === "stairs_up" && game.map.layers[t.layer].underground);
-  if (stairs && game.path.canReach(p, stairs)) return { kind: "shelter", stage: 0, target: { layer: stairs.layer, x: stairs.x, y: stairs.y } };
+  // No sealed room near: go below ground, to a free spot by the stairs up in the caves.
+  if (!L.underground) {
+    for (const st of game.things.values()) {
+      if (game.reg.things.list[st.def].id !== "stairs_up" || !game.map.layers[st.layer].underground) continue;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1], [2, 0], [-2, 0], [0, 2], [0, -2]]) {
+        const pos = { layer: st.layer, x: st.x + dx, y: st.y + dy };
+        if (!game.walkable(pos.layer, pos.x, pos.y) || isReserved(game, `tile:${pos.layer},${pos.x},${pos.y}`, p)) continue;
+        if (game.path.canReach(p, pos)) return take(pos);
+      }
+    }
+  }
+  if (roofed && here < 1) return take(roofed);
+  // Nothing better than here: stay and keep working for a while.
+  const m = noBetterShelter.get(game) ?? new Map<number, number>();
+  m.set(p.id, game.tick + 300);
+  noBetterShelter.set(game, m);
   return null;
 }
 

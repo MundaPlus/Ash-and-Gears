@@ -109,6 +109,8 @@ async function boot() {
       console.warn("session state did not load", e);
     }
   }
+  // A reload or a loaded save starts paused (user request); a new game starts running.
+  const fromSave = !!resumed || params.has("load");
   if (resumed) {
     game = resumed;
   } else if (params.has("load")) {
@@ -442,7 +444,7 @@ async function boot() {
   };
 
   let speed = 1;
-  let paused = false;
+  let paused = fromSave;
   let acc = 0;
   let selected: number | null = null;
 
