@@ -13,6 +13,15 @@ const SCALE = [110, 130.81, 146.83, 164.81, 196, 220, 261.63, 293.66, 329.63, 39
 const PROGRESSION = [110, 98, 87.31, 82.41];
 const BEAT = 0.42; // seconds per beat (about 140 bpm in eighths)
 
+/** Generated songs per mood (YuE2 via ComfyUI, `tools/audio/comfy-music.ts`). Missing files are skipped. */
+const POOLS: Record<string, string[]> = {
+  calm: ["calm_western", "calm_folk", "calm_western_2", "calm_folk_2", "calm_desert"],
+  calm_tech: ["calm_tech", "calm_tech_2", "calm_desert"],
+  night: ["night_ambient", "night_ambient_2"],
+  tense: ["tense", "tense_2"],
+  combat: ["combat", "combat_2"],
+};
+
 export class Audio {
   private ctx: AudioContext | null = null;
   private music!: GainNode;
@@ -59,7 +68,7 @@ export class Audio {
 
   /** Load the generated tracks that exist on the server. */
   private async loadTracks() {
-    const ids = ["calm_western", "calm_folk", "calm_tech", "night_ambient", "tense", "combat"];
+    const ids = [...new Set(Object.values(POOLS).flat())];
     await Promise.all(
       ids.map(async (id) => {
         try {
@@ -73,14 +82,24 @@ export class Audio {
     );
   }
 
-  /** Which generated track fits the moment, or null to use the synthesizer. */
+  /** Next track index per pool, so each mood rotates through its songs. */
+  private poolNext: Record<string, number> = {};
+
+  /** Which generated track fits the moment, or null to use the synthesizer. Keeps the song until it ends. */
   private pickTrack(): string | null {
-    const want =
-      this.mood === "combat" ? "combat" : this.mood === "tense" ? "tense" : this.mood === "night" ? "night_ambient" : this.tier >= 2 ? "calm_tech" : this.day % 2 ? "calm_western" : "calm_folk";
-    if (this.tracks.has(want)) return want;
-    // Calm moods can borrow the other calm track.
-    for (const alt of ["calm_western", "calm_folk", "calm_tech"]) if (this.mood === "calm" && this.tracks.has(alt)) return alt;
-    return null;
+    const pool = this.mood === "calm" ? (this.tier >= 2 ? "calm_tech" : "calm") : this.mood;
+    let have = (POOLS[pool] ?? []).filter((id) => this.tracks.has(id));
+    // Calm moods can borrow any calm song.
+    if (!have.length && this.mood === "calm") have = [...POOLS.calm, ...POOLS.calm_tech].filter((id) => this.tracks.has(id));
+    if (!have.length) return null;
+    const p = this.playing;
+    const nearEnd = p && this.ctx!.currentTime > p.started + p.src.buffer!.duration - 3.5;
+    if (p && have.includes(p.id) && !nearEnd) return p.id;
+    // The next song of the pool, not the one that just played.
+    let i = this.poolNext[pool] ?? Math.floor(this.day) % have.length;
+    if (have.length > 1 && have[i % have.length] === p?.id) i++;
+    this.poolNext[pool] = i + 1;
+    return have[i % have.length];
   }
 
   /** Crossfade to a generated track (or stop it with null). Tracks loop by crossfading into themselves. */

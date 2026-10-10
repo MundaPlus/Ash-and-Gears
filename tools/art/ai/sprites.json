@@ -42,7 +42,8 @@
         32
       ],
       "tries": 4,
-      "prompt": "rusted wrecked car, three quarter top-down view"
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, rusted wrecked car with broken windows",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
     },
     "canned_food": {
       "size": [
@@ -68,7 +69,8 @@
         32
       ],
       "tries": 4,
-      "prompt": "rusty scrap metal workbench with tools, three quarter top-down view"
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, rusty scrap metal workbench with tools, vice and parts on the table top",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
     },
     "scrap_generator": {
       "size": [
@@ -76,7 +78,8 @@
         32
       ],
       "tries": 4,
-      "prompt": "small diesel generator made of scrap with exhaust pipe, three quarter top-down view"
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, diesel generator made of scrap with fuel tank and exhaust pipe",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
     },
     "scrap_wall": {
       "size": [
@@ -95,7 +98,8 @@
         32
       ],
       "tries": 4,
-      "prompt": "pile of rusty scrap metal junk, pipes and sheets, three quarter top-down view"
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, pile of rusty scrap metal junk, pipes and sheets",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
     },
     "loot_crate": {
       "size": [
@@ -103,7 +107,8 @@
         32
       ],
       "tries": 4,
-      "prompt": "old military supply crate, worn green paint, three quarter top-down view"
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, old military supply crate, worn green paint",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
     },
     "dead_tree": {
       "size": [
@@ -135,7 +140,8 @@
         32
       ],
       "tries": 4,
-      "prompt": "long rough table made of planks and scrap metal, three quarter top-down view"
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, long rough table made of planks and scrap metal, plates and a cup on it",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
     },
     "chair": {
       "size": [
@@ -143,7 +149,8 @@
         32
       ],
       "tries": 4,
-      "prompt": "simple wooden chair patched with scrap metal, three quarter top-down view"
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, simple wooden chair seat with backrest",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
     },
     "campfire": {
       "size": [
@@ -151,7 +158,8 @@
         32
       ],
       "tries": 4,
-      "prompt": "small campfire with burning logs in a ring of stones, three quarter top-down view"
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, campfire with burning logs in a ring of stones",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
     },
     "stove": {
       "size": [
@@ -159,7 +167,8 @@
         32
       ],
       "tries": 4,
-      "prompt": "cooking stove made of an old oil barrel with a chimney pipe and a pot on top, three quarter top-down view"
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, cooking stove made of an old oil barrel with a pot on top and a chimney pipe",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
     },
     "scrub_potato_plant": {
       "size": [
@@ -183,7 +192,8 @@
         32
       ],
       "tries": 4,
-      "prompt": "old stone water well with a wooden roof, rope and bucket, three quarter top-down view"
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, round stone water well with dark water inside and a wooden crank",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
     },
     "rain_collector": {
       "size": [
@@ -191,7 +201,8 @@
         32
       ],
       "tries": 4,
-      "prompt": "rain water collector: a rusty barrel with a wide metal funnel on top, three quarter top-down view"
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, rusty open barrel with a wide funnel collecting rain water",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
     },
     "sandbags": {
       "size": [
@@ -199,7 +210,8 @@
         32
       ],
       "tries": 4,
-      "prompt": "short row of stacked sandbags, three quarter top-down view"
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, short straight row of stacked sandbags",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
     },
     "scrap_turret": {
       "size": [
@@ -207,7 +219,8 @@
         32
       ],
       "tries": 4,
-      "prompt": "small automatic gun turret made of scrap on a tripod base, three quarter top-down view"
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, small automatic gun turret made of scrap on a round base",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
     },
     "old_safe": {
       "size": [
@@ -215,7 +228,8 @@
         32
       ],
       "tries": 4,
-      "prompt": "old heavy steel safe with a dial, rusty, three quarter top-down view"
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, heavy steel safe with a dial on the lid",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
     },
     "research_desk": {
       "size": [
@@ -223,7 +237,8 @@
         32
       ],
       "tries": 4,
-      "prompt": "desk with an old computer monitor, papers and books, three quarter top-down view"
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, desk with an old computer, keyboard, papers and books",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
     },
     "battery": {
       "size": [
@@ -231,7 +246,8 @@
         32
       ],
       "tries": 4,
-      "prompt": "large rusty electric battery bank box with cables and a charge gauge, three quarter top-down view"
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, large electric battery bank box with cables and a charge gauge",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
     },
     "lamp": {
       "size": [
@@ -239,7 +255,8 @@
         32
       ],
       "tries": 4,
-      "prompt": "standing street lamp post made of scrap with a glowing bulb, side view"
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, standing lamp post with a glowing bulb",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
     },
     "powered_bench": {
       "size": [
@@ -247,7 +264,8 @@
         32
       ],
       "tries": 4,
-      "prompt": "electric workbench with a drill press and a vice, cables, three quarter top-down view"
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, electric workbench with a drill press, vice and cables",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
     },
     "smelter": {
       "size": [
@@ -255,7 +273,8 @@
         32
       ],
       "tries": 4,
-      "prompt": "small brick smelting furnace with glowing orange molten metal, chimney, three quarter top-down view"
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, small brick smelting furnace with glowing orange molten metal in the middle",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
     },
     "loader": {
       "size": [
@@ -263,7 +282,8 @@
         32
       ],
       "tries": 4,
-      "prompt": "small mechanical robot arm on a metal base, three quarter top-down view"
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, small mechanical loader with a short arm on a metal base",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
     },
     "auto_crafter": {
       "size": [
@@ -271,7 +291,8 @@
         32
       ],
       "tries": 4,
-      "prompt": "automatic assembling machine, metal box with gears and a hatch, three quarter top-down view"
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, automatic assembling machine, metal box with gears and a hatch",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
     },
     "glow_hound": {
       "size": [
@@ -557,6 +578,132 @@
       "own_style": true,
       "prompt": "pixel art seamless square texture tile, floor of square grey stone tiles seen from above, top-down view, the texture fills the whole square edge to edge, flat colors, no background",
       "neg": "face, eyes, mouth, teeth, character, creature, monster, object, frame, border"
+    },
+    "robot_arm": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, robotic arm with a gripper on a round metal base",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
+    },
+    "scrap_chest": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, closed metal storage chest with rivets",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
+    },
+    "water_pump": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, electric water pump with pipe connectors",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
+    },
+    "water_tank": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, round metal water tank with a lid",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
+    },
+    "water_purifier": {
+      "size": [
+        64,
+        32
+      ],
+      "tries": 4,
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, water purifier machine with filters and blue water tanks",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
+    },
+    "water_tap": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, small water tap on a short pipe stand with a drain",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
+    },
+    "fuel_still": {
+      "size": [
+        64,
+        32
+      ],
+      "tries": 4,
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, copper still with a boiler, coils and fuel barrel",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
+    },
+    "refinery": {
+      "size": [
+        64,
+        32
+      ],
+      "tries": 4,
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, small oil refinery machine with tanks, pipes and gauges",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
+    },
+    "assembler": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, large automatic assembler machine with robotic arms and conveyor slot",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
+    },
+    "robot_bay": {
+      "size": [
+        64,
+        64
+      ],
+      "tries": 4,
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, robot charging bay platform with a charging dock and cables",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
+    },
+    "solar_panel": {
+      "size": [
+        64,
+        64
+      ],
+      "tries": 4,
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, solar panel array, dark blue cells in a metal frame",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
+    },
+    "wind_turbine": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, small wind turbine with three blades",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
+    },
+    "power_pole": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, wooden power pole with a crossbar and insulators",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
+    },
+    "bunker_locker": {
+      "size": [
+        32,
+        32
+      ],
+      "tries": 4,
+      "prompt": "top-down view seen from directly above, flat overhead orthographic game sprite, old steel military locker with a closed door",
+      "neg": "side view, front view, perspective, three quarter view, isometric, legs visible, horizon"
     }
   }
 }

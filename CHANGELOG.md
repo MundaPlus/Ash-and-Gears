@@ -1,5 +1,9 @@
 # Changelog
 
+## 2026-10-11
+- Music: each mood has a pool of songs and the game rotates through it, keeping a song until it ends; seven more song styles for the YuE2 generator (second western, folk, tech, night, tense and combat tracks, and a desert blues track) (`packages/client/src/audio.ts`, `tools/audio/comfy-music.ts`) — the user asked for more songs.
+- AI art: top-down prompts for all furniture, machines and objects (35 ids, including the newer things that had only hand art); old side-view tries removed (`tools/art/ai/sprites.json`, `art/ai/`) — the user asked for top-down art except people.
+
 ## 2026-10-10
 - Release v0.2.0-alpha: `develop` merged into `master` and tagged; presentation Artifact updated (https://claude.ai/artifact/Cmp6bsbnXyoFTZYF8AGCPF); preview service serves the Alpha build.
 - A10 presentation: the site gets an Alpha section with four new clips (32 px art, logistics and water, robots, the old bunker) and two stills (survivor panel, world map); hero and roadmap say Alpha (`packages/client/public/site/index.html`, `site/media/`, `tools/docs/record.mjs`). Showcase colony shows the Alpha: waterworks with solar power, poles and a battery; a robot bay with a robot and a drone; Alpha research done (`packages/sim/src/showcase.ts`).
