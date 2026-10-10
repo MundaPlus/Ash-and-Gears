@@ -31,6 +31,9 @@ export function canDesignate(game: Game, kind: DesigKind, layer: number, x: numb
     case "deconstruct":
       // Player-built things, with a separate order.
       return !!thing && thing.kind !== "stairs" && !!thing.build;
+    case "unfloor":
+      // A built floor (not while a new floor plan waits on it).
+      return L.floor[L.i(x, y)] > 0 && L.blueprint[L.i(x, y)] === NO_THING;
   }
 }
 
@@ -180,6 +183,33 @@ registerTask("salvage", {
   },
 });
 
+registerTask("unfloor", {
+  skill: "construction",
+  xp: 0.2,
+  total: (game, job) => {
+    const L = game.map.layers[job.target!.layer];
+    const f = L.floor[L.i(job.target!.x, job.target!.y)];
+    return f > 0 ? Math.ceil(game.reg.floors.list[f - 1].build.work / 2) : 1;
+  },
+  valid: (game, job) => desigAt(game, job) === Desig.unfloor && game.map.layers[job.target!.layer].floor[game.map.layers[job.target!.layer].i(job.target!.x, job.target!.y)] > 0,
+  complete: (game, _p, job) => {
+    const t = job.target!;
+    const L = game.map.layers[t.layer];
+    const i = L.i(t.x, t.y);
+    const def = game.reg.floors.list[L.floor[i] - 1];
+    undesignate(game, t.layer, t.x, t.y);
+    L.floor[i] = 0;
+    L.touch(t.x, t.y);
+    game.mapVersion++;
+    game.pathVersion++;
+    // 75% of the materials come back, like deconstructing.
+    for (const [item, n] of Object.entries(def.build.cost)) {
+      const back = Math.floor(n * 0.75);
+      if (back > 0) dropItems(game, item, back, t.layer, t.x, t.y);
+    }
+  },
+});
+
 registerTask("deconstruct", {
   skill: "construction",
   xp: 0.3,
@@ -208,6 +238,7 @@ const GIVERS: [WorkType, DesigKind][] = [
   ["construct", "clear"],
   ["grow", "cut"],
   ["construct", "deconstruct"],
+  ["construct", "unfloor"],
 ];
 
 /** The nearest order of a kind. Orders survivors gave themselves are only for idle survivors (`own`). */

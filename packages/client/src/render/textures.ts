@@ -193,7 +193,7 @@ function makePixelTextures(reg: Registry, art: ArtSettings, ai: AiArt): TextureS
     creatures[id] = look ? aiTexture(look, palette) : gridTexture(prepDetail(CREATURES[id]), colors);
   }
 
-  const desig = ["", "S", "M", "C", "X", "D"].map((glyph, i) =>
+  const desig = ["", "S", "M", "C", "X", "D", "F"].map((glyph, i) =>
     drawn(TILE, (g) => {
       if (i === 0) return;
       g.strokeStyle = "rgba(239,216,164,.9)";
