@@ -253,6 +253,20 @@ async function boot() {
     sim.setResearch(game, id);
     store.set({ research: researchRows() });
   };
+  actions.togglePowerOverlay = () => {
+    dyn.powerOverlay = !dyn.powerOverlay;
+    store.set({ powerOverlay: dyn.powerOverlay });
+  };
+  actions.setPriority = (thingId, n) => {
+    const th = game.things.get(thingId);
+    if (th) th.priority = n;
+    if (inspected) inspectTile(inspected.x, inspected.y);
+  };
+  actions.setSwitch = (thingId, on) => {
+    const th = game.things.get(thingId);
+    if (th) sim.setSwitch(game, th, on);
+    if (inspected) inspectTile(inspected.x, inspected.y);
+  };
   actions.setFilter = (thingId, item) => {
     const th = game.things.get(thingId);
     if (th) sim.setFilter(game, th, item);
@@ -361,6 +375,7 @@ async function boot() {
     let bills: { benchId: number; recipe: string; target: number; stock: number }[] | undefined;
     let crafter: { thingId: number; current: string | null; options: string[] } | undefined;
     let filter: { thingId: number; current: string | null; options: string[] } | undefined;
+    let power: { thingId: number; priority?: number; switchOn?: boolean } | undefined;
     if (th !== NO_THING) {
       const thing = game.things.get(th)!;
       const def = game.reg.things.list[thing.def];
@@ -375,6 +390,8 @@ async function boot() {
         if (p.fuel) lines.push(t("inspect.fuel", { v: Math.round(thing.fuel ?? 0), max: p.fuel.capacity, item: t(`item.${p.fuel.item}`) }));
         if (p.store) lines.push(t("inspect.charge", { v: Math.round(thing.charge ?? 0), max: p.store }));
         if (p.use) lines.push(sim.isPowered(game, thing) ? t("inspect.powered", { w: p.use }) : t("inspect.unpowered", { w: p.use }));
+        if (p.produce && p.source) lines.push(t("inspect.output", { w: Math.round(p.produce * sim.sourceFactor(game, thing, p.source)) }));
+        if (p.use) power = { thingId: thing.id, priority: sim.priorityOf(game, thing) };
         const net = game.nets[game.netOf.get(thing.id) ?? -1];
         if (net) lines.push(t("inspect.net", { produce: Math.round(net.produce), use: Math.round(net.use), stored: Math.round(net.stored) }));
       }
@@ -391,6 +408,7 @@ async function boot() {
         lines.push(`${t("chest.title")} (${sim.chestCount(game, thing)}/${def.chest}): ${contents(inside) || t("chest.empty")}`);
       }
       if (def.autoCrafter && contents(thing.out)) lines.push(`${t("chest.title")}: ${contents(thing.out)}`);
+      if (def.switch) power = { thingId: thing.id, switchOn: !thing.off };
       if (def.pipe || (def.fluid && def.fluid.role !== "purifier")) {
         const net = sim.fluidNetOf(game, thing);
         if (net)
@@ -422,7 +440,7 @@ async function boot() {
       const name = t(`item.${game.reg.items.list[st.def].id}`);
       lines.push(t("inspect.items", { count: st.count, item: st.contaminated ? `${name} (${t("item.contaminated")})` : name }));
     }
-    store.set({ inspect: { title, lines, bills, crafter, filter } });
+    store.set({ inspect: { title, lines, bills, crafter, filter, power } });
   }
   let inspected: { x: number; y: number } | null = null;
   actions.setBillTarget = (benchId, recipe, n) => {
@@ -523,6 +541,7 @@ async function boot() {
       actions.togglePause();
     } else if (e.key === "1" || e.key === "2" || e.key === "3") actions.setSpeed(Number(e.key));
     else if ((e.key === "q" || e.key === "e") && tools.spec) actions.rotateTool(e.key === "e" ? 1 : -1);
+    else if (e.key === "p" || e.key === "P") actions.togglePowerOverlay();
     else if (e.key === "r" || e.key === "R") {
       if (selected !== null) actions.toggleDraft(selected);
     } else if (e.key === "PageUp") actions.setLayer(renderer.layer - 1);

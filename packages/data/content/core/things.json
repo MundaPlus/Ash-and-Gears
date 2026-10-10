@@ -426,7 +426,8 @@
    "research": "turret_wiring"
   },
   "power": {
-   "use": 60
+   "use": 60,
+   "priority": 1
   }
  },
  {
@@ -504,6 +505,87 @@
   }
  },
  {
+  "id": "power_pole",
+  "kind": "structure",
+  "color": "#84603f",
+  "glyph": "I",
+  "hp": 80,
+  "conduit": true,
+  "pole": 6,
+  "build": {
+   "cost": {
+    "wood": 4,
+    "scrap": 4
+   },
+   "work": 60,
+   "menu": "power",
+   "research": "power_grid"
+  }
+ },
+ {
+  "id": "power_switch",
+  "kind": "structure",
+  "color": "#e3c25a",
+  "glyph": "/",
+  "hp": 60,
+  "conduit": true,
+  "switch": true,
+  "build": {
+   "cost": {
+    "scrap": 6,
+    "components": 1
+   },
+   "work": 60,
+   "menu": "power",
+   "research": "power_grid"
+  }
+ },
+ {
+  "id": "solar_panel",
+  "kind": "furniture",
+  "footprint": [2, 2],
+  "color": "#3b4f63",
+  "glyph": "*",
+  "hp": 120,
+  "blocks": true,
+  "power": {
+   "produce": 300,
+   "source": "solar"
+  },
+  "build": {
+   "cost": {
+    "steel": 10,
+    "components": 4,
+    "scrap": 20
+   },
+   "work": 500,
+   "menu": "power",
+   "research": "renewables"
+  }
+ },
+ {
+  "id": "wind_turbine",
+  "kind": "furniture",
+  "color": "#a6b0ba",
+  "glyph": "Y",
+  "hp": 150,
+  "blocks": true,
+  "power": {
+   "produce": 350,
+   "source": "wind"
+  },
+  "build": {
+   "cost": {
+    "scrap": 40,
+    "components": 3,
+    "wood": 10
+   },
+   "work": 450,
+   "menu": "power",
+   "research": "renewables"
+  }
+ },
+ {
   "id": "battery",
   "kind": "furniture",
   "color": "#3b4f63",
@@ -531,7 +613,8 @@
   "hp": 60,
   "light": 7,
   "power": {
-   "use": 30
+   "use": 30,
+   "priority": 3
   },
   "build": {
    "cost": {

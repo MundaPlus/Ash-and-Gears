@@ -3,14 +3,19 @@
  * Drawn with one Graphics object over the chunk layer.
  */
 import { Graphics } from "pixi.js";
-import { DIRS4, isPowered, type Game } from "@wc/sim";
+import { DIRS4, isPowered, poleLinks, type Game } from "@wc/sim";
 import { TILE } from "./textures.ts";
+
+/** Overlay colors for power networks. */
+const NET_COLORS = [0x4fc3f7, 0xffd54f, 0x81c784, 0xba68c8, 0xff8a65, 0x4db6ac, 0xf06292, 0xaed581];
 
 export class DynamicRenderer {
   readonly gfx = new Graphics();
   /** Light glows: drawn above the night overlay in screen space by main.ts. */
   readonly lights = new Graphics();
   layer = 0;
+  /** Power overlay: each network in its own color, machines without power outlined red. */
+  powerOverlay = false;
 
   constructor(private game: Game) {
     this.lights.blendMode = "add";
@@ -25,6 +30,16 @@ export class DynamicRenderer {
       const px = t.x * TILE, py = t.y * TILE;
       if (px < view.x - TILE * 8 || py < view.y - TILE * 8 || px > view.x + view.w + TILE * 8 || py > view.y + view.h + TILE * 8) continue;
       const d = game.reg.things.list[t.def];
+      // Power poles: a cable to each linked pole (drawn once per pair).
+      if (d.pole)
+        for (const o of poleLinks(game, t))
+          if (o.id > t.id) g.moveTo(px + TILE / 2, py + 5).lineTo(o.x * TILE + TILE / 2, o.y * TILE + 5).stroke({ width: 1.5, color: 0x3a2e26, alpha: 0.85 });
+      if (this.powerOverlay && (d.power || d.conduit)) {
+        const net = game.netOf.get(t.id);
+        const hue = net === undefined ? 0x777777 : NET_COLORS[net % NET_COLORS.length];
+        for (const f of game.footprint(t.def, t.x, t.y, t.rot)) g.rect(f.x * TILE, f.y * TILE, TILE, TILE).fill({ color: hue, alpha: 0.35 });
+        if (d.power?.use && !isPowered(game, t)) g.rect(px + 1, py + 1, TILE - 2, TILE - 2).stroke({ width: 2, color: 0xff4a3a });
+      }
       // Direction arrow on rotatable things.
       if (d.rotatable) {
         const [dx, dy] = DIRS4[t.rot ?? 0];

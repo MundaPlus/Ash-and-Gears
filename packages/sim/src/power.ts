@@ -25,7 +25,52 @@ export interface PowerNet {
 
 function powerish(game: Game, t: Thing): boolean {
   const d = game.reg.things.list[t.def];
+  // A switch that is off cuts the line.
+  if (d.switch && t.off) return false;
   return !!d.power || d.conduit;
+}
+
+/** Poles this pole links to (other poles within range on the same layer). */
+export function poleLinks(game: Game, t: Thing): Thing[] {
+  const range = game.reg.things.list[t.def].pole;
+  if (!range) return [];
+  const out: Thing[] = [];
+  for (const o of game.things.values()) {
+    if (o.id === t.id || o.layer !== t.layer || !game.reg.things.list[o.def].pole) continue;
+    const r = Math.min(range, game.reg.things.list[o.def].pole!);
+    if ((o.x - t.x) ** 2 + (o.y - t.y) ** 2 <= r * r) out.push(o);
+  }
+  return out;
+}
+
+/** Output factor for solar and wind generators right now (0..1). */
+export function sourceFactor(game: Game, t: Thing, source: "solar" | "wind"): number {
+  const w = game.weather.kind;
+  if (source === "solar") {
+    if (t.layer !== 0) return 0;
+    const h = game.hourOfDay;
+    const sun = h > 6 && h < 19 ? Math.sin((Math.PI * (h - 6)) / 13) : 0;
+    const sky = w === "clear" ? 1 : w === "overcast" ? 0.5 : w === "rad_cloud" ? 0.2 : 0.3;
+    return sun * sky;
+  }
+  // Wind: slow gusts from a few waves, stronger in rain.
+  const k = game.tick / game.ticksPerHour;
+  const gust = 0.5 + 0.3 * Math.sin(k / 5 + t.x) + 0.2 * Math.sin(k / 1.7 + t.y);
+  return Math.max(0.05, Math.min(1, gust * (w === "rain" || w === "toxic_rain" ? 1.3 : 1)));
+}
+
+/** A consumer's priority: the player's choice, else the def's (1 keep on .. 3 cut first). */
+export function priorityOf(game: Game, t: Thing): number {
+  return t.priority ?? game.reg.things.list[t.def].power?.priority ?? 2;
+}
+
+/** Turn a switch on or off (rebuilds the networks). */
+export function setSwitch(game: Game, t: Thing, on: boolean): void {
+  if (on) delete t.off;
+  else t.off = true;
+  game.powerVersion++;
+  game.map.layers[t.layer].touch(t.x, t.y);
+  game.mapVersion++;
 }
 
 /** Rebuild networks by flood fill when power things change. */
@@ -43,6 +88,7 @@ export function ensureNets(game: Game): void {
       net.things.push(c.id);
       const L = game.map.layers[c.layer];
       const nbs = game.footprint(c.def, c.x, c.y, c.rot).flatMap((f) => [[f.x + 1, f.y], [f.x - 1, f.y], [f.x, f.y + 1], [f.x, f.y - 1]]);
+      for (const o of poleLinks(game, c)) nbs.push([o.x, o.y]);
       // An underground belt pair carries power under the ground, like a buried cable.
       const pair = tunnelPartner(game, c);
       if (pair) nbs.push([pair.x, pair.y]);
@@ -78,7 +124,7 @@ export function tickPower(game: Game): void {
       if (!p) continue;
       if (p.produce) {
         if (!p.fuel || (t.fuel ?? 0) > 0) {
-          produce += p.produce;
+          produce += p.produce * (p.source ? sourceFactor(game, t, p.source) : 1);
           gens.push(t);
         }
       }
@@ -98,18 +144,34 @@ export function tickPower(game: Game): void {
       const f = game.reg.things.list[g.def].power!.fuel;
       if (f) g.fuel = Math.max(0, (g.fuel ?? 0) - f.perHour * dtH * load);
     }
-    // Balance: surplus charges batteries, shortage drains them.
-    const delta = (produce - use) * dtH;
-    let ok = true;
-    if (delta >= 0) stored = Math.min(capacity, stored + delta);
-    else if (stored + delta >= 0) stored += delta;
-    else {
-      ok = false;
-      stored = 0;
+    // Not enough from generators and batteries: cut consumers, priority 3 first, until the rest fits.
+    const avail = produce + stored / dtH;
+    let served = use;
+    const cut = new Set<number>();
+    if (use > avail) {
+      served = 0;
+      const byPriority = [...users].sort((a, b) => priorityOf(game, a) - priorityOf(game, b) || a.id - b.id);
+      // Within one priority, smaller machines may still fit; after a cut, every later priority goes.
+      let cutFrom = Infinity;
+      for (const u of byPriority) {
+        const w = game.reg.things.list[u.def].power!.use;
+        const pr = priorityOf(game, u);
+        if (pr <= cutFrom && served + w <= avail) served += w;
+        else {
+          cut.add(u.id);
+          cutFrom = Math.min(cutFrom, pr);
+        }
+      }
+      if (cut.size && !users.some((u) => cut.has(u.id) && u.powered === false) && game.tick - game.lastBlackoutMsg > game.ticksPerDay / 2) {
+        game.message("msg.blackout", { n: cut.size }, "warn");
+        game.lastBlackoutMsg = game.tick;
+      }
     }
+    // Balance: surplus charges batteries, shortage drains them.
+    stored = Math.max(0, Math.min(capacity, stored + (produce - served) * dtH));
     // Spread the charge evenly over the batteries.
     for (const b of batteries) b.charge = capacity ? (stored * game.reg.things.list[b.def].power!.store) / capacity : 0;
-    for (const u of users) u.powered = ok;
+    for (const u of users) u.powered = !cut.has(u.id);
     Object.assign(net, { produce, use, stored, capacity });
   }
 }

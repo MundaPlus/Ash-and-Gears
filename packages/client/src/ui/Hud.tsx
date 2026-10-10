@@ -82,6 +82,9 @@ export function Hud() {
         >
           ▼
         </button>
+        <button data-testid="power-overlay" class={s.powerOverlay ? "on" : ""} onClick={() => actions.togglePowerOverlay()} title={t("overlay.power")} aria-label={t("overlay.power")}>
+          ⚡
+        </button>
       </div>
 
       {(s.weather === "rad_cloud" || s.radWarning !== null) && (
@@ -126,6 +129,25 @@ export function Hud() {
                   {t(`recipe.${r}`)}
                 </button>
               ))}
+            </div>
+          )}
+          {s.inspect.power && (
+            <div class="bills" data-testid="power">
+              {s.inspect.power.switchOn !== undefined && (
+                <button class={s.inspect.power.switchOn ? "on" : ""} onClick={() => actions.setSwitch(s.inspect!.power!.thingId, !s.inspect!.power!.switchOn)}>
+                  {t(s.inspect.power.switchOn ? "power.switch_on" : "power.switch_off")}
+                </button>
+              )}
+              {s.inspect.power.priority !== undefined && (
+                <>
+                  <h3>{t("power.priority")}</h3>
+                  {[1, 2, 3].map((n) => (
+                    <button key={n} class={s.inspect!.power!.priority === n ? "on" : ""} onClick={() => actions.setPriority(s.inspect!.power!.thingId, n)}>
+                      {t(`power.priority.${n}`)}
+                    </button>
+                  ))}
+                </>
+              )}
             </div>
           )}
           {s.inspect.filter && (

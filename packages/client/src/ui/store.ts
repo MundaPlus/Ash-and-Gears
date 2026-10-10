@@ -8,6 +8,8 @@ export interface Inspect {
   bills?: { benchId: number; recipe: string; target: number; stock: number }[];
   /** Auto-crafter: recipe choice. */
   crafter?: { thingId: number; current: string | null; options: string[] };
+  /** Power consumers: priority; switches: on or off. */
+  power?: { thingId: number; priority?: number; switchOn?: boolean };
   /** Sorter belts and robot arms: the one item they handle (null = any). */
   filter?: { thingId: number; current: string | null; options: string[] };
 }
@@ -114,6 +116,8 @@ export interface UiState {
   goalHint: string | null;
   /** Hours until a radiation cloud, or null. */
   radWarning: number | null;
+  /** Power overlay on (networks in colors, cut machines in red). */
+  powerOverlay: boolean;
 }
 
 type Listener = () => void;
@@ -124,6 +128,7 @@ class Store {
     paused: false,
     layer: 0,
     layerCount: 1,
+    powerOverlay: false,
     clock: "",
     season: "",
     seed: "",
@@ -174,6 +179,9 @@ export const actions = {
   setSpeed: (_s: number) => {},
   togglePause: () => {},
   setLayer: (_l: number) => {},
+  togglePowerOverlay: () => {},
+  setPriority: (_thing: number, _p: number) => {},
+  setSwitch: (_thing: number, _on: boolean) => {},
   selectPawn: (_id: number | null, _center = false) => {},
   setTool: (_spec: import("../input/tools.ts").ToolSpec | null) => {},
   setWork: (_pawn: number, _work: string, _value: number) => {},

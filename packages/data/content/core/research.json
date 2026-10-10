@@ -87,6 +87,23 @@
   ]
  },
  {
+  "id": "power_grid",
+  "cost": 2000,
+  "tier": 2,
+  "prereqs": [
+   "batteries"
+  ]
+ },
+ {
+  "id": "renewables",
+  "cost": 3000,
+  "tier": 2,
+  "prereqs": [
+   "power_grid",
+   "smelting"
+  ]
+ },
+ {
   "id": "belt_logistics",
   "cost": 2800,
   "tier": 2,

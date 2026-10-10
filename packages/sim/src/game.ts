@@ -115,6 +115,8 @@ export class Game {
   fluidNets: FluidNet[] = [];
   readonly fluidNetOf = new Map<number, number>();
   fluidNetsVersion = -1;
+  /** Tick of the last "blackout" message (one per half day at most). */
+  lastBlackoutMsg = -1e9;
   /** Bumped when power things or wires change. Power nets are rebuilt when it changes. */
   powerVersion = 0;
   nets: PowerNet[] = [];

@@ -118,9 +118,9 @@ export function makeTextures(reg: Registry, art: ArtSettings, ai: AiArt = new Ma
     return d.wall && !d.door && THINGS[d.id] ? Array.from({ length: 16 }, (_, m) => gridTexture(prepGrid(wallVariant(parseGrid(THINGS[d.id]), m)), colors)) : null;
   });
   const lines = reg.things.list.map((d) =>
-    (d.conduit || d.pipe) && THINGS[d.id] ? Array.from({ length: 16 }, (_, m) => gridTexture(prepGrid(lineVariant(parseGrid(THINGS[d.id]), m)), colors)) : null,
+    ((d.conduit && !d.pole && !d.switch) || d.pipe) && THINGS[d.id] ? Array.from({ length: 16 }, (_, m) => gridTexture(prepGrid(lineVariant(parseGrid(THINGS[d.id]), m)), colors)) : null,
   );
-  const wireId = reg.things.list.find((d) => d.conduit && THINGS[d.id])?.id;
+  const wireId = reg.things.list.find((d) => d.conduit && !d.pole && !d.switch && THINGS[d.id])?.id;
   const stubs = wireId ? Array.from({ length: 16 }, (_, m) => gridTexture(prepGrid(lineVariant(parseGrid(THINGS[wireId]), m, true)), colors)) : [];
   const turned = reg.things.list.map((d) => (TURN_IN_LINE.has(d.id) && THINGS[d.id] ? gridTexture(prepGrid(rotateGrid(parseGrid(THINGS[d.id]))), colors) : null));
   const thingsTurned = reg.things.list.map((d) => {

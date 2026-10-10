@@ -227,6 +227,7 @@ export class WorldRenderer {
             t.width = fw * TILE;
             t.height = fh * TILE;
             t.position.copyFrom(s.position);
+            if (def.switch && thing.off) t.tint = 0x707070;
           }
           things.push(t);
         }

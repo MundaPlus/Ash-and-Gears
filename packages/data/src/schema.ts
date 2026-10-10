@@ -110,10 +110,18 @@ export const ThingDef = z.object({
       use: z.number().min(0).default(0),
       store: z.number().min(0).default(0),
       fuel: z.object({ item: id, perHour: z.number().positive(), capacity: z.number().int().positive() }).optional(),
+      /** Output follows the sun (day, weather) or the wind (A3). */
+      source: z.enum(["solar", "wind"]).optional(),
+      /** Consumers: 1 = keep on longest, 3 = cut first when power runs short (A3). */
+      priority: z.number().int().min(1).max(3).default(2),
     })
     .optional(),
   /** Wires: carry power, nothing else. */
   conduit: z.boolean().default(false),
+  /** Power pole: links to other poles up to this many tiles away (A3). */
+  pole: z.number().positive().optional(),
+  /** Power switch: a wire piece that carries power only while on (A3). */
+  switch: z.boolean().default(false),
   /** Conveyor belt: moves items one tile toward its facing. Value = tiles per in-game hour. */
   belt: z.number().positive().optional(),
   /**

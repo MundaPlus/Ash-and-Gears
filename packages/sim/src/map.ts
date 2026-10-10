@@ -40,6 +40,10 @@ export interface Thing {
   filter?: number;
   /** Splitter: which output gets the next packet. */
   splitNext?: number;
+  /** Power switch turned off. */
+  off?: boolean;
+  /** Consumer priority set by the player (1 keep on longest .. 3 cut first); default from the def. */
+  priority?: number;
   /** Pipes, tanks, pumps, taps: liters of each fluid held here ("water", "clean_water"). */
   liquid?: Record<string, number>;
 }
