@@ -136,5 +136,36 @@
    "accuracy": 0.7
   },
   "behavior": "machine"
+ },
+ {
+  "id": "rogue_bot",
+  "color": "#8a3b2e",
+  "glyph": "B",
+  "size": 1,
+  "hp": 1.6,
+  "speed": 0.9,
+  "attack": {
+   "dmg": 8,
+   "cooldown": 45,
+   "range": 1.5,
+   "kind": "blunt"
+  },
+  "behavior": "machine"
+ },
+ {
+  "id": "old_sentry",
+  "color": "#56616d",
+  "glyph": "Y",
+  "size": 1,
+  "hp": 1.8,
+  "speed": 0,
+  "attack": {
+   "dmg": 8,
+   "cooldown": 55,
+   "range": 12,
+   "kind": "gunshot",
+   "accuracy": 0.05
+  },
+  "behavior": "machine"
  }
 ]

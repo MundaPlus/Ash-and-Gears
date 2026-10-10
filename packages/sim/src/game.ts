@@ -1,6 +1,8 @@
 /**
  * The game state and the fixed-step tick loop. No DOM. Runs in the browser and in Node.
  */
+import { populateLairs } from "./towers.ts";
+import { tickLairs } from "./lairs.ts";
 import { ensureLinks } from "./links.ts";
 import type { Content } from "@wc/data";
 import { GameMap, NO_THING, type Blueprint, type ItemStack, type Thing, type Zone } from "./map.ts";
@@ -37,8 +39,10 @@ export interface GameOptions {
   seed: string;
   /** Map width and height in tiles. */
   mapSize: number;
-  /** Number of layers including the surface. */
+  /** Number of layers from the surface down (surface, caves, deep). */
   layers: number;
+  /** Tower floors above the surface (N1). Saves from before towers have none until they load. */
+  upper: number;
   /** Real seconds per in-game day at 1x. Spec default: 360. */
   dayLengthSec: number;
   /** In-game days per season. Spec default: 15. */
@@ -61,6 +65,7 @@ export const DEFAULT_OPTIONS: GameOptions = {
   seed: "wasteland",
   mapSize: 200,
   layers: 3,
+  upper: 2,
   dayLengthSec: 360,
   seasonDays: 15,
   radCloudScale: 1,
@@ -123,7 +128,10 @@ export class Game {
   readonly fx: { kind: "shot" | "melee" | "turret"; layer: number; from: { x: number; y: number }; to: { x: number; y: number }; hit: boolean; tick: number }[] = [];
   /** Raids and packs: id -> state. */
   /** Hostile groups. `beatenAt`: tick when the last standing survivor went down (the group leaves soon after). */
-  readonly groups = new Map<number, { id: number; kind: string; size: number; fleeing: boolean; arrived: number; beatenAt?: number }>();
+  readonly groups = new Map<
+    number,
+    { id: number; kind: string; size: number; fleeing: boolean; arrived: number; beatenAt?: number; dormant?: boolean; lair?: { layer: number; x0: number; y0: number; x1: number; y1: number } }
+  >();
   /** Burning tiles: node id -> intensity 0..1. */
   readonly fires = new Map<number, number>();
   readonly story: StoryState = { points: 0, lastThreat: 0, lastGood: 0, log: [], raidsSurvived: 0 };
@@ -174,7 +182,7 @@ export class Game {
     this.reg = new Registry(content);
     this.opts = { ...DEFAULT_OPTIONS, ...opts };
     this.rng = new Rng(this.opts.seed);
-    this.map = new GameMap(this.opts.mapSize, this.opts.mapSize, this.opts.layers);
+    this.map = new GameMap(this.opts.mapSize, this.opts.mapSize, this.opts.layers, this.opts.upper);
     this.aiRng = this.rng.fork("ai");
     this.path = new PathFinder(this);
   }
@@ -211,6 +219,8 @@ export class Game {
     generateHomeMap(g);
     setupStart(g, startSurvivors(g.opts.scenario));
     applyScenario(g);
+    // Lair enemies (N1) after the colonists, so the colony comes first in the pawn list.
+    populateLairs(g);
     // Ruins that still stand closed keep their old roofs.
     completeRoofs(g);
     // Start at 07:00, so the first look at the world is in daylight.
@@ -375,6 +385,7 @@ export class Game {
     tickWorld(this);
     tickPlot(this);
     tickTurrets(this);
+    tickLairs(this);
     tickGoals(this);
   }
 }

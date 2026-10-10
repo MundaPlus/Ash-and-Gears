@@ -128,7 +128,7 @@ export class PathFinder {
     }
     const s = this.stairsAt(layer, x, y);
     if (s !== 0) {
-      const nl = layer + s;
+      const nl = this.game.map.linked(layer, s);
       if (nl >= 0 && nl < layers.length && this.enterCost(nl, x, y) > 0) cb(nl * w * h + y * w + x, STAIRS_COST);
     }
   }
@@ -150,8 +150,8 @@ export class PathFinder {
     for (const t of game.things.values()) {
       const s = game.reg.things.list[t.def].stairs;
       if (!s) continue;
-      const nl = t.layer + s;
-      if (nl < 0 || nl >= layers.length) continue;
+      const nl = game.map.linked(t.layer, s);
+      if (nl < 0) continue;
       const a = t.layer * wh + t.y * w + t.x, b = nl * wh + t.y * w + t.x;
       if (open[a] && open[b]) link.set(a, b);
     }
@@ -219,6 +219,7 @@ export class PathFinder {
   find(a: Pos, b: Pos, adjacent = false): Pos[] | null {
     if (adjacent ? !this.canReachAdjacent(a, b) : !this.canReach(a, b)) return null;
     const { w, h } = this.game.map;
+    const levels = this.game.map.layers.map((L) => L.level);
     const start = this.node(a);
     const isGoal = (n: number) => {
       const p = this.pos(n);
@@ -229,7 +230,7 @@ export class PathFinder {
     const hScore = (n: number) => {
       const r = n % (w * h);
       const dx = Math.abs((r % w) - b.x), dy = Math.abs(Math.floor(r / w) - b.y);
-      const layerGap = Math.abs(Math.floor(n / (w * h)) - b.layer) * STAIRS_COST;
+      const layerGap = Math.abs(levels[Math.floor(n / (w * h))] - levels[b.layer]) * STAIRS_COST;
       return (Math.max(dx, dy) + (Math.SQRT2 - 1) * Math.min(dx, dy)) * this.minCost + layerGap;
     };
     this.gen++;

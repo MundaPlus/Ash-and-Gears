@@ -11,31 +11,36 @@ import { NO_THING } from "./map.ts";
 
 const idOf = (game: Game, def: number) => game.reg.things.list[def].id;
 const goesDown = (game: Game, def: number) => (game.reg.things.list[def].stairs ?? 0) > 0;
+const DEEP = -2;
 
 export function ensureLinks(game: Game): void {
   repairStairs(game);
-  if (game.map.layers.length >= 3 && !bunkerReachable(game)) connectBunker(game);
+  if (game.map.layerAt(-2) >= 0 && !bunkerReachable(game)) connectBunker(game);
 }
 
-/** Put back missing halves of stairs. */
+/** Put back missing halves of stairs: every stairs has a partner going the other way one level up or down. */
 export function repairStairs(game: Game): void {
+  const air = game.reg.terrain.has("open_air") ? game.reg.terrain.idx("open_air") : -1;
   for (const t of [...game.things.values()]) {
-    // Stairs down without stairs up below: dig them in.
-    if (goesDown(game, t.def) && t.layer + 1 < game.map.layers.length) {
-      const below = game.map.layers[t.layer + 1];
-      const b = below.thing[below.i(t.x, t.y)];
-      if (b === NO_THING || idOf(game, game.things.get(b)!.def) !== "stairs_up") digDown(game, t.layer + 1, t.x, t.y);
+    const s = game.reg.things.list[t.def].stairs ?? 0;
+    if (!s) continue;
+    const to = game.map.linked(t.layer, s);
+    if (to < 0) continue;
+    const L = game.map.layers[to];
+    const i = L.i(t.x, t.y);
+    const b = L.thing[i];
+    // A partner going the other way is fine.
+    if (b !== NO_THING && Math.sign(game.reg.things.list[game.things.get(b)!.def].stairs ?? 0) === -Math.sign(s)) continue;
+    // Going down into rock: dig the way (as dug stairs do).
+    if (s > 0 && L.underground) {
+      digDown(game, to, t.x, t.y);
+      continue;
     }
-    // Stairs up without stairs down above: put them back (on the surface the plain stairs, below dug stairs).
-    if (idOf(game, t.def) === "stairs_up" && t.layer >= 1) {
-      const up = game.map.layers[t.layer - 1];
-      const i = up.i(t.x, t.y);
-      const a = up.thing[i];
-      if (a !== NO_THING && goesDown(game, game.things.get(a)!.def)) continue;
-      if (a !== NO_THING) game.removeThing(a);
-      if (game.reg.terrain.list[up.terrain[i]].solid) game.setTerrain(t.layer - 1, t.x, t.y, t.layer - 1 === 0 ? "dirt" : "cave_floor");
-      game.spawnThing(t.layer - 1 === 0 ? "stairs_down" : "dug_stairs", t.layer - 1, t.x, t.y);
-    }
+    if (b !== NO_THING) game.removeThing(b);
+    const td = game.reg.terrain.list[L.terrain[i]];
+    if (td.solid || L.terrain[i] === air) game.setTerrain(to, t.x, t.y, L.underground ? "cave_floor" : L.level === 0 ? "dirt" : "ruin_floor");
+    // Up from below gets stairs down on the floor above (dug stairs between cave layers), down from above gets stairs up.
+    game.spawnThing(s > 0 ? "stairs_up" : L.underground ? "dug_stairs" : "stairs_down", to, t.x, t.y);
   }
 }
 
@@ -47,14 +52,15 @@ function surfaceStairs(game: Game) {
 
 /** The bunker's outer door: the westmost bunker door on layer 2. */
 function bunkerDoor(game: Game) {
-  const doors = [...game.things.values()].filter((t) => t.layer === 2 && idOf(game, t.def) === "bunker_door");
+  const deep = game.map.layerAt(DEEP);
+  const doors = [...game.things.values()].filter((t) => t.layer === deep && idOf(game, t.def) === "bunker_door");
   return doors.length ? doors.reduce((a, b) => (b.x < a.x ? b : a)) : undefined;
 }
 
 function bunkerReachable(game: Game): boolean {
   const s = surfaceStairs(game), door = bunkerDoor(game);
   if (!s || !door) return true;
-  return game.path.canReach({ layer: 0, x: s.x, y: s.y }, { layer: 2, x: door.x - 1, y: door.y });
+  return game.path.canReach({ layer: 0, x: s.x, y: s.y }, { layer: door.layer, x: door.x - 1, y: door.y });
 }
 
 /** Dig a walkable line on a layer: rock becomes floor, blocking junk goes (stairs and bunker walls stay). */
@@ -76,22 +82,23 @@ function carve(game: Game, layer: number, x0: number, y0: number, x1: number, y1
 export function connectBunker(game: Game): void {
   const s = surfaceStairs(game), door = bunkerDoor(game);
   if (!s || !door) return;
-  const walls = [...game.things.values()].filter((t) => t.layer === 2 && idOf(game, t.def).startsWith("bunker"));
+  const cave = game.map.layerAt(-1), deep = door.layer;
+  const walls = [...game.things.values()].filter((t) => t.layer === deep && idOf(game, t.def).startsWith("bunker"));
   const minY = Math.min(...walls.map((t) => t.y)), maxY = Math.max(...walls.map((t) => t.y));
   const shaft = { x: door.x - 4, y: door.y };
   // Layer 1: from below the surface stairs to the shaft (around the bunker's rows, which lie below).
   const row = s.y < (minY + maxY) / 2 ? Math.min(s.y, minY - 2) : Math.max(s.y, maxY + 2);
-  carve(game, 1, s.x, s.y, s.x, row, "cave_floor");
-  carve(game, 1, s.x, row, shaft.x, row, "cave_floor");
-  carve(game, 1, shaft.x, row, shaft.x, shaft.y, "cave_floor");
-  const L1 = game.map.layers[1];
+  carve(game, cave, s.x, s.y, s.x, row, "cave_floor");
+  carve(game, cave, s.x, row, shaft.x, row, "cave_floor");
+  carve(game, cave, shaft.x, row, shaft.x, shaft.y, "cave_floor");
+  const L1 = game.map.layers[cave];
   const at = L1.thing[L1.i(shaft.x, shaft.y)];
   if (at === NO_THING || !goesDown(game, game.things.get(at)!.def)) {
     if (at !== NO_THING) game.removeThing(at);
-    game.spawnThing("stairs_down", 1, shaft.x, shaft.y);
+    game.spawnThing("stairs_down", cave, shaft.x, shaft.y);
   }
-  digDown(game, 2, shaft.x, shaft.y);
-  // Layer 2: from the shaft east to the door.
-  carve(game, 2, shaft.x, shaft.y, door.x - 1, door.y, "rough_floor");
+  digDown(game, deep, shaft.x, shaft.y);
+  // The deep layer: from the shaft east to the door.
+  carve(game, deep, shaft.x, shaft.y, door.x - 1, door.y, "rough_floor");
   game.pathVersion++;
 }

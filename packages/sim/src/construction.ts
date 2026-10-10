@@ -64,8 +64,11 @@ function canPlaceTile(game: Game, kind: Blueprint["kind"], defId: string, layer:
   if (kind === "floor") return L.floor[i] === 0;
   const build = game.reg.things.get(defId).build;
   if (!build || (build.research && !game.research.done.has(build.research))) return false;
-  // Stairs down need a layer below.
-  if ((game.reg.things.get(defId).stairs ?? 0) > 0 && layer + 1 >= game.map.layers.length) return false;
+  // Dug stairs go down into rock: only where an underground layer lies below (not from a tower floor).
+  if ((game.reg.things.get(defId).stairs ?? 0) > 0) {
+    const below = game.map.below(layer);
+    if (below < 0 || !game.map.layers[below].underground) return false;
+  }
   return L.thing[i] === NO_THING || clearOrder(game, layer, x, y) !== null;
 }
 
@@ -144,7 +147,7 @@ function completeBlueprint(game: Game, bp: Blueprint) {
     takeFromStack(game, s.id, s.count);
   }
   game.spawnThing(def.id, bp.layer, bp.x, bp.y, bp.rot);
-  if ((def.stairs ?? 0) > 0) digDown(game, bp.layer + 1, bp.x, bp.y);
+  if ((def.stairs ?? 0) > 0) digDown(game, game.map.below(bp.layer), bp.x, bp.y);
   for (const m of moved) dropItems(game, m.def, m.count, bp.layer, m.x, m.y, m.contaminated);
   if (def.blocks) {
     for (const p of game.pawns.values()) {

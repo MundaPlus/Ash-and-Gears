@@ -459,6 +459,10 @@ async function boot() {
     tools.cancel();
     store.set({ layer: n, inspect: null });
   };
+  actions.stepLayer = (d) => {
+    const l = d > 0 ? game.map.above(renderer.layer) : game.map.below(renderer.layer);
+    if (l >= 0) actions.setLayer(l);
+  };
   actions.selectPawn = (id, center) => {
     selected = id;
     pawnsR.selected = id;
@@ -536,6 +540,7 @@ async function boot() {
       researchLink = !!def.bench || !!def.research;
       if (def.grave && thing.filled) lines.push(t("inspect.grave_filled"));
       // Belts: what rides on this piece right now.
+      if (def.sealed) lines.push(t("inspect.sealed"));
       if (def.belt) lines.push(thing.cargo ? t("inspect.belt_cargo", { count: thing.cargo.count, item: t(`item.${game.reg.items.list[thing.cargo.def].id}`) }) : t("inspect.belt_empty"));
       if (def.burns) {
         lines.push(t("inspect.fuel", { v: Math.round(thing.fuel ?? 0), max: def.burns.capacity, item: t(`item.${def.burns.item}`) }));
@@ -889,8 +894,8 @@ async function boot() {
     else if ((e.key === "f" || e.key === "F") && store.state.inspect?.actions?.first) actions.tileAction(store.state.inspect.actions.first);
     else if (e.key === "r" || e.key === "R") {
       if (selected !== null) actions.toggleDraft(selected);
-    } else if (e.key === "PageUp") actions.setLayer(renderer.layer - 1);
-    else if (e.key === "PageDown") actions.setLayer(renderer.layer + 1);
+    } else if (e.key === "PageUp") actions.stepLayer(1);
+    else if (e.key === "PageDown") actions.stepLayer(-1);
     else if (e.key === "Escape") {
       if (tools.spec) actions.setTool(null);
       else if (store.state.menu) actions.openMenu(null);
@@ -925,18 +930,19 @@ async function boot() {
     renderer.update(camera.view, camera.zoom);
     pawnsR.update(anim, camera.zoom);
     fx.update(clock, camera.view);
-    dyn.update(anim, camera.view, renderer.layer > 0 ? 0.6 : darkness(game.hourOfDay), (x, y) => ({ x: x * camera.zoom + world.position.x, y: y * camera.zoom + world.position.y }), camera.zoom);
+    const under = game.map.layers[renderer.layer].underground;
+    dyn.update(anim, camera.view, under ? 0.6 : darkness(game.hourOfDay), (x, y) => ({ x: x * camera.zoom + world.position.x, y: y * camera.zoom + world.position.y }), camera.zoom);
 
     // Night: underground is always dim, the surface follows the clock.
-    const dark = renderer.layer > 0 ? 0.35 : darkness(game.hourOfDay) * 0.55;
+    const dark = under ? 0.35 : darkness(game.hourOfDay) * 0.55;
     night.clear();
     if (dark > 0.01) night.rect(0, 0, app.screen.width, app.screen.height).fill({ color: 0x0b1020, alpha: dark });
     // Weather on the surface: a pulsing green haze for the radiation cloud, falling streaks for rain.
     weatherFx.clear();
     const wk = game.weather.kind;
-    if (renderer.layer === 0 && (wk === "rad_cloud" || wk === "toxic_rain"))
+    if (!under && (wk === "rad_cloud" || wk === "toxic_rain"))
       weatherFx.rect(0, 0, app.screen.width, app.screen.height).fill({ color: 0x9fd14a, alpha: (wk === "rad_cloud" ? 0.13 : 0.06) + 0.05 * Math.sin(clock * 1.5) });
-    if (renderer.layer === 0 && (wk === "rain" || wk === "rad_cloud" || wk === "toxic_rain")) {
+    if (!under && (wk === "rain" || wk === "rad_cloud" || wk === "toxic_rain")) {
       const W = app.screen.width, H = app.screen.height;
       for (const d of drops) {
         d[1] = (d[1] + dt * d[2] * (paused ? 0 : 1.6)) % 1;
@@ -947,7 +953,7 @@ async function boot() {
     }
 
     // Audio: music mood from the situation, sound effects from new combat events and messages.
-    const hostiles = [...game.pawns.values()].some((p) => p.faction !== "colony" && !p.health.downed);
+    const hostiles = [...game.pawns.values()].some((p) => p.faction !== "colony" && !p.health.downed && !sim.isDormant(game, p) && !["prisoner", "visitor", "trader"].includes(p.faction));
     const recentFight = game.fx.some((f) => game.tick - f.tick < 120);
     audio.mood = hostiles && recentFight ? "combat" : hostiles || game.weather.kind === "rad_cloud" || game.weather.next?.kind === "rad_cloud" ? "tense" : darkness(game.hourOfDay) > 0.5 ? "night" : "calm";
     audio.tier = Math.max(0, ...game.reg.content.research.filter((r) => game.research.done.has(r.id)).map((r) => r.tier));
@@ -965,7 +971,7 @@ async function boot() {
       if (f.hit) audio.play("hit", vol * 0.8, pan);
     }
     if (game.fx.length) lastFxTick = game.fx[game.fx.length - 1].tick;
-    if (game.weather.kind === "rad_cloud" && renderer.layer === 0 && !paused && Math.random() < 0.25 * speed) audio.play("geiger", 0.5, Math.random() * 2 - 1);
+    if (game.weather.kind === "rad_cloud" && !game.map.layers[renderer.layer].underground && !paused && Math.random() < 0.25 * speed) audio.play("geiger", 0.5, Math.random() * 2 - 1);
     // Work sounds: a soft sound per kind of work, in a steady rhythm (every 0.7 s per worker) for the two
     // workers nearest the middle of the screen.
     if (!paused) {
@@ -1048,7 +1054,7 @@ async function boot() {
   if (params.has("cinematic")) document.body.classList.add("cinematic");
 
   store.set({ art: { ...art } });
-  store.set({ seed, layerCount: game.map.layers.length, buildOptions: buildRows(), workTypes: activeWorkTypes(), workRows: workRows(), research: researchRows() });
+  store.set({ seed, layerCount: game.map.layers.length, layerLevels: game.map.layers.map((L) => L.level), buildOptions: buildRows(), workTypes: activeWorkTypes(), workRows: workRows(), research: researchRows() });
   render(h(Hud, {}), document.getElementById("ui")!);
 
   // Debug and test hook (spec 10, "Debug and test hooks").

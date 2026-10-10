@@ -6,7 +6,7 @@ import { WorldPanel } from "./WorldPanel.tsx";
 import { TradePanel } from "./TradePanel.tsx";
 
 const BUILD_MENUS = ["structure", "furniture", "production", "power", "water", "defense", "floor"];
-const ORDERS = ["salvage", "deconstruct", "unfloor", "mine", "clear", "cut"] as const;
+const ORDERS = ["salvage", "deconstruct", "unfloor", "mine", "clear", "cut", "pry"] as const;
 
 function costText(o: BuildOption) {
   return o.cost.map((c) => `${c.n} ${t(`item.${c.item}`)}`).join(", ");

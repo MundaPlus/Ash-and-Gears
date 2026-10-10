@@ -56,7 +56,7 @@ function situational(game: Game, p: Pawn): string[] {
   if (p.needs.fun < 0.05) out.push("joyless");
   else if (p.needs.fun < 0.25) out.push("bored");
   if (p.rad >= 0.3) out.push("rad_sick");
-  if (game.weather.kind === "rad_cloud" && p.layer === 0 && !isRoofed(game, 0, p.x, p.y)) out.push("in_rad_cloud");
+  if (game.weather.kind === "rad_cloud" && !game.map.layers[p.layer].underground && !isRoofed(game, p.layer, p.x, p.y)) out.push("in_rad_cloud");
   const temp = tempAt(game, p.layer, p.x, p.y);
   if (temp < COMFORT_MIN - 12) out.push("freezing");
   else if (temp < COMFORT_MIN) out.push("cold");

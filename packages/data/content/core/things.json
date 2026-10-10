@@ -1462,5 +1462,32 @@
    "menu": "power",
    "research": "climate_control"
   }
+ },
+ {
+  "id": "sealed_door",
+  "kind": "structure",
+  "color": "#5a6470",
+  "glyph": "S",
+  "hp": 900,
+  "blocks": true,
+  "wall": true,
+  "sealed": true,
+  "insulation": 0.8,
+  "work": 600
+ },
+ {
+  "id": "rusted_door",
+  "kind": "structure",
+  "color": "#8a5a3a",
+  "glyph": "D",
+  "hp": 300,
+  "door": true,
+  "wall": true,
+  "insulation": 0.5,
+  "work": 300,
+  "yield": {
+   "steel": 2,
+   "scrap": 3
+  }
  }
 ]

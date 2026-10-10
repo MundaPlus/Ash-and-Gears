@@ -188,12 +188,13 @@ function makePixelTextures(reg: Registry, art: ArtSettings, ai: AiArt): TextureS
   const aiRaiders = aiDetail("raider");
   const raiders = aiRaiders?.length ? aiRaiders.map((c) => aiTexture(c, palette)) : [gridTexture(prepDetail(CREATURES.raider), colors)];
   const creatures: Record<string, Texture> = {};
-  for (const id of ["rad_rat", "glow_hound", "robot", "hauler_drone", "builder_bot", "miner_bot", "farmer_bot", "guard_bot"]) {
+  for (const id of ["rad_rat", "glow_hound", "robot", "hauler_drone", "builder_bot", "miner_bot", "farmer_bot", "guard_bot", "rogue_bot", "old_sentry"]) {
     const look = aiDetail(id)?.[0];
-    creatures[id] = look ? aiTexture(look, palette) : gridTexture(prepDetail(CREATURES[id]), colors);
+    // No pixel art yet for the lair machines (N1): they borrow the guard bot's.
+    creatures[id] = look ? aiTexture(look, palette) : gridTexture(prepDetail(CREATURES[id] ?? CREATURES.guard_bot), colors);
   }
 
-  const desig = ["", "S", "M", "C", "X", "D", "F"].map((glyph, i) =>
+  const desig = ["", "S", "M", "C", "X", "D", "F", "P"].map((glyph, i) =>
     drawn(TILE, (g) => {
       if (i === 0) return;
       g.strokeStyle = "rgba(239,216,164,.9)";

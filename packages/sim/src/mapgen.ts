@@ -7,6 +7,7 @@ import type { Game } from "./game.ts";
 import type { Layer } from "./map.ts";
 import { NO_THING } from "./map.ts";
 import { Noise2D } from "./noise.ts";
+import { fillAir, generateTowers, sealBunker } from "./towers.ts";
 import type { Rng } from "./rng.ts";
 
 export interface Rect {
@@ -19,9 +20,14 @@ export interface Rect {
 export function generateHomeMap(game: Game): void {
   const rng = game.rng.fork("mapgen");
   generateSurface(game, rng.fork("surface"));
-  for (let l = 1; l < game.map.layers.length; l++) generateUnderground(game, l, rng.fork(`under${l}`));
-  if (game.map.layers.length > 2) placeBunker(game, 2, rng.fork("bunker"));
+  for (const L of game.map.layers) if (L.underground) generateUnderground(game, L.index, rng.fork(`under${L.index}`));
+  const deep = game.map.layerAt(-2);
+  if (deep >= 0) placeBunker(game, deep, rng.fork("bunker"));
   placeStairs(game, rng.fork("stairs"));
+  // Tower floors (N1): air everywhere, then the towers; and sealed lairs in the bunker.
+  fillAir(game);
+  generateTowers(game, rng.fork("towers"));
+  sealBunker(game, rng.fork("lairs"));
 }
 
 function setT(game: Game, layer: Layer, x: number, y: number, terrain: string) {
@@ -233,8 +239,8 @@ function generateUnderground(game: Game, l: number, rng: Rng) {
 
 /** Put a stairway next to a rock outcrop near the start and carve a small cave under it. */
 function placeStairs(game: Game, rng: Rng) {
-  if (game.map.layers.length < 2) return;
-  const top = game.map.layers[0], low = game.map.layers[1];
+  if (game.map.layerAt(-1) < 0) return;
+  const top = game.map.layers[0], lowIdx = game.map.layerAt(-1), low = game.map.layers[lowIdx];
   const cx = top.w >> 1, cy = top.h >> 1;
   const rockIdx = game.reg.terrain.idx("rock");
   let best: [number, number] | null = null;
@@ -261,7 +267,7 @@ function placeStairs(game: Game, rng: Rng) {
   for (let y = -3; y <= 3; y++)
     for (let x = -3; x <= 3; x++)
       if (x * x + y * y <= 10 && low.inBounds(sx + x, sy + y)) setT(game, low, sx + x, sy + y, "cave_floor");
-  game.spawnThing("stairs_up", 1, sx, sy);
+  game.spawnThing("stairs_up", lowIdx, sx, sy);
 }
 
 /**

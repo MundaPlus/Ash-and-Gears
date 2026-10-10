@@ -34,6 +34,8 @@ const R: Record<string, Recipe> = {
   rough_floor: { tones: [0, 1, 2], dark: 0.1, light: 0.1, details: [["marks", 0, 2, 3], ["pebbles", 2, 0, 2]], layer: 5 },
   cave_floor: { tones: [0, 1, 2], dark: 0.12, light: 0.06, details: [["pebbles", 2, 0, 4], ["flakes", 0, 2, 3]], layer: 4 },
   bunker_floor: { tones: [13, 14, 2], dark: 0.05, light: 0.05, details: [["plates", 1, 6], ["cracks", 1, 14, 1]], layer: 8 },
+  // Open air on tower floors (N1): near black, lowest, so floors spill their edge over it.
+  open_air: { tones: [0, 0, 1], dark: 0.4, light: 0.02, details: [], layer: 0 },
 };
 
 function rng(seed: number) {

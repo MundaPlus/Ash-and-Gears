@@ -47,7 +47,7 @@ export function applyScenario(game: Game): void {
     spawnPack(game, "rad_rats", 6);
   } else if (s === "bunker") {
     // Everyone starts by the stairs in the cave; the surface glows for two days.
-    const up = [...game.things.values()].find((t) => game.reg.things.list[t.def].id === "stairs_up");
+    const up = [...game.things.values()].find((t) => game.reg.things.list[t.def].id === "stairs_up" && game.map.layers[t.layer].underground);
     if (up) {
       const cave = game.map.layers[up.layer];
       for (const p of game.pawns.values()) {

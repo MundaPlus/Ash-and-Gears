@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadCoreContent } from "@wc/data";
-import { WORK_TYPES, completeRoofs, contaminate, countItems, createZone, dropItems, exposureAt, Game, NO_THING, roomAt, scheduleRadCloud, tickWeather, type Pawn } from "../src/index.ts";
+import { WORK_TYPES, isRoofed, completeRoofs, contaminate, countItems, createZone, dropItems, exposureAt, Game, NO_THING, roomAt, scheduleRadCloud, tickWeather, type Pawn } from "../src/index.ts";
 
 const content = loadCoreContent();
 const newGame = (seed: string) => Game.create(content, { seed, mapSize: 96, storyteller: "none" });
@@ -200,7 +200,7 @@ describe("rot", () => {
     scheduleRadCloud(g, 1);
     run(g, 4);
     expect(g.weather.kind).toBe("rad_cloud");
-    for (const p of g.pawns.values()) expect(p.layer > 0 || g.map.layers[0].roof[g.map.layers[0].i(p.x, p.y)] === 1).toBe(true);
+    for (const p of g.pawns.values()) if (p.faction === "colony") expect(g.map.layers[p.layer].underground || isRoofed(g, p.layer, p.x, p.y)).toBe(true);
   });
 
   it("meals rot in a few warm days but cans do not", () => {

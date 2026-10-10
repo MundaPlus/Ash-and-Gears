@@ -652,7 +652,7 @@ export function radDanger(game: Game): boolean {
 }
 
 export function sheltered(game: Game, p: Pawn): boolean {
-  return p.layer > 0 || isRoofed(game, p.layer, p.x, p.y);
+  return game.map.layers[p.layer].underground || isRoofed(game, p.layer, p.x, p.y);
 }
 
 /** Nearest roofed tile by walking distance (breadth-first), else the cave under the stairs. */
@@ -678,7 +678,7 @@ function shelterJob(game: Game, p: Pawn): Job | null {
     }
     frontier = next;
   }
-  const stairs = [...game.things.values()].find((t) => game.reg.things.list[t.def].id === "stairs_up");
+  const stairs = [...game.things.values()].find((t) => game.reg.things.list[t.def].id === "stairs_up" && game.map.layers[t.layer].underground);
   if (stairs && game.path.canReach(p, stairs)) return { kind: "shelter", stage: 0, target: { layer: stairs.layer, x: stairs.x, y: stairs.y } };
   return null;
 }

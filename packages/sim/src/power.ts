@@ -60,7 +60,7 @@ export function poleLinks(game: Game, t: Thing): Thing[] {
 export function sourceFactor(game: Game, t: Thing, source: "solar" | "wind"): number {
   const w = game.weather.kind;
   if (source === "solar") {
-    if (t.layer !== 0) return 0;
+    if (game.map.layers[t.layer].underground) return 0;
     const h = game.hourOfDay;
     const sun = h > 6 && h < 19 ? Math.sin((Math.PI * (h - 6)) / 13) : 0;
     const sky = w === "clear" ? 1 : w === "overcast" ? 0.5 : w === "rad_cloud" ? 0.2 : 0.3;
