@@ -345,5 +345,14 @@
   "category": "misc",
   "stack": 1,
   "value": 0
+ },
+ {
+  "id": "medkit",
+  "color": "#f0f2f4",
+  "glyph": "+",
+  "category": "medicine",
+  "stack": 20,
+  "medicine": 0.9,
+  "value": 14
  }
 ]

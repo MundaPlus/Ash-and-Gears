@@ -560,6 +560,9 @@ async function boot() {
       const st = game.items.get(it)!;
       const name = t(`item.${game.reg.items.list[st.def].id}`);
       lines.push(t("inspect.items", { count: st.count, item: st.contaminated ? `${name} (${t("item.contaminated")})` : name }));
+      // A manual: which research it opens.
+      const opens = game.reg.content.research.filter((r) => r.blueprint === game.reg.items.list[st.def].id);
+      if (opens.length) lines.push(t("inspect.unlocks", { project: opens.map((r) => t(`research.${r.id}`)).join(", ") }));
       // Food and bodies: how long until it rots, here and at this temperature.
       if (game.reg.items.list[st.def].rotDays) {
         const d = sim.daysToRot(game, st);

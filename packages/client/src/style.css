@@ -297,3 +297,4 @@ body.cinematic #ui { display: none; }
 .makewin .queue .num { min-width: 22px; text-align: center; }
 .makewin .queue button { padding: 2px 9px; min-width: 0; min-height: 0; line-height: 1.4; }
 .makewin .queue li { padding: 2px 0; border-bottom: 1px dashed #3d3128; }
+.researchmenu .proj .where { display: block; color: #d6ab6b; font-size: 11px; margin-top: 3px; white-space: normal; }

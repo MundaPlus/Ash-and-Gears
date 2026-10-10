@@ -454,5 +454,52 @@
   "skill": "technology",
   "target": 0,
   "research": "advanced_robotics"
+ },
+ {
+  "id": "can_food",
+  "benches": [
+   "stove"
+  ],
+  "inputs": [
+   {
+    "tag": "raw_food",
+    "count": 12
+   },
+   {
+    "item": "scrap",
+    "count": 2
+   }
+  ],
+  "output": {
+   "canned_food": 4
+  },
+  "work": 300,
+  "skill": "cooking",
+  "target": 0,
+  "research": "food_preservation"
+ },
+ {
+  "id": "make_medkit",
+  "benches": [
+   "scrap_bench",
+   "powered_bench"
+  ],
+  "inputs": [
+   {
+    "item": "bandage",
+    "count": 2
+   },
+   {
+    "item": "plastic",
+    "count": 1
+   }
+  ],
+  "output": {
+   "medkit": 1
+  },
+  "work": 400,
+  "skill": "crafting",
+  "target": 0,
+  "research": "advanced_medicine"
  }
 ]

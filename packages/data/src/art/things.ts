@@ -1219,3 +1219,14 @@ export const THINGS: Record<string, string[]> = {
 
 // Dug stairs look like the stairs down that came with the map.
 THINGS.dug_stairs = THINGS.stairs_down;
+
+// Beta research expansion: new pieces drawn from existing art with other colors.
+const recolor = (rows: string[], map: Record<string, string>) => rows.map((r) => r.replace(/./g, (c) => map[c] ?? c));
+/** Steel wall: the stone wall's blocks in slate steel. */
+THINGS.steel_wall = recolor(THINGS.stone_wall, { "7": "7", "6": "e", "5": "e", "4": "d", "3": "d", "2": "1" });
+/** Heavy turret: the scrap turret in rust red with a double barrel. */
+THINGS.heavy_turret = recolor(THINGS.scrap_turret, { e: "9", d: "8" }).map((r, y) => (y === 6 || y === 8 ? r.slice(0, 12) + "dddd" : r));
+/** Large battery: the battery in a 2x2 case. */
+THINGS.large_battery = THINGS.battery;
+/** Electric cooler: the heater's box with cold grey-white fins instead of glowing coils. */
+THINGS.electric_cooler = recolor(THINGS.electric_heater, { a: "7", "9": "e" });

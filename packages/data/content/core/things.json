@@ -1370,5 +1370,97 @@
    "menu": "power",
    "research": "power_grid"
   }
+ },
+ {
+  "id": "steel_wall",
+  "kind": "structure",
+  "color": "#6f8088",
+  "glyph": "#",
+  "hp": 900,
+  "blocks": true,
+  "wall": true,
+  "insulation": 0.95,
+  "build": {
+   "cost": {
+    "steel": 4
+   },
+   "work": 300,
+   "menu": "structure",
+   "research": "reinforced_walls"
+  }
+ },
+ {
+  "id": "heavy_turret",
+  "kind": "structure",
+  "color": "#3d4a52",
+  "glyph": "T",
+  "hp": 320,
+  "blocks": true,
+  "blocksSight": false,
+  "turret": {
+   "dmg": 12,
+   "range": 16,
+   "cooldown": 50,
+   "accuracy": 0.15,
+   "kind": "gunshot"
+  },
+  "build": {
+   "cost": {
+    "steel": 25,
+    "components": 4
+   },
+   "work": 500,
+   "menu": "defense",
+   "research": "heavy_turrets"
+  },
+  "power": {
+   "use": 120,
+   "priority": 1
+  }
+ },
+ {
+  "id": "large_battery",
+  "footprint": [
+   2,
+   2
+  ],
+  "kind": "furniture",
+  "color": "#3b4f63",
+  "glyph": "B",
+  "hp": 220,
+  "blocks": true,
+  "power": {
+   "store": 9600
+  },
+  "build": {
+   "cost": {
+    "steel": 30,
+    "components": 6
+   },
+   "work": 600,
+   "menu": "power",
+   "research": "large_batteries"
+  }
+ },
+ {
+  "id": "electric_cooler",
+  "kind": "furniture",
+  "color": "#6f8088",
+  "glyph": "C",
+  "hp": 80,
+  "blocks": true,
+  "heat": -12,
+  "power": {
+   "use": 200
+  },
+  "build": {
+   "cost": {
+    "steel": 12,
+    "components": 3
+   },
+   "work": 220,
+   "menu": "power",
+   "research": "climate_control"
+  }
  }
 ]
