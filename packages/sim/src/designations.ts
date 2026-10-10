@@ -3,6 +3,7 @@
  * The player marks tiles. Work givers find the nearest marked tile and make a work job.
  */
 import { wakeLairs } from "./lairs.ts";
+import { kill } from "./health.ts";
 import { isReserved } from "./ai.ts";
 import { registerWorkGiver } from "./jobs.ts";
 import type { Game } from "./game.ts";
@@ -28,6 +29,8 @@ export function canDesignate(game: Game, kind: DesigKind, layer: number, x: numb
       return thing?.kind === "plant";
     case "pry":
       return !!thing?.sealed;
+    case "put_down":
+      return !!downedBeast(game, layer, x, y);
     case "salvage":
       // Every old structure (ruins, wrecks, junk, the bunker). A drag over the base never takes it apart.
       // Only things that span several floors stay (stairs; later the floors of towers).
@@ -40,6 +43,17 @@ export function canDesignate(game: Game, kind: DesigKind, layer: number, x: numb
       if (L.blueprint[L.i(x, y)] !== NO_THING) return false;
       return L.floor[L.i(x, y)] > 0 || (!!td.unfloorTo && !thing);
   }
+}
+
+/** A downed animal or machine (not a person) lying on this tile, or undefined. */
+export function downedBeast(game: Game, layer: number, x: number, y: number): Pawn | undefined {
+  for (const p of game.pawns.values()) {
+    if (p.layer !== layer || p.x !== x || p.y !== y || !p.health.downed) continue;
+    if (["colony", "prisoner", "visitor", "trader"].includes(p.faction)) continue;
+    if (game.reg.content.creatures[p.creature].behavior === "human") continue;
+    return p;
+  }
+  return undefined;
 }
 
 /** Things that link floors (stairs) never come apart: the layer above or below would lose its way. */
@@ -278,6 +292,21 @@ registerTask("pry", {
   },
 });
 
+registerTask("put_down", {
+  skill: "melee",
+  xp: 0.2,
+  total: () => 40,
+  valid: (game, job) => desigAt(game, job) === Desig.put_down && !!downedBeast(game, job.target!.layer, job.target!.x, job.target!.y),
+  complete: (game, p, job) => {
+    const t = job.target!;
+    const beast = downedBeast(game, t.layer, t.x, t.y);
+    undesignate(game, t.layer, t.x, t.y);
+    if (!beast) return;
+    beast.lastAttacker = p.id;
+    kill(game, beast, "put_down");
+  },
+});
+
 // ---------------------------------------------------------------- work givers
 
 const GIVERS: [WorkType, DesigKind][] = [
@@ -288,6 +317,7 @@ const GIVERS: [WorkType, DesigKind][] = [
   ["construct", "deconstruct"],
   ["construct", "unfloor"],
   ["construct", "pry"],
+  ["warden", "put_down"],
 ];
 
 /** The nearest order of a kind. Orders survivors gave themselves are only for idle survivors (`own`). */
