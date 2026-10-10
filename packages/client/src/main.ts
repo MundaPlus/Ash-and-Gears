@@ -435,6 +435,7 @@ async function boot() {
       if ((thing.contamUntil ?? 0) > game.tick) lines.push(t("inspect.contaminated"));
       if (def.bench)
         bills = recipesFor(game, def.id).map((r) => ({ benchId: thing.id, recipe: r.id, target: billTarget(game, thing, r), stock: stockOf(game, r) }));
+      if (def.grave && thing.filled) lines.push(t("inspect.grave_filled"));
       if (def.burns) {
         lines.push(t("inspect.fuel", { v: Math.round(thing.fuel ?? 0), max: def.burns.capacity, item: t(`item.${def.burns.item}`) }));
         if (!thing.fuel) lines.push(t("inspect.fire_out"));
@@ -494,6 +495,11 @@ async function boot() {
       const st = game.items.get(it)!;
       const name = t(`item.${game.reg.items.list[st.def].id}`);
       lines.push(t("inspect.items", { count: st.count, item: st.contaminated ? `${name} (${t("item.contaminated")})` : name }));
+      // Food and bodies: how long until it rots, here and at this temperature.
+      if (game.reg.items.list[st.def].rotDays) {
+        const d = sim.daysToRot(game, st);
+        lines.push(d === Infinity ? t("inspect.rot_frozen") : t("inspect.rot_days", { n: d < 1 ? Math.max(1, Math.round(d * 24)) + " h" : Math.round(d * 10) / 10 + " d" }));
+      }
     }
     const zoneHere = L.zone[i] !== sim.NO_THING ? game.zones.get(L.zone[i]) : undefined;
     const stockpile = zoneHere?.kind === "stockpile" ? { zoneId: zoneHere.id, allow: [...zoneHere.allow] } : undefined;

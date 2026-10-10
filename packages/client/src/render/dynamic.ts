@@ -95,6 +95,13 @@ export class DynamicRenderer {
         const charging = [...game.pawns.values()].some((p) => p.job?.kind === "charge" && p.job.targetId === t.id && p.job.stage === 2);
         if (charging && Math.sin(timeSec * 5) > 0) g.rect(px + 4, py + 4, 4, 4).fill(0x9fd14a);
       }
+      // A filled grave: an earth mound over the pit and a small wooden cross at its head.
+      if (d.grave && t.filled) {
+        g.roundRect(px + 9, py + 10, 14, 18, 5).fill(0x3a2e26).stroke({ width: 2, color: 0x1b1714 });
+        g.roundRect(px + 11, py + 12, 10, 5, 2).fill(0x5c4636);
+        g.rect(px + 14, py + 1, 4, 12).fill(0x1b1714).rect(px + 10, py + 3, 12, 4).fill(0x1b1714);
+        g.rect(px + 15, py + 2, 2, 10).fill(0xd6ab6b).rect(px + 11, py + 4, 10, 2).fill(0xd6ab6b);
+      }
       // Fuel bars for generators and fires.
       const fuel = d.power?.fuel ?? d.burns;
       if (fuel) chargeBar(g, px + 4, py + 2, fw * TILE - 8, 4, (t.fuel ?? 0) / fuel.capacity);

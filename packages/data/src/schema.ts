@@ -160,6 +160,8 @@ export const ThingDef = z.object({
     .optional(),
   /** Storage chest: holds up to this many items of any kind. Belts and arms fill and empty it. */
   chest: z.number().int().positive().optional(),
+  /** A grave (B9): holds one corpse. Haulers bring corpses here; stockpiles and chests never take them. */
+  grave: z.boolean().default(false),
   /** Auto-crafter: runs a recipe without a survivor while powered. */
   autoCrafter: z.boolean().default(false),
   /** Robot bay: robots charge and get repaired here while it has power (A7). */
@@ -184,7 +186,7 @@ export const ItemDef = z.object({
   color,
   glyph: z.string().max(2).default("?"),
   stack: z.number().int().positive().default(75),
-  category: z.enum(["resource", "food", "water", "medicine", "weapon", "apparel", "blueprint", "misc"]),
+  category: z.enum(["resource", "food", "water", "medicine", "weapon", "apparel", "blueprint", "misc", "corpse"]),
   /** Nutrition per unit (food). */
   nutrition: z.number().min(0).default(0),
   /** Trade value per unit (A9). */

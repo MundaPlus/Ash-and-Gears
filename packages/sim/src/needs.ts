@@ -46,6 +46,13 @@ function situational(game: Game, p: Pawn): string[] {
   else if (thirst < 0.25) out.push("thirsty");
   if (rest < 0.05) out.push("exhausted");
   else if (rest < 0.25) out.push("tired");
+  // An unburied body nearby: worse once it rots.
+  if (p.faction === "colony") {
+    let near = 0;
+    for (const s of game.items.values())
+      if (s.layer === p.layer && game.reg.items.list[s.def].category === "corpse" && (s.x - p.x) ** 2 + (s.y - p.y) ** 2 < 64) near = Math.max(near, (s.rot ?? 0) > 0.5 ? 2 : 1);
+    if (near) out.push(near === 2 ? "rotting_corpse" : "corpse_nearby");
+  }
   if (p.needs.fun < 0.05) out.push("joyless");
   else if (p.needs.fun < 0.25) out.push("bored");
   if (p.rad >= 0.3) out.push("rad_sick");

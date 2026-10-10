@@ -1318,5 +1318,57 @@
    "work": 120,
    "menu": "furniture"
   }
+ },
+ {
+  "id": "ash_willow_plant",
+  "kind": "plant",
+  "color": "#7a8a4e",
+  "glyph": "W",
+  "hp": 100,
+  "work": 90,
+  "blocks": false,
+  "crop": {
+   "growDays": 9,
+   "yield": {
+    "wood": 14
+   },
+   "minTemp": 2
+  },
+  "flammable": true
+ },
+ {
+  "id": "grave",
+  "kind": "furniture",
+  "color": "#3a2e26",
+  "glyph": "+",
+  "hp": 200,
+  "blocks": false,
+  "grave": true,
+  "build": {
+   "cost": {},
+   "work": 180,
+   "menu": "furniture"
+  }
+ },
+ {
+  "id": "electric_heater",
+  "kind": "furniture",
+  "color": "#a8481a",
+  "glyph": "H",
+  "hp": 80,
+  "blocks": true,
+  "heat": 10,
+  "power": {
+   "use": 150
+  },
+  "build": {
+   "cost": {
+    "steel": 10,
+    "components": 2
+   },
+   "work": 200,
+   "menu": "power",
+   "research": "power_grid"
+  }
  }
 ]

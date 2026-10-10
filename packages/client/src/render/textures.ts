@@ -54,6 +54,8 @@ export interface TextureSet {
   forbid: Texture;
   /** Rust-orange arrow for "haul now" stacks. */
   haul: Texture;
+  /** Dull green-brown spots on spoiling food and bodies. */
+  rot: Texture;
 }
 
 function gridTexture(grid: number[][], colors: string[], remap?: Record<number, number>): Texture {
@@ -217,7 +219,14 @@ export function makeTextures(reg: Registry, art: ArtSettings, ai: AiArt = new Ma
     g.lineWidth = 1.5;
     g.stroke();
   });
-  return { forbid, haul, terrain, terrainEdges, terrainLayers, things, walls, lines, stubs, turned, thingsTurned, items, floors, desig, survivors, raiders, creatures, shadow };
+  const rot = drawn(16, (g) => {
+    g.fillStyle = "#4a5a3a";
+    for (const [x, y] of [[5, 6], [10, 9], [6, 11], [11, 5], [8, 8]]) g.fillRect(x, y, 1, 1);
+    g.fillStyle = "#1b1714";
+    g.fillRect(8, 3, 1, 1);
+    g.fillRect(3, 9, 1, 1);
+  });
+  return { forbid, haul, rot, terrain, terrainEdges, terrainLayers, things, walls, lines, stubs, turned, thingsTurned, items, floors, desig, survivors, raiders, creatures, shadow };
 }
 
 /** Stable variant per tile so the ground does not repeat. */

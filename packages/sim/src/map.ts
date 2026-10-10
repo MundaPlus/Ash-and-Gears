@@ -46,6 +46,8 @@ export interface Thing {
   forPrisoners?: boolean;
   /** Power switch turned off. */
   off?: boolean;
+  /** Graves: a corpse lies here. */
+  filled?: boolean;
   /** Consumer priority set by the player (1 keep on longest .. 3 cut first); default from the def. */
   priority?: number;
   /** Pipes, tanks, pumps, taps: liters of each fluid held here ("water", "clean_water"). */

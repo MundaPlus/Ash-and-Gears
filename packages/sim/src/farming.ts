@@ -26,7 +26,26 @@ export function fertilityAt(game: Game, layer: number, x: number, y: number): nu
   return game.reg.terrain.list[L.terrain[i]].fertility;
 }
 
+/** Wild shrubs that sprout per day on open fertile ground away from home (wood grows back). */
+const WILD_PER_DAY = 3;
+
+/** Once a day at dawn: a few mutant shrubs sprout on empty fertile surface tiles at least 15 tiles from home. */
+function sproutWild(game: Game): void {
+  const L = game.map.layers[0];
+  let placed = 0;
+  for (let tries = 0; tries < 60 && placed < WILD_PER_DAY; tries++) {
+    const x = game.aiRng.int(1, L.w - 2), y = game.aiRng.int(1, L.h - 2);
+    if (Math.abs(x - game.home.x) + Math.abs(y - game.home.y) < 15) continue;
+    const i = L.i(x, y);
+    if (L.thing[i] !== NO_THING || L.blueprint[i] !== NO_THING || L.item[i] !== NO_THING || L.zone[i] !== NO_THING || L.floor[i]) continue;
+    if (fertilityAt(game, 0, x, y) < 0.5 || !game.walkable(0, x, y)) continue;
+    game.spawnThing("mutant_shrub", 0, x, y);
+    placed++;
+  }
+}
+
 export function tickFarming(game: Game): void {
+  if (game.tick % Math.round(game.ticksPerDay) === Math.round(game.ticksPerHour * 5)) sproutWild(game);
   if (game.tick % GROW_EVERY !== 0) return;
   const dtDays = GROW_EVERY / game.ticksPerDay;
   for (const t of game.things.values()) {

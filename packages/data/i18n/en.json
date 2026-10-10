@@ -996,5 +996,16 @@
   "sched.joy": "Recreation",
   "work.tab_priorities": "Priorities",
   "work.tab_schedule": "Schedule",
-  "alert.no_prison_bed": "{name} is marked for capture, but no free bed is set for prisoners. Select a bed and mark it for prisoners."
+  "alert.no_prison_bed": "{name} is marked for capture, but no free bed is set for prisoners. Select a bed and mark it for prisoners.",
+  "thing.ash_willow_plant": "Ash willow",
+  "thing.ash_willow_plant.desc": "A tree for wood. Grows in about 9 days and gives 14 wood.",
+  "thing.grave": "Grave",
+  "thing.grave.desc": "Dig a grave. Haulers bury one body here. Bodies left lying around upset survivors.",
+  "thought.corpse_nearby": "A body lies nearby",
+  "thought.rotting_corpse": "A rotting body nearby",
+  "inspect.grave_filled": "Someone rests here.",
+  "thing.electric_heater": "Electric heater",
+  "thing.electric_heater.desc": "Warms a closed room while it has power. Uses 150 W.",
+  "inspect.rot_days": "Spoils in about {n} here.",
+  "inspect.rot_frozen": "Frozen: it does not spoil here."
 }

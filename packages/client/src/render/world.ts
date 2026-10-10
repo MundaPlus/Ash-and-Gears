@@ -185,6 +185,13 @@ export class WorldRenderer {
           if (st.contaminated) t.tint = 0xb8ff6a;
           items.push(t);
           // Forbidden stacks: a small red cross in the corner.
+          // Spoiling food and bodies: a few dull green-brown spots.
+          if ((st.rot ?? 0) >= 0.5) {
+            const sp = new Sprite(this.tex.rot);
+            sp.width = sp.height = TILE;
+            sp.position.set(s.x, s.y);
+            marks.push(sp);
+          }
           if (st.forbidden) {
             const fx = new Sprite(this.tex.forbid);
             fx.width = fx.height = TILE / 2;

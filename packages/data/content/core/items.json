@@ -237,7 +237,7 @@
   "id": "corpse",
   "color": "#5c4636",
   "glyph": "x",
-  "category": "misc",
+  "category": "corpse",
   "stack": 1,
   "rotDays": 3,
   "value": 0

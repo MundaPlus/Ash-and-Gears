@@ -98,8 +98,25 @@ function accepts(game: Game, z: Zone | null, def: number, contaminated: boolean)
   return z.allow.includes(game.reg.items.list[def].category);
 }
 
-/** Nearest stockpile tile or chest with room that can take this item. */
+const isCorpse = (game: Game, def: number) => game.reg.items.list[def].category === "corpse";
+
+/** Nearest empty grave (corpses go only there). */
+function findGrave(game: Game, p: Pawn | null, from: Pos): Pos | null {
+  let best: Pos | null = null, bestD = Infinity;
+  for (const t of game.things.values()) {
+    if (!game.reg.things.list[t.def].grave || t.filled || (p && isReserved(game, `tile:${t.layer},${t.x},${t.y}`, p))) continue;
+    const d = (t.x - from.x) ** 2 + (t.y - from.y) ** 2 + (t.layer !== from.layer ? 900 : 0);
+    if (d < bestD) {
+      best = { layer: t.layer, x: t.x, y: t.y };
+      bestD = d;
+    }
+  }
+  return best && (!p || game.path.canReach(from, best)) ? best : null;
+}
+
+/** Nearest stockpile tile or chest with room that can take this item (a grave for a corpse). */
 function findStorage(game: Game, p: Pawn, from: Pos, def: number, contaminated: boolean): Pos | null {
+  if (isCorpse(game, def)) return findGrave(game, p, from);
   let best: Pos | null = null, bestD = Infinity;
   // Chests take anything while they have room.
   for (const t of game.things.values()) {
@@ -180,6 +197,12 @@ export function haulList(game: Game): HaulEntry[] {
   if (chests.length || tilesByCat.size)
     for (const s of game.items.values()) {
       if (!isLoose(game, s)) continue;
+      if (isCorpse(game, s.def)) {
+        // Corpses: only to a grave; they go first, before they rot.
+        const g = findGrave(game, null, s);
+        if (g) list.push({ id: s.id, dist: 0, urgent: !!s.haulNow });
+        continue;
+      }
       let best = Infinity;
       for (const q of [...chests, ...(tilesByCat.get(game.reg.items.list[s.def].category) ?? [])]) {
         const d = Math.hypot(q.x - s.x, q.y - s.y) + (q.layer !== s.layer ? 30 : 0);
@@ -205,6 +228,7 @@ export function haulNow(game: Game, stackId: number): boolean {
 export function canHaul(game: Game, stackId: number): boolean {
   const s = game.items.get(stackId);
   if (!s || !isLoose(game, s) || s.haulNow) return false;
+  if (isCorpse(game, s.def)) return !!findGrave(game, null, s);
   // Some chest with room, or some stockpile that takes the category (the haul list may be a few ticks old).
   const cat = game.reg.items.list[s.def].category;
   if ([...game.zones.values()].some((z) => z.kind === "stockpile" && z.allow.includes(cat))) return true;
@@ -262,6 +286,15 @@ registerJob("haul", (game, p, job: Job) => {
   const L = game.map.layers[job.target!.layer];
   const tid = L.thing[L.i(job.target!.x, job.target!.y)];
   const chest = tid !== NO_THING && game.reg.things.list[game.things.get(tid)!.def].chest ? game.things.get(tid)! : null;
+  // A corpse into a grave: it is buried.
+  const grave = tid !== NO_THING && game.reg.things.list[game.things.get(tid)!.def].grave ? game.things.get(tid)! : null;
+  if (grave && p.carrying && isCorpse(game, p.carrying.def) && !grave.filled) {
+    grave.filled = true;
+    p.carrying = null;
+    L.touch(grave.x, grave.y);
+    game.mapVersion++;
+    return "done";
+  }
   if (chest && p.carrying) {
     p.carrying.count -= putInChest(game, chest, p.carrying.def, p.carrying.count, !!p.carrying.contaminated, p.carrying.contamUntil);
     if (p.carrying.count <= 0) p.carrying = null;

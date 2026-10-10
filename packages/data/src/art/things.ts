@@ -4,6 +4,44 @@
  * 0 outline, 1-7 neutral ramp dark→light, 8-a rust/orange ramp, b-c plants, d-e metal, f glow.
  */
 export const THINGS: Record<string, string[]> = {
+  // Electric heater (B9): top-down, a steel box with glowing orange coils.
+  electric_heater: [
+    "................",
+    "..000000000000..",
+    "..0eeeeeeeeee0..",
+    "..0e00000000e0..",
+    "..0e0aaaaaa0e0..",
+    "..0e09999990e0..",
+    "..0e0aaaaaa0e0..",
+    "..0e09999990e0..",
+    "..0e0aaaaaa0e0..",
+    "..0e09999990e0..",
+    "..0e0aaaaaa0e0..",
+    "..0e00000000e0..",
+    "..0eeeeeeddee0..",
+    "..000000000000..",
+    "...0d0....0d0...",
+    "................",
+  ],
+  // Grave (B9): top-down, an open pit with a heap of dug earth at its head.
+  grave: [
+    "................",
+    "....00000000....",
+    "...0344443430...",
+    "...0433434440...",
+    "....00000000....",
+    "....01111110....",
+    "....01000010....",
+    "....01000010....",
+    "....01000010....",
+    "....01000010....",
+    "....01000010....",
+    "....01000010....",
+    "....01111110....",
+    "....00000000....",
+    "................",
+    "................",
+  ],
   // Card table (B9): top-down, a green felt top with cards on it and two stools.
   card_table: [
     "................",
@@ -400,6 +438,25 @@ export const THINGS: Record<string, string[]> = {
     ".00000000000000.",
     "................",
     "................",
+    "................",
+  ],
+  // Ash willow (B9): a hardy tree grown for wood; grey-green leaves droop over a dark trunk.
+  ash_willow_plant: [
+    "....00000000....",
+    "..00cccccccc00..",
+    ".0ccbccccccbcc0.",
+    "0cbcccbbbbcccbc0",
+    "0ccbcc0110ccbcc0",
+    "0cbc0c0110c0cbc0",
+    "0cc00c0110c00cc0",
+    "0c0.0c0110c0.0c0",
+    "00..00.011.00..0",
+    "......0110......",
+    "......0110......",
+    "......0110......",
+    ".....012110.....",
+    "....01122110....",
+    ".....000000.....",
     "................",
   ],
   glowcorn_plant: [

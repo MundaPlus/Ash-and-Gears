@@ -208,5 +208,13 @@
  {
   "id": "joyless",
   "mood": -10
+ },
+ {
+  "id": "corpse_nearby",
+  "mood": -3
+ },
+ {
+  "id": "rotting_corpse",
+  "mood": -7
  }
 ]
