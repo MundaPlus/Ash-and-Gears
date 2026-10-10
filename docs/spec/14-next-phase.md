@@ -120,6 +120,8 @@ Updated order: N3 (small, helps automation now), N2, then N1, then the phone app
 
 ### N4 — Remove old floors, salvage almost everything
 
+Status: done (2026-10-10). Terrain fields `unfloorTo` / `unfloorYield`. Salvage and deconstruct skip only things that link floors (`spansFloors` in `designations.ts`); towers (N1) must use the same check.
+
 User: "we should also be able to remove non-built floors from ancient structures. The only non-salvageable structures should be the structures that are multi-floor."
 
 Remove floor also works on old floors (ruin floor, bunker floor, asphalt: they turn into the plain ground below, with a little scrap or stone back). Salvage works on all old structures and things except those that span several floors (stairs, and the planned multi-story towers).

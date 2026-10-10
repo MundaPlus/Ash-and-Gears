@@ -435,7 +435,7 @@
   "floor.scrap_tiles": "Scrap tiles",
   "floor.stone_tiles": "Stone tiles",
   "order.salvage": "Salvage",
-  "order.salvage.desc": "Take apart ruins, wrecks and junk for scrap and loot. Your own buildings stay safe.",
+  "order.salvage.desc": "Take apart ruins, wrecks, junk and old bunker walls for scrap and loot. Your own buildings stay safe. Stairs stay: they link the floors.",
   "order.deconstruct": "Deconstruct",
   "order.deconstruct.desc": "Take down your own buildings. Gives back 75% of the materials.",
   "order.mine": "Mine",
@@ -1090,6 +1090,6 @@
   "zone.grow_hint": "Drag next to the zone: new tiles join it.",
   "zone.shrink_hint": "Drag over zone tiles to take them out.",
   "order.unfloor": "Remove floor",
-  "order.unfloor.desc": "Take up a built floor. Gives back 75% of the materials.",
+  "order.unfloor.desc": "Take up a floor. A built floor gives back 75% of the materials. An old floor (ruin, bunker, asphalt) turns into bare ground and gives a little stone or scrap.",
   "action.unfloor": "Remove floor"
 }

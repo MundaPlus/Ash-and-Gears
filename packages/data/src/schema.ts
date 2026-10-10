@@ -31,6 +31,9 @@ export const TerrainDef = z.object({
   /** Rubble-like terrain: "clear" turns it into this terrain and drops clearYield. */
   clearTo: id.optional(),
   clearYield: z.record(id, z.number().int().positive()).optional(),
+  /** Old floor (not built by the colony): "remove floor" turns it into this terrain and drops unfloorYield. */
+  unfloorTo: id.optional(),
+  unfloorYield: z.record(id, z.number().int().positive()).optional(),
 });
 export type TerrainDef = z.infer<typeof TerrainDef>;
 
