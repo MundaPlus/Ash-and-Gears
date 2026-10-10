@@ -99,6 +99,11 @@ export function Hud() {
       <PawnPanel />
       <Ending />
       <header class="topbar">
+        {s.song && (
+          <div class="nowplaying" data-testid="song" title={t("music.now_playing")}>
+            <span aria-hidden="true">♪</span> {t(`music.${s.song}`)}
+          </div>
+        )}
         <div class="clock" data-testid="clock">
           <b>{s.clock}</b>
           <span>

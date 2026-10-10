@@ -167,6 +167,8 @@ export interface UiState {
   layer: number;
   layerCount: number;
   clock: string;
+  /** The song playing now (music id), or null between songs. */
+  song: string | null;
   season: string;
   seed: string;
   fps: number;
@@ -226,6 +228,7 @@ class Store {
     caravan: null,
     powerOverlay: false,
     clock: "",
+    song: null,
     season: "",
     seed: "",
     fps: 0,

@@ -28,6 +28,10 @@ button.on { background: var(--rust); color: var(--ink); border-color: var(--rust
 .clock { background: var(--panel); border: 1px solid var(--line); padding: 4px 12px; display: grid; font-family: var(--mono); font-size: 13px; }
 .clock b { color: var(--text); }
 .clock span { color: var(--dim); }
+/* The song playing now, left of the calendar. */
+.nowplaying { background: var(--panel); border: 1px solid var(--line); padding: 4px 10px; display: flex; align-items: center; gap: 6px;
+  font-size: 13px; color: var(--dim); max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nowplaying span { color: var(--rust); }
 .speed { display: flex; }
 .speed button { font-size: 11px; letter-spacing: -2px; }
 
@@ -173,6 +177,7 @@ input[type="range"], input[type="checkbox"] { accent-color: var(--rust); }
 .menugoals p.done { color: var(--good); text-decoration: line-through; }
 
 @media (max-width: 640px) {
+  .nowplaying { display: none; }
   .goals { display: none; }
   .slider { grid-template-columns: 100px 1fr 44px; }
   .toolbar { left: 8px; right: 8px; transform: none; }

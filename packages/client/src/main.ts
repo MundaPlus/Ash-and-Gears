@@ -251,6 +251,7 @@ async function boot() {
   };
   // ---------------------------------------------------------------- audio
   const audio = new Audio();
+  audio.onSong = (song) => store.set({ song });
   let prefs: { music?: number; sfx?: number; ui?: number };
   try {
     prefs = JSON.parse(localStorage.getItem("wc-prefs") ?? "{}");
