@@ -1,5 +1,11 @@
-<title>Wasteland Colony</title>
-<meta name="description" content="A post-apocalyptic colony sim with progressive automation. Playable demo.">
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="darkreader-lock">
+<title>Ash &amp; Gears</title>
+<meta name="description" content="A post-apocalyptic colony sim with progressive automation. Playable beta.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil+Display:wght@700;900&family=Barlow:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;600&display=swap">
@@ -79,7 +85,7 @@ p { max-width: 62ch; }
 .feature.flip { grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); }
 .feature.flip .clip { order: 2; }
 .clip { position: relative; border: 1px solid var(--line); background: var(--ink); box-shadow: 0 30px 60px rgba(0,0,0,.45); }
-.clip video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; }
+.clip video, .clip img { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; object-fit: cover; }
 .clip .tag { position: absolute; left: 12px; top: 12px; font: 600 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; background: rgba(20,17,15,.8); padding: 7px 9px; color: var(--sand); }
 .feature ul { margin: 14px 0 0; padding-left: 1.1em; color: var(--dim); }
 .feature li { margin: 4px 0; }
@@ -128,15 +134,17 @@ footer .wrap { display: flex; gap: 20px; justify-content: space-between; flex-wr
   .walkers { display: none; }
 }
 </style>
+</head>
+<body>
 
 <header class="hero">
   <video id="herovid" src="media/hero.mp4" poster="media/hero.jpg" autoplay muted loop playsinline aria-hidden="true"></video>
   <div class="wrap">
-    <div class="eyebrow"><span>Playable demo</span><span>Web + phone</span><span>Working title</span><span>Geiger <b id="geiger">0.07</b> rad/h</span></div>
-    <h1>Wasteland <span>Colony</span></h1>
+    <div class="eyebrow"><span>Playable beta</span><span>Web + phone</span><span>Working title</span><span>Geiger <b id="geiger">0.07</b> rad/h</span></div>
+    <h1>Ash &amp; <span>Gears</span></h1>
     <p class="lede">Three survivors. One ruined town. Salvage the old world, keep everyone fed and sane, and slowly let the machines do the work.</p>
     <div class="ctas">
-      <a class="btn" id="play" href="/">Play the demo</a>
+      <a class="btn" id="play" href="/">Play the beta</a>
       <a class="btn ghost" id="showcase" href="/?showcase=1">See a grown colony</a>
     </div>
     <p class="note" id="lan">Runs in the browser on PC and phone. Same Wi-Fi: <span id="lanurl">http://192.168.31.215:4173/</span></p>
@@ -152,7 +160,7 @@ footer .wrap { display: flex; gap: 20px; justify-content: space-between; flex-wr
 </header>
 
 <div class="ticker" aria-hidden="true"><div>
-  <span>DAY 1 · <b>3 SURVIVORS</b> · 36 CANS OF BEANS</span><span>RADIATION CLOUD IN 12 H · <b>MOVE THE FOOD INSIDE</b></span><span>RAIDERS SIGHTED · THEY DID NOT COME TO TRADE</span><span>RESEARCH DONE: <b>SCRAP POWER</b></span><span>A DOG FOUND YOU · IT GLOWS</span><span>"TWO-CAN" GOT BETTER AT COOKING</span>
+  <span>DAY 1 · <b>3 SURVIVORS</b> · 36 CANS OF BEANS</span><span>RADIATION CLOUD IN 12 H · <b>MOVE THE FOOD INSIDE</b></span><span>RAIDERS SIGHTED · THEY DID NOT COME TO TRADE</span><span>RESEARCH DONE: <b>SCRAP POWER</b></span><span>A DOG FOUND YOU · IT GLOWS</span><span>"TWO-CAN" GOT BETTER AT COOKING</span><span>A NEW <b>ROBOT</b> ROLLS OUT OF THE BAY: R-01</span><span>WATER UNION CARAVAN · THEY STAY ABOUT A DAY</span><span>"SPARKY" AND "DOC" ARE A COUPLE NOW</span>
   <span>DAY 1 · <b>3 SURVIVORS</b> · 36 CANS OF BEANS</span><span>RADIATION CLOUD IN 12 H · <b>MOVE THE FOOD INSIDE</b></span><span>RAIDERS SIGHTED · THEY DID NOT COME TO TRADE</span><span>RESEARCH DONE: <b>SCRAP POWER</b></span><span>A DOG FOUND YOU · IT GLOWS</span><span>"TWO-CAN" GOT BETTER AT COOKING</span>
 </div></div>
 
@@ -208,6 +216,126 @@ footer .wrap { display: flex; gap: 20px; justify-content: space-between; flex-wr
   </div>
 </section>
 
+<section class="wrap" id="alpha">
+  <p class="kicker">New in the Alpha</p>
+  <h2>Deeper machines. Deeper people. A whole world outside.</h2>
+  <p class="muted">Nine milestones since the demo: belt logistics, pipes and fluids, a real power grid, tech tiers 2 and 3 with an old bunker underground, traits, backstories and relationships, prisoners, robots, a world map with expeditions, and factions that trade or raid.</p>
+  <div class="feature">
+    <div class="clip"><span class="tag">16 px</span><img src="media/beta-look16.jpg" alt="The colony in hand-pixeled 16 px: a brick house, machines, wires, a farm and robots"></div>
+    <div>
+      <p class="kicker">The look</p>
+      <h3>Hand-pixeled 16 px, redrawn.</h3>
+      <p>After the Alpha review the game went back to its crisp 16 px look. Everything but people and plants is now seen from above. Terrain, floors and walls were redrawn, and machines move when they work.</p>
+      <ul><li>Top-down furniture and machines, seamless walls</li><li>Doors slide open and slow walkers a little</li><li>Belts, turbines, batteries and benches animate</li></ul>
+    </div>
+  </div>
+  <div class="feature flip">
+    <div class="clip"><span class="tag">Logistics</span><video src="media/logistics.mp4" poster="media/logistics.jpg" muted loop playsinline preload="none"></video></div>
+    <div>
+      <p class="kicker">Belts, pipes, power</p>
+      <h3>Pump the sludge. Purify it. Pipe it to a tap.</h3>
+      <p>Splitters, sorters, underground belts, robot arms and chests move items between machines. Pipes carry water and fuel. Poles, switches, sun and wind make a real grid, and when power runs short the low-priority machines go off first.</p>
+      <ul><li>Machines take ingredients on one side and give products on the other</li><li>Pumps, tanks, purifiers, taps and a fuel still</li><li>Power overlay with the P key</li></ul>
+    </div>
+  </div>
+  <div class="feature">
+    <div class="clip"><span class="tag">Robots</span><video src="media/robots.mp4" poster="media/robots.jpg" muted loop playsinline preload="none"></video></div>
+    <div>
+      <p class="kicker">A workforce with limits</p>
+      <h3>Robots haul, build and craft. They will not save your life.</h3>
+      <p>Build robots and hauler drones at a robot bay. They never get hungry or sad, but they run on charge, go back to the bay to recharge and get repaired, fight badly, and never doctor.</p>
+      <ul><li>Robot bay builds, charges and repairs</li><li>Hauler drones only haul, but fast</li><li>Survivors become managers and fighters</li></ul>
+    </div>
+  </div>
+  <div class="feature flip">
+    <div class="clip"><span class="tag">Deep</span><video src="media/bunker.mp4" poster="media/bunker.jpg" muted loop playsinline preload="none"></video></div>
+    <div>
+      <p class="kicker">Tech tiers 2–3</p>
+      <h3>Dig down to the old bunker.</h3>
+      <p>Research deep digging and dig stairs from the caves. A sealed bunker waits below with old-world lockers. Some hold the manuals you need for plastics, electronics and the assembler.</p>
+      <ul><li>Refinery: fuel to plastic</li><li>Electronics from parts and plastic</li><li>The assembler, a fast auto-crafter</li></ul>
+    </div>
+  </div>
+  <div class="feature">
+    <div class="clip"><span class="tag">People</span><img src="media/people.jpg" alt="Survivor panel with traits, backstory and relations"></div>
+    <div>
+      <p class="kicker">Survivors with history</p>
+      <h3>Friends, rivals, lovers. And prisoners.</h3>
+      <p>Thirty traits and 24 backstories shape every survivor. They talk, argue, fall in love and grieve. Capture downed raiders, give them a bed, and a warden can talk them into joining you.</p>
+      <ul><li>Opinions from talks, rescues and raids survived together</li><li>Doctors rush to a downed friend</li><li>Prisoners, wardens, recruiting, release</li></ul>
+    </div>
+  </div>
+  <div class="feature flip">
+    <div class="clip"><span class="tag">World</span><img src="media/world.jpg" alt="World map with sites around the colony"></div>
+    <div>
+      <p class="kicker">The world outside</p>
+      <h3>Send a team. Hope they come back.</h3>
+      <p>A world map with ruins, bunkers, wreck fields, dead towns and a crater. Pack food and water, send survivors to scavenge, and found outposts that gather while you are away. Rust Knights and the Glow Cult raid you; the Water Union and Scrap Nomads come to trade.</p>
+      <ul><li>Expeditions with travel, loot and ambushes</li><li>Outposts that gather every day</li><li>Factions with goodwill, caravans and gifts</li></ul>
+    </div>
+  </div>
+</section>
+
+<section class="wrap" id="beta">
+  <p class="kicker">New in the Beta</p>
+  <h2>Pick a story. Play it to the end.</h2>
+  <p class="muted">The Beta gives the colony a goal and an ending: three storylines, five start scenarios, specialist robots, mods, and a long list of changes that make the colony feel alive. Every survivor now relaxes, sleeps on a schedule, and buries the dead.</p>
+  <div class="feature">
+    <div class="clip"><span class="tag">Story</span><img src="media/beta-story.jpg" alt="A new story game: the chapter banner and the story goals"></div>
+    <div>
+      <p class="kicker">Three storylines</p>
+      <h3>Restart the reactor. Fix the bus. Call the sky.</h3>
+      <p>Each story is a chain of chapters with goals. Story places appear on the world map with parts you cannot find anywhere else. A rusty safety robot, a radio ad for a safe valley, and voices at night lead the way.</p>
+      <ul><li>Keep the Lights On: HAL-PH, five reactor parts, the Glow Cult</li><li>The Last Bus: rebuild a school bus and drive to Haven Valley</li><li>Is Anyone Up There?: relays, a dish and a price to pay</li></ul>
+    </div>
+  </div>
+  <div class="feature flip">
+    <div class="clip"><span class="tag">Endings</span><img src="media/beta-ending.jpg" alt="The win screen with a slide for each survivor"></div>
+    <div>
+      <p class="kicker">Every run ends</p>
+      <h3>A slide for each survivor. Or an obituary.</h3>
+      <p>Win, and every survivor gets a line made from what they did: the fighter, the builder, the one who mostly supervised. Lose everyone, and the game writes an obituary. After a win you can keep playing.</p>
+      <ul><li>Lines from kills, rescues, builds, crafts and traits</li><li>Each storyline has its own music cue and chapter banner</li><li>Five start scenarios: Sandbox, Lone Wanderer, Mall Rats, The Bunker, Rad Season</li></ul>
+    </div>
+  </div>
+  <div class="feature">
+    <div class="clip"><span class="tag">Robots</span><img src="media/beta-robots.jpg" alt="Six robot types with charge bars over their heads"></div>
+    <div>
+      <p class="kicker">Tier 4</p>
+      <h3>Builders, miners, farmers, guards. And hackers.</h3>
+      <p>The robot bay now builds specialists. Guard robots fight on their own when enemies come close. Later raiders carry hacking gear and can turn one of your robots against you for half a day.</p>
+      <ul><li>The bay stores power like two batteries and charges robots from it</li><li>Charge bars in red, yellow and green over every robot and battery</li><li>Every machine has a small backup battery for blackouts</li></ul>
+    </div>
+  </div>
+  <div class="feature flip">
+    <div class="clip"><span class="tag">Life</span><img src="media/beta-life.jpg" alt="Graves, a campfire with a fuel bar, a willow tree, a horseshoe pit and a haul-now arrow"></div>
+    <div>
+      <p class="kicker">A colony that lives</p>
+      <h3>Fun, fire, wood and graves.</h3>
+      <p>Survivors get bored and relax at the campfire, a card table or a horseshoe pit. Fires and stoves burn wood, so you plant ash willows. The dead must be buried, or the living will not stop thinking about them.</p>
+      <ul><li>A fun need and three ways to relax</li><li>Fuel, charge and work progress shown on the map</li><li>Food spoils visibly; work in the dark is slower</li></ul>
+    </div>
+  </div>
+  <div class="feature">
+    <div class="clip"><span class="tag">Control</span><img src="media/beta-schedule.jpg" alt="The schedule grid: sleep, work, recreation and free hours for each survivor"></div>
+    <div>
+      <p class="kicker">More control</p>
+      <h3>Schedules, stockpile priority, haul now.</h3>
+      <p>Paint each survivor's day: sleep, work, recreation or anything. Mark a stack "haul now" and it goes first. Stockpiles have priorities, so food moves to the kitchen and steel to the factory.</p>
+      <ul><li>Tile actions on the left, default on the F key</li><li>Alerts you can click to jump to the problem</li><li>The top bar counts only what is stored</li></ul>
+    </div>
+  </div>
+  <div class="feature flip">
+    <div class="clip"><span class="tag">Mods</span><img src="media/beta-mods.jpg" alt="The mod list with one good pack and one pack with a readable error"></div>
+    <div>
+      <p class="kicker">Make it yours</p>
+      <h3>Mods are plain JSON.</h3>
+      <p>A mod is one file in the same shape as the game's own content: items, buildings, recipes, research, stories, strings and 16 px art. Add it from the title screen. A broken pack is left out, with errors that say what is wrong.</p>
+      <ul><li>New ids add content; known ids replace it</li><li>Load order: later mods win</li><li>An example pack and a short guide come with the game</li></ul>
+    </div>
+  </div>
+</section>
+
 <section class="art" id="art">
   <div class="wrap">
     <p class="kicker">Pick the look</p>
@@ -225,7 +353,7 @@ footer .wrap { display: flex; gap: 20px; justify-content: space-between; flex-wr
 <section class="wrap" id="demo">
   <div class="cols">
     <div>
-      <p class="kicker">In this demo</p>
+      <p class="kicker">In this beta</p>
       <h2>What you can play now</h2>
       <ul class="checklist">
         <li>Ruined town map with an underground layer</li>
@@ -240,15 +368,27 @@ footer .wrap { display: flex; gap: 20px; justify-content: space-between; flex-wr
         <li>Save, load and autosave</li>
         <li>Adaptive music and sound, made live in the browser</li>
         <li>Four goals to guide your first days</li>
+        <li><b>Alpha:</b> splitters, sorters, tunnels, robot arms, chests</li>
+        <li><b>Alpha:</b> pipes, pumps, purifiers, taps, liquid fuel</li>
+        <li><b>Alpha:</b> power poles, switches, solar, wind, priorities</li>
+        <li><b>Alpha:</b> the old bunker, plastics, electronics, assembler</li>
+        <li><b>Alpha:</b> 30 traits, backstories, relationships</li>
+        <li><b>Alpha:</b> prisoners, robots, world map, factions, trade</li>
+        <li><b>Beta:</b> three storylines with endings, five scenarios</li>
+        <li><b>Beta:</b> builder, miner, farmer and guard robots; hacking</li>
+        <li><b>Beta:</b> recreation, schedules, graves, wood that grows back</li>
+        <li><b>Beta:</b> haul list, stockpile priority, backup batteries</li>
+        <li><b>Beta:</b> mods as JSON content packs</li>
       </ul>
     </div>
     <div>
       <p class="kicker">Roadmap</p>
       <h2>Where it goes next</h2>
       <div class="road">
-        <div><b class="now">Demo</b><span>Home map, core loop, early automation. You are here.</span></div>
-        <div><b>Alpha</b><span>World map, expeditions, factions and trade, outposts, a second underground layer, tech tiers 2–3.</span></div>
-        <div><b>Beta</b><span>Three storylines: restart the reactor, reach the safe zone, signal the orbit. Robots, scenarios, mods, the phone app.</span></div>
+        <div><b>Demo</b><span>Home map, core loop, early automation. Done.</span></div>
+        <div><b>Alpha</b><span>Logistics, fluids, power grid, tech tiers 2–3, the old bunker, survivors with history, prisoners, robots, world map, expeditions, factions and trade. Done.</span></div>
+        <div><b class="now">Beta</b><span>Three storylines with endings, scenarios, tier-4 robots, mods, and a colony that relaxes, sleeps on a schedule and buries its dead. You are here.</span></div>
+        <div><b>Next</b><span>The phone app: install it, play offline, touch controls.</span></div>
         <div><b>1.0</b><span>Balance, polish, more languages, maybe Steam.</span></div>
       </div>
     </div>
@@ -274,8 +414,8 @@ footer .wrap { display: flex; gap: 20px; justify-content: space-between; flex-wr
 
 <footer>
   <div class="wrap">
-    <span>Wasteland Colony (working title) · demo build · TypeScript, PixiJS, Web Audio · art hand-pixeled, music synthesized live</span>
-    <a href="/">Play the demo →</a>
+    <span>Ash &amp; Gears · beta build · TypeScript, PixiJS, Web Audio · art hand-pixeled, music generated with YuE2 in ComfyUI</span>
+    <a href="/">Play the beta →</a>
   </div>
 </footer>
 
@@ -325,3 +465,5 @@ footer .wrap { display: flex; gap: 20px; justify-content: space-between; flex-wr
   setInterval(function () { el.textContent = (0.04 + Math.random() * 0.09).toFixed(2); }, 900);
 })();
 </script>
+</body>
+</html>

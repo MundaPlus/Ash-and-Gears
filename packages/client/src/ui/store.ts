@@ -27,6 +27,8 @@ export interface ColonistSummary {
   color: string;
   job: string;
   warn: string | null;
+  /** Robots get a small chip with their charge instead of mood. */
+  charge?: number;
 }
 
 export interface PawnDetail {

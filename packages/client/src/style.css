@@ -275,3 +275,9 @@ body.cinematic #ui { display: none; }
 .schedule .slot.picked { outline: 2px solid #efd8a4; color: #efd8a4; }
 .prio-row { display: flex; flex-wrap: wrap; gap: 3px; align-items: center; margin-bottom: 6px; }
 .prio-row span { margin-right: 4px; color: #b0834e; }
+
+/* Robot chips in the colonist bar: name and charge only. */
+.colonist.robot { grid-template-columns: 1fr; min-width: 0; padding-inline: 6px; font-size: 11px; }
+.colonist.robot .nick { font-weight: 600; }
+/* Mod list checkboxes in the game's rust tone. */
+.mods input[type="checkbox"] { accent-color: #d9742e; }
