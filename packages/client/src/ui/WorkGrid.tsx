@@ -85,6 +85,7 @@ function Priorities() {
   return (
     <>
       <p class="hint">{t("work.hint")}</p>
+      <p class="hint" data-testid="work-order-hint">{t("work.order_hint")}</p>
       <div class="scroll">
         <table>
           <thead>
