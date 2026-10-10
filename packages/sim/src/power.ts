@@ -11,6 +11,8 @@ import type { Game } from "./game.ts";
 import { registerJob, registerWorkGiver } from "./jobs.ts";
 import { NO_THING, type Thing } from "./map.ts";
 import { pickUp } from "./hauling.ts";
+import { recipesFor } from "./bills.ts";
+import type { Job, Pawn } from "./pawn.ts";
 
 const POWER_EVERY = 20;
 /** A consumer's backup battery, in hours of its own use, unless the thing sets `bank`. */
@@ -234,25 +236,37 @@ setTurretReady((game, t) => isPowered(game, t));
 
 // ---------------------------------------------------------------- refueling
 
-registerWorkGiver({
-  workType: "haul",
-  give(game, p) {
-    for (const t of game.things.values()) {
-      const f = fuelOf(game, t);
-      if (!f || (t.fuel ?? 0) > f.capacity * 0.5 || isReserved(game, `thing:${t.id}`, p)) continue;
-      if (!game.path.canReachAdjacent(p, t)) continue;
-      const fuelDef = game.reg.items.idx(f.item);
-      const src = findItem(game, p, (d, cont) => d === fuelDef && !cont);
-      if (src === null) continue;
-      if (!reserve(game, `thing:${t.id}`, p)) continue;
-      if (!reserve(game, `item:${src}`, p)) {
-        game.reservations.delete(`thing:${t.id}`);
-        continue;
-      }
-      return { kind: "refuel", stage: 0, targetId: t.id, data: { src } };
+/**
+ * A refuel job for the first thing that needs fuel: below `below` of its capacity and passing `want`.
+ * Fuel must lie somewhere the survivor can reach.
+ */
+export function refuelJob(game: Game, p: Pawn, below = 0.5, want: (t: Thing) => boolean = () => true): Job | null {
+  for (const t of game.things.values()) {
+    const f = fuelOf(game, t);
+    if (!f || (t.fuel ?? 0) > f.capacity * below || !want(t) || isReserved(game, `thing:${t.id}`, p)) continue;
+    if (!game.path.canReachAdjacent(p, t)) continue;
+    const fuelDef = game.reg.items.idx(f.item);
+    const src = findItem(game, p, (d, cont) => d === fuelDef && !cont);
+    if (src === null) continue;
+    if (!reserve(game, `thing:${t.id}`, p)) continue;
+    if (!reserve(game, `item:${src}`, p)) {
+      game.reservations.delete(`thing:${t.id}`);
+      continue;
     }
-    return null;
-  },
+    return { kind: "refuel", stage: 0, targetId: t.id, data: { src } };
+  }
+  return null;
+}
+
+registerWorkGiver({ workType: "haul", give: (game, p) => refuelJob(game, p) });
+
+/**
+ * Cooks light their own fire (user report: "the campfire never gets refueled, and cooks make no meals").
+ * Refueling is haul work and hauling comes last, so a cook could stand by a cold campfire forever.
+ */
+registerWorkGiver({
+  workType: "cook",
+  give: (game, p) => refuelJob(game, p, 0.25, (t) => !!game.reg.things.list[t.def].bench && recipesFor(game, game.reg.things.list[t.def].id).some((r) => r.skill === "cooking")),
 });
 
 registerJob("refuel", (game, p, job) => {
