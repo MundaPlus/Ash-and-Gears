@@ -1,6 +1,7 @@
 # Changelog
 
 ## 2026-10-11
+- Fix (found in playtest seed s2): a starving, exhausted survivor with no food went to sleep, woke at once for hunger, and looped, so nobody slept, worked or harvested ripe crops, and the colony starved. Survivors now wake for hunger only when food exists. Recreation never starts while a survivor is hungry or thirsty (`packages/sim/src/ai.ts`).
 - Stockpile priority (own pick): Low, Normal, High or Critical, set in the stockpile panel. Haulers move items from a stockpile to a better one that takes them, never back; chests count as Normal (`packages/sim/src/hauling.ts` `setZonePriority`, `zonePriority`; `map.ts`; `packages/client/src/ui/Hud.tsx`, `store.ts`, `main.ts`, `style.css`; i18n; test in `packages/sim/test/haul.test.ts`).
 - Light matters (own pick): the surface is lit by day; at night and underground only powered lamps and burning fires light their radius. Work in the dark (building, mining, cutting, bills) is 20% slower; robots see in the dark. A mood thought for the dark was tried and cut: the 12-seed playtest went from 3 to 16 deaths (`packages/sim/src/light.ts`, `work.ts`, `bills.ts`; test in `packages/sim/test/nature.test.ts`).
 - Wood grows back (own pick, since fires and stoves now burn wood): a few wild shrubs sprout each dawn on open fertile ground at least 15 tiles from home. New crop "ash willow" for grow zones: about 9 days, 14 wood (`packages/sim/src/farming.ts` `sproutWild`; content, art, `ui/Toolbar.tsx`, i18n).

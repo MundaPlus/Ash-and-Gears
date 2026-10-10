@@ -245,7 +245,9 @@ export function think(game: Game, p: Pawn): void {
   if (n.hunger < 0.4 && startJob(game, p, eatJob(game, p, false))) return;
   if (p.weapon === null && startJob(game, p, equipJob(game, p))) return;
   // Recreation: in joy hours until fun is full; in "any" hours when bored; in work hours only when joyless.
-  const wantFun = slot === "joy" ? n.fun < 0.95 : slot === "work" ? n.fun < 0.05 : n.fun < 0.3;
+  // Never while hungry or thirsty: then food and water work comes first.
+  const needy = n.hunger < 0.3 || n.thirst < 0.3;
+  const wantFun = !needy && (slot === "joy" ? n.fun < 0.95 : slot === "work" ? n.fun < 0.05 : n.fun < 0.3);
   if (wantFun && startJob(game, p, relaxJob(game, p))) return;
   // "Haul now" stacks come before all other work for anyone who hauls.
   if (workPriority(p, "haul") > 0 && startJob(game, p, haulJob(game, p, true))) return;
@@ -481,7 +483,10 @@ registerJob("sleep", (game, p, job) => {
     job.stage = 2;
   }
   const wake = p.needs.rest >= 0.99 || (p.needs.rest > 0.7 && !isSleepTime(game, p));
-  const urgent = p.needs.thirst < 0.2 || p.needs.hunger < 0.2;
+  // Wake for hunger only when there is food to eat: else a starving, exhausted survivor wakes,
+  // finds nothing, falls asleep again at once, and never rests or works (they would starve next to ripe crops).
+  const hungry = p.needs.hunger < 0.2 && (game.tick + p.id) % 30 === 0 && findItem(game, p, (d) => game.reg.items.list[d].category === "food") !== null;
+  const urgent = p.needs.thirst < 0.2 || hungry;
   if (!wake && !urgent) return "run";
   addMemory(game, p, (job.data?.thought as string) ?? "slept_on_ground");
   if (!isRoofed(game, p.layer, p.x, p.y)) addMemory(game, p, "slept_outside");
