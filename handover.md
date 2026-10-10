@@ -22,9 +22,10 @@ The user wants a full post-apocalyptic colony + automation game (RimWorld + Fact
 ## Next steps
 1. Add unit tests for `ensureLinks`: (a) a new game: surface stairs reach the bunker door; (b) remove the surface `stairs_down`, save + load → it is back; (c) Mall Rats keeps stairs.
 2. Finish N3 UI: in the stockpile panel (`packages/client/src/ui/Hud.tsx`, inspect `stockpile` from `main.ts`): per-category ▸ that opens item toggles (`setZoneItem`), category state on/partial, "Copy filter" / "Paste filter" (client clipboard → `setZoneFilter`); i18n keys; unit test for `zoneTakes` with `allowItems` (a scrap-only stockpile next to a loader).
-3. N2 weapon and armor tiers, then N1 towers with upper floors and sealed enemy rooms (plans in `docs/spec/14-next-phase.md`).
-4. Phone app (PWA).
-5. Keep finding realism/clarity/QoL gaps unasked (memory "feedback-gameplay-depth").
+3. New user request (not started): let the player remove floors that were not built by the colony (old floors of ancient structures, e.g. `ruin_floor`/`bunker_floor` terrain and ruin floors), and let everything be salvaged except structures that span several floors (stairs and, later, multi-story towers). Today `unfloor` only takes up built floors (`designations.ts` `canDesignate` case "unfloor") and salvage skips `stairs` and player-built things.
+4. N2 weapon and armor tiers, then N1 towers with upper floors and sealed enemy rooms (plans in `docs/spec/14-next-phase.md`).
+5. Phone app (PWA).
+6. Keep finding realism/clarity/QoL gaps unasked (memory "feedback-gameplay-depth").
 
 ## Key files
 - `docs/spec/14-next-phase.md` — plan, progress, N1–N3.

@@ -1,6 +1,7 @@
 # Changelog
 
 ## 2026-10-11
+- Plan: N4 remove old (not built) floors and salvage everything except multi-floor structures (`docs/spec/14-next-phase.md`, `handover.md`) — user request.
 - Layer links check (user request): on every new game and every load, stairs are repaired in pairs (stairs up always have stairs down above; stairs down have stairs up below), and if no path leads from the surface stairs to the old bunker's outer door, a cave tunnel leads to an old service shaft and a short tunnel to the door. Old saves get repaired on load. The Mall Rats clearing keeps stairs; the showcase-only route code is gone (`packages/sim/src/links.ts` `ensureLinks`; `game.ts`, `save.ts`, `scenarios.ts`, `showcase.ts`) — user report: stairs down missing near the settlement, bunker not reachable.
 - N3 stockpile filters per item, sim part: `Zone.allowItems` (when set, exactly these items are taken), `zoneTakes` used for storage, haul list, loose stacks and haul now; `setZoneItem` (the first toggle starts an item filter from the categories), `setZoneFilter` (paste); category toggles switch all their items. The panel UI (item toggles, copy and paste) is not done yet (`packages/sim/src/hauling.ts`, `tileactions.ts`, `map.ts`).
 - Auto-crafter: each recipe button shows what it needs and what it makes ("12 Scrap → 3 Components"); the chosen recipe keeps its have/needed line (`packages/client/src/main.ts`, `ui/Hud.tsx`, `ui/store.ts`, `style.css`) — user request.

@@ -115,3 +115,9 @@ User: "the stockpile zones need more granularity if I want to use them for loade
 Today a stockpile takes whole categories (resources, food, ...). Add item-level filters: in the stockpile panel each category opens a list of its items with on/off toggles; a stockpile can take only scrap, for example, next to a loader. Sim: `Zone.allowItems?: string[]` (when set, items decide; categories stay for the quick view); `accepts()` checks items first; haul list and stockpile priority use the same check. Keep a "copy filter" / "paste filter" pair of buttons for many small stockpiles.
 
 Updated order: N3 (small, helps automation now), N2, then N1, then the phone app.
+
+### N4 — Remove old floors, salvage almost everything
+
+User: "we should also be able to remove non-built floors from ancient structures. The only non-salvageable structures should be the structures that are multi-floor."
+
+Remove floor also works on old floors (ruin floor, bunker floor, asphalt: they turn into the plain ground below, with a little scrap or stone back). Salvage works on all old structures and things except those that span several floors (stairs, and the planned multi-story towers).
