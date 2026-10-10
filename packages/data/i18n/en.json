@@ -995,5 +995,6 @@
   "sched.sleep": "Sleep",
   "sched.joy": "Recreation",
   "work.tab_priorities": "Priorities",
-  "work.tab_schedule": "Schedule"
+  "work.tab_schedule": "Schedule",
+  "alert.no_prison_bed": "{name} is marked for capture, but no free bed is set for prisoners. Select a bed and mark it for prisoners."
 }

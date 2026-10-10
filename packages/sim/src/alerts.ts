@@ -44,6 +44,10 @@ export function computeAlerts(game: Game): Alert[] {
   if (idle.length) out.push({ key: "alert.idle", params: { names: idle.map((p) => p.nick).join(", ") }, level: "warn", at: idle[0] });
   const hurt = people.find((p) => untendedInjuries(p).length > 0);
   if (hurt) out.push({ key: "alert.wounds", params: { name: hurt.nick }, level: hurt.health.downed ? "bad" : "warn", at: hurt });
+  // A raider is marked for capture, but no bed is set for prisoners: the warden cannot take them.
+  const captive = [...game.pawns.values()].find((p) => p.capture && p.health.downed);
+  const freePrisonBed = [...game.things.values()].some((t) => t.forPrisoners && ![...game.pawns.values()].some((o) => o.faction === "prisoner" && o.bedId === t.id));
+  if (captive && !freePrisonBed) out.push({ key: "alert.no_prison_bed", params: { name: captive.nick }, level: "warn", at: captive });
   const dark = [...game.things.values()].filter((t) => game.reg.things.list[t.def].power?.use && !isPowered(game, t));
   if (dark.length) out.push({ key: "alert.unpowered", params: { n: dark.length }, level: "warn", at: dark[0] });
   return out.map((a) => (a.at ? { ...a, at: { layer: a.at.layer, x: a.at.x, y: a.at.y } } : a));
