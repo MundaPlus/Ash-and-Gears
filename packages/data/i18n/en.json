@@ -1072,5 +1072,11 @@
   "style.print.desc": "Drawn like a worn two-color print. Sharp at every zoom.",
   "style.pixel": "Pixel 16",
   "style.pixel.desc": "Hand-pixeled 16 px art.",
-  "pawn.idle": "Idle"
+  "pawn.idle": "Idle",
+  "inspect.materials": "Materials: {list}",
+  "inspect.bp_building": "{name} is building it ({pct}%)",
+  "inspect.bp_bringing": "{name} is bringing {item}",
+  "inspect.bp_nobody": "Nobody is bringing materials yet.",
+  "inspect.bp_wait_builder": "Materials are in. Waiting for a builder.",
+  "inspect.bp_short": "Not enough on the map: {list}"
 }

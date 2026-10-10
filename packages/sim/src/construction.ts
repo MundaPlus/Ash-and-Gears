@@ -7,7 +7,7 @@ import { addStat } from "./pawn.ts";
 import { atGoal, findItem, goTo, isReserved, reserve } from "./ai.ts";
 import { registerJob, registerWorkGiver } from "./jobs.ts";
 import type { Game } from "./game.ts";
-import { dropItems, takeFromStack } from "./items.ts";
+import { countItems, dropItems, takeFromStack } from "./items.ts";
 import { NO_THING, type Blueprint } from "./map.ts";
 import { dropCarried, pickUp } from "./hauling.ts";
 import type { Pawn } from "./pawn.ts";
@@ -335,4 +335,35 @@ export function digDown(game: Game, layer: number, x: number, y: number): void {
       if (game.reg.terrain.list[L.terrain[i]].solid) game.setTerrain(layer, tx, ty, "rough_floor");
     }
   game.spawnThing("stairs_up", layer, x, y);
+}
+
+// ---------------------------------------------------------------- status for the UI
+
+export interface BlueprintStatus {
+  /** Per material: delivered so far and the total cost (item id). */
+  materials: { item: string; have: number; total: number }[];
+  /** Survivors on this plan right now: bringing an item, or building. */
+  workers: { name: string; doing: "bring" | "build"; item?: string }[];
+  /** Materials the map does not hold enough of (not counting what is already delivered). */
+  short: string[];
+  /** 0..1 once building has started. */
+  progress: number;
+}
+
+/** What a plan has, still needs, and who works on it (for the inspect panel and the map). */
+export function blueprintStatus(game: Game, bp: Blueprint): BlueprintStatus {
+  const info = buildInfo(game, bp.kind, bp.def)!;
+  const materials = Object.entries(info.cost).map(([item, total]) => ({ item, total, have: total - (bp.need[game.reg.items.idx(item)] ?? 0) }));
+  const workers: BlueprintStatus["workers"] = [];
+  for (const p of game.pawns.values()) {
+    const j = p.job;
+    if (!j || p.faction !== "colony") continue;
+    if (j.kind === "deliver" && j.data?.bp === bp.id) workers.push({ name: p.nick, doing: "bring", item: game.reg.items.list[j.data.item as number]?.id });
+    else if (j.kind === "work" && j.data?.task === "build" && j.targetId === bp.id) workers.push({ name: p.nick, doing: "build" });
+  }
+  const short = materials.filter((m) => m.have < m.total && countItems(game, m.item) < m.total - m.have).map((m) => m.item);
+  // Build work left is kept per spot (see work.ts), like every other task.
+  const total = info.work;
+  const left = game.progress.get(`build:${bp.layer},${bp.x},${bp.y}`) ?? total;
+  return { materials, workers, short, progress: total > 0 ? Math.max(0, Math.min(1, 1 - left / total)) : 0 };
 }

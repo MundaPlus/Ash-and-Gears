@@ -3,7 +3,7 @@
  * walls make a line or a rectangle outline, floors / orders / zones fill a rectangle,
  * other buildings make a line.
  */
-import { Container, Graphics } from "pixi.js";
+import { Container, Graphics, Sprite, type Texture } from "pixi.js";
 import {
   addToZone,
   canDesignate,
@@ -35,6 +35,10 @@ interface Tile {
 
 export class ToolController implements ToolHandler {
   readonly preview = new Graphics();
+  /** The building as a see-through ghost under the cursor (build tool). */
+  private ghosts = new Container();
+  /** Texture for a thing or floor at a rotation (set by main from the current texture set). */
+  ghostTexture: (defKind: "thing" | "floor", def: string, rot: number) => Texture | null = () => null;
   spec: ToolSpec | null = null;
   layer = 0;
   /** Facing for rotatable buildings: 0 = east, 1 = south, 2 = west, 3 = north. */
@@ -47,7 +51,7 @@ export class ToolController implements ToolHandler {
     private game: Game,
     parent: Container,
   ) {
-    parent.addChild(this.preview);
+    parent.addChild(this.ghosts, this.preview);
   }
 
   set(spec: ToolSpec | null) {
@@ -92,8 +96,8 @@ export class ToolController implements ToolHandler {
 
   cancel() {
     this.start = this.end = null;
-    this.preview.clear();
-    if (this.hovered) this.draw();
+    // Redraw (or clear) the outline and the building ghosts.
+    this.draw();
   }
 
   /** Tiles covered by the current drag, by tool shape. */
@@ -155,8 +159,30 @@ export class ToolController implements ToolHandler {
     }
   }
 
+  /** Show see-through ghosts of the building on these tiles (at most 40), tinted green or red. */
+  private drawGhosts(tiles: Tile[]) {
+    const s = this.spec;
+    const n = s?.kind === "build" ? Math.min(40, tiles.length) : 0;
+    const texture = n && s?.kind === "build" ? this.ghostTexture(s.defKind, s.def, this.rotatable() ? this.rot : 0) : null;
+    while (this.ghosts.children.length < n) this.ghosts.addChild(new Sprite());
+    const [pw, ph] = this.size();
+    this.ghosts.children.forEach((c, k) => {
+      const sp = c as Sprite;
+      sp.visible = !!texture && k < n;
+      if (!sp.visible) return;
+      const t = tiles[k];
+      sp.texture = texture!;
+      sp.position.set(t.x * TILE, t.y * TILE);
+      sp.width = pw * TILE;
+      sp.height = ph * TILE;
+      sp.tint = this.valid(t) ? 0xc8f0a0 : 0xff9080;
+      sp.alpha = 0.7;
+    });
+  }
+
   private draw() {
     this.preview.clear();
+    this.drawGhosts(!this.spec ? [] : this.start ? [...this.tiles()] : this.hovered ? [this.hovered] : []);
     if (!this.spec) return;
     if (!this.start) {
       // Not dragging: outline the tile under the mouse, green if the tool works there.
