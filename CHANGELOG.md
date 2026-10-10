@@ -1,6 +1,7 @@
 # Changelog
 
 ## 2026-10-11
+- GitHub: new remote `github` (https://github.com/MundaPlus/Ash-and-Gears); its MIT `LICENSE` merged in; the Pages workflow also runs on `main` (GitHub's default branch, which carries our `master`); README notes the license (`.github/workflows/pages.yml`, `README.md`, `LICENSE`).
 - Next-phase plan: second art style "Salvage Print" (a screen-printed wasteland zine: code-drawn shapes, a few flat inks, halftone shading, slight print offset, wobbly ink outlines; people in a high three-quarter view with arms, tools and backpacks), kept distinct from RimWorld and Prison Architect; the 16 px style stays as an option. Milestones S1–S6 with a style-sample gate at S1; the phone app follows (`docs/spec/14-next-phase.md`) — user request.
 - Research tree expanded with six projects: Food preservation (can raw food at the stove), Advanced medicine (medkits, tend quality 0.9), Reinforced walls (steel wall, 900 HP), Heavy turrets (12 damage, range 16), Large batteries (2x2, 9600 Wh), Climate control (electric cooler). New art for each (`content/core/research.json`, `things.json`, `items.json`, `recipes.json`; `packages/data/src/art/things.ts`, `items.ts`; i18n) — user request.
 - Manual hints: research that needs a manual says where to find it (the old safe, bunker lockers and loot crates, or a story location); a manual on the ground says which research it opens (`packages/client/src/ui/ResearchPanel.tsx`, `main.ts`, `style.css`; i18n `where.*`) — user request.

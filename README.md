@@ -72,11 +72,11 @@ The development and preview servers bind to `0.0.0.0`, so phones on the same net
 
 ### Publish on GitHub Pages
 
-The workflow in [.github/workflows/pages.yml](.github/workflows/pages.yml) tests, builds and publishes the game on every push to `master`. To turn it on:
+The workflow in [.github/workflows/pages.yml](.github/workflows/pages.yml) tests, builds and publishes the game on every push to `main` (or `master`). To turn it on:
 
 1. Open **Settings → Pages** in the repository.
 2. Set **Source** to **GitHub Actions**.
-3. Push to `master`, or run the workflow by hand from the **Actions** tab.
+3. Push to `main`, or run the workflow by hand from the **Actions** tab.
 
 The game is then at `https://<user>.github.io/<repository>/`, and the presentation page at `.../site/`. The workflow sets the sub-path from the repository name through `BASE_PATH`.
 
@@ -103,3 +103,7 @@ All changes are listed in [CHANGELOG.md](CHANGELOG.md).
 ## Credits
 
 Code and art by Marko Munda, vibe-coded with Claude Code. Music generated with YuE2 in ComfyUI. Made with TypeScript, PixiJS, Preact and the Web Audio API.
+
+## License
+
+[MIT](LICENSE)
