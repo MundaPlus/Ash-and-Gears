@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="darkreader-lock" />
+    <title>Salvage Print samples</title>
+    <style>
+      :root { --bg: #17130f; --panel: #221c17; --line: #3d3128; --text: #eadcbd; --dim: #a8916f; --rust: #c8612b; }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, sans-serif; }
+      main { max-width: 1240px; margin: 0 auto; padding: 24px 16px 64px; }
+      h1 { margin: 0 0 4px; font-size: 30px; }
+      h2 { margin: 36px 0 8px; font-size: 20px; color: var(--rust); text-transform: uppercase; letter-spacing: 0.08em; }
+      p { color: var(--dim); max-width: 70ch; margin: 4px 0 12px; }
+      .row { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-end; }
+      figure { margin: 0; background: var(--panel); border: 1px solid var(--line); padding: 10px; }
+      figcaption { font-size: 12px; color: var(--dim); margin-top: 6px; }
+      canvas { display: block; max-width: 100%; height: auto; }
+    </style>
+  </head>
+  <body>
+    <main id="samples"></main>
+    <script type="module" src="/src/samples.ts"></script>
+  </body>
+</html>
