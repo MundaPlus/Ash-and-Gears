@@ -208,7 +208,8 @@ export class WorldRenderer {
             if (joined) t.texture = joined[near((d) => d.wall)];
             else if (line) {
               // Wires join wires and reach into machines next to them. Belts are left alone (no comb under a belt line).
-              t.texture = line[near((d) => !!d.conduit || (!!d.power && !d.belt))];
+              // Pipes join pipes and fluid machines.
+              t.texture = def.pipe ? line[near((d) => d.pipe || !!d.fluid)] : line[near((d) => !!d.conduit || (!!d.power && !d.belt))];
             }
             else if (d0.power && !d0.belt && this.tex.stubs.length) {
               // A machine next to wires: the wire runs in under it, to its middle.

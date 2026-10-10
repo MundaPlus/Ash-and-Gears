@@ -15,6 +15,7 @@ import { workOrder } from "./worktypes.ts";
 import { moving, tickHealthHourly } from "./health.ts";
 import { draftedTick, fleeFrom, hostileTick, selfDefense, updateGroups } from "./hostile.ts";
 import { equipJob, inBed, rushToDowned } from "./medical.ts";
+import { fluidNetOf, LITERS_PER_DRINK, netDraw, tapHasWater } from "./fluids.ts";
 
 /** Tiles per tick at walk cost 1 (3 tiles per real second at 1x). */
 export const WALK_SPEED = 0.15;
@@ -310,7 +311,11 @@ registerJob("eat", (game, p, job) => {
 /** Water things (wells) that a pawn can drink from. */
 function findWaterThing(game: Game, p: Pawn): Pos | null {
   const wells = [...game.things.values()]
-    .filter((t) => game.reg.things.list[t.def].water && !isReserved(game, `tile:${t.layer},${t.x},${t.y}`, p))
+    .filter((t) => {
+      const d = game.reg.things.list[t.def];
+      // A tap only counts when its pipes hold clean water.
+      return d.water && (d.fluid?.role !== "tap" || tapHasWater(game, t)) && !isReserved(game, `tile:${t.layer},${t.x},${t.y}`, p);
+    })
     .sort((a, b) => dist2(p, a) - dist2(p, b));
   for (const w of wells.slice(0, 6)) if (game.path.canReachAdjacent(p, w)) return { layer: w.layer, x: w.x, y: w.y };
   return null;
@@ -353,7 +358,16 @@ registerJob("drink", (game, p, job) => {
       const t = job.target!;
       const L = game.map.layers[t.layer];
       const th = L.thing[L.i(t.x, t.y)];
-      if (th !== NO_THING && game.reg.things.list[game.things.get(th)!.def].water) {
+      if (th !== NO_THING && game.reg.things.list[game.things.get(th)!.def].fluid?.role === "tap") {
+        // A tap gives what its pipes hold, up to a full drink.
+        const net = fluidNetOf(game, game.things.get(th)!);
+        const liters = net ? netDraw(game, net, "clean_water", (1 - p.needs.thirst) * LITERS_PER_DRINK) : 0;
+        if (liters <= 0) return "fail";
+        job.data = { hydration: liters / LITERS_PER_DRINK, source: "clean", glowing: false };
+        job.until = game.tick + Math.round(game.ticksPerHour * 0.2);
+        job.stage = 2;
+        return "run";
+      } else if (th !== NO_THING && game.reg.things.list[game.things.get(th)!.def].water) {
         const well = game.things.get(th)!;
         source = game.reg.things.list[well.def].water!;
         glowing = isContaminatedThing(game, well);

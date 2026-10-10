@@ -21,6 +21,7 @@ import { tickConstruction } from "./construction.ts";
 import { tickFire } from "./fire.ts";
 import { ensureNets, tickPower, type PowerNet } from "./power.ts";
 import { tickLogistics } from "./logistics.ts";
+import { ensureFluidNets, tickFluids, type FluidNet } from "./fluids.ts";
 import { tickGoals } from "./goals.ts";
 
 /** Sim ticks per real second at 1x speed. */
@@ -109,6 +110,11 @@ export class Game {
   wallVersion = 0;
   /** Layers whose walls changed since rooms were last built. */
   readonly wallDirty = new Set<number>();
+  /** Bumped when pipes or fluid things change. Fluid nets are rebuilt when it changes. */
+  fluidVersion = 0;
+  fluidNets: FluidNet[] = [];
+  readonly fluidNetOf = new Map<number, number>();
+  fluidNetsVersion = -1;
   /** Bumped when power things or wires change. Power nets are rebuilt when it changes. */
   powerVersion = 0;
   nets: PowerNet[] = [];
@@ -156,6 +162,7 @@ export class Game {
   rebuildDerived(): void {
     ensureRooms(this);
     ensureNets(this);
+    ensureFluidNets(this);
   }
 
   message(key: string, params: Record<string, string | number> = {}, level: "info" | "warn" | "bad" = "info") {
@@ -240,6 +247,7 @@ export class Game {
       this.wallDirty.add(layer);
     }
     if (d.power || d.conduit) this.powerVersion++;
+    if (d.pipe || d.fluid) this.fluidVersion++;
     return t;
   }
 
@@ -267,6 +275,7 @@ export class Game {
       this.wallDirty.add(t.layer);
     }
     if (d.power || d.conduit) this.powerVersion++;
+    if (d.pipe || d.fluid) this.fluidVersion++;
   }
 
   /** True if a pawn can stand on this tile. */
@@ -318,6 +327,7 @@ export class Game {
     tickConstruction(this);
     tickPower(this);
     tickLogistics(this);
+    tickFluids(this);
     tickPawns(this);
     tickTurrets(this);
     tickGoals(this);

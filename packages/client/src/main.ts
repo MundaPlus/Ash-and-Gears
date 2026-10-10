@@ -391,6 +391,16 @@ async function boot() {
         lines.push(`${t("chest.title")} (${sim.chestCount(game, thing)}/${def.chest}): ${contents(inside) || t("chest.empty")}`);
       }
       if (def.autoCrafter && contents(thing.out)) lines.push(`${t("chest.title")}: ${contents(thing.out)}`);
+      if (def.pipe || (def.fluid && def.fluid.role !== "purifier")) {
+        const net = sim.fluidNetOf(game, thing);
+        if (net)
+          lines.push(t("inspect.fluids", { water: Math.round(sim.netAmount(game, net, "water")), clean: Math.round(sim.netAmount(game, net, "clean_water")), room: Math.round(sim.netRoom(game, net)) }));
+        if (def.fluid?.role === "pump" && !sim.pumpSource(game, thing)) lines.push(t("inspect.pump_dry"));
+      }
+      if (def.fluid?.role === "purifier") {
+        const r = thing.rot ?? 0;
+        lines.push(t("bench.sides", { in: t(`dir.${(r + 3) % 4}`), out: t(`dir.${(r + 1) % 4}`) }));
+      }
       if (def.bench) {
         // Directions: 0 east, 1 south, 2 west, 3 north. Output side is south when not turned.
         const r = thing.rot ?? 0;

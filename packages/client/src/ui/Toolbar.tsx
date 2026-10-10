@@ -3,7 +3,7 @@ import { actions, useStore, type BuildOption } from "./store.ts";
 import { WorkGrid } from "./WorkGrid.tsx";
 import { ResearchPanel } from "./ResearchPanel.tsx";
 
-const BUILD_MENUS = ["structure", "furniture", "production", "power", "defense", "floor"];
+const BUILD_MENUS = ["structure", "furniture", "production", "power", "water", "defense", "floor"];
 const ORDERS = ["salvage", "deconstruct", "mine", "clear", "cut"] as const;
 
 function costText(o: BuildOption) {

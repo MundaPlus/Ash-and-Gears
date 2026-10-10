@@ -23,6 +23,7 @@ export * from "./hostile.ts";
 export * from "./medical.ts";
 export * from "./storyteller.ts";
 export * from "./fire.ts";
+export * from "./fluids.ts";
 export * from "./jobs.ts";
 export * from "./research.ts";
 export * from "./power.ts";

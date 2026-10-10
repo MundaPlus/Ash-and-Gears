@@ -63,6 +63,22 @@
   ]
  },
  {
+  "id": "plumbing",
+  "cost": 2000,
+  "tier": 1,
+  "prereqs": [
+   "scrap_power"
+  ]
+ },
+ {
+  "id": "water_purification",
+  "cost": 2600,
+  "tier": 2,
+  "prereqs": [
+   "plumbing"
+  ]
+ },
+ {
   "id": "belt_logistics",
   "cost": 2800,
   "tier": 2,

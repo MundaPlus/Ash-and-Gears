@@ -40,6 +40,8 @@ export interface Thing {
   filter?: number;
   /** Splitter: which output gets the next packet. */
   splitNext?: number;
+  /** Pipes, tanks, pumps, taps: liters of each fluid held here ("water", "clean_water"). */
+  liquid?: Record<string, number>;
 }
 
 /** A stack of one item type lying on a tile or carried by a pawn. */

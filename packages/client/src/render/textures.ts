@@ -108,7 +108,7 @@ export function makeTextures(reg: Registry, art: ArtSettings, ai: AiArt = new Ma
   const terrain = reg.terrain.list.map((d) => Array.from({ length: TERRAIN_VARIANTS }, (_, v) => gridTexture(prepGrid(terrainGrid(d.id, v)), colors)));
   const things = reg.things.list.map((d) => {
     const look = aiWorld(d.id)?.[0];
-    if (look && !d.wall && !d.conduit) return aiTexture(look, palette);
+    if (look && !d.wall && !d.conduit && !d.pipe) return aiTexture(look, palette);
     const grid = thingGrid(d.id, ...d.footprint);
     return grid ? gridTexture(prepGrid(grid), colors) : fallback(d.color, d.glyph);
   });
@@ -118,7 +118,7 @@ export function makeTextures(reg: Registry, art: ArtSettings, ai: AiArt = new Ma
     return d.wall && !d.door && THINGS[d.id] ? Array.from({ length: 16 }, (_, m) => gridTexture(prepGrid(wallVariant(parseGrid(THINGS[d.id]), m)), colors)) : null;
   });
   const lines = reg.things.list.map((d) =>
-    d.conduit && THINGS[d.id] ? Array.from({ length: 16 }, (_, m) => gridTexture(prepGrid(lineVariant(parseGrid(THINGS[d.id]), m)), colors)) : null,
+    (d.conduit || d.pipe) && THINGS[d.id] ? Array.from({ length: 16 }, (_, m) => gridTexture(prepGrid(lineVariant(parseGrid(THINGS[d.id]), m)), colors)) : null,
   );
   const wireId = reg.things.list.find((d) => d.conduit && THINGS[d.id])?.id;
   const stubs = wireId ? Array.from({ length: 16 }, (_, m) => gridTexture(prepGrid(lineVariant(parseGrid(THINGS[wireId]), m, true)), colors)) : [];

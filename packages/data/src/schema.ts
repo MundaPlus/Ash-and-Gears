@@ -42,7 +42,7 @@ export const BuildInfo = z.object({
   /** Work ticks at work speed 1. */
   work: z.number().int().positive(),
   /** Build menu group. */
-  menu: z.enum(["structure", "furniture", "production", "power", "defense", "floor"]),
+  menu: z.enum(["structure", "furniture", "production", "power", "water", "defense", "floor"]),
   /** Research project that unlocks it (M6). */
   research: id.optional(),
 });
@@ -126,6 +126,20 @@ export const ThingDef = z.object({
   loader: z.boolean().default(false),
   /** Robot arm: a loader that can be set to move only one item. */
   arm: z.boolean().default(false),
+  /** Pipe: carries fluids between fluid things that touch it (spec 12, A2). */
+  pipe: z.boolean().default(false),
+  /**
+   * Fluid role (A2). pump: rate L/h from a water tile next to it (needs power); tank: holds capacity L;
+   * purifier: rate L/h of water from its input side to clean water on its output side (needs power);
+   * tap: survivors drink clean water from its network.
+   */
+  fluid: z
+    .object({
+      role: z.enum(["pump", "tank", "purifier", "tap"]),
+      rate: z.number().positive().optional(),
+      capacity: z.number().positive().optional(),
+    })
+    .optional(),
   /** Storage chest: holds up to this many items of any kind. Belts and arms fill and empty it. */
   chest: z.number().int().positive().optional(),
   /** Auto-crafter: runs a recipe without a survivor while powered. */

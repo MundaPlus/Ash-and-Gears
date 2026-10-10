@@ -773,5 +773,111 @@
    "menu": "production"
   },
   "flammable": false
+ },
+ {
+  "id": "pipe",
+  "kind": "structure",
+  "color": "#6d86a0",
+  "glyph": "=",
+  "hp": 40,
+  "pipe": true,
+  "build": {
+   "cost": {
+    "scrap": 2
+   },
+   "work": 20,
+   "menu": "water",
+   "research": "plumbing"
+  }
+ },
+ {
+  "id": "water_pump",
+  "kind": "furniture",
+  "color": "#3b4f63",
+  "glyph": "P",
+  "hp": 150,
+  "blocks": true,
+  "power": {
+   "use": 60
+  },
+  "fluid": {
+   "role": "pump",
+   "rate": 60,
+   "capacity": 20
+  },
+  "build": {
+   "cost": {
+    "scrap": 25,
+    "components": 2
+   },
+   "work": 250,
+   "menu": "water",
+   "research": "plumbing"
+  }
+ },
+ {
+  "id": "water_tank",
+  "kind": "furniture",
+  "color": "#4f6b5a",
+  "glyph": "T",
+  "hp": 200,
+  "blocks": true,
+  "fluid": {
+   "role": "tank",
+   "capacity": 500
+  },
+  "build": {
+   "cost": {
+    "scrap": 40
+   },
+   "work": 300,
+   "menu": "water",
+   "research": "plumbing"
+  }
+ },
+ {
+  "id": "water_purifier",
+  "kind": "furniture",
+  "footprint": [2, 1],
+  "color": "#8fae7e",
+  "glyph": "U",
+  "hp": 180,
+  "blocks": true,
+  "power": {
+   "use": 120
+  },
+  "fluid": {
+   "role": "purifier",
+   "rate": 40
+  },
+  "build": {
+   "cost": {
+    "scrap": 30,
+    "components": 3
+   },
+   "work": 400,
+   "menu": "water",
+   "research": "water_purification"
+  }
+ },
+ {
+  "id": "water_tap",
+  "kind": "furniture",
+  "color": "#b8e05a",
+  "glyph": "t",
+  "hp": 60,
+  "water": "clean",
+  "fluid": {
+   "role": "tap",
+   "capacity": 5
+  },
+  "build": {
+   "cost": {
+    "scrap": 10
+   },
+   "work": 80,
+   "menu": "water",
+   "research": "plumbing"
+  }
  }
 ]
