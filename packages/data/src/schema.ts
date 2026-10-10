@@ -82,7 +82,7 @@ export const ThingDef = z.object({
   /** Heat output in degrees per in-game hour into its room. Negative cools. */
   heat: z.number().default(0),
   /** Burns fuel without power (campfire): no fuel, no heat, light or cooking. Survivors refuel it. */
-  burns: z.object({ item: id, perHour: z.number().positive(), capacity: z.number().int().positive() }).optional(),
+  burns: z.object({ item: id, perHour: z.number().positive(), capacity: z.number().int().positive(), whileWorking: z.boolean().default(false) }).optional(),
   /** Light radius in tiles. */
   light: z.number().min(0).default(0),
   /** Seats and tables raise comfort while eating (M4). */

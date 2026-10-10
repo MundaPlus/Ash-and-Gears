@@ -181,6 +181,9 @@ registerJob("bill", (game, p, job) => {
   if (bench.x !== p.x) p.facing = bench.x > p.x ? 1 : -1;
   if (!benchReady(game, bench)) return "fail";
   job.data!.work = (job.data!.work as number) - benchWorkSpeed(game, p, r, bench);
+  // A stove burns its fuel only while someone cooks on it.
+  const burns = game.reg.things.list[bench.def].burns;
+  if (burns?.whileWorking) bench.fuel = Math.max(0, (bench.fuel ?? 0) - burns.perHour / game.ticksPerHour);
   if (r.skill) learn(game, p, r.skill, 0.4);
   if ((job.data!.work as number) > 0) return "run";
   // Water from a contaminated well is contaminated too.

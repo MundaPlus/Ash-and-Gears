@@ -86,4 +86,18 @@ describe("stored items and fires", () => {
     expect(fire.fuel!).toBeGreaterThan(5);
     expect(isLit(g, fire)).toBe(true);
   });
+
+  it("a stove burns wood only while someone cooks on it", () => {
+    const { g, x0, y0 } = setup("stove");
+    const stove = g.spawnThing("stove", 0, x0 + 6, y0 + 1);
+    stove.fuel = 10;
+    run(g, 3);
+    expect(stove.fuel).toBe(10);
+    drop(g, "glowcorn", 20, x0 + 9, y0 + 2);
+    const cook = [...g.pawns.values()].find((p) => p.faction === "colony")!;
+    for (const p of g.pawns.values()) if (p.faction === "colony") p.work = Object.fromEntries(WORK_TYPES.map((w) => [w, 0]));
+    cook.work = Object.fromEntries(WORK_TYPES.map((w) => [w, w === "cook" ? 1 : 0]));
+    run(g, 6);
+    expect(stove.fuel!).toBeLessThan(10);
+  });
 });

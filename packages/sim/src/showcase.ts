@@ -68,7 +68,8 @@ export function buildShowcase(game: Game): void {
 
   // Workshop row: benches, stove, smelter.
   put("scrap_bench", rx + 13, ry + 1);
-  put("stove", rx + 13, ry + 3);
+  const stove = put("stove", rx + 13, ry + 3);
+  if (stove) stove.fuel = 20;
   put("powered_bench", rx + 13, ry + 5);
   put("wire", rx + 12, ry + 5);
   put("wire", rx + 12, ry + 6);

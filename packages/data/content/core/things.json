@@ -394,7 +394,13 @@
    "work": 260,
    "menu": "production"
   },
-  "bench": true
+  "bench": true,
+  "burns": {
+   "item": "wood",
+   "perHour": 1,
+   "capacity": 20,
+   "whileWorking": true
+  }
  },
  {
   "id": "glowcorn_plant",

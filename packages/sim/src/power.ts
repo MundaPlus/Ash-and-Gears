@@ -128,7 +128,7 @@ export function tickPower(game: Game): void {
   // Fires burn their fuel all the time.
   for (const t of game.things.values()) {
     const b = game.reg.things.list[t.def].burns;
-    if (b && (t.fuel ?? 0) > 0) t.fuel = Math.max(0, t.fuel! - b.perHour * dtH);
+    if (b && !b.whileWorking && (t.fuel ?? 0) > 0) t.fuel = Math.max(0, t.fuel! - b.perHour * dtH);
   }
   for (const net of game.nets) {
     let produce = 0, use = 0, stored = 0, capacity = 0;
