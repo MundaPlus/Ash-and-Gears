@@ -252,6 +252,9 @@ export function haulNow(game: Game, stackId: number): boolean {
   if (!s || !isLoose(game, s)) return false;
   s.haulNow = true;
   haulCache.delete(game);
+  // Redraw the tile, so the "haul now" arrow shows (single tile or a mass Haul drag).
+  game.map.layers[s.layer].touch(s.x, s.y);
+  game.mapVersion++;
   return true;
 }
 

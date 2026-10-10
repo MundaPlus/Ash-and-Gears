@@ -102,7 +102,8 @@ export function Hud() {
       <PawnPanel />
       <Ending />
       <header class="topbar">
-        {s.song && (
+        {/* The tool hint takes the top center while a tool is active; the song name steps aside. */}
+        {s.song && !s.toolLabel && (
           <div class="nowplaying" data-testid="song" title={t("music.now_playing")}>
             <span aria-hidden="true">♪</span> {t(`music.${s.song}`)}
           </div>
