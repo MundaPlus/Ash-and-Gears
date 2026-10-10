@@ -79,6 +79,7 @@ function optionsFromParams(params: URLSearchParams) {
     mutantScale: num("mutant", 1),
     radCloudScale: num("rad", 1),
     storyline: ["reactor", "bus", "orbit"].includes(params.get("line") ?? "") ? params.get("line") : null,
+    scenario: (sim.SCENARIOS as readonly string[]).includes(params.get("scen") ?? "") ? params.get("scen")! : "standard",
     storyteller: (story === "grandma" || story === "chaos" || story === "none" ? story : "sheriff") as "sheriff" | "grandma" | "chaos" | "none",
   };
 }
@@ -694,10 +695,13 @@ async function boot() {
   });
 
   let fpsFrames = 0, fpsTime = 0, uiTime = 0, clock = 0, lastFxTick = game.tick;
+  /** Animation time: runs only while the game runs (a little faster at higher speeds), so pause freezes everything. */
+  let anim = 0;
   /** One frame: sim ticks for the elapsed time, camera, renderers, audio, UI. */
   function frame(deltaMS: number) {
     const dt = Math.min(deltaMS, 250) / 1000;
     clock += dt;
+    if (!paused) anim += dt * Math.min(speed, 2);
     if (!paused) {
       acc += dt * TICKS_PER_SECOND * speed;
       let n = Math.min(Math.floor(acc), MAX_TICKS_PER_FRAME * speed);
@@ -709,9 +713,9 @@ async function boot() {
     }
     camera.update(dt);
     renderer.update(camera.view, camera.zoom);
-    pawnsR.update(clock, camera.zoom);
+    pawnsR.update(anim, camera.zoom);
     fx.update(clock, camera.view);
-    dyn.update(clock, camera.view, renderer.layer > 0 ? 0.6 : darkness(game.hourOfDay), (x, y) => ({ x: x * camera.zoom + world.position.x, y: y * camera.zoom + world.position.y }), camera.zoom);
+    dyn.update(anim, camera.view, renderer.layer > 0 ? 0.6 : darkness(game.hourOfDay), (x, y) => ({ x: x * camera.zoom + world.position.x, y: y * camera.zoom + world.position.y }), camera.zoom);
 
     // Night: underground is always dim, the surface follows the clock.
     const dark = renderer.layer > 0 ? 0.35 : darkness(game.hourOfDay) * 0.55;

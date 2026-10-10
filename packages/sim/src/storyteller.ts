@@ -53,7 +53,8 @@ function weight(game: Game, kind: EventKind): number {
       return 0.9 * o.mutantScale;
     case "rad_cloud": {
       // At most one cloud per 8 days.
-      const recent = game.tick - game.weather.lastRadCloud < 8 * game.ticksPerDay && game.weather.lastRadCloud > 0;
+      const gap = game.opts.scenario === "rad_season" ? 5 : 8;
+      const recent = game.tick - game.weather.lastRadCloud < gap * game.ticksPerDay && game.weather.lastRadCloud > 0;
       return game.weather.next || game.weather.kind === "rad_cloud" || recent ? 0 : 0.4 * o.radCloudScale;
     }
   }
@@ -203,4 +204,10 @@ export function tickStoryteller(game: Game): void {
 export function spawnRaid(game: Game, f: FactionDef, size: number): void {
   const at = spawnGroup(game, "raid", size, f);
   game.message("msg.raid_faction", { n: size, faction: f.id }, "bad", at);
+}
+
+/** A pack of creatures arriving now (scenarios). */
+export function spawnPack(game: Game, kind: "rad_rats" | "glow_hounds", size: number): void {
+  const at = spawnGroup(game, kind, size);
+  game.message(`msg.${kind}`, { n: size }, "bad", at);
 }

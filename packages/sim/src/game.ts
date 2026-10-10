@@ -26,6 +26,7 @@ import { tickSocial, type Bond } from "./social.ts";
 import { tickWorld, type Expedition, type WorldMap } from "./world.ts";
 import type { Caravan } from "./factions.ts";
 import { newPlot, startPlot, tickPlot, type Plot } from "./plot.ts";
+import { applyScenario, startSurvivors } from "./scenarios.ts";
 import { tickGoals } from "./goals.ts";
 
 /** Sim ticks per real second at 1x speed. */
@@ -200,8 +201,10 @@ export class Game {
   /** Make a new game with a generated home map. */
   static create(content: Content, opts: Partial<GameOptions> = {}): Game {
     const g = new Game(content, opts);
+    if (g.opts.scenario === "rad_season") g.opts.radCloudScale = Math.max(g.opts.radCloudScale, 3);
     generateHomeMap(g);
-    setupStart(g);
+    setupStart(g, startSurvivors(g.opts.scenario));
+    applyScenario(g);
     // Ruins that still stand closed keep their old roofs.
     completeRoofs(g);
     // Start at 07:00, so the first look at the world is in daylight.

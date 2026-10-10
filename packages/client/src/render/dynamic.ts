@@ -105,22 +105,33 @@ export class DynamicRenderer {
         }
         g.circle(cx, cy, 4).fill(0x6f8088).stroke({ width: 1, color: 0x1b1714 });
       }
-      // Direction arrow on rotatable things.
-      if (d.rotatable) {
+      // Belts: ribs run along the belt while it has power, at the cargo's speed.
+      if (d.belt && isPowered(game, t)) {
         const [dx, dy] = DIRS4[t.rot ?? 0];
-        const cx = px + TILE / 2, cy = py + TILE / 2;
-        g.moveTo(cx - dx * 8 - dy * 6, cy - dy * 8 + dx * 6)
-          .lineTo(cx + dx * 9, cy + dy * 9)
-          .lineTo(cx - dx * 8 + dy * 6, cy - dy * 8 - dx * 6)
-          .stroke({ width: 2, color: 0xe3c25a, alpha: 0.85 });
+        const off = (timeSec * 64) % 8;
+        for (let k = 0; k < 4; k++) {
+          const u = k * 8 + off - 16; // along the belt, from the tile center
+          const cxr = px + TILE / 2 + dx * u, cyr = py + TILE / 2 + dy * u;
+          // Across the belt: perpendicular to the direction, 16 units wide.
+          g.moveTo(cxr - dy * 8, cyr - dx * 8).lineTo(cxr + dy * 8, cyr + dx * 8).stroke({ width: 2, color: 0x1b1714, alpha: 0.5 });
+        }
       }
-      // Belt cargo: a small crate sliding along.
+      // Loaders and arms: a small pointer at the front edge, in the palette's rust brown.
+      if (d.rotatable && !d.belt) {
+        const [dx, dy] = DIRS4[t.rot ?? 0];
+        const fx = px + TILE / 2 + dx * 13, fy = py + TILE / 2 + dy * 13;
+        g.poly([fx + dx * 3, fy + dy * 3, fx - dx * 2 - dy * 4, fy - dy * 2 + dx * 4, fx - dx * 2 + dy * 4, fy - dy * 2 - dx * 4])
+          .fill(0xb0834e)
+          .stroke({ width: 1, color: 0x1b1714 });
+      }
+      // Belt cargo: a small crate in the item's color sliding along.
       if (d.belt && t.cargo) {
         const [dx, dy] = DIRS4[t.rot ?? 0];
         const off = (t.cargo.progress - 0.5) * TILE;
-        const cx = px + TILE / 2 + dx * off, cy = py + TILE / 2 + dy * off;
+        const cx2 = px + TILE / 2 + dx * off, cy2 = py + TILE / 2 + dy * off;
         const col = parseInt(game.reg.items.list[t.cargo.def].color.slice(1), 16);
-        g.rect(cx - 6, cy - 6, 12, 12).fill(col).stroke({ width: 1, color: 0x1b1714 });
+        g.rect(cx2 - 5, cy2 - 5, 10, 10).fill(col).stroke({ width: 2, color: 0x1b1714 });
+        g.rect(cx2 - 3, cy2 - 3, 4, 2).fill({ color: 0xffffff, alpha: 0.35 });
       }
       // Missing power: a red bolt that blinks.
       if (d.power?.use && !isPowered(game, t) && Math.sin(timeSec * 5) > 0) {

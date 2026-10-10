@@ -13,6 +13,7 @@ export interface NewGameOptions {
   storyteller: "sheriff" | "grandma" | "chaos";
   /** Storyline id, or "" for the sandbox. */
   line: string;
+  scenario: string;
   raid: number;
   mutant: number;
   rad: number;
@@ -22,7 +23,7 @@ export interface NewGameOptions {
 }
 
 export function startNewGame(o: NewGameOptions) {
-  const q = new URLSearchParams({ seed: o.seed || Math.random().toString(36).slice(2, 8), story: o.storyteller, raid: String(o.raid), mutant: String(o.mutant), rad: String(o.rad), size: String(o.size), day: String(o.day), line: o.line });
+  const q = new URLSearchParams({ seed: o.seed || Math.random().toString(36).slice(2, 8), story: o.storyteller, raid: String(o.raid), mutant: String(o.mutant), rad: String(o.rad), size: String(o.size), day: String(o.day), line: o.line, scen: o.scenario });
   location.search = q.toString();
 }
 
@@ -57,7 +58,7 @@ function Slots({ onPick }: { onPick: (s: SlotInfo) => void }) {
 }
 
 function NewGame({ onBack }: { onBack: () => void }) {
-  const [o, setO] = useState<NewGameOptions>({ storyteller: "sheriff", line: "reactor", raid: 1, mutant: 1, rad: 1, size: 200, day: 360, seed: "" });
+  const [o, setO] = useState<NewGameOptions>({ storyteller: "sheriff", line: "reactor", scenario: "standard", raid: 1, mutant: 1, rad: 1, size: 200, day: 360, seed: "" });
   const slider = (key: "raid" | "mutant" | "rad") => (
     <label class="slider">
       <span>{t(`newgame.${key}`)}</span>
@@ -74,6 +75,15 @@ function NewGame({ onBack }: { onBack: () => void }) {
           <button key={l || "sandbox"} data-testid={`line-${l || "sandbox"}`} class={o.line === l ? "on" : ""} onClick={() => setO({ ...o, line: l })}>
             <b>{t(`line.${l || "sandbox"}`)}</b>
             <small>{t(`line.${l || "sandbox"}.desc`)}</small>
+          </button>
+        ))}
+      </div>
+      <h3>{t("newgame.scenario")}</h3>
+      <div class="choices">
+        {["standard", "lone", "mall", "bunker", "rad_season"].map((sc) => (
+          <button key={sc} data-testid={`scen-${sc}`} class={o.scenario === sc ? "on" : ""} onClick={() => setO({ ...o, scenario: sc })}>
+            <b>{t(`scen.${sc}`)}</b>
+            <small>{t(`scen.${sc}.desc`)}</small>
           </button>
         ))}
       </div>
