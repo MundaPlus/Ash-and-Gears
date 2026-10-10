@@ -1,6 +1,7 @@
 # Changelog
 
 ## 2026-10-11
+- Refresh keeps the game: while a game runs, its state goes to a hidden "session" save every 20 seconds and when the tab is hidden or closed; a small marker in session storage ties it to the URL. A refresh continues the game with the same view. A closed and reopened tab, or cleared browser data, starts fresh with no automatic load; the autosave stays under "Continue". New game, load and main menu clear the marker (`packages/client/src/session.ts`, `main.ts`, `ui/Screens.tsx`, `ui/Ending.tsx`; i18n) — user request.
 - Eating at tables: a survivor takes a meal and carries it to a free chair next to a table (within 40 tiles), then eats there: "ate at a table" (+2). Food poisoning: each meal has a chance (raw food 6%, cooked 2%, canned 0.4%; 60% less at a table); it gives -8 mood and 25% slower work for 10 hours, with a message. Cut off on the way, the food goes back on the ground (`packages/sim/src/ai.ts` `findSeat`, eat job; `pawn.ts` `sickUntil`; thoughts, i18n; test in `packages/sim/test/food.test.ts`) — user request.
 - Rotation: everything except walls, doors, floors, wires, pipes and plants can be turned with Q/E while placing; turned things draw their art turned 90, 180 or 270 degrees (`packages/client/src/input/tools.ts`, `render/textures.ts` `thingsRot`, `render/world.ts`) — user request.
 - Sleeping pose: a survivor in a bed lies in its middle with the head at the pillow, for every bed rotation (`packages/client/src/render/pawns.ts`) — user report.

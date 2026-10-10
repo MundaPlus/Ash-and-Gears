@@ -7,6 +7,7 @@ import { t } from "@wc/data";
 import { useEffect, useState } from "preact/hooks";
 import { ART_SIZES } from "../render/textures.ts";
 import { importSaveFile, listSlots, type SlotInfo } from "../storage.ts";
+import { clearMark, SESSION_SLOT } from "../session.ts";
 import { TICKS_PER_SECOND, unpackSave } from "@wc/sim";
 import { actions, useStore } from "./store.ts";
 import { Mods } from "./Mods.tsx";
@@ -26,11 +27,13 @@ export interface NewGameOptions {
 }
 
 export function startNewGame(o: NewGameOptions) {
+  clearMark();
   const q = new URLSearchParams({ seed: o.seed || Math.random().toString(36).slice(2, 8), story: o.storyteller, raid: String(o.raid), mutant: String(o.mutant), rad: String(o.rad), size: String(o.size), day: String(o.day), line: o.line, scen: o.scenario });
   location.search = q.toString();
 }
 
 export function loadSlot(id: string) {
+  clearMark();
   try {
     sessionStorage.setItem("wc-load", id);
   } catch {
@@ -72,7 +75,7 @@ function LoadFile() {
 function Slots({ onPick }: { onPick: (s: SlotInfo) => void }) {
   const [slots, setSlots] = useState<SlotInfo[] | null>(null);
   useEffect(() => {
-    listSlots().then(setSlots);
+    listSlots().then((all) => setSlots(all.filter((x) => x.id !== SESSION_SLOT)));
   }, []);
   if (slots === null) return <p class="hint">…</p>;
   if (!slots.length) return <p class="hint">{t("menu.no_saves")}</p>;

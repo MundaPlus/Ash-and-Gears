@@ -1,6 +1,7 @@
 import { t } from "@wc/data";
 import { useState } from "preact/hooks";
 import { actions, useStore } from "./store.ts";
+import { clearMark } from "../session.ts";
 
 /** Ending screen (Beta B1): a won story shows slides per survivor; a lost colony shows an obituary. */
 export function Ending() {
@@ -38,7 +39,14 @@ export function Ending() {
               {t("ending.continue")}
             </button>
           )}
-          <button onClick={() => (location.search = "")}>{t("ending.menu")}</button>
+          <button
+            onClick={() => {
+              clearMark();
+              location.search = "";
+            }}
+          >
+            {t("ending.menu")}
+          </button>
         </div>
       </div>
     </div>

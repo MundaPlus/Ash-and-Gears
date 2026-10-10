@@ -1036,5 +1036,6 @@
   "thought.ate_at_table": "Ate at a table",
   "thought.food_poisoning": "Food poisoning",
   "msg.food_poisoning": "{name} has food poisoning. Eating at a table and cooking food lower the risk.",
-  "pawn.sick": "Food poisoning: works slower"
+  "pawn.sick": "Food poisoning: works slower",
+  "menu.session": "Current session"
 }

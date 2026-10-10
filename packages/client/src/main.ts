@@ -2,6 +2,7 @@ import { Application, Container, Graphics } from "pixi.js";
 import { h, render } from "preact";
 import { applyMods, loadCoreContent, t } from "@wc/data";
 import { enabledPacks, setModErrors } from "./mods.ts";
+import { readMark, SESSION_SLOT, writeMark } from "./session.ts";
 import {
   activeWorkTypes,
   billTarget,
@@ -91,7 +92,20 @@ async function boot() {
   setModErrors(modded.errors);
   const content = modded.content;
   let game: Game;
-  if (params.has("load")) {
+  // A refresh of the running game: continue from the session state (see session.ts).
+  const mark = readMark();
+  const sessionBytes = mark && mark.url === location.search ? await readSlot(SESSION_SLOT).catch(() => null) : null;
+  let resumed: Game | null = null;
+  if (sessionBytes) {
+    try {
+      resumed = sim.loadGame(content, await sim.unpackSave(sessionBytes));
+    } catch (e) {
+      console.warn("session state did not load", e);
+    }
+  }
+  if (resumed) {
+    game = resumed;
+  } else if (params.has("load")) {
     let slot: string | null;
     try {
       slot = sessionStorage.getItem("wc-load");
@@ -158,6 +172,13 @@ async function boot() {
   const camera = new Camera(app.canvas, world, { w: game.map.w * TILE, h: game.map.h * TILE });
   camera.centerOn((game.home.x + 0.5) * TILE, (game.home.y + 0.5) * TILE);
   camera.zoom = 1.5;
+  // After a refresh: the view as it was.
+  if (resumed && mark?.camera) {
+    camera.zoom = mark.camera.zoom;
+    camera.centerOn(mark.camera.x, mark.camera.y);
+  }
+  // This tab now plays this game: a refresh continues it.
+  writeMark({ url: location.search, ...(mark?.camera && resumed ? { camera: mark.camera } : {}) });
   camera.onRightClick = (wx, wy) => {
     if (tools.spec) return actions.setTool(null);
     orderAt(wx, wy);
@@ -257,6 +278,25 @@ async function boot() {
     const bytes = await sim.packSave(sim.saveGame(game));
     downloadBytes(bytes, `ash-and-gears-day${game.time.day}-${game.opts.seed}.aag`);
   };
+  // Session state for a refresh: every 20 s while playing, and when the tab is hidden or closed.
+  let sessionSaving = false;
+  async function saveSession() {
+    if (sessionSaving) return;
+    sessionSaving = true;
+    try {
+      writeMark({ url: location.search, camera: { x: camera.x, y: camera.y, zoom: camera.zoom } });
+      await writeSlot(slotInfo(SESSION_SLOT, t("menu.session")), await sim.packSave(sim.saveGame(game)));
+    } catch (e) {
+      console.warn("session save failed", e);
+    } finally {
+      sessionSaving = false;
+    }
+  }
+  setInterval(() => void saveSession(), 20000);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") void saveSession();
+  });
+  window.addEventListener("pagehide", () => void saveSession());
   let autosaving = false;
   async function autosave() {
     if (autosaving) return;
