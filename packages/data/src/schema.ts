@@ -116,8 +116,18 @@ export const ThingDef = z.object({
   conduit: z.boolean().default(false),
   /** Conveyor belt: moves items one tile toward its facing. Value = tiles per in-game hour. */
   belt: z.number().positive().optional(),
+  /**
+   * Belt kinds: "split" sends packets in turn to front, left and right; "sort" sends its filter item
+   * forward and the rest to the right; "tunnel_in" sends packets under the ground to the next
+   * "tunnel_out" with the same facing, at most TUNNEL_REACH tiles ahead.
+   */
+  beltKind: z.enum(["split", "sort", "tunnel_in", "tunnel_out"]).optional(),
   /** Loader: moves items from the tile behind it to the tile in front of it. */
   loader: z.boolean().default(false),
+  /** Robot arm: a loader that can be set to move only one item. */
+  arm: z.boolean().default(false),
+  /** Storage chest: holds up to this many items of any kind. Belts and arms fill and empty it. */
+  chest: z.number().int().positive().optional(),
   /** Auto-crafter: runs a recipe without a survivor while powered. */
   autoCrafter: z.boolean().default(false),
   /** Work speed multiplier for bills done here (when powered, if it uses power). */

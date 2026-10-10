@@ -1,8 +1,11 @@
 /**
- * Logistics (spec 05): conveyor belts, loaders and the auto-crafter.
+ * Logistics (spec 05, Alpha A1): belts, splitters, sorters, underground belts, loaders, robot arms,
+ * chests and the auto-crafter.
  * A belt tile holds one cargo packet that moves to the next tile in its facing.
- * A loader moves items from the ground tile behind it onto the belt or crafter in front.
- * An auto-crafter runs a recipe from its input buffer while powered and puts the product in front.
+ * Loaders and arms take from the tile behind them (ground, belt, chest, crafter output) and put
+ * on the tile in front (belt, crafter input, chest, ground). Arms can be set to one item.
+ * An auto-crafter runs a recipe from its input buffer while powered; products wait in its output
+ * buffer until the tile in front or an arm takes them.
  */
 import type { RecipeDef } from "@wc/data";
 import { atGoal, findItem, goTo, isReserved, reserve } from "./ai.ts";
@@ -17,17 +20,25 @@ import { isPowered } from "./power.ts";
 export const DIRS4: [number, number][] = [[1, 0], [0, 1], [-1, 0], [0, -1]];
 const PACKET_MAX = 10;
 const LOADER_EVERY = 15;
+/** Items a loader or arm moves per swing. */
+const SWING = 5;
 /** Auto-crafter work per tick (a skill-7 survivor does about 0.8). */
 const CRAFTER_RATE = 0.8;
+/** How far an underground belt reaches (tiles ahead, counting the exit). */
+export const TUNNEL_REACH = 5;
+
+/** The tile `steps` ahead of a rotatable thing; `turn` 1 = its right side, 3 = its left, 2 = behind. */
+export function ahead(t: Thing, steps = 1, turn = 0): { x: number; y: number } {
+  const [dx, dy] = DIRS4[((t.rot ?? 0) + turn) % 4];
+  return { x: t.x + dx * steps, y: t.y + dy * steps };
+}
 
 export function front(t: Thing): { x: number; y: number } {
-  const [dx, dy] = DIRS4[t.rot ?? 0];
-  return { x: t.x + dx, y: t.y + dy };
+  return ahead(t);
 }
 
 export function behind(t: Thing): { x: number; y: number } {
-  const [dx, dy] = DIRS4[t.rot ?? 0];
-  return { x: t.x - dx, y: t.y - dy };
+  return ahead(t, 1, 2);
 }
 
 function thingAt(game: Game, layer: number, x: number, y: number): Thing | null {
@@ -51,8 +62,15 @@ export function crafterWants(game: Game, t: Thing, def: number): number {
   return Math.max(0, inp.count * 2 - (t.buffer?.[def] ?? 0));
 }
 
+const total = (r?: Record<number, number>) => Object.values(r ?? {}).reduce((a, b) => a + b, 0);
+
+/** Items in a chest, all kinds together. */
+export function chestCount(t: Thing): number {
+  return total(t.store);
+}
+
 /** Try to hand items to whatever is on a tile. Returns how many were accepted. */
-function offer(game: Game, layer: number, x: number, y: number, def: number, count: number, contaminated: boolean): number {
+export function offer(game: Game, layer: number, x: number, y: number, def: number, count: number, contaminated: boolean): number {
   const t = thingAt(game, layer, x, y);
   const d = t ? game.reg.things.list[t.def] : null;
   if (t && d?.belt) {
@@ -73,10 +91,102 @@ function offer(game: Game, layer: number, x: number, y: number, def: number, cou
     if (n > 0) t.buffer = { ...(t.buffer ?? {}), [def]: (t.buffer?.[def] ?? 0) + n };
     return n;
   }
-  if (t && d?.blocks) return 0;
+  if (t && d?.chest) {
+    // Contamination is not tracked inside chests: contaminated items stay out.
+    if (contaminated) return 0;
+    const n = Math.min(count, d.chest - chestCount(t));
+    if (n > 0) t.store = { ...(t.store ?? {}), [def]: (t.store?.[def] ?? 0) + n };
+    return Math.max(0, n);
+  }
+  // Loaders and arms are machines, not floor space.
+  if (t && (d?.blocks || d?.loader || d?.arm)) return 0;
   if (!game.walkable(layer, x, y)) return 0;
   // Open ground: the belt drops its load there.
   return count - dropItems(game, def, count, layer, x, y, contaminated);
+}
+
+/** What can be taken from a tile: an item kind and how many, or null. `only` limits it to one item. */
+function peek(game: Game, layer: number, x: number, y: number, only?: number): { def: number; count: number; contaminated: boolean } | null {
+  const t = thingAt(game, layer, x, y);
+  const d = t ? game.reg.things.list[t.def] : null;
+  const pick = (r?: Record<number, number>) => {
+    for (const [k, n] of Object.entries(r ?? {})) if (n > 0 && (only === undefined || Number(k) === only)) return { def: Number(k), count: n, contaminated: false };
+    return null;
+  };
+  if (t && d?.belt) {
+    // Only packets that reached the middle of the tile can be lifted off.
+    const c = t.cargo;
+    return c && c.progress >= 0.5 && (only === undefined || c.def === only) ? { def: c.def, count: c.count, contaminated: !!c.contaminated } : null;
+  }
+  if (t && d?.chest) return pick(t.store);
+  if (t && d?.autoCrafter) return pick(t.out);
+  if (t && (d?.blocks || d?.loader || d?.arm)) return null;
+  const L = game.map.layers[layer];
+  const sid = L.item[L.i(x, y)];
+  if (sid === NO_THING) return null;
+  const s = game.items.get(sid)!;
+  return only === undefined || s.def === only ? { def: s.def, count: s.count, contaminated: !!s.contaminated } : null;
+}
+
+/** Remove `n` of item `def` from a tile (after peek said they are there). */
+function take(game: Game, layer: number, x: number, y: number, def: number, n: number): void {
+  const t = thingAt(game, layer, x, y);
+  const d = t ? game.reg.things.list[t.def] : null;
+  const from = (r: Record<number, number>) => {
+    r[def] -= n;
+    if (r[def] <= 0) delete r[def];
+  };
+  if (t && d?.belt && t.cargo) {
+    t.cargo.count -= n;
+    if (t.cargo.count <= 0) t.cargo = null;
+  } else if (t && d?.chest && t.store) from(t.store);
+  else if (t && d?.autoCrafter && t.out) from(t.out);
+  else {
+    const L = game.map.layers[layer];
+    takeFromStack(game, L.item[L.i(x, y)], n);
+  }
+}
+
+/** One swing of a loader or arm: up to SWING items from behind to front. */
+function swing(game: Game, l: Thing): void {
+  const b = behind(l), f = front(l);
+  if (!game.map.layers[l.layer].inBounds(b.x, b.y)) return;
+  const got = peek(game, l.layer, b.x, b.y, l.filter);
+  if (!got) return;
+  const n = offer(game, l.layer, f.x, f.y, got.def, Math.min(SWING, got.count), got.contaminated);
+  if (n > 0) take(game, l.layer, b.x, b.y, got.def, n);
+}
+
+/**
+ * The other end of an underground belt: for an entrance the first exit ahead with the same facing
+ * (at most TUNNEL_REACH tiles), for an exit the entrance that leads to it. Null if none.
+ */
+export function tunnelPartner(game: Game, t: Thing): Thing | null {
+  const kind = game.reg.things.list[t.def].beltKind;
+  if (kind !== "tunnel_in" && kind !== "tunnel_out") return null;
+  const want = kind === "tunnel_in" ? "tunnel_out" : "tunnel_in";
+  for (let k = 1; k <= TUNNEL_REACH; k++) {
+    const pos = ahead(t, k, kind === "tunnel_in" ? 0 : 2);
+    const o = thingAt(game, t.layer, pos.x, pos.y);
+    if (o && game.reg.things.list[o.def].beltKind === want && (o.rot ?? 0) === (t.rot ?? 0)) return kind === "tunnel_in" || tunnelPartner(game, o) === t ? o : null;
+  }
+  return null;
+}
+
+/** Where a belt tile sends its packet next, in order of preference. */
+function outputs(game: Game, b: Thing): { x: number; y: number }[] {
+  const kind = game.reg.things.list[b.def].beltKind;
+  if (kind === "tunnel_in") {
+    const exit = tunnelPartner(game, b);
+    return [exit ? { x: exit.x, y: exit.y } : front(b)];
+  }
+  if (kind === "sort") return b.filter === undefined || b.cargo?.def === b.filter ? [front(b)] : [ahead(b, 1, 1)];
+  if (kind === "split") {
+    const all = [front(b), ahead(b, 1, 3), ahead(b, 1, 1)];
+    const i = b.splitNext ?? 0;
+    return [...all.slice(i), ...all.slice(0, i)];
+  }
+  return [front(b)];
 }
 
 export function tickLogistics(game: Game): void {
@@ -84,52 +194,54 @@ export function tickLogistics(game: Game): void {
   for (const t of game.things.values()) {
     const d = game.reg.things.list[t.def];
     if (d.belt) belts.push(t);
-    else if (d.loader) loaders.push(t);
+    else if (d.loader || d.arm) loaders.push(t);
     else if (d.autoCrafter) crafters.push(t);
   }
   // Belts: move cargo forward.
   for (const b of belts) {
     if (!b.cargo || !isPowered(game, b)) continue;
-    const speed = game.reg.things.list[b.def].belt! / game.ticksPerHour;
+    const def = game.reg.things.list[b.def];
+    const speed = def.belt! / game.ticksPerHour;
     b.cargo.progress = Math.min(1, b.cargo.progress + speed);
     if (b.cargo.progress < 1) continue;
-    const f = front(b);
-    const n = offer(game, b.layer, f.x, f.y, b.cargo.def, b.cargo.count, !!b.cargo.contaminated);
-    b.cargo.count -= n;
-    if (b.cargo.count <= 0) b.cargo = null;
-  }
-
-  // Loaders: ground stack behind -> belt or crafter in front.
-  if (game.tick % LOADER_EVERY === 0) {
-    for (const l of loaders) {
-      if (!isPowered(game, l)) continue;
-      const b = behind(l), f = front(l);
-      const L = game.map.layers[l.layer];
-      if (!L.inBounds(b.x, b.y)) continue;
-      const sid = L.item[L.i(b.x, b.y)];
-      if (sid === NO_THING) continue;
-      const s = game.items.get(sid)!;
-      const n = offer(game, l.layer, f.x, f.y, s.def, Math.min(5, s.count), !!s.contaminated);
-      if (n > 0) takeFromStack(game, sid, n);
+    const outs = outputs(game, b);
+    for (let i = 0; i < outs.length && b.cargo; i++) {
+      const n = offer(game, b.layer, outs[i].x, outs[i].y, b.cargo.def, b.cargo.count, !!b.cargo.contaminated);
+      b.cargo.count -= n;
+      if (b.cargo.count <= 0) b.cargo = null;
+      // A splitter turns to its next output after each packet it hands on.
+      if (n > 0 && def.beltKind === "split") {
+        b.splitNext = ((b.splitNext ?? 0) + i + 1) % 3;
+        break;
+      }
     }
   }
 
-  // Auto-crafters: work while powered and supplied.
+  // Loaders and arms: one swing every LOADER_EVERY ticks.
+  if (game.tick % LOADER_EVERY === 0) for (const l of loaders) if (isPowered(game, l)) swing(game, l);
+
+  // Auto-crafters: work while powered and supplied, and while the output has room.
   for (const c of crafters) {
+    // Products go out to the tile in front when it takes them.
+    const f = front(c);
+    for (const [k, n] of Object.entries(c.out ?? {})) {
+      const placed = offer(game, c.layer, f.x, f.y, Number(k), n, false);
+      if (placed > 0) take(game, c.layer, c.x, c.y, Number(k), placed);
+    }
     if (!isPowered(game, c)) continue;
     const r = crafterRecipe(game, c);
     if (!r) continue;
     const ready = r.inputs.every((i) => (c.buffer?.[game.reg.items.idx(i.item!)] ?? 0) >= i.count);
-    if (!ready) continue;
+    const batch = Object.values(r.output).reduce((a, b) => a + b, 0);
+    if (!ready || total(c.out) >= batch * 2) continue;
     c.work = (c.work ?? 0) + CRAFTER_RATE;
     if (c.work < r.work) continue;
     c.work = 0;
     for (const i of r.inputs) c.buffer![game.reg.items.idx(i.item!)] -= i.count;
-    const f = front(c);
+    c.out ??= {};
     for (const [item, n] of Object.entries(r.output)) {
       const def = game.reg.items.idx(item);
-      const placed = offer(game, c.layer, f.x, f.y, def, n, false);
-      if (placed < n) dropItems(game, def, n - placed, c.layer, c.x, c.y);
+      c.out[def] = (c.out[def] ?? 0) + n;
     }
   }
 }
@@ -140,6 +252,18 @@ export function setCrafterRecipe(game: Game, t: Thing, recipe: string): void {
   t.buffer = {};
   t.work = 0;
   t.recipe = recipe;
+}
+
+/** Sorter belts and arms: set the one item they handle (undefined = everything). */
+export function setFilter(game: Game, t: Thing, item: string | null): void {
+  if (item === null) delete t.filter;
+  else t.filter = game.reg.items.idx(item);
+}
+
+/** Things removed with items inside give them back on the ground. */
+export function spillContents(game: Game, t: Thing): void {
+  for (const r of [t.store, t.out, t.buffer]) for (const [k, n] of Object.entries(r ?? {})) if (n > 0) dropItems(game, Number(k), n, t.layer, t.x, t.y);
+  if (t.cargo) dropItems(game, t.cargo.def, t.cargo.count, t.layer, t.x, t.y, !!t.cargo.contaminated);
 }
 
 // ---------------------------------------------------------------- survivors fill crafters

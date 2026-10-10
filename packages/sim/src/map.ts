@@ -34,6 +34,14 @@ export interface Thing {
   recipe?: string;
   buffer?: Record<number, number>;
   work?: number;
+  /** Auto-crafter: finished products waiting to go out (item index -> count). */
+  out?: Record<number, number>;
+  /** Chest: items inside (item index -> count). */
+  store?: Record<number, number>;
+  /** Sorter belts and robot arms: the one item they handle (item index). */
+  filter?: number;
+  /** Splitter: which output gets the next packet. */
+  splitNext?: number;
 }
 
 /** A stack of one item type lying on a tile or carried by a pawn. */

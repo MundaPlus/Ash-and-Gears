@@ -63,6 +63,14 @@
   ]
  },
  {
+  "id": "belt_logistics",
+  "cost": 2800,
+  "tier": 2,
+  "prereqs": [
+   "conveyors"
+  ]
+ },
+ {
   "id": "auto_crafting",
   "cost": 4800,
   "tier": 2,

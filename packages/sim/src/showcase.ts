@@ -84,7 +84,12 @@ export function buildShowcase(game: Game): void {
   for (let i = 1; i <= 6; i++) put("conveyor", fx + i, fy, 0);
   const crafter = put("auto_crafter", fx + 7, fy, 0);
   if (crafter) crafter.recipe = "make_components";
-  for (let i = 8; i <= 10; i++) put("conveyor", fx + i, fy, 0);
+  // Components go on: a splitter sends every other packet north, a robot arm lifts the rest into a chest.
+  put("conveyor", fx + 8, fy, 0);
+  put("belt_splitter", fx + 9, fy, 0);
+  put("conveyor", fx + 10, fy, 0);
+  put("robot_arm", fx + 11, fy, 0);
+  put("scrap_chest", fx + 12, fy);
   put("wire", fx, fy + 1);
   for (let i = 1; i <= 7; i++) put("wire", fx + i, fy + 1);
   const gen2 = put("scrap_generator", fx + 8, fy + 1);

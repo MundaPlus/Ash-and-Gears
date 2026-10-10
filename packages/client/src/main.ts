@@ -253,6 +253,11 @@ async function boot() {
     sim.setResearch(game, id);
     store.set({ research: researchRows() });
   };
+  actions.setFilter = (thingId, item) => {
+    const th = game.things.get(thingId);
+    if (th) sim.setFilter(game, th, item);
+    if (inspected) inspectTile(inspected.x, inspected.y);
+  };
   actions.setCrafterRecipe = (thingId, recipe) => {
     const th = game.things.get(thingId);
     if (th) sim.setCrafterRecipe(game, th, recipe);
@@ -355,6 +360,7 @@ async function boot() {
     const th = L.thing[i];
     let bills: { benchId: number; recipe: string; target: number; stock: number }[] | undefined;
     let crafter: { thingId: number; current: string | null; options: string[] } | undefined;
+    let filter: { thingId: number; current: string | null; options: string[] } | undefined;
     if (th !== NO_THING) {
       const thing = game.things.get(th)!;
       const def = game.reg.things.list[thing.def];
@@ -377,6 +383,16 @@ async function boot() {
         crafter = { thingId: thing.id, current: r?.id ?? null, options: recipesFor(game, def.id).filter((x) => x.inputs.every((i) => i.item)).map((x) => x.id) };
         if (r) lines.push(t("inspect.crafter", { have: r.inputs.map((i) => `${thing.buffer?.[game.reg.items.idx(i.item!)] ?? 0}/${i.count} ${t(`item.${i.item}`)}`).join(", "), pct: Math.round(((thing.work ?? 0) / r.work) * 100) }));
       }
+      const contents = (r?: Record<number, number>) =>
+        Object.entries(r ?? {}).filter(([, n]) => n > 0).map(([k, n]) => `${n} × ${t(`item.${game.reg.items.list[Number(k)].id}`)}`).join(", ");
+      if (def.chest) lines.push(`${t("chest.title")} (${sim.chestCount(thing)}/${def.chest}): ${contents(thing.store) || t("chest.empty")}`);
+      if (def.autoCrafter && contents(thing.out)) lines.push(`${t("chest.title")}: ${contents(thing.out)}`);
+      if (def.arm || def.beltKind === "sort")
+        filter = {
+          thingId: thing.id,
+          current: thing.filter !== undefined ? game.reg.items.list[thing.filter].id : null,
+          options: game.reg.items.list.filter((d) => d.id !== "corpse").map((d) => d.id),
+        };
     }
     inspected = { x, y };
     const it = L.item[i];
@@ -385,7 +401,7 @@ async function boot() {
       const name = t(`item.${game.reg.items.list[st.def].id}`);
       lines.push(t("inspect.items", { count: st.count, item: st.contaminated ? `${name} (${t("item.contaminated")})` : name }));
     }
-    store.set({ inspect: { title, lines, bills, crafter } });
+    store.set({ inspect: { title, lines, bills, crafter, filter } });
   }
   let inspected: { x: number; y: number } | null = null;
   actions.setBillTarget = (benchId, recipe, n) => {

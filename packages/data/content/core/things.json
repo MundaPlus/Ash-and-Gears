@@ -650,5 +650,129 @@
    "menu": "production",
    "research": "auto_crafting"
   }
+ },
+ {
+  "id": "belt_splitter",
+  "kind": "structure",
+  "color": "#4f5a66",
+  "glyph": "Y",
+  "hp": 60,
+  "belt": 30,
+  "beltKind": "split",
+  "rotatable": true,
+  "power": {
+   "use": 15
+  },
+  "build": {
+   "cost": {
+    "scrap": 8,
+    "components": 1
+   },
+   "work": 80,
+   "menu": "production",
+   "research": "belt_logistics"
+  }
+ },
+ {
+  "id": "belt_sorter",
+  "kind": "structure",
+  "color": "#4f5a66",
+  "glyph": "S",
+  "hp": 60,
+  "belt": 30,
+  "beltKind": "sort",
+  "rotatable": true,
+  "power": {
+   "use": 15
+  },
+  "build": {
+   "cost": {
+    "scrap": 8,
+    "components": 2
+   },
+   "work": 80,
+   "menu": "production",
+   "research": "belt_logistics"
+  }
+ },
+ {
+  "id": "tunnel_in",
+  "kind": "structure",
+  "color": "#4f5a66",
+  "glyph": "U",
+  "hp": 60,
+  "belt": 30,
+  "beltKind": "tunnel_in",
+  "rotatable": true,
+  "power": {
+   "use": 10
+  },
+  "build": {
+   "cost": {
+    "scrap": 10
+   },
+   "work": 80,
+   "menu": "production",
+   "research": "belt_logistics"
+  }
+ },
+ {
+  "id": "tunnel_out",
+  "kind": "structure",
+  "color": "#4f5a66",
+  "glyph": "U",
+  "hp": 60,
+  "belt": 30,
+  "beltKind": "tunnel_out",
+  "rotatable": true,
+  "power": {
+   "use": 10
+  },
+  "build": {
+   "cost": {
+    "scrap": 10
+   },
+   "work": 80,
+   "menu": "production",
+   "research": "belt_logistics"
+  }
+ },
+ {
+  "id": "robot_arm",
+  "kind": "furniture",
+  "color": "#e3a35a",
+  "glyph": "R",
+  "hp": 100,
+  "arm": true,
+  "rotatable": true,
+  "power": {
+   "use": 30
+  },
+  "build": {
+   "cost": {
+    "scrap": 20,
+    "components": 2
+   },
+   "work": 200,
+   "menu": "production",
+   "research": "belt_logistics"
+  }
+ },
+ {
+  "id": "scrap_chest",
+  "kind": "furniture",
+  "color": "#84603f",
+  "glyph": "C",
+  "hp": 120,
+  "blocks": true,
+  "chest": 200,
+  "build": {
+   "cost": {
+    "scrap": 20
+   },
+   "work": 120,
+   "menu": "production"
+  },
+  "flammable": false
  }
 ]

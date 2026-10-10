@@ -6,6 +6,7 @@ import { isReserved } from "./ai.ts";
 import { registerWorkGiver } from "./jobs.ts";
 import type { Game } from "./game.ts";
 import { dropItems } from "./items.ts";
+import { spillContents } from "./logistics.ts";
 import { Desig, NO_THING, type DesigKind } from "./map.ts";
 import { skillLevel, type Job, type Pawn } from "./pawn.ts";
 import { registerTask, workJob, type WorkType } from "./work.ts";
@@ -140,6 +141,7 @@ registerTask("salvage", {
     const L = game.map.layers[t.layer];
     const def = game.thingDefAt(t.layer, t.x, t.y)!;
     undesignate(game, t.layer, t.x, t.y);
+    spillContents(game, game.things.get(L.thing[L.i(t.x, t.y)])!);
     game.removeThing(L.thing[L.i(t.x, t.y)]);
     const lvl = skillLevel(game, p, "scavenging");
     if (def.build) {
@@ -171,6 +173,7 @@ registerTask("deconstruct", {
     const L = game.map.layers[t.layer];
     const def = game.thingDefAt(t.layer, t.x, t.y)!;
     undesignate(game, t.layer, t.x, t.y);
+    spillContents(game, game.things.get(L.thing[L.i(t.x, t.y)])!);
     game.removeThing(L.thing[L.i(t.x, t.y)]);
     // Get 75% of the materials back.
     for (const [item, n] of Object.entries(def.build!.cost)) {

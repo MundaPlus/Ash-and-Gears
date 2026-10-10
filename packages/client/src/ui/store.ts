@@ -8,6 +8,8 @@ export interface Inspect {
   bills?: { benchId: number; recipe: string; target: number; stock: number }[];
   /** Auto-crafter: recipe choice. */
   crafter?: { thingId: number; current: string | null; options: string[] };
+  /** Sorter belts and robot arms: the one item they handle (null = any). */
+  filter?: { thingId: number; current: string | null; options: string[] };
 }
 
 export interface ColonistSummary {
@@ -185,6 +187,7 @@ export const actions = {
   setUiScale: (_s: number) => {},
   rotateTool: (_d: number) => {},
   setCrafterRecipe: (_thing: number, _recipe: string) => {},
+  setFilter: (_thing: number, _item: string | null) => {},
   draftAll: () => {},
   openMenu: (m: UiState["menu"]) => store.set({ menu: store.state.menu === m ? null : m }),
   closeInspect: () => {

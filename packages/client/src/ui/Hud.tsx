@@ -128,6 +128,19 @@ export function Hud() {
               ))}
             </div>
           )}
+          {s.inspect.filter && (
+            <div class="bills" data-testid="filter">
+              <h3>{t("filter.title")}</h3>
+              <button class={s.inspect.filter.current === null ? "on" : ""} onClick={() => actions.setFilter(s.inspect!.filter!.thingId, null)}>
+                {t("filter.any")}
+              </button>
+              {s.inspect.filter.options.map((id) => (
+                <button key={id} class={s.inspect!.filter!.current === id ? "on" : ""} onClick={() => actions.setFilter(s.inspect!.filter!.thingId, id)}>
+                  {t(`item.${id}`)}
+                </button>
+              ))}
+            </div>
+          )}
         </aside>
       )}
 

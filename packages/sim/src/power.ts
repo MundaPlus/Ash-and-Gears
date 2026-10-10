@@ -5,6 +5,7 @@
  * Generators burn fuel that survivors bring.
  */
 import { atGoal, findItem, goTo, isReserved, reserve } from "./ai.ts";
+import { tunnelPartner } from "./logistics.ts";
 import { setTurretReady } from "./combat.ts";
 import type { Game } from "./game.ts";
 import { registerJob, registerWorkGiver } from "./jobs.ts";
@@ -42,6 +43,9 @@ export function ensureNets(game: Game): void {
       net.things.push(c.id);
       const L = game.map.layers[c.layer];
       const nbs = game.footprint(c.def, c.x, c.y, c.rot).flatMap((f) => [[f.x + 1, f.y], [f.x - 1, f.y], [f.x, f.y + 1], [f.x, f.y - 1]]);
+      // An underground belt pair carries power under the ground, like a buried cable.
+      const pair = tunnelPartner(game, c);
+      if (pair) nbs.push([pair.x, pair.y]);
       for (const [x, y] of nbs) {
         if (!L.inBounds(x, y)) continue;
         const nid = L.thing[L.i(x, y)];
