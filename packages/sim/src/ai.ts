@@ -25,7 +25,7 @@ import { nearestHostile } from "./combat.ts";
 const DRAFTED_CRITICAL = 0.15;
 /** Speed of a robot with no charge left. */
 const ROBOT_CRAWL = 0.2;
-import { equipJob, inBed, rushToDowned } from "./medical.ts";
+import { bedAt, equipJob, freeBed, inBed, rushToDowned } from "./medical.ts";
 import { fluidNetOf, LITERS_PER_DRINK, netDraw, tapHasWater } from "./fluids.ts";
 import { prisonerTick } from "./prison.ts";
 import { robotJob, tickRobot } from "./robots.ts";
@@ -141,7 +141,7 @@ export function tickPawns(game: Game): void {
     if (p.robot) tickRobot(game, p);
     else if (p.faction === "colony" || p.faction === "prisoner") tickNeeds(game, p);
     if (hourly) {
-      tickHealthHourly(game, p, inBed(game, p));
+      tickHealthHourly(game, p, bedAt(game, p)?.medical ? "medical" : inBed(game, p));
       if (!game.pawns.has(p.id)) continue;
     }
     if (p.health.downed) {
@@ -667,7 +667,7 @@ function findBed(game: Game, p: Pawn): number | null {
   if (own === undefined) p.bedId = null;
   const owned = new Set([...game.pawns.values()].map((o) => o.bedId));
   const beds = [...game.things.values()]
-    .filter((t) => game.reg.things.list[t.def].bed && !t.forPrisoners && !owned.has(t.id) && !isReserved(game, `thing:${t.id}`, p))
+    .filter((t) => game.reg.things.list[t.def].bed && !t.forPrisoners && !t.medical && !owned.has(t.id) && !isReserved(game, `thing:${t.id}`, p))
     .sort((a, b) => dist2(p, a) - dist2(p, b));
   for (const b of beds) {
     if (!game.path.canReach(p, b)) continue;
@@ -717,7 +717,8 @@ export function needsBedRest(game: Game, p: Pawn, resting = false): boolean {
 
 /** Go to a free bed and lie there while badly hurt. A bed heals faster, and doctors find the patient there. */
 export function bedRestJob(game: Game, p: Pawn): Job | null {
-  const bed = findBed(game, p);
+  // A free medical bed first, else the survivor's own bed.
+  const bed = freeBed(game, p, p)?.id ?? findBed(game, p);
   if (bed === null || !reserve(game, `thing:${bed}`, p)) return null;
   const t = game.things.get(bed)!;
   return { kind: "bedrest", stage: 0, target: { layer: t.layer, x: t.x, y: t.y } };

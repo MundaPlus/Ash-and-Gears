@@ -11,7 +11,7 @@ import type { Game } from "./game.ts";
 import { pain, untendedInjuries } from "./health.ts";
 import { dropItems, takeFromStack } from "./items.ts";
 import { armorScore, UPGRADE_MARGIN, weaponScore, wornIn } from "./gear.ts";
-import { NO_THING } from "./map.ts";
+import { NO_THING, type Thing } from "./map.ts";
 import { addMemory, addStat, learn, skillLevel, type Job, type Pawn } from "./pawn.ts";
 import { changeOpinion } from "./social.ts";
 import { pickUp } from "./hauling.ts";
@@ -24,12 +24,26 @@ export function inBed(game: Game, p: Pawn): boolean {
   return th !== NO_THING && !!game.reg.things.list[game.things.get(th)!.def].bed;
 }
 
+/** Tend quality factor in a medical bed. */
+const MEDICAL_TEND = 1.25;
+
+/** The bed a pawn lies on, if any. */
+export function bedAt(game: Game, p: Pawn): Thing | undefined {
+  const L = game.map.layers[p.layer];
+  const th = L.thing[L.i(p.x, p.y)];
+  const t = th !== NO_THING ? game.things.get(th) : undefined;
+  return t && game.reg.things.list[t.def].bed ? t : undefined;
+}
+
 export function freeBed(game: Game, p: Pawn, patient: Pawn): { layer: number; x: number; y: number; id: number } | null {
   const occupied = new Set([...game.pawns.values()].filter((o) => o.id !== patient.id && inBed(game, o)).map((o) => `${o.layer},${o.x},${o.y}`));
   const beds = [...game.things.values()]
     .filter((t) => game.reg.things.list[t.def].bed && !t.forPrisoners && !occupied.has(`${t.layer},${t.x},${t.y}`) && !isReserved(game, `thing:${t.id}`, p))
     .sort((a, b) => (a.x - p.x) ** 2 + (a.y - p.y) ** 2 - ((b.x - p.x) ** 2 + (b.y - p.y) ** 2));
-  return beds.find((b) => game.path.canReach(p, b)) ?? null;
+  // Medical beds first. A survivor going to bed rest by themselves (p === patient) takes only a medical bed here.
+  const medical = beds.filter((b) => b.medical);
+  const pick = (list: Thing[]) => list.find((b) => game.path.canReach(p, b)) ?? null;
+  return pick(medical) ?? (p === patient ? null : pick(beds.filter((b) => !b.medical)));
 }
 
 export type CareKind = "rescue" | "feed" | "tend";
@@ -236,7 +250,9 @@ registerJob("tend", (game, p, job) => {
   learn(game, p, "medicine", 0.6);
   if ((job.data!.work as number) > 0) return "run";
   const base = (job.data!.quality as number) ?? 0.25;
-  const q = Math.min(1, Math.max(0.1, base * (0.6 + skillLevel(game, p, "medicine") * 0.04)));
+  // A medical bed (clean sheets, room to work) tends better.
+  const medBed = bedAt(game, patient)?.medical ? MEDICAL_TEND : 1;
+  const q = Math.min(1, Math.max(0.1, base * medBed * (0.6 + skillLevel(game, p, "medicine") * 0.04)));
   for (const i of untendedInjuries(patient)) i.tended = q;
   game.message("msg.tended", { doctor: p.nick, name: patient.nick });
   return "done";

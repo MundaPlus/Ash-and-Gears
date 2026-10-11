@@ -38,7 +38,7 @@ export function computeAlerts(game: Game): Alert[] {
   const waterSource = [...game.things.values()].some((t) => game.reg.things.list[t.def].water === "clean" || !!game.reg.things.list[t.def].rainCollect);
   if (left.food < 2) out.push({ key: "alert.food_low", params: { days: Math.max(0, Math.floor(left.food * 10) / 10) }, level: left.food < 1 ? "bad" : "warn" });
   if (left.water < 1.5 && !waterSource) out.push({ key: "alert.water_low", params: { days: Math.max(0, Math.floor(left.water * 10) / 10) }, level: left.water < 0.7 ? "bad" : "warn" });
-  const beds = [...game.things.values()].filter((t) => game.reg.things.list[t.def].bed && !t.forPrisoners).length;
+  const beds = [...game.things.values()].filter((t) => game.reg.things.list[t.def].bed && !t.forPrisoners && !t.medical).length;
   if (beds < people.length) out.push({ key: "alert.no_beds", params: { n: people.length - beds }, level: "warn" });
   const idle = people.filter((p) => !p.drafted && !p.mentalBreak && !p.health.downed && p.job?.kind === "wander" && !p.job.data?.sulk);
   if (idle.length) out.push({ key: "alert.idle", params: { names: idle.map((p) => p.nick).join(", ") }, level: "warn", at: idle[0] });
