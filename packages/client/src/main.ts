@@ -693,13 +693,20 @@ async function boot() {
     if (td.fertility > 0) lines.push(t("inspect.fertility", { v: Math.round(td.fertility * 100) }));
     if (td.water) lines.push(t("inspect.water", { v: td.water }));
     const room = roomAt(game, renderer.layer, x, y);
+    const temp = Math.round(tempAt(game, renderer.layer, x, y));
     if (room && !room.outdoor) {
-      lines.push(t("inspect.room", { size: room.size }));
+      lines.push(t("inspect.room", { size: room.size, v: temp }));
       // Shelter: roof progress, then how well it keeps radiation out.
       const exp = exposureAt(game, renderer.layer, x, y);
       lines.push(t(`inspect.shelter_${exp}`));
-    } else lines.push(t("inspect.outdoors"));
-    lines.push(t("inspect.temp", { v: Math.round(tempAt(game, renderer.layer, x, y)) }));
+    } else lines.push(t("inspect.outdoors", { v: temp }));
+    // A field or crop in the cold: say that it does not grow, and why (user: it was winter).
+    const gz = game.zones.get(L.zone[i]);
+    const cropId = gz?.kind === "grow" && gz.crop ? gz.crop : L.thing[i] !== NO_THING && game.reg.things.list[game.things.get(L.thing[i])!.def].crop ? game.reg.things.list[game.things.get(L.thing[i])!.def].id : null;
+    if (cropId) {
+      const min = game.reg.things.get(cropId).crop!.minTemp;
+      if (tempAt(game, renderer.layer, x, y) < min) lines.push(t("inspect.too_cold", { crop: t(`thing.${cropId}`), min, v: temp }));
+    }
     const bp = L.blueprint[i] !== NO_THING ? game.blueprints.get(L.blueprint[i]) : undefined;
     if (bp) lines.push(t("inspect.blueprint", { name: t(bp.kind === "floor" ? `floor.${game.reg.floors.list[bp.def].id}` : `thing.${game.reg.things.list[bp.def].id}`) }));
     if (bp) {
@@ -725,7 +732,7 @@ async function boot() {
       const def = game.reg.things.list[thing.def];
       title = `${t(`thing.${def.id}`)} · ${title}`;
       lines.push(t("inspect.hp", { hp: thing.hp, max: def.hp }));
-      if (def.crop) lines.push(t("inspect.growth", { v: Math.round((thing.growth ?? 0) * 100) }));
+      if (def.crop) lines.push((thing.growth ?? 0) >= 1 ? t("inspect.ripe") : t("inspect.growth", { v: Math.min(99, Math.round((thing.growth ?? 0) * 100)) }));
       if ((thing.contamUntil ?? 0) > game.tick) lines.push(t("inspect.contaminated"));
       if (def.bench)
         bills = recipesFor(game, def.id).map((r) => ({ benchId: thing.id, recipe: r.id, target: billTarget(game, thing, r), stock: stockOf(game, r) }));
@@ -1238,7 +1245,7 @@ async function boot() {
         speed,
         paused,
         clock: t("clock", { day: tm.day, hh: pad(tm.hour), mm: pad(tm.minute) }),
-        season: t(`season.${tm.season}`, { year: tm.year }),
+        season: `${t(`season.${tm.season}`, { year: tm.year })} · ${Math.round(sim.outdoorTemp(game, 0))} °C`,
         weather: game.weather.kind,
         goals: sim.GOALS.map((id) => ({ id, done: !!game.goals[id] })),
         alerts: sim.computeAlerts(game),

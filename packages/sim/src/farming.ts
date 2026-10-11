@@ -105,6 +105,24 @@ registerTask("sow", {
   },
 });
 
+/** The nearest walkable tile within 6 tiles that is not in a grow zone and has no item yet, or null. */
+function offField(game: Game, layer: number, x: number, y: number): { x: number; y: number } | null {
+  const L = game.map.layers[layer];
+  for (let r = 1; r <= 6; r++)
+    for (let dy = -r; dy <= r; dy++)
+      for (let dx = -r; dx <= r; dx++) {
+        if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+        const tx = x + dx, ty = y + dy;
+        if (!L.inBounds(tx, ty)) continue;
+        const i = L.i(tx, ty);
+        if (L.item[i] !== NO_THING || L.thing[i] !== NO_THING || !game.walkable(layer, tx, ty)) continue;
+        const z = game.zones.get(L.zone[i]);
+        if (z?.kind === "grow") continue;
+        return { x: tx, y: ty };
+      }
+  return null;
+}
+
 registerTask("harvest", {
   skill: "farming",
   xp: 0.4,
@@ -124,7 +142,10 @@ registerTask("harvest", {
     const until = thing.contamUntil;
     game.removeThing(thing.id);
     const mult = 0.7 + skillLevel(game, p, "farming") * 0.03;
-    for (const [item, n] of Object.entries(def.crop!.yield)) dropItems(game, item, Math.max(1, Math.round(n * mult)), t.layer, t.x, t.y, cont, until);
+    // The harvest goes on the nearest tile next to the field, so the field tile is free to sow again
+    // (user report: fields stayed empty for days while the harvest lay on them).
+    const at = offField(game, t.layer, t.x, t.y) ?? t;
+    for (const [item, n] of Object.entries(def.crop!.yield)) dropItems(game, item, Math.max(1, Math.round(n * mult)), t.layer, at.x, at.y, cont, until);
   },
 });
 
