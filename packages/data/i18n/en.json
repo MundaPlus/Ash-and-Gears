@@ -1230,5 +1230,14 @@
   "zone.shrink_hint": "Drag over zone tiles to take them out.",
   "order.unfloor": "Remove floor",
   "order.unfloor.desc": "Take up a floor. A built floor gives back 75% of the materials. An old floor (ruin, bunker, asphalt) turns into bare ground and gives a little stone or scrap.",
-  "action.unfloor": "Remove floor"
+  "action.unfloor": "Remove floor",
+  "order.claim": "Claim",
+  "order.claim.desc": "Patch up an old ruin wall or rusted door and make it your own, as if you built it. A ruin you close in with your own door gets claimed by itself, and gets its roof.",
+  "action.claim": "Claim",
+  "task.claim": "Patching up an old wall",
+  "pawnmenu.do_claim": "Claim",
+  "thing.patched_wall": "Patched wall",
+  "thing.patched_door": "Patched door",
+  "msg.food_low": "Food is running low: {days} days left at home. Harvest ripe crops ({ripe} ready), sow more fields or hunt.",
+  "msg.food_critical": "Food is almost gone: {days} days left! Harvest ripe crops ({ripe} ready) or hunt now. Starving survivors pick ripe crops and eat them raw."
 }

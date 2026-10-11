@@ -241,6 +241,17 @@ const WALLS: Record<string, WallMat> = {
       p.dot(x1 - 12, y0 + 10, 1.6, "rustDark");
     },
   },
+  // A claimed ruin wall: the same old stone, its crack filled and a scrap plate bolted on.
+  patched_wall: {
+    top: "paper",
+    tone: "ochreDark",
+    face: "ochreDark",
+    marks: (p, x0, y0, x1, _y1) => {
+      p.line([[x0 + 6, y0 + 10], [x0 + 16, y0 + 18]], "ochreDark", 1.1);
+      p.shape(Print.rect(x1 - 18, y0 + 7, 11, 8, 0), { fill: "rust", line: false, shift: 0 });
+      p.dot(x1 - 16, y0 + 9, 1, "soot").dot(x1 - 9, y0 + 13, 1, "soot");
+    },
+  },
   bunker_wall: {
     top: "slateDark",
     tone: "soot",

@@ -55,3 +55,23 @@ export function computeAlerts(game: Game): Alert[] {
   if (dark.length) out.push({ key: "alert.unpowered", params: { n: dark.length }, level: "warn", at: dark[0] });
   return out.map((a) => (a.at ? { ...a, at: { layer: a.at.layer, x: a.at.x, y: a.at.y } } : a));
 }
+
+/** Food warning level last told to the player: 0 enough, 1 low, 2 nearly gone. */
+const foodTold = new WeakMap<Game, number>();
+
+/**
+ * Once an hour: tell the player (a message with a sound) when food at home falls under 2 days, and
+ * again under half a day. It only warns again after the stock has come back above 3 days.
+ */
+export function tickFoodWarning(game: Game): void {
+  if (game.tick % game.ticksPerHour !== 0) return;
+  if (![...game.pawns.values()].some((p) => p.faction === "colony" && !p.robot)) return;
+  const days = daysLeft(game).food;
+  const told = foodTold.get(game) ?? 0;
+  const level = days < 0.5 ? 2 : days < 2 ? 1 : 0;
+  if (level > told) {
+    const ripe = [...game.things.values()].filter((t) => (t.growth ?? 0) >= 1 && !!game.reg.things.list[t.def].crop).length;
+    game.message(level === 2 ? "msg.food_critical" : "msg.food_low", { days: Math.floor(days * 10) / 10, ripe }, level === 2 ? "bad" : "warn");
+    foodTold.set(game, level);
+  } else if (days >= 3 && told) foodTold.set(game, 0);
+}

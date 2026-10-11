@@ -22,11 +22,11 @@ import { reserve } from "./ai.ts";
 export type PawnAction = "attack" | "put_down" | "capture" | "rescue" | "tend" | "feed";
 
 /** Things a survivor can be told to do on a tile right now (the player's menu, "force"). */
-export type TileForce = "mine" | "salvage" | "cut" | "clear" | "deconstruct" | "unfloor" | "pry" | "haul" | "harvest" | "sow" | "build";
+export type TileForce = "mine" | "salvage" | "cut" | "clear" | "deconstruct" | "unfloor" | "pry" | "claim" | "haul" | "harvest" | "sow" | "build";
 
 /** Order kinds and the work type they belong to (a backstory that rules the work out still says no). */
 const ORDER_WORK: Partial<Record<DesigKind, WorkType>> = {
-  mine: "mine", salvage: "salvage", cut: "grow", clear: "construct", deconstruct: "construct", unfloor: "construct", pry: "construct",
+  mine: "mine", salvage: "salvage", cut: "grow", clear: "construct", deconstruct: "construct", unfloor: "construct", pry: "construct", claim: "construct",
 };
 
 function can(actor: Pawn, w: WorkType): boolean {

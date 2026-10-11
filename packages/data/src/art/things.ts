@@ -1230,3 +1230,5 @@ THINGS.heavy_turret = recolor(THINGS.scrap_turret, { e: "9", d: "8" }).map((r, y
 THINGS.large_battery = THINGS.battery;
 /** Electric cooler: the heater's box with cold grey-white fins instead of glowing coils. */
 THINGS.electric_cooler = recolor(THINGS.electric_heater, { a: "7", "9": "e" });
+/** Patched wall (claimed ruin): the ruin wall with its gap at the top filled in. */
+THINGS.patched_wall = THINGS.ruin_wall.map((r, y) => (y === 0 ? "0000000000000000" : y === 1 ? r.replace("..", "55") : r));

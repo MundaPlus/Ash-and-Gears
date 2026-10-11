@@ -46,7 +46,7 @@ const TOAST_SEC = 7;
 /** Big events pause the game so the player can react (spec 06). */
 /** Toolbar menus by key (W, A, S, D move the camera). */
 const MENU_KEYS: Record<string, "build" | "orders" | "zones" | "work" | "research" | "world"> = { b: "build", o: "orders", z: "zones", j: "work", t: "research", m: "world" };
-const AUTO_PAUSE = new Set(["msg.raid", "msg.raid_faction", "msg.glow_hounds", "msg.rad_rats", "msg.rad_warning", "msg.downed", "msg.died"]);
+const AUTO_PAUSE = new Set(["msg.raid", "msg.raid_faction", "msg.glow_hounds", "msg.rad_rats", "msg.rad_warning", "msg.downed", "msg.died", "msg.food_critical"]);
 
 const hex = (n: number) => `#${n.toString(16).padStart(6, "0")}`;
 
@@ -932,7 +932,7 @@ async function boot() {
   }
 
   const buildOptions: BuildOption[] = [
-    ...game.reg.things.list.filter((d) => d.build).map((d) => ({ defKind: "thing" as const, def: d.id, menu: d.build!.menu, cost: Object.entries(d.build!.cost).map(([item, n]) => ({ item, n })), locked: d.build!.research ?? null, rotatable: d.rotatable })),
+    ...game.reg.things.list.filter((d) => d.build && !d.claimed).map((d) => ({ defKind: "thing" as const, def: d.id, menu: d.build!.menu, cost: Object.entries(d.build!.cost).map(([item, n]) => ({ item, n })), locked: d.build!.research ?? null, rotatable: d.rotatable })),
     ...game.reg.floors.list.map((d) => ({ defKind: "floor" as const, def: d.id, menu: "floor", cost: Object.entries(d.build.cost).map(([item, n]) => ({ item, n })), locked: null, rotatable: false })),
   ];
   const buildRows = () => buildOptions.map((o) => ({ ...o, locked: o.locked && !game.research.done.has(o.locked) ? o.locked : null }));

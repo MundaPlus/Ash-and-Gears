@@ -3,6 +3,8 @@
  */
 import { populateLairs } from "./towers.ts";
 import { tickLairs } from "./lairs.ts";
+import { tickClaims } from "./claim.ts";
+import { tickFoodWarning } from "./alerts.ts";
 import { ensureLinks } from "./links.ts";
 import type { Content } from "@wc/data";
 import { GameMap, NO_THING, type Blueprint, type ItemStack, type Thing, type Zone } from "./map.ts";
@@ -387,6 +389,8 @@ export class Game {
     tickPlot(this);
     tickTurrets(this);
     tickLairs(this);
+    tickClaims(this);
+    tickFoodWarning(this);
     tickGoals(this);
   }
 }
