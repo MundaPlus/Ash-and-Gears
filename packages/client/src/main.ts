@@ -451,6 +451,31 @@ async function boot() {
     if (document.visibilityState === "hidden") void saveSession();
   });
   window.addEventListener("pagehide", () => void saveSession());
+  // A new build on the server: say so, save the game, then reload (user request). Not on the dev server.
+  if (!import.meta.env.DEV) {
+    let reloading = false;
+    const checkVersion = async () => {
+      if (reloading) return;
+      try {
+        const r = await fetch(`${import.meta.env.BASE_URL}version.json`, { cache: "no-store" });
+        if (!r.ok) return;
+        const { id } = (await r.json()) as { id?: string };
+        if (!id || id === __BUILD_ID__) return;
+        reloading = true;
+        game.message("msg.new_version", {}, "info");
+        setTimeout(async () => {
+          await saveSession();
+          location.reload();
+        }, 4000);
+      } catch {
+        // Offline or the file is missing: try again later.
+      }
+    };
+    setInterval(() => void checkVersion(), 60000);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") void checkVersion();
+    });
+  }
   let autosaving = false;
   async function autosave() {
     if (autosaving) return;

@@ -850,6 +850,7 @@
   "research.field_medicine.desc": "Make bandages from cloth.",
   "msg.research_done": "Research done: {project}.",
   "msg.manual_studied": "{name} studied the {item}. {project} can start now.",
+  "msg.new_version": "A new version of the game is out. Saving and reloading…",
   "msg.study_called": "{name} takes the {item} to the research desk to study it.",
   "msg.no_researcher": "Nobody can study the {item} now. Turn on Research for a survivor in the Work tab.",
   "build.locked": "Needs research: {project}",
