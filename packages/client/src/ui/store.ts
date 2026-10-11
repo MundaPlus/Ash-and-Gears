@@ -65,7 +65,7 @@ export interface PawnDetail {
   pain: number;
   injuries: { part: string; kind: string; dmg: number; tended: boolean }[];
   missing: string[];
-  skills: { id: string; level: number; passion: number }[];
+  skills: { id: string; level: number; passion: number; next: number }[];
   traits: string[];
   /** Colony robot: charge 0..1 instead of needs and mood. */
   robot: boolean;

@@ -71,6 +71,9 @@ button.on { background: var(--rust); color: var(--ink); border-color: var(--rust
 .bar, .skills li { display: grid; grid-template-columns: 96px 1fr 38px; gap: 8px; align-items: center; font-size: 13px; margin: 3px 0; }
 .track { display: block; height: 6px; background: rgba(255,255,255,.08); }
 .track b { display: block; height: 100%; background: var(--dim); }
+/* Progress to the next skill level: a thin bright line under the level bar. */
+.skills .track { position: relative; }
+.skills .track i.xp { position: absolute; left: 0; bottom: -3px; height: 2px; background: var(--rust); }
 .num { font: 12px var(--mono); text-align: right; color: var(--dim); font-variant-numeric: tabular-nums; }
 .pawnpanel ul { list-style: none; margin: 0; padding: 0; }
 .traits { display: flex; flex-wrap: wrap; gap: 4px; }

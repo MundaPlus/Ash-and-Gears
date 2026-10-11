@@ -102,6 +102,19 @@ function benchWorkSpeed(game: Game, p: Pawn, r: RecipeDef, bench: Thing): number
   return base * game.reg.things.list[bench.def].benchSpeed * lightWorkFactor(game, p);
 }
 
+/**
+ * Batch cooking (user request): a skilled cook makes up to 5 portions in one go. Cooking skill 0-3 makes 1,
+ * 4-7 makes 2, 8-11 makes 3, 12-15 makes 4, and 16 or more makes 5.
+ */
+export function cookBatch(level: number): number {
+  return Math.max(1, Math.min(5, 1 + Math.floor(level / 4)));
+}
+/** Each extra portion in a batch takes this share of one portion's work (one fire, one pot). */
+const BATCH_EXTRA_WORK = 0.7;
+
+/** Portions in this job (1 unless batch cooking). */
+const batchOf = (job: Job) => (job.data?.batch as number) ?? 1;
+
 /** Benches that need power only work while powered. */
 function benchReady(game: Game, bench: Thing): boolean {
   const d = game.reg.things.list[bench.def];
@@ -169,7 +182,23 @@ function billJob(game: Game, p: Pawn, workType: WorkType, urgentOnly = false): J
       if (!net || netAmount(game, net, r.fluidIn.kind) < r.fluidIn.liters) continue;
     }
     if (!reserve(game, `thing:${bench.id}`, p)) continue;
-    return { kind: "bill", stage: 0, targetId: bench.id, data: { recipe: r.id, input: 0, have: 0, work: r.work, ...(isOrder ? { order: true } : {}) } };
+    // Cooks make a batch: as many portions as their skill allows, the inputs on hand cover, and the order or bill still needs.
+    let batch = 1;
+    if (r.skill === "cooking" && !r.fluidIn && !r.fluidOut && !r.spawn && Object.keys(r.output).every((id) => game.reg.items.get(id).category === "food")) {
+      const sets = Math.min(
+        ...r.inputs.map((inp) => {
+          let n = 0;
+          for (const s of game.items.values()) if (s.layer >= 0 && !s.contaminated && !s.forbidden && matchesInput(game, inp, s.def)) n += s.count;
+          for (const [k, v] of Object.entries(bench.buffer ?? {})) if (matchesInput(game, inp, Number(k))) n += v;
+          return Math.floor(n / inp.count);
+        }),
+      );
+      const perRun = Math.max(1, Object.values(r.output)[0] ?? 1);
+      const wanted = isOrder ? ((bench.queue ?? []).find((o) => o.recipe === r.id)?.left ?? 1) : Math.ceil((billTarget(game, bench, r) - stockOf(game, r)) / perRun);
+      batch = Math.max(1, Math.min(cookBatch(skillLevel(game, p, "cooking")), sets, wanted));
+    }
+    const work = r.work * (1 + BATCH_EXTRA_WORK * (batch - 1));
+    return { kind: "bill", stage: 0, targetId: bench.id, data: { recipe: r.id, input: 0, have: 0, work, ...(batch > 1 ? { batch, total: work } : {}), ...(isOrder ? { order: true } : {}) } };
   }
   return null;
 }
@@ -191,7 +220,7 @@ registerWorkGiver({ workType: "haul", give: urgentBillJob }, true);
 /** Inputs still missing for the current input slot. */
 function missingNow(r: RecipeDef, job: Job): number {
   const idx = job.data!.input as number;
-  return idx < r.inputs.length ? r.inputs[idx].count - (job.data!.have as number) : 0;
+  return idx < r.inputs.length ? r.inputs[idx].count * batchOf(job) - (job.data!.have as number) : 0;
 }
 
 /**
@@ -281,7 +310,7 @@ registerJob("bill", (game, p, job) => {
   // A make order: one fewer to go; the order leaves the queue when it is done.
   if (job.data!.order) {
     const i = (bench.queue ?? []).findIndex((o) => o.recipe === r.id);
-    if (i >= 0) queueSet(bench, i, bench.queue![i].left - 1);
+    if (i >= 0) queueSet(bench, i, Math.max(0, bench.queue![i].left - batchOf(job)));
   }
   // Water from a contaminated well is contaminated too.
   const cont = isContaminatedThing(game, bench);
@@ -298,7 +327,8 @@ registerJob("bill", (game, p, job) => {
   }
   // A belt, chest or arm on the output side takes the products; else they go next to the worker.
   const out = !cont && benchFeedsOut(game, bench);
-  for (const [item, n] of Object.entries(r.output)) {
+  for (const [item, one] of Object.entries(r.output)) {
+    const n = one * batchOf(job);
     if (!out) dropItems(game, item, n, p.layer, p.x, p.y, cont, bench.contamUntil);
     else {
       const def = game.reg.items.idx(item);
@@ -335,7 +365,7 @@ function useBuffer(game: Game, bench: Thing, r: RecipeDef, job: Job): void {
   if (!bench.buffer || idx >= r.inputs.length) return;
   const inp = r.inputs[idx];
   for (const [k, v] of Object.entries(bench.buffer)) {
-    const missing = inp.count - (job.data!.have as number);
+    const missing = inp.count * batchOf(job) - (job.data!.have as number);
     if (missing <= 0 || v <= 0 || !matchesInput(game, inp, Number(k))) continue;
     const n = Math.min(v, missing);
     bench.buffer[Number(k)] -= n;

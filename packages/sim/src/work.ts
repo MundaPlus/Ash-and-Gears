@@ -56,7 +56,7 @@ export function jobProgress(game: Game, p: Pawn): { at: Pos; k: number } | null 
     const r = game.reg.content.recipes.find((x) => x.id === j.data!.recipe);
     const bench = game.things.get(j.targetId!);
     if (!r || !bench) return null;
-    return { at: { layer: bench.layer, x: bench.x, y: bench.y }, k: 1 - (j.data!.work as number) / r.work };
+    return { at: { layer: bench.layer, x: bench.x, y: bench.y }, k: 1 - (j.data!.work as number) / ((j.data!.total as number) ?? r.work) };
   }
   return null;
 }

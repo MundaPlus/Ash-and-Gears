@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadCoreContent } from "@wc/data";
-import { WORK_TYPES, isRoofed, rotRateAt, setRoof, completeRoofs, contaminate, countItems, createZone, dropItems, exposureAt, Game, NO_THING, roomAt, scheduleRadCloud, tickWeather, type Pawn } from "../src/index.ts";
+import { WORK_TYPES, cookBatch, isRoofed, rotRateAt, setRoof, completeRoofs, contaminate, countItems, createZone, dropItems, exposureAt, Game, NO_THING, roomAt, scheduleRadCloud, tickWeather, type Pawn } from "../src/index.ts";
 
 const content = loadCoreContent();
 const newGame = (seed: string) => Game.create(content, { seed, mapSize: 96, storyteller: "none" });
@@ -122,6 +122,45 @@ describe("cooks cook and draw water (user request)", () => {
       if (people[0].job?.kind === "bill") recipe = people[0].job.data?.recipe;
     }
     expect(recipe).toBe("cook_simple_meal");
+  });
+});
+
+describe("batch cooking (user request)", () => {
+  /** One cook with this cooking level; returns the batch size of the first cooking job. */
+  function firstBatch(seed: string, level: number, food = 60) {
+    const g = newGame(seed);
+    const { x: hx, y: hy } = g.home;
+    clearArea(g, hx - 6, hy - 6, 3);
+    g.spawnThing("campfire", 0, hx - 7, hy - 6).fuel = 50;
+    for (const s of [...g.items.values()]) if (g.reg.items.list[s.def].category === "food") s.count = 0;
+    dropItems(g, "glowcorn", food, 0, hx - 3, hy - 3);
+    const people = [...g.pawns.values()].filter((p) => p.faction === "colony");
+    for (const p of people) p.work = Object.fromEntries(WORK_TYPES.map((w) => [w, w === "cook" && p === people[0] ? 1 : 0]));
+    const cook = people[0];
+    cook.skills[g.reg.skills.idx("cooking")].level = level;
+    cook.traits = [];
+    delete cook.backstory;
+    for (let i = 0; i < g.ticksPerHour * 2 && cook.job?.kind !== "bill"; i++) g.step();
+    return { g, batch: (cook.job?.data?.batch as number) ?? 1 };
+  }
+
+  it("a better cook makes a bigger batch, from 1 up to 5", () => {
+    expect(cookBatch(0)).toBe(1);
+    expect(cookBatch(5)).toBe(2);
+    expect(cookBatch(12)).toBe(4);
+    expect(cookBatch(20)).toBe(5);
+    expect(firstBatch("batch0", 2).batch).toBe(1);
+    expect(firstBatch("batch12", 12).batch).toBe(4);
+  });
+
+  it("the batch is only as big as the raw food on hand", () => {
+    expect(firstBatch("batchfood", 20, 25).batch).toBe(2);
+  });
+
+  it("a batch of 4 turns 40 raw food into 4 meals in one job", () => {
+    const { g } = firstBatch("batchmeals", 12);
+    run(g, 6);
+    expect(countItems(g, "simple_meal")).toBeGreaterThanOrEqual(4);
   });
 });
 

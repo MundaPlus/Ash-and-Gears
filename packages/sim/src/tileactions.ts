@@ -19,12 +19,12 @@ export function tileActions(game: Game, layer: number, x: number, y: number): { 
   const actions: TileAction[] = [];
   if (L.blueprint[i] !== NO_THING) actions.push("cancel_plan");
   if (L.desig[i]) actions.push("cancel_order");
-  else for (const k of ["put_down", "pry", "mine", "salvage", "claim", "cut", "clear", "deconstruct", "unfloor"] as DesigKind[]) if (canDesignate(game, k, layer, x, y)) actions.push(k);
+  else for (const k of ["put_down", "pry", "mine", "salvage", "claim", "cut", "clear", "deconstruct", "unfloor", "unline"] as DesigKind[]) if (canDesignate(game, k, layer, x, y)) actions.push(k);
   const stack = L.item[i] !== NO_THING ? game.items.get(L.item[i]) : undefined;
   if (stack && canHaul(game, stack.id)) actions.push("haul");
   if (stack) actions.push(stack.forbidden ? "allow" : "forbid");
   if (L.zone[i] !== NO_THING) actions.push("remove_zone");
-  const first = actions.find((a) => a !== "deconstruct" && a !== "unfloor" && a !== "remove_zone") ?? null;
+  const first = actions.find((a) => a !== "deconstruct" && a !== "unfloor" && a !== "unline" && a !== "remove_zone") ?? null;
   return { actions, first };
 }
 

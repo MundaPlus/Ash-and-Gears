@@ -209,12 +209,13 @@ export function PawnPanel() {
       <h3>{t("pawn.skills")}</h3>
       <ul class="skills">
         {p.skills.map((sk) => (
-          <li key={sk.id} title={sk.passion ? t(`passion.${sk.passion}`) : ""}>
+          <li key={sk.id} title={[sk.passion ? t(`passion.${sk.passion}`) : "", t("pawn.skill_next", { pct: Math.floor(sk.next * 100) })].filter(Boolean).join(" · ")}>
             <span>
               {t(`skill.${sk.id}`)} <em class="passion">{sk.passion === 2 ? "++" : sk.passion === 1 ? "+" : ""}</em>
             </span>
             <span class="track">
               <b style={{ width: `${(sk.level / 20) * 100}%` }} />
+              <i class="xp" style={{ width: `${sk.next * 100}%` }} />
             </span>
             <span class="num">{sk.level}</span>
           </li>

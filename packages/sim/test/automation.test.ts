@@ -1,8 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { loadCoreContent } from "@wc/data";
 import {
+  callResearcher,
+  canStudy,
   countItems,
+  doTileForce,
   dropItems,
+  tileForceActions,
+  WORK_TYPES,
   Game,
   makeHostile,
   NO_THING,
@@ -58,6 +63,41 @@ describe("research", () => {
     expect(g.research.studied.has("factory_manual")).toBe(true);
     expect(researchState(g, "auto_crafting")).toBe("available");
     expect(countItems(g, "factory_manual")).toBe(1);
+  });
+
+  it("right-clicking a manual calls a researcher who drops other work and studies it (user request)", () => {
+    const g = newGame("callres");
+    for (const r of ["scrap_power", "powered_tools", "conveyors", "smelting"]) g.research.done.add(r);
+    const { x, y } = g.home;
+    clearArea(g, x - 5, y - 5, 2);
+    g.spawnThing("research_desk", 0, x - 5, y - 5);
+    const L = g.map.layers[0];
+    dropItems(g, "factory_manual", 1, 0, x + 3, y);
+    const stack = L.item[L.i(x + 3, y)];
+    expect(canStudy(g, stack)).toBe(true);
+    // Researchers with research as their last priority, busy with other work.
+    const people = [...g.pawns.values()].filter((p) => p.faction === "colony");
+    for (const p of people) p.work = Object.fromEntries(WORK_TYPES.map((w) => [w, w === "research" ? 4 : w === "haul" ? 1 : 0]));
+    const who = callResearcher(g, stack)!;
+    expect(who).not.toBeNull();
+    expect(who.job?.kind).toBe("study");
+    run(g, 3);
+    expect(g.research.studied.has("factory_manual")).toBe(true);
+    expect(canStudy(g, stack)).toBe(false);
+  });
+
+  it("the selected survivor can be told to study a manual from the tile menu", () => {
+    const g = newGame("forcestudy");
+    for (const r of ["scrap_power", "powered_tools", "conveyors", "smelting"]) g.research.done.add(r);
+    const { x, y } = g.home;
+    clearArea(g, x - 5, y - 5, 2);
+    g.spawnThing("research_desk", 0, x - 5, y - 5);
+    dropItems(g, "factory_manual", 1, 0, x + 3, y);
+    const [p] = [...g.pawns.values()].filter((o) => o.faction === "colony");
+    delete p.noWork;
+    expect(tileForceActions(g, p, 0, x + 3, y)).toContain("study");
+    expect(doTileForce(g, p, 0, x + 3, y, "study")).toBe(true);
+    expect(p.job?.kind).toBe("study");
   });
 
   it("the map has an old safe that holds the factory manual", () => {
