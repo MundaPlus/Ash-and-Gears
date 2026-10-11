@@ -31,6 +31,9 @@ export function canDesignate(game: Game, kind: DesigKind, layer: number, x: numb
       return !!thing?.sealed;
     case "put_down":
       return !!downedBeast(game, layer, x, y);
+    case "unline":
+      // The wire or pipe inside a wall or door (user request).
+      return !!game.things.get(L.thing[L.i(x, y)])?.line;
     case "claim":
       // An old wall or door the colony patches up and takes as its own.
       return !!thing?.claimAs && game.reg.things.has(thing.claimAs);
@@ -310,8 +313,45 @@ registerTask("claim", {
     // Patched up: the old wall or door becomes the colony's own, at full strength.
     const old = game.things.get(L.thing[L.i(t.x, t.y)])!;
     const as = game.reg.things.list[old.def].claimAs!;
+    // A wire or pipe inside stays inside the patched wall.
+    const line = old.line;
+    delete old.line;
     game.removeThing(old.id);
-    game.spawnThing(as, t.layer, t.x, t.y, old.rot);
+    const now = game.spawnThing(as, t.layer, t.x, t.y, old.rot);
+    if (line) now.line = line;
+  },
+});
+
+registerTask("unline", {
+  skill: "construction",
+  xp: 0.2,
+  total: (game, job) => {
+    const L = game.map.layers[job.target!.layer];
+    const line = game.things.get(L.thing[L.i(job.target!.x, job.target!.y)])?.line;
+    return Math.ceil((line ? game.reg.things.get(line).build?.work ?? 40 : 40) / 2);
+  },
+  valid: (game, job) => {
+    const L = game.map.layers[job.target!.layer];
+    return desigAt(game, job) === Desig.unline && !!game.things.get(L.thing[L.i(job.target!.x, job.target!.y)])?.line;
+  },
+  complete: (game, _p, job) => {
+    const t = job.target!;
+    const L = game.map.layers[t.layer];
+    undesignate(game, t.layer, t.x, t.y);
+    const wall = game.things.get(L.thing[L.i(t.x, t.y)])!;
+    const def = game.reg.things.get(wall.line!);
+    delete wall.line;
+    delete wall.liquid;
+    if (def.conduit) game.powerVersion++;
+    else game.fluidVersion++;
+    L.touch(t.x, t.y);
+    game.touchAround(t.layer, t.x, t.y);
+    game.mapVersion++;
+    // 75% of the line's materials come back, like deconstructing.
+    for (const [item, n] of Object.entries(def.build?.cost ?? {})) {
+      const back = Math.floor(n * 0.75);
+      if (back > 0) dropItems(game, item, back, t.layer, t.x, t.y);
+    }
   },
 });
 
@@ -341,6 +381,7 @@ const GIVERS: [WorkType, DesigKind][] = [
   ["construct", "unfloor"],
   ["construct", "pry"],
   ["construct", "claim"],
+  ["construct", "unline"],
   ["warden", "put_down"],
 ];
 

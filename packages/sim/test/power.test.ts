@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadCoreContent } from "@wc/data";
-import { bankSize, canPlace, Game, placeBlueprint, isPowered, makeRobot, NO_THING, setSwitch, WORK_TYPES } from "../src/index.ts";
+import { bankSize, canPlace, designate, Game, placeBlueprint, isPowered, makeRobot, NO_THING, setSwitch, WORK_TYPES } from "../src/index.ts";
 
 const content = loadCoreContent();
 const run = (g: Game, hours: number) => {
@@ -51,6 +51,29 @@ describe("wires and pipes in walls (user request)", () => {
     run(g, 0.2);
     expect(g.thingDefAt(0, ex + 2, y0)?.id).toBe("wire");
     expect(isPowered(g, lamp)).toBe(true);
+  });
+
+  it("the Remove wire/pipe order takes the line out and leaves the wall", () => {
+    const { g, x0, y0 } = setup("unline");
+    const gen = g.spawnThing("scrap_generator", 0, x0, y0);
+    gen.fuel = 30;
+    const ex = Math.max(...g.footprint(gen.def, gen.x, gen.y).map((f) => f.x));
+    g.spawnThing("wire", 0, ex + 1, y0);
+    const wall = g.spawnThing("scrap_wall", 0, ex + 2, y0);
+    wall.line = "wire";
+    g.spawnThing("wire", 0, ex + 3, y0);
+    const lamp = g.spawnThing("lamp", 0, ex + 4, y0);
+    g.powerVersion++;
+    run(g, 0.2);
+    expect(isPowered(g, lamp)).toBe(true);
+    expect(designate(g, "unline", 0, ex + 2, y0)).toBe(true);
+    for (const p of g.pawns.values()) if (p.faction === "colony") p.work = Object.fromEntries(WORK_TYPES.map((w) => [w, w === "construct" ? 1 : 0]));
+    lamp.bank = 0;
+    run(g, 3);
+    expect(wall.line).toBeUndefined();
+    expect(g.things.get(wall.id)).toBe(wall);
+    expect(isPowered(g, lamp)).toBe(false);
+    expect(designate(g, "unline", 0, ex + 2, y0)).toBe(false);
   });
 
   it("a wall built over a pipe takes the pipe inside", () => {
