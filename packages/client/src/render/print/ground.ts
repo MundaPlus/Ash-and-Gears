@@ -32,6 +32,15 @@ const cracks = (ink: Ink, n: number) => (p: Print, r: () => number) => {
     p.line([[x, y], [x + 6 + r() * 6, y + 2 + r() * 4], [x + 10 + r() * 8, y + 8 + r() * 6]], ink, 1.2);
   }
 };
+/** Stone blocks in offset rows with a lit top-left edge and a dark lower-right edge: the mark of mineable rock. */
+const blocks = (light: Ink, shadow: Ink) => (p: Print) => {
+  for (const [x, y, w] of [[0, 0, 32], [32, 0, 32], [-16, 32, 32], [16, 32, 32], [48, 32, 32]] as [number, number, number][]) {
+    const x0 = Math.max(0, x) + 2, x1 = Math.min(64, x + w) - 2, y0 = y + 2, y1 = y + 30;
+    if (x1 - x0 < 6) continue;
+    p.line([[x0, y1], [x0, y0], [x1, y0]], light, 2.2);
+    p.line([[x1, y0], [x1, y1], [x0, y1]], shadow, 2.6);
+  }
+};
 const both = (...fs: ((p: Print, r: () => number) => void)[]) => (p: Print, r: () => number) => fs.forEach((f) => f(p, r));
 
 const GROUND: Record<string, Ground> = {
@@ -104,8 +113,9 @@ const GROUND: Record<string, Ground> = {
   deck: { base: "ochreDark", tone: "hair", amount: 0.2, cell: 3, marks: cracks("soot", 1) },
   // Open air on tower floors (N1): a dark drop.
   open_air: { base: "soot", tone: "slateDark", amount: 0.12, cell: 5 },
-  rock: { base: "slateDark", tone: "soot", amount: 0.38, cell: 3, marks: cracks("soot", 2) },
-  coal_seam: { base: "soot", tone: "slateDark", amount: 0.25, cell: 3, marks: pebbles(["slateDark", "slate"], 4) },
+  // Mineable ground: raised stone blocks (user report: rock looked like asphalt).
+  rock: { base: "slate", tone: "slateDark", amount: 0.2, cell: 3, marks: both(cracks("slateDark", 1), blocks("bone", "slateDark")) },
+  coal_seam: { base: "slateDark", tone: "soot", amount: 0.3, cell: 3, marks: both(pebbles(["soot", "soot"], 6), blocks("slate", "soot")) },
   scrap_vein: {
     base: "rustDark",
     tone: "soot",
@@ -116,6 +126,7 @@ const GROUND: Record<string, Ground> = {
         const x = 12 + r() * 36, y = 12 + r() * 36;
         p.shape([[x, y], [x + 8, y + 2], [x + 4, y + 7]], { fill: r() < 0.5 ? "rust" : "slate", line: 1.2 });
       }
+      blocks("rust", "soot")(p);
     },
   },
   rough_floor: { base: "slate", tone: "soot", amount: 0.22, cell: 3, marks: pebbles(["slateDark"], 3) },

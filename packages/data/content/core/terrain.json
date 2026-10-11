@@ -70,7 +70,7 @@
  },
  {
   "id": "rock",
-  "color": "#3a2e26",
+  "color": "#8a7a66",
   "walkCost": 0,
   "solid": true,
   "buildable": false,
