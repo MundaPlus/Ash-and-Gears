@@ -305,7 +305,7 @@ export class Game {
   }
 
   /** Redraw the four neighbors too (walls, wires and sandbags join with them, maybe across a chunk edge). */
-  private touchAround(layer: number, x: number, y: number): void {
+  touchAround(layer: number, x: number, y: number): void {
     const L = this.map.layers[layer];
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (L.inBounds(x + dx, y + dy)) L.touch(x + dx, y + dy);
   }
@@ -329,6 +329,8 @@ export class Game {
     }
     if (d.power || d.conduit) this.powerVersion++;
     if (d.pipe || d.fluid) this.fluidVersion++;
+    // A wire or pipe inside a wall stays when the wall goes.
+    if (t.line && this.reg.things.has(t.line) && L.thing[L.i(t.x, t.y)] === NO_THING) this.spawnThing(t.line, t.layer, t.x, t.y);
   }
 
   /** True if a pawn can stand on this tile. */

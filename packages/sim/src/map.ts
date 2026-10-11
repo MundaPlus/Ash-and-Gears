@@ -48,6 +48,8 @@ export interface Thing {
   splitNext?: number;
   /** Bed for prisoners (A6). */
   forPrisoners?: boolean;
+  /** A wire or a pipe (def id) that runs through this wall or door. One per tile: never both (user rule). */
+  line?: string;
   /** Trap that went off and waits to be re-armed. */
   sprung?: boolean;
   /** Medical bed: only for the sick and hurt. Nobody owns it; it heals faster and tends better. */

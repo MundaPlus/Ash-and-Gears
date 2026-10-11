@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadCoreContent } from "@wc/data";
-import { bankSize, Game, isPowered, makeRobot, NO_THING, setSwitch, WORK_TYPES } from "../src/index.ts";
+import { bankSize, canPlace, Game, placeBlueprint, isPowered, makeRobot, NO_THING, setSwitch, WORK_TYPES } from "../src/index.ts";
 
 const content = loadCoreContent();
 const run = (g: Game, hours: number) => {
@@ -21,6 +21,49 @@ function setup(seed: string) {
   for (const p of g.pawns.values()) p.work = Object.fromEntries(WORK_TYPES.map((w) => [w, 0]));
   return { g, x0, y0 };
 }
+
+describe("wires and pipes in walls (user request)", () => {
+  it("a wire runs through a wall, a pipe cannot join it there, and the wire stays when the wall goes", () => {
+    const { g, x0, y0 } = setup("wallwire");
+    g.research.done.add("scrap_power").add("plumbing");
+    const gen = g.spawnThing("scrap_generator", 0, x0, y0);
+    gen.fuel = 30;
+    const ex = Math.max(...g.footprint(gen.def, gen.x, gen.y).map((f) => f.x));
+    g.spawnThing("wire", 0, ex + 1, y0);
+    const wall = g.spawnThing("scrap_wall", 0, ex + 2, y0);
+    g.spawnThing("wire", 0, ex + 3, y0);
+    const lamp = g.spawnThing("lamp", 0, ex + 4, y0);
+    lamp.bank = 0;
+    run(g, 0.2);
+    expect(isPowered(g, lamp)).toBe(false);
+    // A builder lays the wire into the wall.
+    expect(placeBlueprint(g, "thing", "wire", 0, ex + 2, y0)).not.toBeNull();
+    const [p] = [...g.pawns.values()].filter((o) => o.faction === "colony");
+    p.work = Object.fromEntries(WORK_TYPES.map((w) => [w, w === "construct" || w === "haul" ? 1 : 0]));
+    run(g, 4);
+    expect(wall.line).toBe("wire");
+    expect(g.things.get(wall.id)).toBe(wall);
+    expect(isPowered(g, lamp)).toBe(true);
+    // One line per tile: no pipe into the same wall.
+    expect(canPlace(g, "thing", "pipe", 0, ex + 2, y0)).toBe(false);
+    // The wall goes, the wire stays.
+    g.removeThing(wall.id);
+    run(g, 0.2);
+    expect(g.thingDefAt(0, ex + 2, y0)?.id).toBe("wire");
+    expect(isPowered(g, lamp)).toBe(true);
+  });
+
+  it("a wall built over a pipe takes the pipe inside", () => {
+    const { g, x0, y0 } = setup("wallpipe");
+    g.spawnThing("pipe", 0, x0 + 3, y0 + 3);
+    expect(placeBlueprint(g, "thing", "scrap_wall", 0, x0 + 3, y0 + 3)).not.toBeNull();
+    for (const p of g.pawns.values()) if (p.faction === "colony") p.work = Object.fromEntries(WORK_TYPES.map((w) => [w, w === "construct" || w === "haul" ? 1 : 0]));
+    run(g, 4);
+    expect(g.thingDefAt(0, x0 + 3, y0 + 3)?.id).toBe("scrap_wall");
+    const L = g.map.layers[0];
+    expect(g.things.get(L.thing[L.i(x0 + 3, y0 + 3)])!.line).toBe("pipe");
+  });
+});
 
 describe("power grid (A3)", () => {
   it("power poles link groups up to 6 tiles apart, and a switch cuts the line", () => {

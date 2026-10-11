@@ -8,7 +8,7 @@ import { atGoal, findItem, goTo, isReserved, reserve } from "./ai.ts";
 import { registerJob, registerWorkGiver } from "./jobs.ts";
 import type { Game } from "./game.ts";
 import { countItems, dropItems, takeFromStack } from "./items.ts";
-import { NO_THING, type Blueprint } from "./map.ts";
+import { NO_THING, type Blueprint, type Thing } from "./map.ts";
 import { dropCarried, pickUp } from "./hauling.ts";
 import type { Job, Pawn } from "./pawn.ts";
 import { canDesignate, designate } from "./designations.ts";
@@ -35,10 +35,29 @@ function planTiles(game: Game, kind: Blueprint["kind"], def: number, x: number, 
   return kind === "thing" ? game.footprint(def, x, y, rot) : [{ x, y }];
 }
 
+/**
+ * Wires and pipes run through walls and doors (user request). True when the plan `def` and the thing on
+ * its tile join into one wall with a line in it: a line into an empty wall, or a one-tile wall over a line.
+ */
+export function joinsLine(game: Game, def: number, here: Thing): boolean {
+  const d = game.reg.things.list[def], h = game.reg.things.list[here.def];
+  if (isLine(d) && h.wall) return !here.line;
+  return !!d.wall && d.footprint[0] * d.footprint[1] === 1 && isLine(h);
+}
+
+/** A plain wire or pipe (not a pole or a switch). */
+const isLine = (d: Game["reg"]["things"]["list"][number]) => (!!d.conduit && !d.pole && !d.switch) || !!d.pipe;
+
 /** True while something still stands on one of the plan's tiles. */
 function blocked(game: Game, bp: Blueprint): boolean {
   const L = game.map.layers[bp.layer];
-  return bp.kind === "thing" && planTiles(game, bp.kind, bp.def, bp.x, bp.y, bp.rot).some((t) => L.thing[L.i(t.x, t.y)] !== NO_THING);
+  return (
+    bp.kind === "thing" &&
+    planTiles(game, bp.kind, bp.def, bp.x, bp.y, bp.rot).some((t) => {
+      const id = L.thing[L.i(t.x, t.y)];
+      return id !== NO_THING && !joinsLine(game, bp.def, game.things.get(id)!);
+    })
+  );
 }
 
 /** Can a blueprint of this def go here? Big things check every tile they cover. */
@@ -101,6 +120,7 @@ function canPlaceTile(game: Game, kind: Blueprint["kind"], defId: string, layer:
     if (U.thing[U.i(x, y)] !== NO_THING || U.blueprint[U.i(x, y)] !== NO_THING) return false;
     if (isAir(game, up, x, y) ? !deckSupported(game, up, x, y) : !game.walkable(up, x, y)) return false;
   }
+  if (L.thing[i] !== NO_THING && joinsLine(game, game.reg.things.idx(defId), game.things.get(L.thing[i])!)) return true;
   return L.thing[i] === NO_THING || clearOrder(game, layer, x, y) !== null;
 }
 
@@ -171,6 +191,23 @@ function completeBlueprint(game: Game, bp: Blueprint) {
     return;
   }
   const def = game.reg.things.list[bp.def];
+  // A wire or pipe into a wall: the wall now carries it. A wall over a wire or pipe: it takes the line inside.
+  const hereId = L.thing[i];
+  const here = hereId !== NO_THING ? game.things.get(hereId) : undefined;
+  let line: string | undefined;
+  if (here && joinsLine(game, bp.def, here)) {
+    if (isLine(def)) {
+      here.line = def.id;
+      if (def.conduit) game.powerVersion++;
+      else game.fluidVersion++;
+      L.touch(bp.x, bp.y);
+      game.touchAround(bp.layer, bp.x, bp.y);
+      game.mapVersion++;
+      return;
+    }
+    line = game.reg.things.list[here.def].id;
+    game.removeThing(here.id);
+  }
   const tiles = game.footprint(bp.def, bp.x, bp.y, bp.rot);
   const moved: { def: number; count: number; contaminated: boolean; x: number; y: number }[] = [];
   for (const t of def.blocks ? tiles : []) {
@@ -180,7 +217,12 @@ function completeBlueprint(game: Game, bp: Blueprint) {
     moved.push({ def: s.def, count: s.count, contaminated: !!s.contaminated, x: t.x, y: t.y });
     takeFromStack(game, s.id, s.count);
   }
-  game.spawnThing(def.id, bp.layer, bp.x, bp.y, bp.rot);
+  const built = game.spawnThing(def.id, bp.layer, bp.x, bp.y, bp.rot);
+  if (line) {
+    built.line = line;
+    game.powerVersion++;
+    game.fluidVersion++;
+  }
   if ((def.stairs ?? 0) > 0) digDown(game, game.map.below(bp.layer), bp.x, bp.y);
   if ((def.stairs ?? 0) < 0) {
     // Built stairs up: a landing above (planks where there was air) and stairs down there.

@@ -749,13 +749,14 @@ async function boot() {
       if (def.autoCrafter && contents(thing.out)) lines.push(`${t("chest.title")}: ${contents(thing.out)}`);
       if (def.switch) power = { thingId: thing.id, switchOn: !thing.off };
       if (def.trap) lines.push(t(thing.sprung ? "inspect.trap_sprung" : "inspect.trap_armed"));
+      if (thing.line) lines.push(t("inspect.line_inside", { thing: t(`thing.${thing.line}`) }));
       if (def.bed) {
         const owner = sim.bedOwner(game, thing);
         const people = [...game.pawns.values()].filter((p) => p.faction === "colony" && !p.robot).map((p) => ({ id: p.id, nick: p.nick }));
         bed = { thingId: thing.id, use: sim.bedUse(thing), owner: owner?.id ?? null, people };
         if (bed.use === "colonist") lines.push(owner ? t("inspect.bed_owner", { name: owner.nick }) : t("inspect.bed_free"));
       }
-      if (def.pipe || (def.fluid && def.fluid.role !== "purifier")) {
+      if (def.pipe || (def.fluid && def.fluid.role !== "purifier") || (thing.line && game.reg.things.get(thing.line).pipe)) {
         const net = sim.fluidNetOf(game, thing);
         if (net)
           lines.push(t("inspect.fluids", { water: Math.round(sim.netAmount(game, net, "water")), clean: Math.round(sim.netAmount(game, net, "clean_water")), fuel: Math.round(sim.netAmount(game, net, "fuel")), room: Math.round(sim.netRoom(game, net)) }));
