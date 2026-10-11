@@ -502,6 +502,15 @@ async function boot() {
     const p = game.pawns.get(id);
     if (p) sim.release(game, p);
   };
+  actions.assignBed = (thingId, pawnId) => {
+    const th = game.things.get(thingId);
+    if (th) sim.assignBed(game, th, pawnId);
+    if (inspected) inspectTile(inspected.x, inspected.y);
+  };
+  actions.setGrowPaused = (zoneId, paused) => {
+    sim.setGrowPaused(game, zoneId, paused);
+    if (inspected) inspectTile(inspected.x, inspected.y);
+  };
   actions.setBedUse = (thingId, use) => {
     const th = game.things.get(thingId);
     if (th) sim.setBedUse(game, th, use);
@@ -666,7 +675,7 @@ async function boot() {
     let crafter: { thingId: number; current: string | null; options: string[]; needs?: Record<string, string> } | undefined;
     let filter: { thingId: number; current: string | null; options: string[] } | undefined;
     let power: { thingId: number; priority?: number; switchOn?: boolean } | undefined;
-    let bed: { thingId: number; use: sim.BedUse } | undefined;
+    let bed: { thingId: number; use: sim.BedUse; owner: number | null; people: { id: number; nick: string }[] } | undefined;
     if (th !== NO_THING) {
       const thing = game.things.get(th)!;
       const def = game.reg.things.list[thing.def];
@@ -731,7 +740,12 @@ async function boot() {
       }
       if (def.autoCrafter && contents(thing.out)) lines.push(`${t("chest.title")}: ${contents(thing.out)}`);
       if (def.switch) power = { thingId: thing.id, switchOn: !thing.off };
-      if (def.bed) bed = { thingId: thing.id, use: sim.bedUse(thing) };
+      if (def.bed) {
+        const owner = sim.bedOwner(game, thing);
+        const people = [...game.pawns.values()].filter((p) => p.faction === "colony" && !p.robot).map((p) => ({ id: p.id, nick: p.nick }));
+        bed = { thingId: thing.id, use: sim.bedUse(thing), owner: owner?.id ?? null, people };
+        if (bed.use === "colonist") lines.push(owner ? t("inspect.bed_owner", { name: owner.nick }) : t("inspect.bed_free"));
+      }
       if (def.pipe || (def.fluid && def.fluid.role !== "purifier")) {
         const net = sim.fluidNetOf(game, thing);
         if (net)
@@ -792,7 +806,8 @@ async function boot() {
     const ta = sim.tileActions(game, renderer.layer, x, y);
     const actionsUi = ta.actions.length ? { list: ta.actions as string[], first: ta.first } : undefined;
     // Any zone tile: grow or shrink this zone with the zone tools.
-    const zone = zoneHere ? { kind: zoneHere.kind, ...(zoneHere.crop ? { crop: zoneHere.crop } : {}) } : undefined;
+    const zone = zoneHere ? { id: zoneHere.id, kind: zoneHere.kind, ...(zoneHere.crop ? { crop: zoneHere.crop } : {}), ...(zoneHere.paused ? { paused: true } : {}) } : undefined;
+    if (zoneHere?.paused) lines.push(t("inspect.grow_paused"));
     store.set({ inspect: { title, lines, bills, crafter, filter, power, bed, actions: actionsUi, stockpile, make, researchLink, zone } });
   }
   let inspected: { x: number; y: number } | null = null;
@@ -961,6 +976,7 @@ async function boot() {
       downed: p.health.downed,
       weapon: p.weapon !== null ? game.reg.items.list[p.weapon].id : null,
       armor: p.armor.map((a) => game.reg.items.list[a].id),
+      stats: sim.charStats(game, p),
       bloodLoss: p.health.bloodLoss,
       pain: sim.pain(game, p),
       injuries: p.health.injuries.map((i) => ({ part: i.part, kind: i.kind, dmg: Math.round(i.dmg), tended: i.tended > 0 })),

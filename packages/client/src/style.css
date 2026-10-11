@@ -328,3 +328,20 @@ body.cinematic #ui { display: none; }
 .pawnmenu b { font-size: 12px; color: var(--dim); padding: 0 4px 2px; }
 .pawnmenu button { text-align: left; min-height: 34px; padding: 0 10px; }
 .pawnmenu button.dim { color: var(--dim); }
+/* Character panel tabs and the Gear tab (slots, stats, protection table). */
+.pawnpanel .tabs { display: flex; gap: 4px; margin: 2px 0 8px; }
+.pawnpanel .tabs button { flex: 1; padding: 4px 8px; }
+.gear .doll { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.gear .slot { border: 1px solid var(--line); padding: 6px 8px; display: flex; flex-direction: column; gap: 2px; min-height: 58px; }
+.gear .slot:last-child { grid-column: 1 / -1; }
+.gear .slot small { font: 600 10px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--dim); }
+.gear .slot b { font-size: 14px; }
+.gear .slot em { font-style: normal; font-size: 12px; color: var(--dim); }
+.gear .slot.empty b { color: var(--dim); font-weight: 400; }
+.gear .statlist li { display: flex; justify-content: space-between; font-size: 13px; padding: 1px 0; }
+.gear .pos { color: var(--good); } .gear .neg { color: var(--bad); }
+.gear .prot { width: 100%; border-collapse: collapse; font-size: 13px; }
+.gear .prot th { font: 600 10px var(--mono); text-transform: uppercase; color: var(--dim); text-align: right; }
+.gear .prot td { padding: 1px 0; text-align: right; }
+.gear .prot td:first-child { text-align: left; }
+.gear .prot td.dim { color: var(--dim); }

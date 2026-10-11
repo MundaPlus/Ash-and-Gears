@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadCoreContent } from "@wc/data";
-import { bedAt, bedUse, Game, inBed, NO_THING, setBedUse, WORK_TYPES } from "../src/index.ts";
+import { assignBed, bedAt, bedOwner, bedUse, Game, inBed, NO_THING, setBedUse, WORK_TYPES } from "../src/index.ts";
 
 const content = loadCoreContent();
 const run = (g: Game, hours: number) => {
@@ -55,5 +55,27 @@ describe("bed uses: colonists, prisoners, medical", () => {
     }
     expect(rested).toBe(true);
     expect(bedAt(g, patient)?.id).toBe(med.id);
+  });
+
+  it("the player gives a bed to one survivor; they sleep there and give up their old bed", () => {
+    const { g, own, med, colony } = camp("beds3");
+    const [a, b] = colony;
+    a.bedId = own.id;
+    assignBed(g, med, a.id);
+    expect(bedOwner(g, med)?.id).toBe(a.id);
+    expect(bedOwner(g, own)).toBe(null);
+    // Giving it to someone else takes it from the first owner.
+    assignBed(g, med, b.id);
+    expect(bedOwner(g, med)?.id).toBe(b.id);
+    expect(a.bedId).toBe(null);
+    b.needs.rest = 0.05;
+    let slept = false;
+    for (let h = 0; h < 4 && !slept; h++) {
+      run(g, 1);
+      slept = bedAt(g, b)?.id === med.id;
+    }
+    expect(slept).toBe(true);
+    assignBed(g, med, null);
+    expect(bedOwner(g, med)).toBe(null);
   });
 });

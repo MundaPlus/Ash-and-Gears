@@ -1,5 +1,63 @@
 import { t } from "@wc/data";
-import { actions, useStore } from "./store.ts";
+import { useState } from "preact/hooks";
+import { actions, useStore, type PawnDetail } from "./store.ts";
+
+const pct = (v: number) => `${Math.round(v * 100)}%`;
+const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / Math.max(1, xs.length);
+
+/** One gear slot: what sits there and its main number. */
+function Slot({ slot, item, note }: { slot: string; item: string | null; note: string }) {
+  return (
+    <div class={`slot ${item ? "" : "empty"}`} data-testid={`slot-${slot}`}>
+      <small>{t(`gear.slot.${slot}`)}</small>
+      <b>{item ? t(`item.${item}`) : t(slot === "weapon" ? "pawn.fists" : "gear.empty")}</b>
+      <em>{note}</em>
+    </div>
+  );
+}
+
+/** Gear tab (user request): slots and the detailed stats they give. */
+function GearTab({ p }: { p: PawnDetail }) {
+  const s = p.stats;
+  const a = s.attack;
+  const headAvg = avg(s.protection.map((x) => x.head)), bodyAvg = avg(s.protection.map((x) => x.body));
+  return (
+    <div class="gear" data-testid="gear-tab">
+      <div class="doll">
+        <Slot slot="head" item={s.slots.head} note={s.slots.head ? t("gear.protects", { v: pct(headAvg) }) : ""} />
+        <Slot slot="body" item={s.slots.body} note={s.slots.body ? t("gear.protects", { v: pct(bodyAvg) }) : ""} />
+        <Slot slot="weapon" item={s.slots.weapon} note={t("gear.weapon_note", { dmg: a.dmg, kind: t(`dmg.${a.kind}`) })} />
+      </div>
+      <h3>{t("gear.combat")}</h3>
+      <ul class="statlist">
+        <li><span>{t("gear.style")}</span><b>{t(a.melee ? "gear.melee" : "gear.ranged")}</b></li>
+        <li><span>{t("gear.damage")}</span><b>{a.dmg} {t(`dmg.${a.kind}`)}</b></li>
+        {!a.melee && <li><span>{t("gear.range")}</span><b>{t("gear.tiles", { n: Math.round(a.range) })}</b></li>}
+        <li title={a.melee ? "" : t("gear.hit_hint")}><span>{t("gear.hit")}</span><b>{pct(a.hit)}</b></li>
+        <li><span>{t("gear.dps")}</span><b>{a.perSecond.toFixed(1)}</b></li>
+      </ul>
+      <h3>{t("gear.protection")}</h3>
+      <table class="prot" data-testid="gear-protection">
+        <thead><tr><th /><th>{t("gear.slot.head")}</th><th>{t("gear.slot.body")}</th></tr></thead>
+        <tbody>
+          {s.protection.map((x) => (
+            <tr key={x.kind}><td>{t(`dmg.${x.kind}`)}</td><td class={x.head ? "" : "dim"}>{pct(x.head)}</td><td class={x.body ? "" : "dim"}>{pct(x.body)}</td></tr>
+          ))}
+        </tbody>
+      </table>
+      <p class="hint">{t("gear.legs_hint")}</p>
+      <h3>{t("gear.body")}</h3>
+      <ul class="statlist">
+        <li><span>{t("gear.move")}</span><b class={s.move < 0.95 ? "neg" : ""}>{pct(s.move)}</b></li>
+        {s.armorMove < 1 && <li><span>{t("gear.armor_move")}</span><b class="neg">{pct(s.armorMove)}</b></li>}
+        <li><span>{t("gear.work")}</span><b class={s.work < 0.95 ? "neg" : s.work > 1.05 ? "pos" : ""}>{pct(s.work)}</b></li>
+        <li><span>{t("gear.moving")}</span><b class={s.moving < 0.95 ? "neg" : ""}>{pct(s.moving)}</b></li>
+        <li><span>{t("gear.manipulation")}</span><b class={s.manipulation < 0.95 ? "neg" : ""}>{pct(s.manipulation)}</b></li>
+        <li><span>{t("gear.pain")}</span><b class={s.pain > 0.1 ? "neg" : ""}>{pct(s.pain)}</b></li>
+      </ul>
+    </div>
+  );
+}
 
 function Bar({ value, label }: { value: number; label: string }) {
   const pct = Math.round(value * 100);
@@ -17,6 +75,7 @@ function Bar({ value, label }: { value: number; label: string }) {
 
 export function PawnPanel() {
   const { pawn: p } = useStore();
+  const [tab, setTab] = useState<"overview" | "gear">("overview");
   if (!p) return null;
   return (
     <aside class="inspect pawnpanel" data-testid="pawn-panel">
@@ -26,6 +85,11 @@ export function PawnPanel() {
       <h2>
         <i class="swatch" style={{ background: p.color }} /> {p.name}
       </h2>
+      <div class="tabs" data-testid="pawn-tabs">
+        <button class={tab === "overview" ? "on" : ""} onClick={() => setTab("overview")}>{t("pawn.tab.overview")}</button>
+        <button class={tab === "gear" ? "on" : ""} data-testid="tab-gear" onClick={() => setTab("gear")}>{t("pawn.tab.gear")}</button>
+      </div>
+      {tab === "gear" ? <GearTab p={p} /> : <>
       <p class="sub">
         {p.faction === "colony" ? (
           <>
@@ -144,6 +208,7 @@ export function PawnPanel() {
       </ul>
         </>
       )}
+      </>}
     </aside>
   );
 }

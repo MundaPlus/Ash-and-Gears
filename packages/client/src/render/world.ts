@@ -149,7 +149,9 @@ export class WorldRenderer {
           const zs = new Sprite(Texture.WHITE);
           zs.width = zs.height = TILE;
           zs.position.copyFrom(s.position);
-          zs.tint = g.zones.get(z)?.kind === "grow" ? 0x9fd14a : 0x6fa0ff;
+          const zd = g.zones.get(z);
+          // Grow zones green (grey when sowing is stopped), stockpiles blue.
+          zs.tint = zd?.kind === "grow" ? (zd.paused ? 0xb0a090 : 0x9fd14a) : 0x6fa0ff;
           zs.alpha = 0.16;
           overlays.push(zs);
         }

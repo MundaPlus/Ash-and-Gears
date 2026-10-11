@@ -246,6 +246,11 @@ export function Hud() {
               >
                 {t("zone.grow_btn")}
               </button>
+              {s.inspect.zone.kind === "grow" && (
+                <button data-testid="zone-sow-btn" class={s.inspect.zone.paused ? "on" : ""} title={t("zone.sow_hint")} onClick={() => actions.setGrowPaused(s.inspect!.zone!.id, !s.inspect!.zone!.paused)}>
+                  {t(s.inspect.zone.paused ? "zone.sow_start" : "zone.sow_stop")}
+                </button>
+              )}
               <button data-testid="zone-shrink-btn" onClick={() => actions.setTool({ kind: "zone", zone: "remove" })} title={t("zone.shrink_hint")}>
                 {t("zone.shrink_btn")}
               </button>
@@ -302,6 +307,19 @@ export function Hud() {
               {(["colonist", "prisoner", "medical"] as const).map((use) => (
                 <button key={use} class={s.inspect!.bed!.use === use ? "on" : ""} title={t(`bed.${use}.desc`)} onClick={() => actions.setBedUse(s.inspect!.bed!.thingId, use)}>
                   {t(`bed.${use}`)}
+                </button>
+              ))}
+            </div>
+          )}
+          {s.inspect.bed?.use === "colonist" && (
+            <div class="bills bed-owner" data-testid="bed-owner">
+              <h3>{t("bed.owner")}</h3>
+              <button class={s.inspect.bed.owner === null ? "on" : ""} title={t("bed.anyone.desc")} onClick={() => actions.assignBed(s.inspect!.bed!.thingId, null)}>
+                {t("bed.anyone")}
+              </button>
+              {s.inspect.bed.people.map((p) => (
+                <button key={p.id} class={s.inspect!.bed!.owner === p.id ? "on" : ""} onClick={() => actions.assignBed(s.inspect!.bed!.thingId, p.id)}>
+                  {p.nick}
                 </button>
               ))}
             </div>

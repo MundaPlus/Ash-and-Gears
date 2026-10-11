@@ -116,6 +116,8 @@ export interface Zone {
   allowItems?: string[];
   /** Crop def id (grow zones, M4). */
   crop?: string;
+  /** Grow zone: sowing stopped by the player. Ripe crops still get harvested. */
+  paused?: boolean;
   /** Stockpile priority (B9): 1 low, 2 normal (default), 3 high, 4 critical. Items move up to better stockpiles. */
   priority?: number;
 }
