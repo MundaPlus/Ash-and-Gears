@@ -1,3 +1,4 @@
+import { MenuHead } from "./MenuHead.tsx";
 import { t } from "@wc/data";
 import { useState } from "preact/hooks";
 import { actions, useStore } from "./store.ts";
@@ -13,6 +14,7 @@ export function WorkGrid() {
   const [tab, setTab] = useState<"prio" | "sched">("prio");
   return (
     <div class="menu workgrid" data-testid="work-grid">
+      <MenuHead id="work" />
       <div class="tabs">
         <button class={tab === "prio" ? "on" : ""} onClick={() => setTab("prio")}>
           {t("work.tab_priorities")}

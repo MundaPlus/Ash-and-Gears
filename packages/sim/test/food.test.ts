@@ -43,6 +43,23 @@ describe("farming", () => {
     // Rich soil grows glowcorn in about 4 days, so some was harvested by day 6.
     expect(countItems(g, "glowcorn")).toBeGreaterThan(20);
   });
+
+  it("the harvest goes next to the field, so the field is sown again at once (user report)", () => {
+    const g = newGame("resow");
+    const { x: hx, y: hy } = g.home;
+    clearArea(g, hx + 8, hy + 8, 4);
+    const tiles = [];
+    for (let y = hy + 7; y <= hy + 9; y++) for (let x = hx + 7; x <= hx + 9; x++) tiles.push({ x, y });
+    createZone(g, "grow", 0, tiles, undefined, "glowcorn_plant");
+    const L = g.map.layers[0];
+    for (const t of tiles) g.spawnThing("glowcorn_plant", 0, t.x, t.y).growth = 1;
+    // No stockpile: nobody hauls the harvest away.
+    run(g, 12);
+    expect(tiles.every((t) => L.item[L.i(t.x, t.y)] === NO_THING)).toBe(true);
+    expect(countItems(g, "glowcorn")).toBeGreaterThan(50);
+    const sown = tiles.filter((t) => g.thingDefAt(0, t.x, t.y)?.id === "glowcorn_plant").length;
+    expect(sown).toBe(tiles.length);
+  });
 });
 
 describe("cooking and water", () => {

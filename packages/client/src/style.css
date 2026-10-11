@@ -47,7 +47,7 @@ button.on { background: var(--rust); color: var(--ink); border-color: var(--rust
 .inspect p { margin: 2px 0; font-size: 14px; }
 .inspect .close { position: absolute; top: 4px; right: 4px; min-width: 32px; min-height: 32px; border: 0; background: transparent; font-size: 20px; }
 
-.debug { position: absolute; left: 8px; bottom: calc(env(safe-area-inset-bottom, 0px) + 6px); font: 11px var(--mono); color: var(--dim); pointer-events: none; }
+.debug { position: absolute; left: 8px; bottom: calc(env(safe-area-inset-bottom, 0px) + 6px); font: 11px var(--mono); color: var(--dim); pointer-events: none; text-shadow: 0 0 3px #1b1714, 0 0 3px #1b1714; }
 .fatal { position: fixed; inset: 20px; background: #300; color: #fcc; padding: 20px; overflow: auto; white-space: pre-wrap; z-index: 9; }
 
 .topleft { position: absolute; top: calc(env(safe-area-inset-top, 0px) + 8px); left: 8px; display: grid; gap: 6px; max-width: calc(100vw - 360px); }
@@ -103,15 +103,44 @@ button.on { background: var(--rust); color: var(--ink); border-color: var(--rust
 .toast.warn { border-left-color: var(--warn); }
 .toast.bad { border-left-color: var(--bad); }
 
-.toolbar { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 8px); display: flex; gap: 2px; }
-.toolbar button { padding: 0 18px; font-weight: 600; min-height: 44px; }
-.menu { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 60px);
-  background: var(--panel); border: 1px solid var(--line); padding: 10px; display: flex; flex-wrap: wrap; gap: 6px;
-  width: min(760px, calc(100vw - 16px)); max-height: min(60vh, calc(100vh - 220px)); overflow-y: auto; z-index: 5; }
-.menu h3 { width: 100%; margin: 4px 0 2px; font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--dim); }
-.menu > button, .menu section button { display: grid; text-align: left; padding: 6px 10px; gap: 2px; min-width: 150px; }
+/* Bottom bar: icon, name and key for each menu, in one strip. */
+.toolbar { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 8px); display: flex; gap: 0;
+  background: var(--panel); border: 1px solid var(--line); padding: 3px; box-shadow: 0 4px 14px rgba(0, 0, 0, .35); }
+.toolbar button { position: relative; display: flex; align-items: center; gap: 7px; padding: 0 16px 0 12px; font-weight: 600; min-height: 44px;
+  background: transparent; border: 1px solid transparent; }
+.toolbar button + button { border-left: 1px solid rgba(92, 70, 54, .6); }
+.toolbar button:hover:not(:disabled) { border-color: transparent; background: rgba(217, 116, 46, .14); }
+.toolbar button.on, .toolbar button.on:hover:not(:disabled) { background: var(--rust); color: var(--ink); border-color: var(--rust); }
+.toolbar kbd { font: 600 10px var(--mono); color: var(--dim); border: 1px solid rgba(176, 131, 78, .55); border-bottom-width: 2px; padding: 0 4px; line-height: 14px; margin-left: 2px; }
+.toolbar button.on kbd { color: var(--ink); border-color: rgba(27, 23, 20, .5); }
+.tbicon { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+/* The menus above the bar: a header (name, key, close), then groups of cards. */
+.menu { position: absolute; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 64px);
+  background: #1b1714; border: 1px solid var(--line); padding: 0 12px 12px; display: flex; flex-wrap: wrap; gap: 6px; align-content: flex-start;
+  width: min(820px, calc(100vw - 16px)); max-height: min(62vh, calc(100vh - 220px)); overflow-y: auto; z-index: 5; box-shadow: 0 6px 22px rgba(0, 0, 0, .45); }
+.menuhead { position: sticky; top: 0; z-index: 1; width: 100%; display: flex; align-items: center; gap: 8px; margin: 0 -12px 4px; padding: 8px 12px;
+  background: rgba(27, 23, 20, .97); border-bottom: 1px solid var(--line); box-sizing: content-box; }
+.menuhead h2 { margin: 0; font: 600 13px var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--text); }
+.menuhead kbd { font: 600 10px var(--mono); color: var(--dim); border: 1px solid rgba(176, 131, 78, .55); border-bottom-width: 2px; padding: 0 4px; }
+.menuhead .close { margin-left: auto; min-width: 32px; min-height: 30px; padding: 0; font-size: 18px; line-height: 1; background: transparent; }
+.menu h3 { width: 100%; margin: 6px 0 4px; font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--dim); }
+.menu section { width: 100%; }
+.menu .cards { width: 100%; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px; }
+.menu .cards.foot { margin-top: 8px; padding-top: 8px; border-top: 1px dashed rgba(239, 216, 164, .2); }
+.menu .card { display: grid; align-content: start; text-align: left; padding: 7px 10px; gap: 2px; min-width: 0; border-left: 3px solid var(--line); }
+.menu .card:hover:not(:disabled) { border-left-color: var(--rust); background: rgba(217, 116, 46, .10); }
+.menu .card b { font-size: 14px; }
+.menu .card small { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.menu .card.cancel { border-left-color: #8a3b2e; }
+.menu .card.locked b { color: var(--dim); }
+.menu > button, .menu section > button { display: grid; text-align: left; padding: 6px 10px; gap: 2px; min-width: 150px; }
 .menu small { color: var(--dim); font-size: 12px; }
-.buildmenu section { display: flex; flex-wrap: wrap; gap: 6px; width: 100%; }
+.buildmenu .tabs { width: 100%; display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 4px; }
+.buildmenu .tabs button { min-height: 34px; padding: 0 10px; display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.buildmenu .tabs button small { font: 600 10px var(--mono); }
+.buildmenu .tabs button.on, .buildmenu .tabs button.on:hover:not(:disabled) { background: var(--rust); color: var(--ink); border-color: var(--rust); }
+.buildmenu .tabs button.on small { color: var(--ink); }
 .toolhint { position: absolute; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top, 0px) + 8px);
   background: var(--panel); border: 1px solid var(--rust); padding: 4px 4px 4px 12px; display: flex; gap: 10px; align-items: center; font-size: 13px; max-width: calc(100vw - 16px); }
 .toolhint button { min-height: 32px; }
@@ -187,9 +216,11 @@ input[type="range"], input[type="checkbox"] { accent-color: var(--rust); }
   .slider { grid-template-columns: 100px 1fr 44px; }
   .toolbar { left: 8px; right: 8px; transform: none; }
   .layerbox { bottom: calc(env(safe-area-inset-bottom, 0px) + 60px); }
-  .toolbar button { flex: 1; padding: 0 4px; }
+  .toolbar button { flex: 1; padding: 0 4px; flex-direction: column; justify-content: center; gap: 1px; font-size: 11px; }
+  .toolbar kbd, .menuhead kbd { display: none; }
+  .menu .cards { grid-template-columns: 1fr 1fr; }
   .menu { bottom: calc(env(safe-area-inset-bottom, 0px) + 60px); }
-  .menu > button, .menu section button { min-width: calc(50% - 3px); }
+  .menu > button, .menu section > button { min-width: calc(50% - 3px); }
   .toolhint { top: calc(env(safe-area-inset-top, 0px) + 116px); }
   .radbanner { top: calc(env(safe-area-inset-top, 0px) + 160px); }
   .debug { display: none; }

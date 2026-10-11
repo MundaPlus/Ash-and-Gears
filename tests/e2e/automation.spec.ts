@@ -23,6 +23,7 @@ test("research, power, belts and lamp light", async ({ page }, info) => {
 
   // Locked build item shows the research it needs; unlocking enables it.
   await page.getByTestId("tb-build").click();
+  await page.getByTestId("build-tab-power").click();
   await expect(page.getByTestId("build-scrap_generator")).toBeDisabled();
   await page.evaluate(() => {
     const g = (window as any).__game;
@@ -31,6 +32,7 @@ test("research, power, belts and lamp light", async ({ page }, info) => {
   await page.getByTestId("tb-build").click();
   await page.getByTestId("tb-build").click();
   await expect(page.getByTestId("build-scrap_generator")).toBeEnabled();
+  await page.getByTestId("build-tab-production").click();
 
   // Place a belt facing south using Q (counter-clockwise from east = north) twice... use E once: east -> south.
   await page.getByTestId("build-conveyor").click();
