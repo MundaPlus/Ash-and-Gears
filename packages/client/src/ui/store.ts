@@ -87,6 +87,8 @@ export interface Toast {
   until: number;
   /** Where it happened: clicking the message moves the camera there. */
   at?: { layer: number; x: number; y: number };
+  /** This message paused the game: it stays on screen until the player resumes. */
+  pin?: boolean;
 }
 
 export interface StoryUi {

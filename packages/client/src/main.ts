@@ -1023,9 +1023,13 @@ async function boot() {
   function drainMessages(now: number) {
     const fresh = game.messages.filter((m) => m.tick > msgSeen);
     if (game.messages.length) msgSeen = game.messages[game.messages.length - 1].tick;
-    let toasts = store.state.toasts.filter((x) => x.until > now);
+    // Messages that paused the game stay until the player resumes; then they fade like the others.
+    let toasts = store.state.toasts
+      .map((x) => (x.pin && !paused ? { ...x, pin: false, until: now + TOAST_SEC } : x))
+      .filter((x) => x.pin || x.until > now);
     for (const m of fresh) {
-      if (AUTO_PAUSE.has(m.key) && !capturing) paused = true;
+      const pauses = AUTO_PAUSE.has(m.key) && !capturing;
+      if (pauses) paused = true;
       // Story moments get their storyline's music cue (B9).
       if (m.key === "msg.story_beat") audio.cue("beat", game.plot.line);
       else if (m.key === "msg.story_site") audio.cue("site", game.plot.line);
@@ -1050,10 +1054,14 @@ async function boot() {
       if (typeof params.site === "string") params.site = params.site.startsWith("story.") ? t(params.site) : t(`site.${params.site}`);
       if (typeof params.beat === "string") params.beat = t(params.beat);
       if (typeof params.kind === "string") params.kind = t(`pawn.${params.kind}`);
-      toasts.push({ id: toastId++, text: t(m.key, params), level: m.level, until: now + TOAST_SEC, ...(m.at ? { at: m.at } : {}) });
+      toasts.push({ id: toastId++, text: t(m.key, params), level: m.level, until: now + TOAST_SEC, ...(m.at ? { at: m.at } : {}), ...(pauses ? { pin: true } : {}) });
     }
-    toasts = toasts.slice(-4);
-    if (fresh.length || toasts.length !== store.state.toasts.length) store.set({ toasts });
+    // At most 4 on screen; pinned ones (why the game paused) are never pushed out.
+    const pinned = toasts.filter((x) => x.pin).slice(-4);
+    const room = 4 - pinned.length;
+    toasts = [...pinned, ...(room > 0 ? toasts.filter((x) => !x.pin).slice(-room) : [])];
+    const changed = toasts.length !== store.state.toasts.length || toasts.some((x, i) => x.id !== store.state.toasts[i]?.id || x.pin !== store.state.toasts[i]?.pin);
+    if (fresh.length || changed) store.set({ toasts });
     if (store.state.banner && store.state.banner.until < now) store.set({ banner: null });
   }
 

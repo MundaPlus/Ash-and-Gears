@@ -1309,5 +1309,6 @@
   "task.rearm": "Re-arming a trap",
   "inspect.trap_sprung": "Sprung: a builder re-arms it soon.",
   "inspect.trap_armed": "Armed.",
-  "msg.trap_sprung_beast": "A {thing} caught a {creature}!"
+  "msg.trap_sprung_beast": "A {thing} caught a {creature}!",
+  "toast.paused": "Paused"
 }
