@@ -204,7 +204,13 @@ async function boot() {
   camera.onRightClick = (wx, wy) => {
     if (tools.spec) return actions.setTool(null);
     if (openPawnMenu(wx, wy, false) || openTileMenu(wx, wy, false)) return;
-    orderAt(wx, wy);
+    if (orderAt(wx, wy)) return;
+    // Nobody selected: a right-click on a manual calls the nearest researcher to study it (user request).
+    if (selected === null && !groupIds().length) {
+      const L = game.map.layers[renderer.layer];
+      const x = Math.floor(wx / TILE), y = Math.floor(wy / TILE);
+      if (L.inBounds(x, y) && L.item[L.i(x, y)] !== sim.NO_THING && sim.canStudy(game, L.item[L.i(x, y)])) sim.callResearcher(game, L.item[L.i(x, y)]);
+    }
   };
 
   /** Who (or which tile) the menu is for. */

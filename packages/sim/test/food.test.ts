@@ -139,7 +139,7 @@ describe("batch cooking (user request)", () => {
     const cook = people[0];
     cook.skills[g.reg.skills.idx("cooking")].level = level;
     cook.traits = [];
-    cook.backstory = [];
+    delete cook.backstory;
     for (let i = 0; i < g.ticksPerHour * 2 && cook.job?.kind !== "bill"; i++) g.step();
     return { g, batch: (cook.job?.data?.batch as number) ?? 1 };
   }

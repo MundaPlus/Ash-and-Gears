@@ -4,13 +4,14 @@
  * (user's choice); then the project is open for good and the manual goes back to storage.
  */
 import type { ResearchDef } from "@wc/data";
-import { atGoal, goTo, isReserved, reserve } from "./ai.ts";
+import { atGoal, goTo, interrupt, isReserved, reserve } from "./ai.ts";
 import type { Game } from "./game.ts";
 import { countItems, dropItems } from "./items.ts";
 import { findItem } from "./ai.ts";
 import { pickUp } from "./hauling.ts";
 import { registerJob, registerWorkGiver } from "./jobs.ts";
-import { learn } from "./pawn.ts";
+import { learn, type Job, type Pawn } from "./pawn.ts";
+import { workPriority } from "./worktypes.ts";
 import { workRate } from "./work.ts";
 
 export function researchDef(game: Game, id: string): ResearchDef {
@@ -57,6 +58,57 @@ export function manualFound(game: Game, item: string): boolean {
   return countItems(game, item) > 0;
 }
 
+/** A job to carry this manual stack to a free research desk and study it there, or null. */
+export function studyJob(game: Game, p: Pawn, src: number): Job | null {
+  for (const t of game.things.values()) {
+    if (!game.reg.things.list[t.def].research || isReserved(game, `thing:${t.id}`, p)) continue;
+    if (!game.path.canReachAdjacent(p, t)) continue;
+    if (!reserve(game, `thing:${t.id}`, p)) continue;
+    if (!reserve(game, `item:${src}`, p)) {
+      game.reservations.delete(`thing:${t.id}`);
+      return null;
+    }
+    return { kind: "study", stage: 0, targetId: t.id, data: { src, work: STUDY_WORK } };
+  }
+  return null;
+}
+
+/** Can this item stack be studied now: a manual some project still needs, with a research desk built? */
+export function canStudy(game: Game, stackId: number): boolean {
+  const s = game.items.get(stackId);
+  if (!s || s.layer < 0) return false;
+  if (!manualsWanted(game).has(game.reg.items.list[s.def].id)) return false;
+  return [...game.things.values()].some((t) => game.reg.things.list[t.def].research);
+}
+
+/**
+ * Right-click on a manual (user request): the nearest survivor who does research drops the current job,
+ * carries the manual to a research desk and studies it. Returns the survivor, or null (with a message).
+ */
+export function callResearcher(game: Game, stackId: number): Pawn | null {
+  const s = game.items.get(stackId);
+  if (!s || !canStudy(game, stackId)) return null;
+  const who = [...game.pawns.values()]
+    .filter((p) => p.faction === "colony" && !p.robot && !p.health.downed && !p.drafted && !p.mentalBreak && workPriority(p, "research") > 0)
+    .sort((a, b) => Math.hypot(a.x - s.x, a.y - s.y) + (a.layer !== s.layer ? 50 : 0) - (Math.hypot(b.x - s.x, b.y - s.y) + (b.layer !== s.layer ? 50 : 0)));
+  for (const p of who) {
+    const other = game.reservations.get(`item:${stackId}`);
+    if (other !== undefined && other !== p.id) {
+      const o = game.pawns.get(other);
+      if (o) interrupt(game, o);
+      game.reservations.delete(`item:${stackId}`);
+    }
+    interrupt(game, p);
+    const job = studyJob(game, p, stackId);
+    if (!job) continue;
+    p.job = job;
+    game.message("msg.study_called", { name: p.nick, item: game.reg.items.list[s.def].id }, "info", p);
+    return p;
+  }
+  game.message("msg.no_researcher", { item: game.reg.items.list[s.def].id }, "warn", s);
+  return null;
+}
+
 // Studying a found manual comes before the normal research work.
 registerWorkGiver(
   {
@@ -65,18 +117,7 @@ registerWorkGiver(
       const want = manualsWanted(game);
       if (!want.size) return null;
       const src = findItem(game, p, (d) => want.has(game.reg.items.list[d].id));
-      if (src === null) return null;
-      for (const t of game.things.values()) {
-        if (!game.reg.things.list[t.def].research || isReserved(game, `thing:${t.id}`, p)) continue;
-        if (!game.path.canReachAdjacent(p, t)) continue;
-        if (!reserve(game, `thing:${t.id}`, p)) continue;
-        if (!reserve(game, `item:${src}`, p)) {
-          game.reservations.delete(`thing:${t.id}`);
-          return null;
-        }
-        return { kind: "study", stage: 0, targetId: t.id, data: { src, work: STUDY_WORK } };
-      }
-      return null;
+      return src === null ? null : studyJob(game, p, src);
     },
   },
   true,

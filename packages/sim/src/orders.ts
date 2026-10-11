@@ -16,13 +16,14 @@ import { Desig, NO_THING, type DesigKind } from "./map.ts";
 import { canHaul, haulStackJob } from "./hauling.ts";
 import { forceBuildJob } from "./construction.ts";
 import { forceFarmTask } from "./farming.ts";
+import { canStudy, studyJob } from "./research.ts";
 import type { Job } from "./pawn.ts";
 import { reserve } from "./ai.ts";
 
 export type PawnAction = "attack" | "put_down" | "capture" | "rescue" | "tend" | "feed";
 
 /** Things a survivor can be told to do on a tile right now (the player's menu, "force"). */
-export type TileForce = "mine" | "salvage" | "cut" | "clear" | "deconstruct" | "unfloor" | "pry" | "claim" | "haul" | "harvest" | "sow" | "build";
+export type TileForce = "mine" | "salvage" | "cut" | "clear" | "deconstruct" | "unfloor" | "pry" | "claim" | "haul" | "harvest" | "sow" | "build" | "study";
 
 /** Order kinds and the work type they belong to (a backstory that rules the work out still says no). */
 const ORDER_WORK: Partial<Record<DesigKind, WorkType>> = {
@@ -49,6 +50,8 @@ export function tileForceActions(game: Game, actor: Pawn, layer: number, x: numb
   const farm = forceFarmTask(game, layer, x, y);
   if (farm && can(actor, "grow")) out.push(farm.task);
   if (L.item[i] !== NO_THING && can(actor, "haul") && canHaul(game, L.item[i])) out.push("haul");
+  // A manual a project needs: study it at a research desk now (user request).
+  if (L.item[i] !== NO_THING && can(actor, "research") && !actor.robot && canStudy(game, L.item[i])) out.push("study");
   return out;
 }
 
@@ -70,7 +73,10 @@ export function doTileForce(game: Game, actor: Pawn, layer: number, x: number, y
   const i = L.i(x, y);
   const pos = { layer, x, y };
   let job: Job | null;
-  if (a === "haul") {
+  if (a === "study") {
+    takeOver(game, actor, `item:${L.item[i]}`);
+    job = studyJob(game, actor, L.item[i]);
+  } else if (a === "haul") {
     takeOver(game, actor, `item:${L.item[i]}`);
     job = haulStackJob(game, actor, L.item[i]);
   } else if (a === "build") {
