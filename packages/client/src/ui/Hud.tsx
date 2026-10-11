@@ -38,6 +38,11 @@ export function Hud() {
     <>
       <div class="topleft">
         <div class="resources" data-testid="resources">
+          {s.foodDays !== null && (
+            <span class={`res fooddays ${s.foodDays < 0.5 ? "bad" : s.foodDays < 2 ? "warn" : ""}`} data-testid="food-days" title={t("res.food_days.desc")}>
+              {t("res.food")} <b>{t("res.days", { n: s.foodDays })}</b>
+            </span>
+          )}
           {s.resources.map((r) => (
             <span key={r.id} class="res" title={r.loose > 0 ? t("res.loose", { n: r.loose }) : undefined}>
               {t(`res.${r.id}`)} <b>{r.count}</b>
