@@ -10,7 +10,8 @@ import { atGoal, findItem, goTo, reserve } from "./ai.ts";
 import { registerCleanup, registerJob, registerWorkGiver } from "./jobs.ts";
 import type { Game } from "./game.ts";
 import { countItems, dropItems } from "./items.ts";
-import type { Thing } from "./map.ts";
+import type { ItemStack, Thing } from "./map.ts";
+import { daysToRot } from "./rot.ts";
 import { benchFeedsOut } from "./logistics.ts";
 import { fluidNetOf, netAdd, netAmount, netDraw, totalFluid } from "./fluids.ts";
 import { makeRobot, robotCount } from "./robots.ts";
@@ -193,10 +194,15 @@ function missingNow(r: RecipeDef, job: Job): number {
   return idx < r.inputs.length ? r.inputs[idx].count - (job.data!.have as number) : 0;
 }
 
-/** Walk to the nearest stack for the current input. Returns false if none can be found. */
+/**
+ * Walk to a stack for the current input: the one that spoils soonest (user request: cook the food that
+ * would rot first), then the nearest. Returns false if none can be found.
+ */
 function fetchNext(game: Game, p: Pawn, r: RecipeDef, job: Job): boolean {
   const inp = r.inputs[job.data!.input as number];
-  const src = findItem(game, p, (d, cont) => !cont && matchesInput(game, inp, d) && (!p.carrying || p.carrying.def === d));
+  // Days to rot, in whole half days, so stacks that spoil about the same time go by distance.
+  const spoil = (s: ItemStack) => Math.min(1e6, Math.floor(daysToRot(game, s) * 2));
+  const src = findItem(game, p, (d, cont) => !cont && matchesInput(game, inp, d) && (!p.carrying || p.carrying.def === d), undefined, spoil);
   if (src === null || !reserve(game, `item:${src}`, p)) return false;
   job.data!.src = src;
   return goTo(game, p, game.items.get(src)!);

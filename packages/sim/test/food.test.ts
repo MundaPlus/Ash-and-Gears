@@ -125,6 +125,29 @@ describe("cooks cook and draw water (user request)", () => {
   });
 });
 
+describe("cooks use the food that spoils first (user request)", () => {
+  it("a cook takes the nearly rotten stack before a fresh one that lies nearer", () => {
+    const g = newGame("spoilfirst");
+    const { x: hx, y: hy } = g.home;
+    clearArea(g, hx - 6, hy - 6, 3);
+    g.spawnThing("campfire", 0, hx - 6, hy - 6).fuel = 50;
+    for (const s of [...g.items.values()]) if (g.reg.items.list[s.def].category === "food") s.count = 0;
+    dropItems(g, "glowcorn", 20, 0, hx - 5, hy - 4);
+    dropItems(g, "scrub_potato", 20, 0, hx + 6, hy + 4);
+    const L = g.map.layers[0];
+    const old = g.items.get(L.item[L.i(hx + 6, hy + 4)])!;
+    old.rot = 0.8; // 6 days left; fresh glowcorn has 12
+    const people = [...g.pawns.values()].filter((p) => p.faction === "colony");
+    for (const p of people) p.work = Object.fromEntries(WORK_TYPES.map((w) => [w, w === "cook" && p === people[0] ? 1 : 0]));
+    let src: unknown;
+    for (let i = 0; i < g.ticksPerHour * 2 && src === undefined; i++) {
+      g.step();
+      if (people[0].job?.kind === "bill") src = people[0].job.data?.src;
+    }
+    expect(src).toBe(old.id);
+  });
+});
+
 describe("radiation cloud", () => {
   it("hurts survivors outside, spares a sealed room, and contaminates what was outside", () => {
     const g = newGame("rad");
