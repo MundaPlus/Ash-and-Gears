@@ -153,4 +153,6 @@ function growJob(game: Game, p: Pawn) {
   return null;
 }
 
-registerWorkGiver({ workType: "grow", give: (game, p) => growJob(game, p) });
+// Within farm work, ripe crops and sowing come before Cut orders (user report: the colony starved while
+// growers cut trees next to ripe and empty fields).
+registerWorkGiver({ workType: "grow", give: (game, p) => growJob(game, p) }, true);

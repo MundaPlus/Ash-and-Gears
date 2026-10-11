@@ -11,7 +11,7 @@ import type { Game } from "./game.ts";
 import { registerJob, registerWorkGiver } from "./jobs.ts";
 import { NO_THING, type Thing } from "./map.ts";
 import { pickUp } from "./hauling.ts";
-import { recipesFor } from "./bills.ts";
+import { cookingWanted } from "./bills.ts";
 import type { Job, Pawn } from "./pawn.ts";
 
 const POWER_EVERY = 20;
@@ -268,7 +268,8 @@ registerWorkGiver({ workType: "haul", give: (game, p) => refuelJob(game, p, 0.25
  */
 registerWorkGiver({
   workType: "cook",
-  give: (game, p) => refuelJob(game, p, 0.25, (t) => !!game.reg.things.list[t.def].bench && recipesFor(game, game.reg.things.list[t.def].id).some((r) => r.skill === "cooking")),
+  // Only when there is something to cook (else a cook could spend the day feeding a fire for nothing).
+  give: (game, p) => refuelJob(game, p, 0.25, (t) => !!game.reg.things.list[t.def].bench && cookingWanted(game, t)),
 });
 
 registerJob("refuel", (game, p, job) => {
