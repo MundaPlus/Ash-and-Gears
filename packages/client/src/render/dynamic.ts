@@ -118,7 +118,7 @@ export class DynamicRenderer {
         g.rect(px + 6, py + TILE / 2 - 2, TILE - 12, 4).fill(0xd9742e);
       }
       // Beds show who they are for: prisoners get a grey blanket with orange stripes, medical beds a white sheet with a red cross.
-      if (d.bed && (t.forPrisoners || t.medical)) this.bedCover(g, px, py, fw, fh, !!t.medical);
+      if (d.bed && (t.forPrisoners || t.medical)) this.bedCover(g, px, py, fw, fh, t.rot ?? 0, !!t.medical);
       // Benches in use: sparks at workbenches, smoke at fires and furnaces, a blinking screen at the desk.
       if (inUse.has(t.id)) {
         if (d.research) {
@@ -255,30 +255,33 @@ export class DynamicRenderer {
     }
   }
 
-  /**
-   * A Salvage Print door, drawn live: two jambs and two leaves that slide into them (`open` 0..1, eased).
-   * The door stands upright when the walls run north and south of it.
-   */
-  /** The blanket over a bed (pillow end left free): long side along the bed's longer axis. */
-  private bedCover(g: Graphics, px: number, py: number, fw: number, fh: number, medical: boolean) {
-    const W = fw * TILE, H = fh * TILE, tall = H >= W;
-    // Leave the top (or left) third for the pillow; inset the sides.
-    const x = px + (tall ? W * 0.14 : W * 0.36), y = py + (tall ? H * 0.36 : H * 0.14);
-    const w = tall ? W * 0.72 : W * 0.56, h = tall ? H * 0.56 : H * 0.72;
+  /** The blanket over a bed. The pillow end stays free and turns with the bed (rot 0 top, then clockwise). */
+  private bedCover(g: Graphics, px: number, py: number, fw: number, fh: number, rot: number, medical: boolean) {
+    const W = fw * TILE, H = fh * TILE, side = ((rot % 4) + 4) % 4;
+    // Along the bed: from 36% to 92% of its length, measured from the pillow end. Across: inset 14%.
+    const [a0, a1] = side === 0 || side === 3 ? [0.36, 0.92] : [0.08, 0.64];
+    const along = side % 2 === 0;
+    const x = px + W * (along ? 0.14 : a0), y = py + H * (along ? a0 : 0.14);
+    const w = W * (along ? 0.72 : a1 - a0), h = H * (along ? a1 - a0 : 0.72);
     if (medical) {
       g.roundRect(x, y, w, h, 3).fill({ color: 0xece6d6 }).stroke({ width: 1.2, color: 0x3a2e26, alpha: 0.8 });
       const c = Math.min(w, h) * 0.5, k = c / 3, mx = x + w / 2, my = y + h / 2;
       g.rect(mx - k / 2, my - c / 2, k, c).fill(0xc8372d).rect(mx - c / 2, my - k / 2, c, k).fill(0xc8372d);
     } else {
       g.roundRect(x, y, w, h, 3).fill({ color: 0x56616d }).stroke({ width: 1.2, color: 0x3a2e26, alpha: 0.8 });
+      // Stripes run across the bed.
       const n = 4;
       for (let i = 1; i < n; i++) {
-        if (tall) g.rect(x + 1, y + (h * i) / n - 1.5, w - 2, 3).fill(0xd9742e);
+        if (along) g.rect(x + 1, y + (h * i) / n - 1.5, w - 2, 3).fill(0xd9742e);
         else g.rect(x + (w * i) / n - 1.5, y + 1, 3, h - 2).fill(0xd9742e);
       }
     }
   }
 
+  /**
+   * A Salvage Print door, drawn live: two jambs and two leaves that slide into them (`open` 0..1, eased).
+   * The door stands upright when the walls run north and south of it.
+   */
   private printDoor(g: Graphics, t: Thing, bunker: boolean, open: number) {
     const ink = this.print!;
     const L = this.game.map.layers[t.layer];

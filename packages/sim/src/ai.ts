@@ -3,6 +3,7 @@
  * Each job is a small state machine. A driver returns "run", "done" or "fail" every tick.
  * Work jobs (build, haul, mine...) register through registerJob/registerWorkGiver in later milestones.
  */
+import { rearmJob } from "./traps.ts";
 import { armorMove } from "./gear.ts";
 import type { Game } from "./game.ts";
 import { dropItems, takeFromStack } from "./items.ts";
@@ -363,6 +364,8 @@ export function think(game: Game, p: Pawn): void {
   }
   if (n.thirst < 0.45 && startJob(game, p, drinkJob(game, p, false))) return;
   if (n.hunger < 0.4 && startJob(game, p, eatJob(game, p, false))) return;
+  // Sprung traps come right after food and water, before any other work (user request).
+  if (workPriority(p, "construct") > 0 && startJob(game, p, rearmJob(game, p))) return;
   if (startJob(game, p, equipJob(game, p))) return;
   // Recreation: in joy hours until fun is full; in "any" hours when bored; in work hours only when joyless.
   // Never while hungry or thirsty: then food and water work comes first.

@@ -49,6 +49,23 @@ describe("traps (user request)", () => {
     expect(trap.sprung).toBeFalsy();
   });
 
+  it("re-arming comes before other work", () => {
+    const { g, x, y } = field("traps3");
+    const trap = g.spawnThing("spike_trap", 0, x, y);
+    trap.sprung = true;
+    // Plenty of other building waits closer to home. Re-arming still comes first.
+    for (let k = 0; k < 8; k++) placeBlueprint(g, "thing", "scrap_wall", 0, g.home.x - 2, g.home.y - 4 + k);
+    // One builder; the others do nothing.
+    const colony = [...g.pawns.values()].filter((o) => o.faction === "colony");
+    colony.forEach((o, i) => {
+      o.work = Object.fromEntries(WORK_TYPES.map((w) => [w, w === "construct" && i === 0 ? 1 : 0]));
+      o.needs.hunger = o.needs.thirst = 1;
+      o.job = null;
+    });
+    for (let i = 0; i < 120 && !colony[0].job; i++) g.step();
+    expect(colony[0].job?.data?.task).toBe("rearm");
+  });
+
   it("a blast trap burns every enemy close by and is gone", () => {
     const { g, x, y } = field("traps2");
     for (const r of ["traps", "explosive_traps"]) g.research.done.add(r);
