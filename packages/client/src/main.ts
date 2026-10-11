@@ -976,6 +976,7 @@ async function boot() {
       downed: p.health.downed,
       weapon: p.weapon !== null ? game.reg.items.list[p.weapon].id : null,
       armor: p.armor.map((a) => game.reg.items.list[a].id),
+      stats: sim.charStats(game, p),
       bloodLoss: p.health.bloodLoss,
       pain: sim.pain(game, p),
       injuries: p.health.injuries.map((i) => ({ part: i.part, kind: i.kind, dmg: Math.round(i.dmg), tended: i.tended > 0 })),

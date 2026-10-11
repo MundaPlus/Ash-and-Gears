@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadCoreContent } from "@wc/data";
-import { armorReduction, countItems, damage, designate, dropItems, Game, loadGame, NO_THING, saveGame, WORK_TYPES, type Pawn } from "../src/index.ts";
+import { armorReduction, charStats, countItems, damage, designate, dropItems, Game, loadGame, NO_THING, saveGame, WORK_TYPES, type Pawn } from "../src/index.ts";
 
 const content = loadCoreContent();
 const newGame = (seed: string) => Game.create(content, { seed, mapSize: 96, storyteller: "none" });
@@ -102,5 +102,23 @@ describe("water at the well comes first within hauling", () => {
     delete hauler.noWork;
     run(g, 6);
     expect(countItems(g, "clean_water")).toBeGreaterThanOrEqual(5);
+  });
+});
+
+describe("gear panel stats", () => {
+  it("shows worn gear in its slot, armor protection per kind, and the weapon's numbers", () => {
+    const g = Game.create(content, { seed: "gearstats", mapSize: 64, storyteller: "none" });
+    const p = [...g.pawns.values()].find((x) => x.faction === "colony")!;
+    const items = g.reg.items;
+    p.weapon = items.idx("hunting_rifle");
+    p.armor = [items.idx("plate_helmet")];
+    const s = charStats(g, p);
+    expect(s.slots).toEqual({ head: "plate_helmet", body: null, weapon: "hunting_rifle" });
+    expect(s.attack.melee).toBe(false);
+    expect(s.attack.dmg).toBe(items.get("hunting_rifle").weapon!.dmg);
+    expect(s.attack.hit).toBeGreaterThan(0);
+    const cut = s.protection.find((x) => x.kind === "cut")!;
+    expect(cut.head).toBe(items.get("plate_helmet").armor!.cut);
+    expect(cut.body).toBe(0);
   });
 });

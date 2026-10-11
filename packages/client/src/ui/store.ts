@@ -45,6 +45,8 @@ export interface ColonistSummary {
 
 export interface PawnDetail {
   id: number;
+  /** Gear slots and detailed stats (Gear tab). */
+  stats: import("@wc/sim").CharStats;
   name: string;
   age: number;
   color: string;
