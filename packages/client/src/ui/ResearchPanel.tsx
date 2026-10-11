@@ -1,3 +1,4 @@
+import { MenuHead } from "./MenuHead.tsx";
 import { t } from "@wc/data";
 import { actions, useStore } from "./store.ts";
 
@@ -6,7 +7,7 @@ export function ResearchPanel() {
   const tiers = [...new Set(s.research.map((r) => r.tier))].sort();
   return (
     <div class="menu researchmenu" data-testid="research-panel">
-      <h3>{t("research.title")}</h3>
+      <MenuHead id="research" />
       <p class="hint">{s.research.some((r) => r.current) ? t("research.hint_busy") : t("research.hint")}</p>
       {tiers.map((tier) => (
         <section key={tier}>

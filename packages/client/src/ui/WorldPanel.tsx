@@ -1,3 +1,4 @@
+import { MenuHead } from "./MenuHead.tsx";
 import { t } from "@wc/data";
 import { useState } from "preact/hooks";
 import { actions, useStore } from "./store.ts";
@@ -25,7 +26,7 @@ export function WorldPanel() {
   const toggle = (id: number) => setTeam(team.includes(id) ? team.filter((x) => x !== id) : [...team, id]);
   return (
     <div class="menu worldmenu" data-testid="world-panel">
-      <h3>{t("world.title")}</h3>
+      <MenuHead id="world" />
       <svg viewBox={`0 0 ${w.w * CELL} ${w.h * CELL}`} class="worldmap" role="img" aria-label={t("world.title")}>
         {w.biome.map((b, i) => (
           <rect key={i} x={(i % w.w) * CELL} y={Math.floor(i / w.w) * CELL} width={CELL} height={CELL} fill={BIOME_COLOR[b] ?? "#777"} />

@@ -365,7 +365,7 @@ export function Hud() {
       )}
 
       <footer class="debug">
-        seed {s.seed} · {s.fps} fps
+        <span data-testid="version">{__VERSION__}</span> · seed {s.seed} · {s.fps} fps
       </footer>
     </>
   );
