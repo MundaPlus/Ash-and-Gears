@@ -5,7 +5,7 @@
  * Four seeded variants per terrain keep large areas from looking tiled.
  * Edges between terrains: `terrainEdge` gives a dithered border of one terrain to lay over another.
  */
-type Detail = "blocks" | "pebbles" | "tufts" | "sprouts" | "ripples" | "cracks" | "flakes" | "rubble" | "tiles" | "plates" | "veins" | "bubbles" | "sheen" | "marks";
+type Detail = "crags" | "pebbles" | "tufts" | "sprouts" | "ripples" | "cracks" | "flakes" | "rubble" | "tiles" | "plates" | "veins" | "bubbles" | "sheen" | "marks";
 
 type Recipe = {
   /** Dark, base and light palette indexes. */
@@ -28,10 +28,10 @@ const R: Record<string, Recipe> = {
   ruin_floor: { tones: [4, 5, 6], dark: 0.05, light: 0.05, details: [["tiles", 3, 2], ["cracks", 2, 4, 1]], layer: 8 },
   sludge: { tones: [1, 11, 12], dark: 0.11, light: 0.07, details: [["sheen", 14, 12, 3]], layer: 1 },
   toxic_pool: { tones: [11, 12, 15], dark: 0.09, light: 0.11, details: [["bubbles", 15, 7, 3], ["sheen", 15, 12, 2]], layer: 0 },
-  // Mineable rock: raised stone blocks with a light top edge and a dark seam (user report: it looked like asphalt).
-  rock: { tones: [3, 4, 5], dark: 0.12, light: 0.12, details: [["blocks", 6, 2, 0], ["flakes", 3, 6, 3]], layer: 9 },
-  coal_seam: { tones: [2, 3, 4], dark: 0.12, light: 0.1, details: [["veins", 0, 13, 5], ["blocks", 5, 1, 0]], layer: 9 },
-  scrap_vein: { tones: [3, 4, 5], dark: 0.12, light: 0.1, details: [["veins", 9, 10, 4], ["flakes", 14, 10, 4], ["blocks", 6, 8, 0]], layer: 9 },
+  // Mineable rock: craggy raw stone, lit from the top left (user report: it looked like asphalt).
+  rock: { tones: [3, 4, 5], dark: 0.12, light: 0.12, details: [["crags", 5, 2], ["cracks", 1, 5, 2]], layer: 9 },
+  coal_seam: { tones: [2, 3, 4], dark: 0.12, light: 0.1, details: [["crags", 4, 0], ["veins", 0, 13, 5]], layer: 9 },
+  scrap_vein: { tones: [3, 4, 5], dark: 0.12, light: 0.1, details: [["veins", 9, 10, 4], ["crags", 5, 1], ["flakes", 14, 10, 4]], layer: 9 },
   rough_floor: { tones: [0, 1, 2], dark: 0.1, light: 0.1, details: [["marks", 0, 2, 3], ["pebbles", 2, 0, 2]], layer: 5 },
   cave_floor: { tones: [0, 1, 2], dark: 0.12, light: 0.06, details: [["pebbles", 2, 0, 4], ["flakes", 0, 2, 3]], layer: 4 },
   bunker_floor: { tones: [13, 14, 2], dark: 0.05, light: 0.05, details: [["plates", 1, 6], ["cracks", 1, 14, 1]], layer: 8 },
@@ -92,13 +92,12 @@ export function terrainGrid(id: string, v: number): number[][] {
   const ri = (n: number) => Math.floor(rand() * n);
   for (const [kind, ...a] of r.details) {
     switch (kind) {
-      case "blocks": // a: light, shadow, seam — 8x8 stones in offset rows, lit from the top left
+      case "crags": // a: light, shadow — emboss the noise: rises lit from the top left, falls in shadow
         for (let y = 0; y < N; y++)
           for (let x = 0; x < N; x++) {
-            const bx = wrap(x + (y >= 8 ? 4 : 0)) % 8, by = y % 8;
-            if (by === 7 || bx === 7) set(x, y, a[2]);
-            else if (by === 6 || bx === 6) set(x, y, a[1]);
-            else if (by === 0 || bx === 0) set(x, y, a[0]);
+            const d = f[y][x] - f[wrap(y - 1)][wrap(x - 1)];
+            if (d > 0.08) set(x, y, a[0]);
+            else if (d < -0.08) set(x, y, a[1]);
           }
         break;
       case "pebbles": // a: light, shadow, count

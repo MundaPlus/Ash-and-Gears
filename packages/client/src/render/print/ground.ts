@@ -32,13 +32,25 @@ const cracks = (ink: Ink, n: number) => (p: Print, r: () => number) => {
     p.line([[x, y], [x + 6 + r() * 6, y + 2 + r() * 4], [x + 10 + r() * 8, y + 8 + r() * 6]], ink, 1.2);
   }
 };
-/** Stone blocks in offset rows with a lit top-left edge and a dark lower-right edge: the mark of mineable rock. */
-const blocks = (light: Ink, shadow: Ink) => (p: Print) => {
-  for (const [x, y, w] of [[0, 0, 32], [32, 0, 32], [-16, 32, 32], [16, 32, 32], [48, 32, 32]] as [number, number, number][]) {
-    const x0 = Math.max(0, x) + 2, x1 = Math.min(64, x + w) - 2, y0 = y + 2, y1 = y + 30;
-    if (x1 - x0 < 6) continue;
-    p.line([[x0, y1], [x0, y0], [x1, y0]], light, 2.2);
-    p.line([[x1, y0], [x1, y1], [x0, y1]], shadow, 2.6);
+/**
+ * Rough rock: a few jagged chunks per tile, lit from the top left (light upper rim, dark lower rim),
+ * with no grid, so it reads as raw stone and not as a wall or a floor.
+ */
+const crags = (fill: Ink[], light: Ink, shadow: Ink, n = 3) => (p: Print, r: () => number) => {
+  for (let k = 0; k < n; k++) {
+    const cx = 16 + r() * 32, cy = 16 + r() * 32, rad = 14 + r() * 8, sides = 5 + Math.floor(r() * 3), turn = r() * 6;
+    const pts: Pt[] = [];
+    for (let j = 0; j < sides; j++) {
+      const a = turn + (j / sides) * Math.PI * 2, d = rad * (0.7 + r() * 0.4);
+      pts.push([Math.min(62, Math.max(2, cx + Math.cos(a) * d)), Math.min(62, Math.max(2, cy + Math.sin(a) * d * 0.85))]);
+    }
+    p.shape(pts, { fill: fill[Math.floor(r() * fill.length)], tone: { ink: shadow, amount: 0.12, cell: 3 }, line: 1, shift: 0.4 });
+    // Each rim edge facing up-left gets light, each facing down-right a shadow.
+    pts.forEach((u, j) => {
+      const v = pts[(j + 1) % pts.length];
+      const up = (u[0] + v[0]) / 2 - cx + ((u[1] + v[1]) / 2 - cy) < 0;
+      p.line([u, v], up ? light : shadow, up ? 1.8 : 2.4);
+    });
   }
 };
 const both = (...fs: ((p: Print, r: () => number) => void)[]) => (p: Print, r: () => number) => fs.forEach((f) => f(p, r));
@@ -113,9 +125,9 @@ const GROUND: Record<string, Ground> = {
   deck: { base: "ochreDark", tone: "hair", amount: 0.2, cell: 3, marks: cracks("soot", 1) },
   // Open air on tower floors (N1): a dark drop.
   open_air: { base: "soot", tone: "slateDark", amount: 0.12, cell: 5 },
-  // Mineable ground: raised stone blocks (user report: rock looked like asphalt).
-  rock: { base: "slate", tone: "slateDark", amount: 0.2, cell: 3, marks: both(cracks("slateDark", 1), blocks("bone", "slateDark")) },
-  coal_seam: { base: "slateDark", tone: "soot", amount: 0.3, cell: 3, marks: both(pebbles(["soot", "soot"], 6), blocks("slate", "soot")) },
+  // Mineable ground: jagged raw stone (user report: rock looked like asphalt).
+  rock: { base: "slate", tone: "slateDark", amount: 0.2, cell: 3, marks: both(crags(["slate", "paper", "slate"], "bone", "slateDark"), cracks("soot", 1)) },
+  coal_seam: { base: "slateDark", tone: "soot", amount: 0.3, cell: 3, marks: both(crags(["slateDark", "soot"], "slate", "soot"), pebbles(["soot", "slate"], 4)) },
   scrap_vein: {
     base: "rustDark",
     tone: "soot",
@@ -126,7 +138,7 @@ const GROUND: Record<string, Ground> = {
         const x = 12 + r() * 36, y = 12 + r() * 36;
         p.shape([[x, y], [x + 8, y + 2], [x + 4, y + 7]], { fill: r() < 0.5 ? "rust" : "slate", line: 1.2 });
       }
-      blocks("rust", "soot")(p);
+      crags(["rustDark", "slateDark"], "rust", "soot", 3)(p, r);
     },
   },
   rough_floor: { base: "slate", tone: "soot", amount: 0.22, cell: 3, marks: pebbles(["slateDark"], 3) },
