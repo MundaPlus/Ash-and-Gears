@@ -502,6 +502,14 @@ async function boot() {
     const p = game.pawns.get(id);
     if (p) sim.release(game, p);
   };
+  actions.dropGear = (pawnId, slot) => {
+    const p = game.pawns.get(pawnId);
+    if (p) sim.dropGear(game, p, slot);
+  };
+  actions.holdGear = (pawnId, slot, on) => {
+    const p = game.pawns.get(pawnId);
+    if (p) sim.holdGear(game, p, slot, on);
+  };
   actions.assignBed = (thingId, pawnId) => {
     const th = game.things.get(thingId);
     if (th) sim.assignBed(game, th, pawnId);
@@ -740,6 +748,7 @@ async function boot() {
       }
       if (def.autoCrafter && contents(thing.out)) lines.push(`${t("chest.title")}: ${contents(thing.out)}`);
       if (def.switch) power = { thingId: thing.id, switchOn: !thing.off };
+      if (def.trap) lines.push(t(thing.sprung ? "inspect.trap_sprung" : "inspect.trap_armed"));
       if (def.bed) {
         const owner = sim.bedOwner(game, thing);
         const people = [...game.pawns.values()].filter((p) => p.faction === "colony" && !p.robot).map((p) => ({ id: p.id, nick: p.nick }));
@@ -1034,6 +1043,7 @@ async function boot() {
       if (typeof params.item === "string") params.item = t(`item.${params.item}`);
       if (typeof params.thing === "string") params.thing = t(`thing.${params.thing}`);
       if (typeof params.part === "string") params.part = t(`part.${params.part}`);
+      if (typeof params.creature === "string") params.creature = t(`creature.${params.creature}`);
       if (typeof params.cause === "string") params.cause = t(`cause.${params.cause}`);
       if (typeof params.project === "string") params.project = t(`research.${params.project}`);
       if (typeof params.faction === "string") params.faction = t(`fac.${params.faction}`);

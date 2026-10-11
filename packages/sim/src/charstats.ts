@@ -22,6 +22,8 @@ export interface GearSlots {
 
 export interface CharStats {
   slots: GearSlots;
+  /** Slots the player keeps empty. */
+  held: string[];
   attack: { melee: boolean; kind: string; dmg: number; perSecond: number; range: number; hit: number };
   /** Share stopped per damage kind (0..0.9), for the head and the body slot. */
   protection: { kind: string; head: number; body: number }[];
@@ -52,6 +54,7 @@ export function charStats(game: Game, p: Pawn): CharStats {
   const stop = (i: number | undefined, k: string) => (i === undefined ? 0 : (game.reg.items.list[i].armor as Record<string, number> | undefined)?.[k] ?? 0);
   return {
     slots: gearSlots(game, p),
+    held: [...(p.gearHold ?? [])],
     attack: { melee, kind: atk.kind, dmg: atk.dmg, perSecond: (atk.dmg / cooldown) * TICKS_PER_SECOND * hit, range: atk.range, hit },
     protection: ARMOR_KINDS.map((k) => ({ kind: k, head: stop(head, k), body: stop(body, k) })),
     move: moveSpeed(game, p) / (WALK_SPEED * game.reg.content.creatures[p.creature].speed || 1),

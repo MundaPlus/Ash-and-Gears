@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadCoreContent } from "@wc/data";
-import { WORK_TYPES, isRoofed, completeRoofs, contaminate, countItems, createZone, dropItems, exposureAt, Game, NO_THING, roomAt, scheduleRadCloud, tickWeather, type Pawn } from "../src/index.ts";
+import { WORK_TYPES, isRoofed, rotRateAt, setRoof, completeRoofs, contaminate, countItems, createZone, dropItems, exposureAt, Game, NO_THING, roomAt, scheduleRadCloud, tickWeather, type Pawn } from "../src/index.ts";
 
 const content = loadCoreContent();
 const newGame = (seed: string) => Game.create(content, { seed, mapSize: 96, storyteller: "none" });
@@ -122,6 +122,45 @@ describe("cooks cook and draw water (user request)", () => {
       if (people[0].job?.kind === "bill") recipe = people[0].job.data?.recipe;
     }
     expect(recipe).toBe("cook_simple_meal");
+  });
+});
+
+describe("cooks use the food that spoils first (user request)", () => {
+  it("a cook takes the nearly rotten stack before a fresh one that lies nearer", () => {
+    const g = newGame("spoilfirst");
+    const { x: hx, y: hy } = g.home;
+    clearArea(g, hx - 6, hy - 6, 3);
+    g.spawnThing("campfire", 0, hx - 6, hy - 6).fuel = 50;
+    for (const s of [...g.items.values()]) if (g.reg.items.list[s.def].category === "food") s.count = 0;
+    dropItems(g, "glowcorn", 20, 0, hx - 5, hy - 4);
+    dropItems(g, "scrub_potato", 20, 0, hx + 6, hy + 4);
+    const L = g.map.layers[0];
+    const old = g.items.get(L.item[L.i(hx + 6, hy + 4)])!;
+    old.rot = 0.8; // 6 days left; fresh glowcorn has 12
+    const people = [...g.pawns.values()].filter((p) => p.faction === "colony");
+    for (const p of people) p.work = Object.fromEntries(WORK_TYPES.map((w) => [w, w === "cook" && p === people[0] ? 1 : 0]));
+    let src: unknown;
+    for (let i = 0; i < g.ticksPerHour * 2 && src === undefined; i++) {
+      g.step();
+      if (people[0].job?.kind === "bill") src = people[0].job.data?.src;
+    }
+    expect(src).toBe(old.id);
+  });
+});
+
+describe("food under a roof rots slower (user request)", () => {
+  it("the same food rots slower under a roof than in the open", () => {
+    const g = newGame("roofrot");
+    const { x: hx, y: hy } = g.home;
+    clearArea(g, hx + 8, hy + 8, 3);
+    dropItems(g, "mutant_meat", 5, 0, hx + 7, hy + 8);
+    dropItems(g, "mutant_meat", 5, 0, hx + 9, hy + 8);
+    setRoof(g, hx + 7, hy + 8, true);
+    const L = g.map.layers[0];
+    const under = g.items.get(L.item[L.i(hx + 7, hy + 8)])!, open = g.items.get(L.item[L.i(hx + 9, hy + 8)])!;
+    // Same place, same temperature: only the roof differs (checked before rooms are rebuilt).
+    expect(rotRateAt(g, open)).toBeGreaterThan(0);
+    expect(rotRateAt(g, under) / rotRateAt(g, open)).toBeCloseTo(0.6, 5);
   });
 });
 

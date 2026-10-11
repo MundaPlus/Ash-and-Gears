@@ -1232,3 +1232,41 @@ THINGS.large_battery = THINGS.battery;
 THINGS.electric_cooler = recolor(THINGS.electric_heater, { a: "7", "9": "e" });
 /** Patched wall (claimed ruin): the ruin wall with its gap at the top filled in. */
 THINGS.patched_wall = THINGS.ruin_wall.map((r, y) => (y === 0 ? "0000000000000000" : y === 1 ? r.replace("..", "55") : r));
+/** Spike trap: a plank frame with rows of stakes (slate, bone tips). */
+THINGS.spike_trap = [
+  "................",
+  "................",
+  ".00000000000000.",
+  ".03333333333330.",
+  ".03.7..7..7..30.",
+  ".03.e..e..e..30.",
+  ".03dd0dd0dd0.30.",
+  ".03.7..7..7..30.",
+  ".03.e..e..e..30.",
+  ".03dd0dd0dd0.30.",
+  ".03.7..7..999930",
+  ".03.e..e..9aa930",
+  ".03dd0dd0d99993.",
+  ".03333333333330.",
+  ".00000000000000.",
+  "................",
+];
+/** Blast trap: a buried canister with a pressure plate and a glowing fuse. */
+THINGS.blast_trap = [
+  "................",
+  "................",
+  "............0f..",
+  "...........0....",
+  ".....00000.0....",
+  "....0dddddd0....",
+  "...0dd8888dd0...",
+  "...0d899998d0...",
+  "...0d89ee98d0...",
+  "...0d89ee98d0...",
+  "...0d899998d0...",
+  "...0dd8888dd0...",
+  "....0dddddd0....",
+  ".....000000.....",
+  "................",
+  "................",
+];

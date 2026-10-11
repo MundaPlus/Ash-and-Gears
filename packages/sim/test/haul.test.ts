@@ -121,6 +121,34 @@ describe("stockpile priority (B9)", () => {
   });
 });
 
+describe("stockpile spill-over (user request)", () => {
+  it("loose items go to the best stockpile first, and spill to a lower one when it is full", () => {
+    const { g, x0, y0 } = setup("spill");
+    for (const p of g.pawns.values()) p.work = Object.fromEntries(WORK_TYPES.map((w) => [w, w === "haul" ? 1 : 0]));
+    const [main] = [...g.zones.values()];
+    // A high-priority stockpile far away, full of other stacks; the normal one is near.
+    const high = createZone(g, "stockpile", 0, [{ x: x0 + 20, y: y0 }, { x: x0 + 21, y: y0 }]);
+    setZonePriority(g, high.id, 3);
+    drop(g, "stone", g.reg.items.get("stone").stack, x0 + 20, y0);
+    drop(g, "wood", g.reg.items.get("wood").stack, x0 + 21, y0);
+    const loose = drop(g, "scrap", 5, x0 + 10, y0 + 2);
+    expect(haulList(g).some((e) => e.id === loose)).toBe(true);
+    run(g, 3);
+    expect(storedCount(g, "scrap")).toBe(5);
+    const L = g.map.layers[0];
+    const inMain = [...g.items.values()].some((s) => g.reg.items.list[s.def].id === "scrap" && L.zone[L.i(s.x, s.y)] === main.id);
+    expect(inMain).toBe(true);
+    // Room again in the high stockpile: the next stack goes there, though the normal one is nearer.
+    const wood = L.item[L.i(x0 + 21, y0)];
+    g.items.delete(wood);
+    L.item[L.i(x0 + 21, y0)] = NO_THING;
+    drop(g, "steel", 3, x0 + 4, y0 + 2);
+    run(g, 3);
+    const steel = [...g.items.values()].find((s) => g.reg.items.list[s.def].id === "steel")!;
+    expect(L.zone[L.i(steel.x, steel.y)]).toBe(high.id);
+  });
+});
+
 describe("idle survivors find their own work", () => {
   it("an idle survivor gives itself a salvage order near home, and the player's orders come first", () => {
     const g = Game.create(loadCoreContent(), { seed: "idle", mapSize: 96, storyteller: "none" });

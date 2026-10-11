@@ -10,7 +10,7 @@ import { registerJob, registerWorkGiver } from "./jobs.ts";
 import type { Game } from "./game.ts";
 import { pain, untendedInjuries } from "./health.ts";
 import { dropItems, takeFromStack } from "./items.ts";
-import { armorScore, UPGRADE_MARGIN, weaponScore, wornIn } from "./gear.ts";
+import { armorScore, gearChecked, gearHeld, UPGRADE_MARGIN, weaponScore, wornIn } from "./gear.ts";
 import { NO_THING, type Thing } from "./map.ts";
 import { addMemory, addStat, learn, skillLevel, type Job, type Pawn } from "./pawn.ts";
 import { changeOpinion } from "./social.ts";
@@ -267,7 +267,6 @@ registerWorkGiver({ workType: "patient", give: (game, p) => (needsBedRest(game, 
 
 /** Ticks between two looks for better gear by the same survivor (the search walks every stack). */
 const GEAR_EVERY = 600;
-const gearChecked = new WeakMap<Game, Map<number, number>>();
 
 /**
  * Gear (N2): a survivor without a weapon takes one (ranged first). Every few hours each survivor also
@@ -276,7 +275,7 @@ const gearChecked = new WeakMap<Game, Map<number, number>>();
 export function equipJob(game: Game, p: Pawn): Job | null {
   if (p.faction !== "colony" || p.robot) return null;
   const list = game.reg.items.list;
-  if (p.weapon === null) {
+  if (p.weapon === null && !gearHeld(p, "weapon")) {
     const ranged = findItem(game, p, (d) => (list[d].weapon?.range ?? 0) > 1.5);
     const w = ranged ?? findItem(game, p, (d) => !!list[d].weapon);
     if (w !== null && reserve(game, `item:${w}`, p)) return { kind: "equip", stage: 0, targetId: w };
@@ -286,12 +285,13 @@ export function equipJob(game: Game, p: Pawn): Job | null {
   if (game.tick - (seen.get(p.id) ?? -1e9) < GEAR_EVERY) return null;
   seen.set(p.id, game.tick);
   // A better weapon of the same reach (a melee fighter keeps melee if no gun is better).
-  if (p.weapon !== null) {
+  if (p.weapon !== null && !gearHeld(p, "weapon")) {
     const now = weaponScore(list[p.weapon]);
     const w = findItem(game, p, (d) => !!list[d].weapon && weaponScore(list[d]) > now * UPGRADE_MARGIN);
     if (w !== null && reserve(game, `item:${w}`, p)) return { kind: "equip", stage: 0, targetId: w };
   }
   for (const slot of ["body", "head"] as const) {
+    if (gearHeld(p, slot)) continue;
     const worn = wornIn(game, p, slot);
     const now = worn === undefined ? 0 : armorScore(list[worn]);
     const a = findItem(game, p, (d) => list[d].armor?.slot === slot && armorScore(list[d]) > Math.max(0.01, now * UPGRADE_MARGIN));

@@ -389,11 +389,16 @@ export function findItem(
   p: Pawn,
   match: (defIdx: number, contaminated: boolean) => boolean,
   extra?: (s: ItemStack) => boolean,
+  /** Optional first sort key (lower first), before distance. */
+  rank?: (s: ItemStack) => number,
 ): number | null {
   const cands = [...game.items.values()].filter(
     (s) => s.layer >= 0 && !s.forbidden && match(s.def, !!s.contaminated) && !isReserved(game, `item:${s.id}`, p) && (!extra || extra(s)),
   );
-  cands.sort((a, b) => dist2(p, a) - dist2(p, b));
+  if (rank) {
+    const r = new Map(cands.map((s) => [s.id, rank(s)]));
+    cands.sort((a, b) => r.get(a.id)! - r.get(b.id)! || dist2(p, a) - dist2(p, b));
+  } else cands.sort((a, b) => dist2(p, a) - dist2(p, b));
   for (const s of cands.slice(0, 12)) if (game.path.canReach(p, s)) return s.id;
   return null;
 }

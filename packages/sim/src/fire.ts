@@ -3,6 +3,7 @@
  * It grows, spreads to flammable neighbors, burns pawns standing in it, and dies in the rain.
  * Firefighters beat it out. Lightning in a storm can start one.
  */
+import { rebuildTrap } from "./traps.ts";
 import { atGoal, goTo, isReserved, reserve } from "./ai.ts";
 import type { Game } from "./game.ts";
 import { damage } from "./health.ts";
@@ -57,6 +58,7 @@ export function tickFire(game: Game): void {
       if (th.hp <= 0) {
         game.removeThing(th.id);
         game.message("msg.burned_down", { thing: game.reg.things.list[th.def].id }, "warn");
+        rebuildTrap(game, game.reg.things.list[th.def].id, th.layer, th.x, th.y, th.rot);
       }
     } else next -= 0.15; // nothing left to burn
     if (raining && !roofed) next -= 0.25;

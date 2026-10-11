@@ -13,6 +13,13 @@ test("research, power, belts and lamp light", async ({ page }, info) => {
   await expect(page.getByTestId("research-panel")).toBeVisible();
   await page.getByTestId("research-scrap_power").click();
   expect(await page.evaluate(() => (window as any).__game.game.research.current)).toBe("scrap_power");
+  // The active project's progress bar shows on its orange button (user report: it was invisible).
+  await page.evaluate(() => {
+    const g = (window as any).__game.game;
+    g.research.progress.set("scrap_power", g.reg.content.research.find((r: any) => r.id === "scrap_power").cost * 0.4);
+  });
+  await page.waitForTimeout(400);
+  await page.getByTestId("research-scrap_power").screenshot({ path: `artifacts/screens/research-active-${info.project.name}.png` });
 
   // Locked build item shows the research it needs; unlocking enables it.
   await page.getByTestId("tb-build").click();
