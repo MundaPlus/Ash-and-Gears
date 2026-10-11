@@ -92,6 +92,8 @@ export function stockOf(game: Game, r: RecipeDef): number {
 
 export function matchesInput(game: Game, input: RecipeDef["inputs"][number], defIdx: number): boolean {
   const d = game.reg.items.list[defIdx];
+  // An unknown item number (a bad buffer entry from an older version) matches nothing.
+  if (!d) return false;
   if (input.item) return d.id === input.item;
   if (input.tag === "raw_food") return d.raw;
   return false;
@@ -350,7 +352,8 @@ registerCleanup("bill", (game, p, job) => {
     if (net) netAdd(game, net, r.fluidIn.kind, job.data.fluid);
   }
   for (const [k, v] of Object.entries(job.data ?? {})) {
-    if (typeof v !== "number" || v <= 0 || k === "fluid") continue;
+    // Only u<item> and b<item> keys hold inputs (not "batch" or other job fields).
+    if (typeof v !== "number" || v <= 0 || !/^[ub]\d+$/.test(k)) continue;
     if (k.startsWith("u")) dropItems(game, Number(k.slice(1)), v, p.layer, p.x, p.y);
     else if (k.startsWith("b") && bench) {
       const def = Number(k.slice(1));
@@ -366,7 +369,7 @@ function useBuffer(game: Game, bench: Thing, r: RecipeDef, job: Job): void {
   const inp = r.inputs[idx];
   for (const [k, v] of Object.entries(bench.buffer)) {
     const missing = inp.count * batchOf(job) - (job.data!.have as number);
-    if (missing <= 0 || v <= 0 || !matchesInput(game, inp, Number(k))) continue;
+    if (missing <= 0 || v <= 0 || !game.reg.items.list[Number(k)] || !matchesInput(game, inp, Number(k))) continue;
     const n = Math.min(v, missing);
     bench.buffer[Number(k)] -= n;
     job.data!.have = (job.data!.have as number) + n;
