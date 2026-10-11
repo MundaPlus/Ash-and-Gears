@@ -5,7 +5,8 @@
 import type { ItemDef } from "@wc/data";
 import type { Game } from "./game.ts";
 import type { PartId } from "./health.ts";
-import type { Pawn } from "./pawn.ts";
+import type { GearSlot, Pawn } from "./pawn.ts";
+import { dropItems } from "./items.ts";
 
 export const ARMOR_KINDS = ["cut", "blunt", "gunshot", "arrow", "bite", "burn"] as const;
 type ArmorKind = (typeof ARMOR_KINDS)[number];
@@ -16,6 +17,33 @@ export const UPGRADE_MARGIN = 1.15;
 /** The armor item a pawn wears in a slot, or undefined. */
 export function wornIn(game: Game, p: Pawn, slot: "body" | "head"): number | undefined {
   return p.armor.find((a) => game.reg.items.list[a].armor?.slot === slot);
+}
+
+/** Last tick each survivor looked for better gear (per game). */
+export const gearChecked = new WeakMap<Game, Map<number, number>>();
+
+/** True when the player keeps this slot empty (auto-equip skips it). */
+export function gearHeld(p: Pawn, slot: GearSlot): boolean {
+  return !!p.gearHold?.includes(slot);
+}
+
+/** Take off the gear in a slot and drop it where the survivor stands. The slot then stays empty. */
+export function dropGear(game: Game, p: Pawn, slot: GearSlot): void {
+  const item = slot === "weapon" ? p.weapon : wornIn(game, p, slot);
+  if (item === null || item === undefined) return;
+  if (slot === "weapon") p.weapon = null;
+  else p.armor = p.armor.filter((a) => a !== item);
+  dropItems(game, item, 1, p.layer, p.x, p.y);
+  holdGear(game, p, slot, true);
+}
+
+/** Keep a slot empty (true), or let the survivor pick gear for it again (false: they look at once). */
+export function holdGear(game: Game, p: Pawn, slot: GearSlot, on: boolean): void {
+  const rest = (p.gearHold ?? []).filter((s) => s !== slot);
+  if (on) rest.push(slot);
+  else gearChecked.get(game)?.delete(p.id);
+  if (rest.length) p.gearHold = rest;
+  else delete p.gearHold;
 }
 
 /** Share of a hit that armor stops on this body part (0..0.9). */

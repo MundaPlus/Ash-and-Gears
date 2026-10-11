@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadCoreContent } from "@wc/data";
-import { armorReduction, charStats, countItems, damage, designate, dropItems, Game, loadGame, NO_THING, saveGame, WORK_TYPES, type Pawn } from "../src/index.ts";
+import { armorReduction, charStats, countItems, dropGear, holdGear, damage, designate, dropItems, Game, loadGame, NO_THING, saveGame, WORK_TYPES, type Pawn } from "../src/index.ts";
 
 const content = loadCoreContent();
 const newGame = (seed: string) => Game.create(content, { seed, mapSize: 96, storyteller: "none" });
@@ -120,5 +120,24 @@ describe("gear panel stats", () => {
     const cut = s.protection.find((x) => x.kind === "cut")!;
     expect(cut.head).toBe(items.get("plate_helmet").armor!.cut);
     expect(cut.body).toBe(0);
+  });
+});
+
+describe("drop gear from a slot (user request)", () => {
+  it("the dropped piece stays on the floor until the player allows gear again", () => {
+    const g = Game.create(content, { seed: "dropgear", mapSize: 64, storyteller: "none" });
+    const p = [...g.pawns.values()].find((x) => x.faction === "colony")!;
+    const helmet = g.reg.items.idx("plate_helmet");
+    p.armor = [helmet];
+    // The others keep their heads bare, or one of them takes the free helmet.
+    for (const o of g.pawns.values()) if (o.faction === "colony" && o !== p) holdGear(g, o, "head", true);
+    dropGear(g, p, "head");
+    expect(p.armor).toEqual([]);
+    expect(countItems(g, "plate_helmet")).toBe(1);
+    for (let i = 0; i < g.ticksPerHour * 3; i++) g.step();
+    expect(p.armor).toEqual([]);
+    holdGear(g, p, "head", false);
+    for (let i = 0; i < g.ticksPerHour * 8 && !p.armor.length; i++) g.step();
+    expect(p.armor).toEqual([helmet]);
   });
 });

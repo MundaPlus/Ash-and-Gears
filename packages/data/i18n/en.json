@@ -1291,5 +1291,10 @@
   "gear.work": "Work speed",
   "gear.moving": "Moving (legs)",
   "gear.manipulation": "Manipulation (arms)",
-  "gear.pain": "Pain"
+  "gear.pain": "Pain",
+  "gear.drop": "Drop",
+  "gear.drop_hint": "Take it off and drop it here. The slot stays empty until you allow gear again.",
+  "gear.kept_empty": "kept empty",
+  "gear.allow": "Allow gear",
+  "gear.allow_hint": "Let the survivor pick up gear for this slot again."
 }

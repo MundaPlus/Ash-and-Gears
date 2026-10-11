@@ -21,5 +21,10 @@ test("the Gear tab shows slots, combat stats and protection", async ({ page }, i
   await expect(page.getByTestId("slot-head")).not.toContainText("Nothing");
   await expect(page.getByTestId("gear-protection")).toContainText("%");
   await page.screenshot({ path: `artifacts/screens/gear-${info.project.name}.png` });
+  // Drop the helmet: the slot empties and offers Allow gear.
+  await page.getByTestId("drop-head").click();
+  await expect(page.getByTestId("slot-head")).toContainText("Nothing");
+  await expect(page.getByTestId("allow-head")).toBeVisible();
+  await page.screenshot({ path: `artifacts/screens/gear-dropped-${info.project.name}.png` });
   expect(errors).toEqual([]);
 });

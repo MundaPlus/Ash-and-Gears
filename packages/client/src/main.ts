@@ -502,6 +502,14 @@ async function boot() {
     const p = game.pawns.get(id);
     if (p) sim.release(game, p);
   };
+  actions.dropGear = (pawnId, slot) => {
+    const p = game.pawns.get(pawnId);
+    if (p) sim.dropGear(game, p, slot);
+  };
+  actions.holdGear = (pawnId, slot, on) => {
+    const p = game.pawns.get(pawnId);
+    if (p) sim.holdGear(game, p, slot, on);
+  };
   actions.assignBed = (thingId, pawnId) => {
     const th = game.things.get(thingId);
     if (th) sim.assignBed(game, th, pawnId);

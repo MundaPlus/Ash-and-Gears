@@ -5,13 +5,27 @@ import { actions, useStore, type PawnDetail } from "./store.ts";
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / Math.max(1, xs.length);
 
-/** One gear slot: what sits there and its main number. */
-function Slot({ slot, item, note }: { slot: string; item: string | null; note: string }) {
+type SlotId = "head" | "body" | "weapon";
+
+/** One gear slot: what sits there, its main number, and Drop (or Allow gear when kept empty). */
+function Slot({ p, slot, item, note }: { p: PawnDetail; slot: SlotId; item: string | null; note: string }) {
+  const own = p.faction === "colony" && !p.robot;
+  const held = p.stats.held.includes(slot);
   return (
     <div class={`slot ${item ? "" : "empty"}`} data-testid={`slot-${slot}`}>
       <small>{t(`gear.slot.${slot}`)}</small>
       <b>{item ? t(`item.${item}`) : t(slot === "weapon" ? "pawn.fists" : "gear.empty")}</b>
-      <em>{note}</em>
+      <em>{held && !item ? t("gear.kept_empty") : note}</em>
+      {own && item && (
+        <button class="slotbtn" data-testid={`drop-${slot}`} title={t("gear.drop_hint")} onClick={() => actions.dropGear(p.id, slot)}>
+          {t("gear.drop")}
+        </button>
+      )}
+      {own && !item && held && (
+        <button class="slotbtn" data-testid={`allow-${slot}`} title={t("gear.allow_hint")} onClick={() => actions.holdGear(p.id, slot, false)}>
+          {t("gear.allow")}
+        </button>
+      )}
     </div>
   );
 }
@@ -24,9 +38,9 @@ function GearTab({ p }: { p: PawnDetail }) {
   return (
     <div class="gear" data-testid="gear-tab">
       <div class="doll">
-        <Slot slot="head" item={s.slots.head} note={s.slots.head ? t("gear.protects", { v: pct(headAvg) }) : ""} />
-        <Slot slot="body" item={s.slots.body} note={s.slots.body ? t("gear.protects", { v: pct(bodyAvg) }) : ""} />
-        <Slot slot="weapon" item={s.slots.weapon} note={t("gear.weapon_note", { dmg: a.dmg, kind: t(`dmg.${a.kind}`) })} />
+        <Slot p={p} slot="head" item={s.slots.head} note={s.slots.head ? t("gear.protects", { v: pct(headAvg) }) : ""} />
+        <Slot p={p} slot="body" item={s.slots.body} note={s.slots.body ? t("gear.protects", { v: pct(bodyAvg) }) : ""} />
+        <Slot p={p} slot="weapon" item={s.slots.weapon} note={t("gear.weapon_note", { dmg: a.dmg, kind: t(`dmg.${a.kind}`) })} />
       </div>
       <h3>{t("gear.combat")}</h3>
       <ul class="statlist">
