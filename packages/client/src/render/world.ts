@@ -4,7 +4,7 @@
  * Far out: one small overview texture per layer (1 pixel per tile), so phones stay fast.
  */
 import { Container, Sprite, Text, Texture } from "pixi.js";
-import { CHUNK, NO_THING, type Game } from "@wc/sim";
+import { CHUNK, NO_THING, type Game, type Thing } from "@wc/sim";
 import { WALL_E, WALL_N, WALL_S, WALL_W } from "@wc/data";
 
 /** Tiles wide and high of a thing def with a rotation (1 and 3 swap them). */
@@ -135,6 +135,7 @@ export class WorldRenderer {
     c.counts.removeChildren().forEach((ch) => ch.destroy());
     const openAir = L.level > 0 ? g.reg.terrain.idx("open_air") : -1;
     const things: Sprite[] = [];
+    const lineSprites: Sprite[] = [];
     const items: Sprite[] = [];
     const overlays: Sprite[] = [];
     const marks: Sprite[] = [];
@@ -266,11 +267,11 @@ export class WorldRenderer {
             t.position.set(s.x + TILE / 2, s.y + TILE / 2);
           } else {
             // Walls join with walls and doors; wires with wires and powered things; sandbags turn in a column.
-            const near = (test: (d: (typeof g.reg.things.list)[number]) => boolean) => {
+            const near = (test: (d: (typeof g.reg.things.list)[number], o: Thing) => boolean) => {
               const at = (nx: number, ny: number) => {
                 if (!L.inBounds(nx, ny)) return false;
                 const o = L.thing[L.i(nx, ny)];
-                return o !== NO_THING && test(g.reg.things.list[g.things.get(o)!.def]);
+                return o !== NO_THING && test(g.reg.things.list[g.things.get(o)!.def], g.things.get(o)!);
               };
               return (at(x, y - 1) ? WALL_N : 0) | (at(x + 1, y) ? WALL_E : 0) | (at(x, y + 1) ? WALL_S : 0) | (at(x - 1, y) ? WALL_W : 0);
             };
@@ -278,15 +279,29 @@ export class WorldRenderer {
             const line = this.tex.lines[thing.def];
             const turned = this.tex.turned[thing.def];
             const d0 = def;
-            if (joined) t.texture = joined[near((d) => d.wall)];
-            else if (line) {
+            // A wire or pipe inside a wall counts as one for its neighbors.
+            const lineIn = (o: Thing) => (o.line ? g.reg.things.get(o.line) : undefined);
+            const joinPipe = (d: (typeof g.reg.things.list)[number], o: Thing) => d.pipe || !!d.fluid || !!lineIn(o)?.pipe;
+            const joinWire = (d: (typeof g.reg.things.list)[number], o: Thing) => !!d.conduit || (!!d.power && !d.belt) || !!lineIn(o)?.conduit;
+            if (joined) {
+              t.texture = joined[near((d) => d.wall)];
+              // The wire or pipe that runs through this wall, drawn over it.
+              const ld = lineIn(thing);
+              const lt = ld && this.tex.lines[g.reg.things.idx(ld.id)];
+              if (ld && lt) {
+                const ls = new Sprite(lt[near(ld.pipe ? joinPipe : joinWire)]);
+                ls.width = ls.height = TILE;
+                ls.position.copyFrom(s.position);
+                lineSprites.push(ls);
+              }
+            } else if (line) {
               // Wires join wires and reach into machines next to them. Belts are left alone (no comb under a belt line).
               // Pipes join pipes and fluid machines.
-              t.texture = def.pipe ? line[near((d) => d.pipe || !!d.fluid)] : line[near((d) => !!d.conduit || (!!d.power && !d.belt))];
+              t.texture = def.pipe ? line[near(joinPipe)] : line[near(joinWire)];
             }
             else if (d0.power && !d0.belt && this.tex.stubs.length) {
               // A machine next to wires: the wire runs in under it, to its middle.
-              const m = near((d) => !!d.conduit);
+              const m = near((d, o) => !!d.conduit || !!lineIn(o)?.conduit);
               if (m) {
                 const st = new Sprite(this.tex.stubs[m]);
                 st.width = st.height = TILE;
@@ -309,6 +324,7 @@ export class WorldRenderer {
     for (const t of overlays) c.top.addChild(t);
     for (const t of items) c.top.addChild(t);
     for (const t of things) c.top.addChild(t);
+    for (const t of lineSprites) c.top.addChild(t);
     for (const t of marks) c.top.addChild(t);
     // Counts on top of everything in the chunk.
     c.top.addChild(c.counts);

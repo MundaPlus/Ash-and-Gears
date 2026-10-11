@@ -1264,6 +1264,7 @@
   "bed.anyone": "Anyone",
   "bed.anyone.desc": "Nobody owns this bed. The next survivor without a bed claims it.",
   "inspect.bed_owner": "Owner: {name}",
+  "inspect.line_inside": "Runs through it: {thing}",
   "inspect.bed_free": "No owner yet: the next survivor without a bed claims it.",
   "pawn.tab.overview": "Overview",
   "pawn.tab.gear": "Gear",

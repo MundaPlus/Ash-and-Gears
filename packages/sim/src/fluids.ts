@@ -27,13 +27,13 @@ export interface FluidNet {
 /** Part of a fluid network: pipes and fluid things, except purifiers (they join two networks). */
 function fluidish(game: Game, t: Thing): boolean {
   const d = game.reg.things.list[t.def];
-  return d.pipe || (!!d.fluid && d.fluid.role !== "purifier");
+  return d.pipe || (!!d.fluid && d.fluid.role !== "purifier") || (!!t.line && game.reg.things.get(t.line).pipe);
 }
 
 /** Liters a thing can hold. */
 export function capacityOf(game: Game, t: Thing): number {
   const d = game.reg.things.list[t.def];
-  if (d.pipe) return PIPE_CAPACITY;
+  if (d.pipe || t.line) return PIPE_CAPACITY;
   return d.fluid?.capacity ?? (d.fluid ? PIPE_CAPACITY : 0);
 }
 

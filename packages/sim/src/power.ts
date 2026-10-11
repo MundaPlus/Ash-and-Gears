@@ -40,7 +40,7 @@ function powerish(game: Game, t: Thing): boolean {
   const d = game.reg.things.list[t.def];
   // A switch that is off cuts the line.
   if (d.switch && t.off) return false;
-  return !!d.power || d.conduit;
+  return !!d.power || d.conduit || (!!t.line && !!game.reg.things.get(t.line).conduit);
 }
 
 /** Poles this pole links to (other poles within range on the same layer). */
