@@ -85,7 +85,8 @@ export function connectBunker(game: Game): void {
   const cave = game.map.layerAt(-1), deep = door.layer;
   const walls = [...game.things.values()].filter((t) => t.layer === deep && idOf(game, t.def).startsWith("bunker"));
   const minY = Math.min(...walls.map((t) => t.y)), maxY = Math.max(...walls.map((t) => t.y));
-  const shaft = { x: door.x - 4, y: door.y };
+  // West of the door; on small maps the bunker may sit near the edge, so keep the shaft on the map.
+  const shaft = { x: Math.max(1, door.x - 4), y: door.y };
   // Layer 1: from below the surface stairs to the shaft (around the bunker's rows, which lie below).
   const row = s.y < (minY + maxY) / 2 ? Math.min(s.y, minY - 2) : Math.max(s.y, maxY + 2);
   carve(game, cave, s.x, s.y, s.x, row, "cave_floor");

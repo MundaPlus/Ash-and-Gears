@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadCoreContent } from "@wc/data";
-import { WORK_TYPES, isRoofed, completeRoofs, contaminate, countItems, createZone, dropItems, exposureAt, Game, NO_THING, roomAt, scheduleRadCloud, tickWeather, type Pawn } from "../src/index.ts";
+import { WORK_TYPES, isRoofed, rotRateAt, setRoof, completeRoofs, contaminate, countItems, createZone, dropItems, exposureAt, Game, NO_THING, roomAt, scheduleRadCloud, tickWeather, type Pawn } from "../src/index.ts";
 
 const content = loadCoreContent();
 const newGame = (seed: string) => Game.create(content, { seed, mapSize: 96, storyteller: "none" });
@@ -145,6 +145,22 @@ describe("cooks use the food that spoils first (user request)", () => {
       if (people[0].job?.kind === "bill") src = people[0].job.data?.src;
     }
     expect(src).toBe(old.id);
+  });
+});
+
+describe("food under a roof rots slower (user request)", () => {
+  it("the same food rots slower under a roof than in the open", () => {
+    const g = newGame("roofrot");
+    const { x: hx, y: hy } = g.home;
+    clearArea(g, hx + 8, hy + 8, 3);
+    dropItems(g, "mutant_meat", 5, 0, hx + 7, hy + 8);
+    dropItems(g, "mutant_meat", 5, 0, hx + 9, hy + 8);
+    setRoof(g, hx + 7, hy + 8, true);
+    const L = g.map.layers[0];
+    const under = g.items.get(L.item[L.i(hx + 7, hy + 8)])!, open = g.items.get(L.item[L.i(hx + 9, hy + 8)])!;
+    // Same place, same temperature: only the roof differs (checked before rooms are rebuilt).
+    expect(rotRateAt(g, open)).toBeGreaterThan(0);
+    expect(rotRateAt(g, under) / rotRateAt(g, open)).toBeCloseTo(0.6, 5);
   });
 });
 

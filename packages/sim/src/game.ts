@@ -4,6 +4,7 @@
 import { populateLairs } from "./towers.ts";
 import { tickLairs } from "./lairs.ts";
 import { tickClaims } from "./claim.ts";
+import { tickTraps } from "./traps.ts";
 import { tickFoodWarning } from "./alerts.ts";
 import { ensureLinks } from "./links.ts";
 import type { Content } from "@wc/data";
@@ -390,6 +391,7 @@ export class Game {
     tickTurrets(this);
     tickLairs(this);
     tickClaims(this);
+    tickTraps(this);
     tickFoodWarning(this);
     tickGoals(this);
   }

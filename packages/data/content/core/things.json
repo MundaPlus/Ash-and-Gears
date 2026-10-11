@@ -527,6 +527,50 @@
   }
  },
  {
+  "id": "spike_trap",
+  "kind": "structure",
+  "color": "#7a5a3a",
+  "glyph": "^",
+  "hp": 120,
+  "beauty": -1,
+  "trap": {
+   "dmg": 14,
+   "kind": "cut"
+  },
+  "build": {
+   "cost": {
+    "wood": 8,
+    "scrap": 4
+   },
+   "work": 120,
+   "menu": "defense",
+   "research": "traps"
+  }
+ },
+ {
+  "id": "blast_trap",
+  "kind": "structure",
+  "color": "#5a5040",
+  "glyph": "*",
+  "hp": 60,
+  "trap": {
+   "dmg": 22,
+   "kind": "burn",
+   "radius": 2.2,
+   "once": true
+  },
+  "build": {
+   "cost": {
+    "scrap": 6,
+    "components": 2,
+    "coal": 4
+   },
+   "work": 160,
+   "menu": "defense",
+   "research": "explosive_traps"
+  }
+ },
+ {
   "id": "scrap_turret",
   "kind": "structure",
   "color": "#6b2b1a",

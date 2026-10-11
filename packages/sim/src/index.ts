@@ -39,6 +39,7 @@ export * from "./tileactions.ts";
 export * from "./alerts.ts";
 export * from "./claim.ts";
 export * from "./charstats.ts";
+export * from "./traps.ts";
 export * from "./plot.ts";
 export * from "./scenarios.ts";
 export * from "./jobs.ts";

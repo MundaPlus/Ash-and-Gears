@@ -48,6 +48,8 @@ export interface Thing {
   splitNext?: number;
   /** Bed for prisoners (A6). */
   forPrisoners?: boolean;
+  /** Trap that went off and waits to be re-armed. */
+  sprung?: boolean;
   /** Medical bed: only for the sick and hurt. Nobody owns it; it heals faster and tends better. */
   medical?: boolean;
   /** Power switch turned off. */

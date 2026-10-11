@@ -212,6 +212,27 @@ const sandbags: Draw = (p) => {
     p.shape(Print.ellipse(x + 8, y + 8, 10, 7), { fill: "ochre", tone: { ink: "ochreDark", amount: 0.3 }, line: 2 });
   }
 };
+/** Spike trap: a low plank frame with rows of sharpened stakes, half hidden under loose scrap. */
+const spike_trap: Draw = (p) => {
+  p.tone(Print.rect(12, 14, 46, 46, 4), "soot", 0.35, 3);
+  p.shape(Print.rect(8, 8, 48, 48, 4), { fill: "ochreDark", tone: { ink: "soot", amount: 0.25 }, line: 2 });
+  for (let row = 0; row < 3; row++)
+    for (let col = 0; col < 3; col++) {
+      const cx = 18 + col * 14, cy = 20 + row * 14;
+      p.shape([[cx - 5, cy + 5], [cx + 5, cy + 5], [cx, cy - 7]], { fill: "slate", tone: { ink: "slateDark", amount: 0.3 }, line: 1.4 });
+      p.dot(cx, cy - 5, 1.2, "bone");
+    }
+  p.shape(Print.rect(34, 36, 18, 14, 2), { fill: "rust", tone: { ink: "rustDark", amount: 0.3 }, line: 1.6 });
+};
+/** Blast trap: a buried canister with a pressure plate and a short fuse wire. */
+const blast_trap: Draw = (p) => {
+  p.tone(Print.ellipse(35, 36, 20, 18), "soot", 0.4, 3);
+  p.shape(Print.ellipse(32, 32, 20, 18), { fill: "slateDark", tone: { ink: "soot", amount: 0.3 }, line: 2 });
+  p.shape(Print.ellipse(32, 32, 11, 10), { fill: "rust", tone: { ink: "rustDark", amount: 0.35 }, line: 1.8 });
+  p.shape(Print.rect(28, 28, 8, 8, 2), { fill: "slate", line: 1.4 });
+  p.line([[44, 22], [50, 14], [56, 16]], "soot", 1.6);
+  p.dot(56, 16, 2, "glow");
+};
 const turret = (heavy: boolean): Draw => (p) => {
   const base: Ink = heavy ? "slateDark" : "slate";
   p.tone(Print.ellipse(35, 36, 22, 20), "soot", 0.45, 3);
@@ -470,7 +491,7 @@ export const PRINT_THINGS: Partial<Record<string, Draw>> = {
   scrub_potato_plant: crop("teal", "tealDark", "ochre"),
   fiber_weed_plant: crop("ochre", "ochreDark", "bone", true),
   ash_willow_plant,
-  well, rain_collector, sandbags, scrap_turret: turret(false), heavy_turret: turret(true),
+  well, rain_collector, sandbags, spike_trap, blast_trap, scrap_turret: turret(false), heavy_turret: turret(true),
   research_desk, scrap_generator, solar_panel, wind_turbine, lamp, powered_bench, smelter,
   loader, auto_crafter, assembler, refinery, robot_bay,
   belt_splitter, belt_sorter, tunnel_in: tunnel(false), tunnel_out: tunnel(true), robot_arm, scrap_chest,

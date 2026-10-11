@@ -112,6 +112,11 @@ export class DynamicRenderer {
           g.rect(px + 3, py + 3, w, TILE - 6).fill(col).rect(px + TILE - 3 - w, py + 3, w, TILE - 6).fill(col);
         }
       }
+      // A sprung trap: its stakes lie flat under a dark cover with an orange "re-arm" bar.
+      if (d.trap && t.sprung) {
+        g.rect(px + 4, py + 4, TILE - 8, TILE - 8).fill({ color: 0x1b1714, alpha: 0.55 });
+        g.rect(px + 6, py + TILE / 2 - 2, TILE - 12, 4).fill(0xd9742e);
+      }
       // Beds show who they are for: prisoners get a grey blanket with orange stripes, medical beds a white sheet with a red cross.
       if (d.bed && (t.forPrisoners || t.medical)) this.bedCover(g, px, py, fw, fh, !!t.medical);
       // Benches in use: sparks at workbenches, smoke at fires and furnaces, a blinking screen at the desk.

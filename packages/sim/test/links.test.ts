@@ -46,4 +46,9 @@ describe("layer links (ensureLinks)", () => {
     expect(g.things.has(s.id)).toBe(true);
     expect(below(g, s)).toBe("stairs_up");
   });
+
+  it("a small map with the bunker near the edge still gets its tunnel (seed trapshot crashed)", () => {
+    const g = Game.create(content, { seed: "trapshot", mapSize: 64 });
+    expect(g.map.layers.length).toBeGreaterThan(2);
+  });
 });

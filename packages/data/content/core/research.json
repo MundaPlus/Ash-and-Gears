@@ -320,5 +320,19 @@
    "composite_armor",
    "robotics"
   ]
+ },
+ {
+  "id": "traps",
+  "cost": 1400,
+  "tier": 1
+ },
+ {
+  "id": "explosive_traps",
+  "cost": 2600,
+  "tier": 2,
+  "prereqs": [
+   "traps",
+   "smelting"
+  ]
  }
 ]

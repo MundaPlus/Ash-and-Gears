@@ -185,6 +185,11 @@ export const ThingDef = z.object({
   footprint: z.tuple([z.number().int().min(1).max(4), z.number().int().min(1).max(4)]).default([1, 1]),
   /** Research desk: survivors research here. */
   research: z.number().positive().optional(),
+  /**
+   * Trap: hurts a hostile who steps on it (survivors know their traps). `radius` > 0 is a blast that also
+   * hits hostiles nearby. `once`: the trap is gone after it goes off; else builders re-arm it.
+   */
+  trap: z.object({ dmg: z.number().positive(), kind: z.string(), radius: z.number().min(0).default(0), once: z.boolean().default(false) }).optional(),
   /** Turret: shoots hostiles on its own. */
   turret: z.object({ dmg: z.number(), range: z.number(), cooldown: z.number().int(), accuracy: z.number(), kind: z.string() }).optional(),
 });
