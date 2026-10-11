@@ -81,6 +81,21 @@ describe("health", () => {
 });
 
 describe("combat rules", () => {
+  it("a closed door blocks sight and shots; it is open while someone stands in it (user report)", () => {
+    const g = newGame("losdoor");
+    const { x, y } = g.home;
+    clearArea(g, x, y - 12, 6);
+    const a = { x: x - 5, y: y - 12 }, b = { x: x + 5, y: y - 12 };
+    g.spawnThing("scrap_door", 0, x, y - 12);
+    expect(canSee(g, 0, a, b)).toBe(false);
+    const p = colonists(g)[0];
+    p.layer = 0;
+    p.x = x;
+    p.y = y - 12;
+    g.step();
+    expect(canSee(g, 0, a, b)).toBe(true);
+  });
+
   it("walls block sight; sandbags lower the hit chance", () => {
     const g = newGame("los");
     const { x, y } = g.home;

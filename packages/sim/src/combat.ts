@@ -41,6 +41,23 @@ export function dist(a: { x: number; y: number }, b: { x: number; y: number }): 
   return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
+/** Doorways someone stands in this tick (an open door), per game. Rebuilt once per tick. */
+const openDoors = new WeakMap<Game, { tick: number; tiles: Set<number> }>();
+
+function doorOpen(game: Game, layer: number, i: number): boolean {
+  let o = openDoors.get(game);
+  if (!o || o.tick !== game.tick) {
+    o = { tick: game.tick, tiles: new Set() };
+    for (const p of game.pawns.values()) {
+      const L = game.map.layers[p.layer];
+      o.tiles.add(p.layer * L.w * L.h + L.i(p.x, p.y));
+    }
+    openDoors.set(game, o);
+  }
+  const L = game.map.layers[layer];
+  return o.tiles.has(layer * L.w * L.h + i);
+}
+
 function blocksSight(game: Game, layer: number, x: number, y: number): boolean {
   const L = game.map.layers[layer];
   const i = L.i(x, y);
@@ -48,7 +65,10 @@ function blocksSight(game: Game, layer: number, x: number, y: number): boolean {
   const th = L.thing[i];
   if (th === NO_THING) return false;
   const d = game.reg.things.list[game.things.get(th)!.def];
-  return d.blocksSight ?? (d.blocks && d.wall && !d.door);
+  if (d.blocksSight !== undefined) return d.blocksSight;
+  // A closed door blocks sight and shots like the wall around it. It is open while someone stands in it.
+  if (d.door && d.wall) return !doorOpen(game, layer, i);
+  return d.blocks && d.wall;
 }
 
 /** Bresenham line from a to b; true if no tile in between blocks sight. */
