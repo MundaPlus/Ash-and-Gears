@@ -78,16 +78,18 @@ registerTask("rearm", {
   },
 });
 
-/** Builders re-arm the nearest sprung trap they can reach. */
-registerWorkGiver({
-  workType: "construct",
-  give: (game, p) => {
-    const sprung = [...game.things.values()].filter((t) => t.sprung).sort((a, b) => dist(a, p) - dist(b, p));
-    for (const t of sprung) {
-      if (!game.path.canReachAdjacent(p, t)) continue;
-      const job = workJob(game, p, "rearm", { layer: t.layer, x: t.x, y: t.y }, t.id);
-      if (job) return job;
-    }
-    return null;
-  },
-});
+/**
+ * Builders re-arm the nearest sprung trap they can reach. The AI asks this right after food and water,
+ * before all other work (user request: a sprung trap is a hole in the defense).
+ */
+export function rearmJob(game: Game, p: Pawn) {
+  const sprung = [...game.things.values()].filter((t) => t.sprung).sort((a, b) => dist(a, p) - dist(b, p));
+  for (const t of sprung) {
+    if (!game.path.canReachAdjacent(p, t)) continue;
+    const job = workJob(game, p, "rearm", { layer: t.layer, x: t.x, y: t.y }, t.id);
+    if (job) return job;
+  }
+  return null;
+}
+
+registerWorkGiver({ workType: "construct", give: rearmJob });
