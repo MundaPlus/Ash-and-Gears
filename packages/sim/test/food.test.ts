@@ -86,6 +86,45 @@ describe("cooking and water", () => {
   });
 });
 
+describe("cooks cook and draw water (user request)", () => {
+  /** A campfire, a well, raw food and wood; one survivor does cooking only, the others nothing. */
+  function kitchen(seed: string) {
+    const g = newGame(seed);
+    const { x: hx, y: hy } = g.home;
+    clearArea(g, hx - 6, hy - 6, 3);
+    g.spawnThing("campfire", 0, hx - 7, hy - 6).fuel = 50;
+    g.spawnThing("well", 0, hx - 4, hy - 6);
+    dropItems(g, "glowcorn", 60, 0, hx - 3, hy - 3);
+    const people = [...g.pawns.values()].filter((p) => p.faction === "colony");
+    for (const p of people) {
+      p.work = Object.fromEntries(WORK_TYPES.map((w) => [w, w === "cook" && p === people[0] ? 1 : 0]));
+      delete p.noWork;
+    }
+    for (const s of [...g.items.values()]) if (g.reg.items.list[s.def].category === "food" && !g.reg.items.list[s.def].raw) s.count = 0;
+    return { g, people };
+  }
+
+  it("a cook with plenty of meals draws water when the jugs run low", () => {
+    const { g } = kitchen("cookwater");
+    dropItems(g, "simple_meal", 6, 0, g.home.x + 2, g.home.y + 2);
+    for (const s of [...g.items.values()]) if (g.reg.items.list[s.def].id === "clean_water") s.count = 1;
+    const before = countItems(g, "clean_water");
+    run(g, 6);
+    expect(countItems(g, "clean_water")).toBeGreaterThan(before + 4);
+  });
+
+  it("the lower stock goes first: no meals and some water means cooking first", () => {
+    const { g, people } = kitchen("cookfirst");
+    for (const s of [...g.items.values()]) if (g.reg.items.list[s.def].id === "clean_water") s.count = 8;
+    let recipe: unknown;
+    for (let i = 0; i < g.ticksPerHour * 2 && recipe === undefined; i++) {
+      g.step();
+      if (people[0].job?.kind === "bill") recipe = people[0].job.data?.recipe;
+    }
+    expect(recipe).toBe("cook_simple_meal");
+  });
+});
+
 describe("radiation cloud", () => {
   it("hurts survivors outside, spares a sealed room, and contaminates what was outside", () => {
     const g = newGame("rad");

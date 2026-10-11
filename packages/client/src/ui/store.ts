@@ -24,7 +24,8 @@ export interface Inspect {
     canPaste: boolean;
   };
   /** Beds: for prisoners or not. */
-  prisonBed?: { thingId: number; on: boolean };
+  /** Who a bed is for (colonists, prisoners, medical). */
+  bed?: { thingId: number; use: "colonist" | "prisoner" | "medical" };
   /** Power consumers: priority; switches: on or off. */
   power?: { thingId: number; priority?: number; switchOn?: boolean };
   /** Sorter belts and robot arms: the one item they handle (null = any). */
@@ -311,7 +312,7 @@ export const actions = {
   sendExpedition: (_site: number, _pawns: number[], _outpost: boolean) => {},
   trade: (_buy: Record<string, number>, _sell: Record<string, number>) => {},
   release: (_pawn: number) => {},
-  setPrisonBed: (_thing: number, _on: boolean) => {},
+  setBedUse: (_thing: number, _use: "colonist" | "prisoner" | "medical") => {},
   setPriority: (_thing: number, _p: number) => {},
   setSwitch: (_thing: number, _on: boolean) => {},
   selectPawn: (_id: number | null, _center = false) => {},

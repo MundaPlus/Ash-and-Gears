@@ -198,7 +198,7 @@ export function kill(game: Game, p: Pawn, cause: string): void {
 }
 
 /** Once per in-game hour: bleeding, healing, starvation, dehydration, radiation. */
-export function tickHealthHourly(game: Game, p: Pawn, inBed: boolean): void {
+export function tickHealthHourly(game: Game, p: Pawn, inBed: boolean | "medical"): void {
   const h = p.health;
   const bleed = bleedRate(p);
   h.bloodLoss = Math.max(0, h.bloodLoss + bleed - 0.15 / 24);
@@ -214,7 +214,7 @@ export function tickHealthHourly(game: Game, p: Pawn, inBed: boolean): void {
   }
 
   // Healing per hour. Starvation/dehydration/radiation heal only once the cause is gone.
-  const bedMult = inBed ? 1.5 : 1;
+  const bedMult = inBed === "medical" ? 1.8 : inBed ? 1.5 : 1;
   for (const i of h.injuries) {
     if (i.kind === "starvation" && p.needs.hunger <= 0) continue;
     if (i.kind === "dehydration" && p.needs.thirst <= 0) continue;

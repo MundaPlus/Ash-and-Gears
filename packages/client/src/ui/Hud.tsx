@@ -297,11 +297,13 @@ export function Hud() {
               </div>
             </div>
           )}
-          {s.inspect.prisonBed && (
-            <div class="bills" data-testid="prison-bed">
-              <button class={s.inspect.prisonBed.on ? "on" : ""} onClick={() => actions.setPrisonBed(s.inspect!.prisonBed!.thingId, !s.inspect!.prisonBed!.on)}>
-                {t(s.inspect.prisonBed.on ? "prison.bed_on" : "prison.bed_off")}
-              </button>
+          {s.inspect.bed && (
+            <div class="bills bed-use" data-testid="bed-use">
+              {(["colonist", "prisoner", "medical"] as const).map((use) => (
+                <button key={use} class={s.inspect!.bed!.use === use ? "on" : ""} title={t(`bed.${use}.desc`)} onClick={() => actions.setBedUse(s.inspect!.bed!.thingId, use)}>
+                  {t(`bed.${use}`)}
+                </button>
+              ))}
             </div>
           )}
           {s.inspect.power && (

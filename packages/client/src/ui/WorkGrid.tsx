@@ -92,7 +92,7 @@ function Priorities() {
             <tr>
               <th />
               {s.workTypes.map((w) => (
-                <th key={w}>{t(`work.${w}`)}</th>
+                <th key={w} title={t(`work.${w}.desc`)}>{t(`work.${w}`)}</th>
               ))}
             </tr>
           </thead>

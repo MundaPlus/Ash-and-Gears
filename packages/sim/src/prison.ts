@@ -26,13 +26,29 @@ export function setCapture(game: Game, p: Pawn, on: boolean): void {
   void game;
 }
 
+export type BedUse = "colonist" | "prisoner" | "medical";
+
+export function bedUse(t: Thing): BedUse {
+  return t.forPrisoners ? "prisoner" : t.medical ? "medical" : "colonist";
+}
+
+/** Set who a bed is for: colonists (owned, to sleep), prisoners, or the sick and hurt (medical). */
+export function setBedUse(game: Game, t: Thing, use: BedUse): void {
+  if (!game.reg.things.list[t.def].bed) return;
+  delete t.forPrisoners;
+  delete t.medical;
+  if (use === "prisoner") t.forPrisoners = true;
+  if (use === "medical") t.medical = true;
+  // Whoever owned the bed gives it up when it is no longer a colonist bed; prisoners move out of a non-prison bed.
+  for (const p of game.pawns.values()) {
+    if (p.bedId !== t.id) continue;
+    if ((p.faction === "colony" && use !== "colonist") || (p.faction === "prisoner" && use !== "prisoner")) p.bedId = null;
+  }
+}
+
 /** Mark a bed for prisoners (or back for colonists). */
 export function setPrisonBed(game: Game, t: Thing, on: boolean): void {
-  if (!game.reg.things.list[t.def].bed) return;
-  if (on) t.forPrisoners = true;
-  else delete t.forPrisoners;
-  // Colonists give up a bed that is now for prisoners.
-  for (const p of game.pawns.values()) if (p.faction === "colony" && p.bedId === t.id && on) p.bedId = null;
+  setBedUse(game, t, on ? "prisoner" : "colonist");
 }
 
 export function freePrisonBed(game: Game, p: Pawn): Thing | null {

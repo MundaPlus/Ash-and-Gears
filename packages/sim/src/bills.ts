@@ -21,9 +21,15 @@ import { isContaminatedThing } from "./weather.ts";
 
 /** Which work type does a recipe belong to? */
 export function recipeWorkType(r: RecipeDef): WorkType {
-  if (r.skill === "cooking") return "cook";
+  // Cooks also draw water at the well (user request): food and water are both the kitchen's job.
+  if (r.skill === "cooking" || isWaterRecipe(r)) return "cook";
   if (r.skill === "crafting" || r.skill === "technology") return "craft";
   return "haul";
+}
+
+/** A recipe that makes drinking water (jugs at the well). */
+export function isWaterRecipe(r: RecipeDef): boolean {
+  return !r.spawn && !r.fluidOut && Object.keys(r.output).some((id) => id === "clean_water");
 }
 
 export function billTarget(game: Game, bench: Thing, r: RecipeDef): number {
@@ -118,40 +124,51 @@ export function cookingWanted(game: Game, bench: Thing): boolean {
 }
 
 /**
- * Give a bill job of this work type, if any bench needs one done. `urgentOnly`: only make orders, and
- * bills whose stock is below half the target (water at the well while the colony runs dry).
+ * Give a bill job of this work type, if any bench needs one done. Make orders come first (nearest bench,
+ * queue order). Then the "keep in stock" bills, the one furthest below its target first: a cook draws
+ * water when jugs run lower than meals, and cooks when meals run lower. `urgentOnly`: only make orders,
+ * and water below half its target (for anyone who hauls, while the colony runs dry).
  */
 function billJob(game: Game, p: Pawn, workType: WorkType, urgentOnly = false): Job | null {
   const benches = [...game.things.values()]
     .filter((t) => game.reg.things.list[t.def].bench && benchReady(game, t))
     .sort((a, b) => (a.x - p.x) ** 2 + (a.y - p.y) ** 2 - ((b.x - p.x) ** 2 + (b.y - p.y) ** 2));
+  const orders: [Thing, RecipeDef][] = [];
+  const bills: [Thing, RecipeDef, number][] = [];
   for (const bench of benches) {
-    const def = game.reg.things.list[bench.def];
-    const all = recipesFor(game, def.id);
-    // Make orders first, in queue order; then the "keep in stock" bills.
-    const queued = (bench.queue ?? []).map((o) => all.find((r) => r.id === o.recipe)).filter((r): r is RecipeDef => !!r);
-    const cands: [RecipeDef, boolean][] = [...queued.map((r) => [r, true] as [RecipeDef, boolean]), ...all.map((r) => [r, false] as [RecipeDef, boolean])];
-    for (const [r, isOrder] of cands) {
-      if (recipeWorkType(r) !== workType) continue;
-      if (!isOrder && stockOf(game, r) >= billTarget(game, bench, r)) continue;
-      if (urgentOnly && !isOrder && stockOf(game, r) >= billTarget(game, bench, r) / 2) continue;
-      if (!game.path.canReachAdjacent(p, bench)) continue;
-      // All inputs must exist somewhere before starting.
-      const enough = r.inputs.every((inp) => {
-        let n = 0;
-        for (const s of game.items.values()) if (s.layer >= 0 && !s.contaminated && !s.forbidden && matchesInput(game, inp, s.def)) n += s.count;
-        for (const [k, v] of Object.entries(bench.buffer ?? {})) if (matchesInput(game, inp, Number(k))) n += v;
-        return n >= inp.count;
-      });
-      if (!enough) continue;
-      // Fluid inputs come from the bench's own pipes.
-      if (r.fluidIn) {
-        const net = fluidNetOf(game, bench);
-        if (!net || netAmount(game, net, r.fluidIn.kind) < r.fluidIn.liters) continue;
-      }
-      if (!reserve(game, `thing:${bench.id}`, p)) continue;
-      return { kind: "bill", stage: 0, targetId: bench.id, data: { recipe: r.id, input: 0, have: 0, work: r.work, ...(isOrder ? { order: true } : {}) } };
+    const all = recipesFor(game, game.reg.things.list[bench.def].id);
+    for (const o of bench.queue ?? []) {
+      const r = all.find((x) => x.id === o.recipe);
+      if (r && (recipeWorkType(r) === workType || (urgentOnly && isWaterRecipe(r)))) orders.push([bench, r]);
     }
+    for (const r of all) {
+      if (urgentOnly ? !isWaterRecipe(r) : recipeWorkType(r) !== workType) continue;
+      const target = billTarget(game, bench, r);
+      const fill = target > 0 ? stockOf(game, r) / target : 1;
+      if (fill >= 1 || (urgentOnly && fill >= 0.5)) continue;
+      bills.push([bench, r, fill]);
+    }
+  }
+  // Stable sort: equal fill keeps the nearest bench first.
+  bills.sort((a, b) => a[2] - b[2]);
+  const cands: [Thing, RecipeDef, boolean][] = [...orders.map(([b, r]) => [b, r, true] as [Thing, RecipeDef, boolean]), ...bills.map(([b, r]) => [b, r, false] as [Thing, RecipeDef, boolean])];
+  for (const [bench, r, isOrder] of cands) {
+    if (!game.path.canReachAdjacent(p, bench)) continue;
+    // All inputs must exist somewhere before starting.
+    const enough = r.inputs.every((inp) => {
+      let n = 0;
+      for (const s of game.items.values()) if (s.layer >= 0 && !s.contaminated && !s.forbidden && matchesInput(game, inp, s.def)) n += s.count;
+      for (const [k, v] of Object.entries(bench.buffer ?? {})) if (matchesInput(game, inp, Number(k))) n += v;
+      return n >= inp.count;
+    });
+    if (!enough) continue;
+    // Fluid inputs come from the bench's own pipes.
+    if (r.fluidIn) {
+      const net = fluidNetOf(game, bench);
+      if (!net || netAmount(game, net, r.fluidIn.kind) < r.fluidIn.liters) continue;
+    }
+    if (!reserve(game, `thing:${bench.id}`, p)) continue;
+    return { kind: "bill", stage: 0, targetId: bench.id, data: { recipe: r.id, input: 0, have: 0, work: r.work, ...(isOrder ? { order: true } : {}) } };
   }
   return null;
 }
@@ -161,9 +178,9 @@ function billJob(game: Game, p: Pawn, workType: WorkType, urgentOnly = false): J
 for (const wt of ["cook", "craft", "haul"] as WorkType[]) registerWorkGiver({ workType: wt, give: (game, p) => billJob(game, p, wt) }, wt === "haul");
 
 /**
- * Urgent haul-type bills (user report: "the well is not producing water"). Hauling comes last in the
- * work order, so a busy colony (sowing, mining, salvage) never filled the well's jugs. Make orders
- * there, and water below half its target, come before all other work for anyone who hauls.
+ * Urgent water (user report: "the well is not producing water"). Cooks draw water now, but a colony
+ * without a free cook still must not go dry: water below half its target, and make orders for water,
+ * come before all other hauling for anyone who hauls.
  */
 export function urgentBillJob(game: Game, p: Pawn): Job | null {
   return billJob(game, p, "haul", true);

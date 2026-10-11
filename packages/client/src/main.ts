@@ -502,9 +502,9 @@ async function boot() {
     const p = game.pawns.get(id);
     if (p) sim.release(game, p);
   };
-  actions.setPrisonBed = (thingId, on) => {
+  actions.setBedUse = (thingId, use) => {
     const th = game.things.get(thingId);
-    if (th) sim.setPrisonBed(game, th, on);
+    if (th) sim.setBedUse(game, th, use);
     if (inspected) inspectTile(inspected.x, inspected.y);
   };
   actions.togglePowerOverlay = () => {
@@ -666,7 +666,7 @@ async function boot() {
     let crafter: { thingId: number; current: string | null; options: string[]; needs?: Record<string, string> } | undefined;
     let filter: { thingId: number; current: string | null; options: string[] } | undefined;
     let power: { thingId: number; priority?: number; switchOn?: boolean } | undefined;
-    let prisonBed: { thingId: number; on: boolean } | undefined;
+    let bed: { thingId: number; use: sim.BedUse } | undefined;
     if (th !== NO_THING) {
       const thing = game.things.get(th)!;
       const def = game.reg.things.list[thing.def];
@@ -731,7 +731,7 @@ async function boot() {
       }
       if (def.autoCrafter && contents(thing.out)) lines.push(`${t("chest.title")}: ${contents(thing.out)}`);
       if (def.switch) power = { thingId: thing.id, switchOn: !thing.off };
-      if (def.bed) prisonBed = { thingId: thing.id, on: !!thing.forPrisoners };
+      if (def.bed) bed = { thingId: thing.id, use: sim.bedUse(thing) };
       if (def.pipe || (def.fluid && def.fluid.role !== "purifier")) {
         const net = sim.fluidNetOf(game, thing);
         if (net)
@@ -793,7 +793,7 @@ async function boot() {
     const actionsUi = ta.actions.length ? { list: ta.actions as string[], first: ta.first } : undefined;
     // Any zone tile: grow or shrink this zone with the zone tools.
     const zone = zoneHere ? { kind: zoneHere.kind, ...(zoneHere.crop ? { crop: zoneHere.crop } : {}) } : undefined;
-    store.set({ inspect: { title, lines, bills, crafter, filter, power, prisonBed, actions: actionsUi, stockpile, make, researchLink, zone } });
+    store.set({ inspect: { title, lines, bills, crafter, filter, power, bed, actions: actionsUi, stockpile, make, researchLink, zone } });
   }
   let inspected: { x: number; y: number } | null = null;
   /** Copied stockpile filter (Copy / Paste filter buttons). */
