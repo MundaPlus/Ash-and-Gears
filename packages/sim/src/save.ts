@@ -96,7 +96,9 @@ function intoTyped(target: Uint8Array | Int32Array, b64: string) {
 export function saveGame(game: Game): SaveFile {
   const reg = game.reg;
   /** Item index keys -> item id keys. */
-  const itemMapOut = (r: Record<number, number>) => Object.fromEntries(Object.entries(r).map(([k, v]) => [reg.items.list[Number(k)].id, v]));
+  // Unknown item keys (a bad buffer entry) are left out, so one bad entry never stops the save.
+  const itemMapOut = (r: Record<number, number>) =>
+    Object.fromEntries(Object.entries(r).flatMap(([k, v]) => (reg.items.list[Number(k)] ? [[reg.items.list[Number(k)].id, v]] : [])));
   return {
     version: SAVE_VERSION,
     savedAt: new Date().toISOString(),
@@ -161,7 +163,7 @@ export function loadGame(content: Content, raw: SaveFile): Game {
   const data = migrate(raw);
   const game = new Game(content, data.opts);
   const reg = game.reg;
-  const itemMapIn = (r: Record<string, number>) => Object.fromEntries(Object.entries(r).map(([k, v]) => [reg.items.idx(k), v]));
+  const itemMapIn = (r: Record<string, number>) => Object.fromEntries(Object.entries(r).flatMap(([k, v]) => (reg.items.has(k) ? [[reg.items.idx(k), v]] : [])));
   const idOr = (table: { has(id: string): boolean; idx(id: string): number }, id: string, what: string) => {
     if (!table.has(id)) throw new Error(`save uses unknown ${what}: ${id}`);
     return table.idx(id);

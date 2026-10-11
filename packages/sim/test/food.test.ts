@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadCoreContent } from "@wc/data";
-import { WORK_TYPES, cookBatch, isRoofed, rotRateAt, setRoof, completeRoofs, contaminate, countItems, createZone, dropItems, exposureAt, Game, NO_THING, roomAt, scheduleRadCloud, tickWeather, type Pawn } from "../src/index.ts";
+import { WORK_TYPES, cookBatch, interrupt, loadGame, saveGame, isRoofed, rotRateAt, setRoof, completeRoofs, contaminate, countItems, createZone, dropItems, exposureAt, Game, NO_THING, roomAt, scheduleRadCloud, tickWeather, type Pawn } from "../src/index.ts";
 
 const content = loadCoreContent();
 const newGame = (seed: string) => Game.create(content, { seed, mapSize: 96, storyteller: "none" });
@@ -151,6 +151,16 @@ describe("batch cooking (user request)", () => {
     expect(cookBatch(20)).toBe(5);
     expect(firstBatch("batch0", 2).batch).toBe(1);
     expect(firstBatch("batch12", 12).batch).toBe(4);
+  });
+
+  it("a batch job stopped half way puts back only real items, and the game still saves (user report)", () => {
+    const { g } = firstBatch("batchstop", 12);
+    const cook = [...g.pawns.values()].find((p) => p.job?.kind === "bill")!;
+    // Let the cook bring some food to the fire, then stop the job.
+    for (let i = 0; i < g.ticksPerHour && !(cook.job?.data?.have as number); i++) g.step();
+    interrupt(g, cook);
+    for (const t of g.things.values()) for (const k of Object.keys(t.buffer ?? {})) expect(g.reg.items.list[Number(k)]).toBeDefined();
+    expect(() => loadGame(content, JSON.parse(JSON.stringify(saveGame(g))))).not.toThrow();
   });
 
   it("the batch is only as big as the raw food on hand", () => {
