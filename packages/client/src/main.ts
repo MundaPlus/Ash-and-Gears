@@ -203,7 +203,12 @@ async function boot() {
   writeMark({ url: location.search, ...(mark?.camera && resumed ? { camera: mark.camera } : {}) });
   camera.onRightClick = (wx, wy) => {
     if (tools.spec) return actions.setTool(null);
-    if (openPawnMenu(wx, wy, false) || openTileMenu(wx, wy, false)) return;
+    if (openPawnMenu(wx, wy, false)) return;
+    // Drafted: a right-click on open ground is a move, never a menu (user report: drafted survivors on
+    // asphalt got a "Remove floor" menu and seemed to ignore the move). The menu is for tiles they cannot walk on.
+    const sel = selected !== null ? game.pawns.get(selected) : undefined;
+    if ((sel?.drafted || groupIds().length) && orderAt(wx, wy)) return;
+    if (openTileMenu(wx, wy, false)) return;
     if (orderAt(wx, wy)) return;
     // Nobody selected: a right-click on a manual calls the nearest researcher to study it (user request).
     if (selected === null && !groupIds().length) {
@@ -226,7 +231,7 @@ async function boot() {
   /**
    * The tile menu (user: "force an order"): with one survivor selected, point at a tile: mine, salvage,
    * cut, clear, deconstruct, remove floor, pry, haul, harvest, sow, build, done now by that survivor.
-   * Drafted: "Move here" comes first; on plain ground a drafted survivor just moves (no menu).
+   * Drafted: a right-click on ground they can walk on is a move (see onRightClick); here "Move here" comes first.
    */
   function openTileMenu(wx: number, wy: number, touch: boolean): boolean {
     const actor = selected !== null ? game.pawns.get(selected) : undefined;
