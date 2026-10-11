@@ -14,6 +14,11 @@ test("a raid pauses the game, survivors draft and fight", async ({ page }, info)
   });
   // Auto-pause on the raid message (the UI drains messages a few times per second).
   await expect.poll(() => page.evaluate(() => document.querySelector(".speed button.on")?.getAttribute("aria-label"))).toContain("Pause");
+  // The message that paused the game stays on screen, tagged "Paused", for as long as the game is paused.
+  await expect(page.getByTestId("pause-reason")).toBeVisible();
+  await page.waitForTimeout(9000);
+  await expect(page.getByTestId("pause-reason")).toBeVisible();
+  await page.screenshot({ path: `artifacts/screens/pause-reason-${info.project.name}.png` });
 
   await page.getByTestId("draft-all").click();
   const drafted = await page.evaluate(() => [...(window as any).__game.game.pawns.values()].filter((p: any) => p.drafted).length);
