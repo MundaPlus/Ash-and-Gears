@@ -37,6 +37,7 @@ export * from "./world.ts";
 export * from "./factions.ts";
 export * from "./tileactions.ts";
 export * from "./alerts.ts";
+export * from "./claim.ts";
 export * from "./plot.ts";
 export * from "./scenarios.ts";
 export * from "./jobs.ts";

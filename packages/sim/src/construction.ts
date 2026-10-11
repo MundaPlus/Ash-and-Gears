@@ -87,7 +87,7 @@ function canPlaceTile(game: Game, kind: Blueprint["kind"], defId: string, layer:
   if (old && old.kind !== kind) return false;
   if (kind === "floor") return L.floor[i] === 0;
   const build = game.reg.things.get(defId).build;
-  if (!build || (build.research && !game.research.done.has(build.research))) return false;
+  if (!build || game.reg.things.get(defId).claimed || (build.research && !game.research.done.has(build.research))) return false;
   // Dug stairs go down into rock: only where an underground layer lies below (not from a tower floor).
   if ((game.reg.things.get(defId).stairs ?? 0) > 0) {
     const below = game.map.below(layer);

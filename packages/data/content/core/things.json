@@ -14,7 +14,27 @@
    "stone": 3,
    "scrap": 2
   },
-  "lootChance": 0.05
+  "lootChance": 0.05,
+  "claimAs": "patched_wall"
+ },
+ {
+  "id": "patched_wall",
+  "kind": "structure",
+  "color": "#a89880",
+  "glyph": "#",
+  "hp": 320,
+  "blocks": true,
+  "wall": true,
+  "insulation": 0.6,
+  "claimed": true,
+  "build": {
+   "cost": {
+    "stone": 2,
+    "scrap": 2
+   },
+   "work": 150,
+   "menu": "structure"
+  }
  },
  {
   "id": "car_wreck",
@@ -1488,6 +1508,26 @@
   "yield": {
    "steel": 2,
    "scrap": 3
+  },
+  "claimAs": "patched_door"
+ },
+ {
+  "id": "patched_door",
+  "kind": "structure",
+  "color": "#8a6a4a",
+  "glyph": "D",
+  "hp": 300,
+  "door": true,
+  "wall": true,
+  "insulation": 0.6,
+  "claimed": true,
+  "build": {
+   "cost": {
+    "steel": 1,
+    "scrap": 3
+   },
+   "work": 200,
+   "menu": "structure"
   }
  },
  {

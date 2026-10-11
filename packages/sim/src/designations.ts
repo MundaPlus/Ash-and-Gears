@@ -31,6 +31,9 @@ export function canDesignate(game: Game, kind: DesigKind, layer: number, x: numb
       return !!thing?.sealed;
     case "put_down":
       return !!downedBeast(game, layer, x, y);
+    case "claim":
+      // An old wall or door the colony patches up and takes as its own.
+      return !!thing?.claimAs && game.reg.things.has(thing.claimAs);
     case "salvage":
       // Every old structure (ruins, wrecks, junk, the bunker). A drag over the base never takes it apart.
       // Only things that span several floors stay (stairs; later the floors of towers).
@@ -292,6 +295,26 @@ registerTask("pry", {
   },
 });
 
+registerTask("claim", {
+  skill: "construction",
+  xp: 0.4,
+  total: (game, job) => {
+    const as = game.thingDefAt(job.target!.layer, job.target!.x, job.target!.y)?.claimAs;
+    return Math.ceil((as ? game.reg.things.get(as).build?.work ?? 150 : 150) / 2);
+  },
+  valid: (game, job) => desigAt(game, job) === Desig.claim && !!game.thingDefAt(job.target!.layer, job.target!.x, job.target!.y)?.claimAs,
+  complete: (game, _p, job) => {
+    const t = job.target!;
+    const L = game.map.layers[t.layer];
+    undesignate(game, t.layer, t.x, t.y);
+    // Patched up: the old wall or door becomes the colony's own, at full strength.
+    const old = game.things.get(L.thing[L.i(t.x, t.y)])!;
+    const as = game.reg.things.list[old.def].claimAs!;
+    game.removeThing(old.id);
+    game.spawnThing(as, t.layer, t.x, t.y, old.rot);
+  },
+});
+
 registerTask("put_down", {
   skill: "melee",
   xp: 0.2,
@@ -317,6 +340,7 @@ const GIVERS: [WorkType, DesigKind][] = [
   ["construct", "deconstruct"],
   ["construct", "unfloor"],
   ["construct", "pry"],
+  ["construct", "claim"],
   ["warden", "put_down"],
 ];
 

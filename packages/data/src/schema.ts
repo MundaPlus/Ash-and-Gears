@@ -64,6 +64,10 @@ export const ThingDef = z.object({
   wall: z.boolean().default(false),
   /** A locked old door (N1): blocks like a wall until survivors pry it open. */
   sealed: z.boolean().default(false),
+  /** An old structure the colony can claim and patch up: it turns into this thing (owned, like built). */
+  claimAs: id.optional(),
+  /** Only made by claiming an old structure: never in the build menu. */
+  claimed: z.boolean().default(false),
   /** Items gained from salvage / deconstruct / harvest. */
   yield: z.record(id, z.number().int().positive()).optional(),
   /** Chance (0..1) of a loot roll when salvaged. */
