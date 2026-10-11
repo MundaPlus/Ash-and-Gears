@@ -854,7 +854,7 @@ async function boot() {
   };
 
   const jobKey = (p: Pawn) =>
-    p.mentalBreak ? "job.sulk" : p.job?.kind === "work" ? `task.${p.job.data!.task}` : `job.${p.job?.kind ?? "none"}`;
+    p.mentalBreak ? "job.sulk" : p.job?.kind === "work" ? `task.${p.job.data!.task}` : p.job?.kind === "bill" && p.job.data?.batch ? "job.cook_batch" : `job.${p.job?.kind ?? "none"}`;
 
   // ---------------------------------------------------------------- story (Beta)
   let endingSeen = !!(game.plot.won || game.plot.lost);
@@ -992,7 +992,13 @@ async function boot() {
       injuries: p.health.injuries.map((i) => ({ part: i.part, kind: i.kind, dmg: Math.round(i.dmg), tended: i.tended > 0 })),
       missing: [...p.health.missing],
       // Shown levels include trait and backstory bonuses.
-      skills: game.reg.skills.list.map((s, i) => ({ id: s.id, level: sim.skillLevel(game, p, s.id), passion: p.skills[i].passion })),
+      skills: game.reg.skills.list.map((s, i) => ({
+        id: s.id,
+        level: sim.skillLevel(game, p, s.id),
+        passion: p.skills[i].passion,
+        // Share of the way to the next level (survivors learn by doing).
+        next: p.skills[i].level >= 20 ? 0 : p.skills[i].xp / sim.XP_PER_LEVEL(p.skills[i].level),
+      })),
       traits: p.traits.map((ti) => game.reg.traits.list[ti].id),
       robot: !!p.robot,
       charge: p.charge ?? 1,
