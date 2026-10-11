@@ -9,7 +9,7 @@ export interface Inspect {
   /** Benches: the make queue (up to 5 orders) and what the bench can make. */
   make?: { benchId: number; queue: { recipe: string; left: number }[]; recipes: { id: string; inputs: string }[] };
   /** Zone under the tile: its kind and crop, for the grow and shrink buttons. */
-  zone?: { kind: "stockpile" | "grow"; crop?: string };
+  zone?: { id: number; kind: "stockpile" | "grow"; crop?: string; paused?: boolean };
   /** Research desks and benches: a button that opens the research menu. */
   researchLink?: boolean;
   /** Auto-crafter: recipe choice. */
@@ -25,7 +25,7 @@ export interface Inspect {
   };
   /** Beds: for prisoners or not. */
   /** Who a bed is for (colonists, prisoners, medical). */
-  bed?: { thingId: number; use: "colonist" | "prisoner" | "medical" };
+  bed?: { thingId: number; use: "colonist" | "prisoner" | "medical"; owner: number | null; people: { id: number; nick: string }[] };
   /** Power consumers: priority; switches: on or off. */
   power?: { thingId: number; priority?: number; switchOn?: boolean };
   /** Sorter belts and robot arms: the one item they handle (null = any). */
@@ -303,6 +303,8 @@ export const actions = {
   queueSet: (_bench: number, _index: number, _left: number) => {},
   queueUp: (_bench: number, _index: number) => {},
   setZonePriority: (_zone: number, _priority: number) => {},
+  setGrowPaused: (_zone: number, _paused: boolean) => {},
+  assignBed: (_thing: number, _pawn: number | null) => {},
   setZoneAllow: (_zone: number, _category: string, _on: boolean) => {},
   setZoneItem: (_zone: number, _item: string, _on: boolean) => {},
   copyZoneFilter: (_zone: number) => {},

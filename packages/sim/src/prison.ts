@@ -46,6 +46,24 @@ export function setBedUse(game: Game, t: Thing, use: BedUse): void {
   }
 }
 
+/** Who owns a colonist bed, or null. */
+export function bedOwner(game: Game, t: Thing): Pawn | null {
+  for (const p of game.pawns.values()) if (p.faction === "colony" && p.bedId === t.id) return p;
+  return null;
+}
+
+/**
+ * Give a colonist bed to one survivor (they give up their old bed), or `null`: nobody owns it, and the
+ * next survivor without a bed claims it when they go to sleep.
+ */
+export function assignBed(game: Game, t: Thing, pawnId: number | null): void {
+  if (!game.reg.things.list[t.def].bed || bedUse(t) !== "colonist") return;
+  const p = pawnId === null ? undefined : game.pawns.get(pawnId);
+  if (pawnId !== null && (!p || p.faction !== "colony" || p.robot)) return;
+  for (const o of game.pawns.values()) if (o.faction === "colony" && o.bedId === t.id) o.bedId = null;
+  if (p) p.bedId = t.id;
+}
+
 /** Mark a bed for prisoners (or back for colonists). */
 export function setPrisonBed(game: Game, t: Thing, on: boolean): void {
   setBedUse(game, t, on ? "prisoner" : "colonist");

@@ -1255,5 +1255,14 @@
   "work.salvage.desc": "Take apart ruins, wrecks and junk.",
   "work.craft.desc": "Work bills at benches (not cooking).",
   "work.research.desc": "Research at the desk, study manuals.",
-  "work.haul.desc": "Carry items to storage, fuel machines. Fills water jugs too when water runs very low."
+  "work.haul.desc": "Carry items to storage, fuel machines. Fills water jugs too when water runs very low.",
+  "zone.sow_stop": "Stop growing",
+  "zone.sow_start": "Start growing",
+  "zone.sow_hint": "Stop or start sowing in this grow zone. Ripe crops are still harvested while it is stopped.",
+  "inspect.grow_paused": "Growing stopped: nobody sows here. Ripe crops are still harvested.",
+  "bed.owner": "Owner",
+  "bed.anyone": "Anyone",
+  "bed.anyone.desc": "Nobody owns this bed. The next survivor without a bed claims it.",
+  "inspect.bed_owner": "Owner: {name}",
+  "inspect.bed_free": "No owner yet: the next survivor without a bed claims it."
 }

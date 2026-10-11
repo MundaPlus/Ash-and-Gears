@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { loadCoreContent } from "@wc/data";
-import { countItems, createZone, designate, dropItems, Game, NO_THING, WORK_TYPES } from "../src/index.ts";
+import { countItems, createZone, designate, dropItems, Game, NO_THING, setGrowPaused, WORK_TYPES } from "../src/index.ts";
 
 const content = loadCoreContent();
 const run = (g: Game, hours: number) => {
@@ -74,5 +74,25 @@ describe("starving survivors (user report)", () => {
     }
     run(g, 3);
     expect(fire.fuel ?? 0).toBe(0);
+  });
+});
+
+describe("grow zone stop/start (user request)", () => {
+  it("nobody sows a stopped grow zone, but ripe crops still get harvested", () => {
+    const { g, x, y, colony } = hungry("growpause");
+    for (const p of colony) p.work = Object.fromEntries(WORK_TYPES.map((w) => [w, w === "grow" ? 1 : 0]));
+    const tiles = [];
+    for (let ty = y + 2; ty <= y + 4; ty++) for (let tx = x - 1; tx <= x + 1; tx++) tiles.push({ x: tx, y: ty });
+    const z = createZone(g, "grow", 0, tiles, undefined, "glowcorn_plant")!;
+    const ripe = g.spawnThing("glowcorn_plant", 0, x, y + 3);
+    ripe.growth = 1;
+    setGrowPaused(g, z.id, true);
+    run(g, 6);
+    const plants = [...g.things.values()].filter((t) => g.reg.things.list[t.def].id === "glowcorn_plant");
+    expect(plants.length).toBe(0);
+    expect(g.things.has(ripe.id)).toBe(false);
+    setGrowPaused(g, z.id, false);
+    run(g, 6);
+    expect([...g.things.values()].filter((t) => g.reg.things.list[t.def].id === "glowcorn_plant").length).toBeGreaterThan(0);
   });
 });

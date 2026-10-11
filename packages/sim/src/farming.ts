@@ -42,6 +42,17 @@ export function forceFarmTask(game: Game, layer: number, x: number, y: number): 
   return tempAt(game, layer, x, y) >= game.reg.things.get(z.crop).crop!.minTemp ? { task: "sow", crop: z.crop } : null;
 }
 
+/** Stop or start sowing in a grow zone (ripe crops are still harvested while stopped). */
+export function setGrowPaused(game: Game, zoneId: number, paused: boolean): void {
+  const z = game.zones.get(zoneId);
+  if (!z || z.kind !== "grow") return;
+  if (paused) z.paused = true;
+  else delete z.paused;
+  // Redraw the zone's tiles (paused fields have a grey tint).
+  const L = game.map.layers[z.layer];
+  for (let i = 0; i < L.zone.length; i++) if (L.zone[i] === zoneId) L.touch(i % L.w, Math.floor(i / L.w));
+}
+
 /** Wild shrubs that sprout per day on open fertile ground away from home (wood grows back). */
 const WILD_PER_DAY = 3;
 
@@ -133,7 +144,7 @@ function growJob(game: Game, p: Pawn) {
       if (th !== NO_THING) {
         const thing = game.things.get(th)!;
         if (game.reg.things.list[thing.def].crop && (thing.growth ?? 0) >= RIPE) task = "harvest";
-      } else if (L.blueprint[i] === NO_THING && L.item[i] === NO_THING && tempAt(game, z.layer, x, y) >= crop.minTemp) task = "sow";
+      } else if (!z.paused && L.blueprint[i] === NO_THING && L.item[i] === NO_THING && tempAt(game, z.layer, x, y) >= crop.minTemp) task = "sow";
       if (!task) continue;
       // Harvest first: ripe food is worth more than a new seed.
       const d = (x - p.x) ** 2 + (y - p.y) ** 2 + (z.layer !== p.layer ? 900 : 0) - (task === "harvest" ? 10000 : 0);
