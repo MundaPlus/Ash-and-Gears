@@ -18,6 +18,8 @@ import { TILE, variantAt, type TextureSet } from "./textures.ts";
 const OVERVIEW_ZOOM = 0.3;
 /** From this zoom on, stacks show how many items they hold (user request). */
 const COUNT_ZOOM = 1.4;
+/** How dark open air on a tower floor draws over the floor below (0 clear, 1 black). */
+const OPEN_AIR_ALPHA = 0.55;
 const COUNT_STYLE = { fontFamily: "monospace", fontSize: 10, fontWeight: "bold" as const, fill: 0xefd8a4, stroke: { color: 0x1b1714, width: 3 } };
 
 interface Chunk {
@@ -83,31 +85,45 @@ export class WorldRenderer {
     for (const list of this.chunks) for (const c of list) c.version = -1;
   }
 
+  /** The layers drawn now: the viewed one, and on a tower floor every floor below it down to the surface. */
+  private shown(): number[] {
+    const m = this.game.map, lv = m.layers[this.layer].level;
+    if (lv <= 0) return [this.layer];
+    const out: number[] = [];
+    for (let k = 0; k <= lv; k++) out.push(m.layerAt(k));
+    return out;
+  }
+
   setLayer(l: number) {
     this.layer = l;
-    this.layerRoots.forEach((r, i) => (r.visible = i === l));
+    const shown = this.shown();
+    this.layerRoots.forEach((r, i) => (r.visible = shown.includes(i)));
   }
 
   /** Call every frame with the camera's visible world rectangle (in world pixels). */
   update(view: { x: number; y: number; w: number; h: number }, zoom: number) {
+    for (const l of this.shown()) this.updateLayer(l, view, zoom);
+  }
+
+  private updateLayer(l: number, view: { x: number; y: number; w: number; h: number }, zoom: number) {
     const far = zoom < OVERVIEW_ZOOM;
-    const ov = this.overview[this.layer];
+    const ov = this.overview[l];
     ov.visible = far;
     if (far) {
-      if (this.overviewVersion[this.layer] !== this.game.mapVersion) this.buildOverview(this.layer);
-      for (const c of this.chunks[this.layer]) c.root.visible = c.top.visible = false;
+      if (this.overviewVersion[l] !== this.game.mapVersion) this.buildOverview(l);
+      for (const c of this.chunks[l]) c.root.visible = c.top.visible = false;
       return;
     }
     const span = CHUNK * TILE;
-    for (const c of this.chunks[this.layer]) {
+    const L = this.game.map.layers[l];
+    for (const c of this.chunks[l]) {
       const x0 = c.cx * span, y0 = c.cy * span;
       const vis = x0 < view.x + view.w && x0 + span > view.x && y0 < view.y + view.h && y0 + span > view.y;
       c.root.visible = c.top.visible = vis;
-      c.counts.visible = zoom >= COUNT_ZOOM;
+      c.counts.visible = zoom >= COUNT_ZOOM && l === this.layer;
       if (vis) {
-        const L = this.game.map.layers[this.layer];
         const v = L.chunkVersion[c.cy * L.chunksX + c.cx];
-        if (c.version !== v) this.buildChunk(this.layer, c, v);
+        if (c.version !== v) this.buildChunk(l, c, v);
       }
     }
   }
@@ -117,6 +133,7 @@ export class WorldRenderer {
     c.root.removeChildren().forEach((ch) => ch.destroy());
     c.top.removeChildren().forEach((ch) => ch !== c.counts && ch.destroy());
     c.counts.removeChildren().forEach((ch) => ch.destroy());
+    const openAir = L.level > 0 ? g.reg.terrain.idx("open_air") : -1;
     const things: Sprite[] = [];
     const items: Sprite[] = [];
     const overlays: Sprite[] = [];
@@ -128,6 +145,8 @@ export class WorldRenderer {
         const s = new Sprite(fl ? this.tex.floors[fl - 1] : this.tex.terrain[L.terrain[i]][variantAt(x, y)]);
         s.position.set((x - c.cx * CHUNK) * TILE, (y - c.cy * CHUNK) * TILE);
         s.width = s.height = TILE;
+        // Open air on a tower floor: a dark veil, so the floor below shows through (user request).
+        if (!fl && L.terrain[i] === openAir) s.alpha = OPEN_AIR_ALPHA;
         c.root.addChild(s);
         // Soft borders: a neighbor ground of a higher layer spills a dithered edge onto this tile.
         if (!fl) {
@@ -306,10 +325,11 @@ export class WorldRenderer {
     const rgb = (hex: string) => [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
     const tCol = g.reg.terrain.list.map((d) => rgb(d.color));
     const thCol = g.reg.things.list.map((d) => rgb(d.color));
+    const openAir = L.level > 0 ? g.reg.terrain.idx("open_air") : -1;
     for (let i = 0; i < L.w * L.h; i++) {
       const th = L.thing[i];
       const c = th !== NO_THING ? thCol[g.things.get(th)!.def] : tCol[L.terrain[i]];
-      img.data.set([c[0], c[1], c[2], 255], i * 4);
+      img.data.set([c[0], c[1], c[2], th === NO_THING && !L.floor[i] && L.terrain[i] === openAir ? Math.round(OPEN_AIR_ALPHA * 255) : 255], i * 4);
     }
     ctx.putImageData(img, 0, 0);
     const old = this.overview[l].texture;
