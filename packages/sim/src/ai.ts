@@ -188,7 +188,7 @@ export function tickPawns(game: Game): void {
       continue;
     }
     // Sulking survivors keep only eating, drinking and the alarm care for a downed friend (rescue, feed, tend).
-    const breakKeeps = p.job && ["eat", "drink", "rescue", "feed", "tend"].includes(p.job.kind);
+    const breakKeeps = p.job && ["eat", "forage", "drink", "rescue", "feed", "tend"].includes(p.job.kind);
     if (p.mentalBreak && p.job && !p.job.data?.sulk && !breakKeeps) endJob(game, p, false);
     // A radiation cloud is coming: drop idle or outdoor work and think again (that finds shelter).
     // Eating and drinking finish first: cutting them off would loop (drink, interrupted, drink...).
@@ -198,7 +198,7 @@ export function tickPawns(game: Game): void {
       // Safety nets: urgent needs win over any work, and no job may run forever.
       p.job.started ??= game.tick;
       const k = p.job.kind;
-      const needJob = k === "eat" || k === "drink" || k === "sleep";
+      const needJob = k === "eat" || k === "forage" || k === "drink" || k === "sleep";
       const urgent = p.needs.hunger < 0.1 || p.needs.thirst < 0.1;
       const longOk = k === "sleep" || k === "shelter" || k === "research" || k === "charge";
       if ((urgent && !needJob) || (!longOk && game.tick - p.job.started > game.ticksPerHour * 6)) {
@@ -432,8 +432,55 @@ function eatJob(game: Game, p: Pawn, desperate: boolean): Job | null {
       if (food !== null && reserve(game, `item:${food}`, p)) return { kind: "eat", stage: 0, targetId: food };
     }
   }
+  // No food anywhere and hungry: pick a ripe food crop and eat it in the field (user report: survivors
+  // starved next to ripe crops while sulking).
+  if (desperate || p.needs.hunger < 0.25) return forageJob(game, p);
   return null;
 }
+
+/** Work ticks to pick a crop by hand. */
+const FORAGE_WORK = 40;
+
+function forageJob(game: Game, p: Pawn): Job | null {
+  const cands = [...game.things.values()]
+    .filter((t) => {
+      const c = game.reg.things.list[t.def].crop;
+      return !!c && (t.growth ?? 0) >= 1 && Object.keys(c.yield).some((id) => game.reg.items.get(id).category === "food");
+    })
+    .sort((a, b) => dist2(p, a) - dist2(p, b));
+  for (const t of cands.slice(0, 8)) {
+    const key = `tile:${t.layer},${t.x},${t.y}`;
+    if (isReserved(game, key, p) || !game.path.canReachAdjacent(p, t)) continue;
+    if (!reserve(game, key, p)) continue;
+    return { kind: "forage", stage: 0, target: { layer: t.layer, x: t.x, y: t.y }, data: { work: FORAGE_WORK } };
+  }
+  return null;
+}
+
+registerJob("forage", (game, p, job) => {
+  const t = job.target!;
+  const L = game.map.layers[t.layer];
+  const th = L.thing[L.i(t.x, t.y)];
+  if (th === NO_THING || (game.things.get(th)!.growth ?? 0) < 1) return "fail";
+  if (job.stage === 0) {
+    if (!goTo(game, p, t, true)) return "fail";
+    job.stage = 1;
+  }
+  if (!atGoal(p)) return "run";
+  job.data!.work = (job.data!.work as number) - 1;
+  if ((job.data!.work as number) > 0) return "run";
+  // Picked: the harvest drops on the tile, and the survivor eats from it now.
+  const def = game.reg.things.list[game.things.get(th)!.def];
+  game.removeThing(th);
+  for (const [item, n] of Object.entries(def.crop!.yield)) dropItems(game, item, n, t.layer, t.x, t.y);
+  const food = Object.keys(def.crop!.yield).find((id) => game.reg.items.get(id).category === "food");
+  const stack = L.item[L.i(t.x, t.y)];
+  if (!food || stack === NO_THING || game.reg.items.list[game.items.get(stack)!.def].id !== food) return "done";
+  releaseAll(game, p);
+  reserve(game, `item:${stack}`, p);
+  p.job = { kind: "eat", stage: 0, targetId: stack };
+  return "run";
+});
 
 // Cut off on the way to the table: the food goes back on the ground.
 registerCleanup("eat", (game, p, job) => {

@@ -102,6 +102,21 @@ function benchReady(game: Game, bench: Thing): boolean {
   return !d.power?.use || !!bench.powered;
 }
 
+/** Is there cooking to do at this bench now (a cook order or a bill below target, with the inputs on hand)? */
+export function cookingWanted(game: Game, bench: Thing): boolean {
+  const queued = new Set((bench.queue ?? []).map((o) => o.recipe));
+  return recipesFor(game, game.reg.things.list[bench.def].id).some(
+    (r) =>
+      r.skill === "cooking" &&
+      (queued.has(r.id) || stockOf(game, r) < billTarget(game, bench, r)) &&
+      r.inputs.every((inp) => {
+        let n = 0;
+        for (const s of game.items.values()) if (s.layer >= 0 && !s.contaminated && !s.forbidden && matchesInput(game, inp, s.def)) n += s.count;
+        return n >= inp.count;
+      }),
+  );
+}
+
 /**
  * Give a bill job of this work type, if any bench needs one done. `urgentOnly`: only make orders, and
  * bills whose stock is below half the target (water at the well while the colony runs dry).
