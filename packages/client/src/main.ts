@@ -1227,11 +1227,13 @@ async function boot() {
         ...(store.state.menu === "research" ? { research: researchRows() } : {}),
         ...(store.state.menu === "build" ? { buildOptions: buildRows() } : {}),
         pawn: sel ? pawnDetail(sel) : null,
+        // All food (meals, cans and raw, stored or loose) in days for everyone (user: meals did not count as food).
+        foodDays: ((d) => (Number.isFinite(d) ? Math.floor(d * 10) / 10 : null))(sim.daysLeft(game).food),
         // Only what is stored counts: loose items on the map are not in the colony's hands yet (shown as "+N").
         resources: (
           [
             ["meals", ["simple_meal"]],
-            ["food", ["canned_food"]],
+            ["cans", ["canned_food"]],
             ["raw", game.reg.items.list.filter((d) => d.raw).map((d) => d.id)],
             ["water", ["clean_water", "dirty_water"]],
             ["scrap", ["scrap"]],

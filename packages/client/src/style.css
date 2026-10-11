@@ -263,6 +263,9 @@ body.cinematic #ui { display: none; }
 .modadd { display: grid; gap: 4px; margin: 8px 0; }
 
 /* Loose items not stored yet: a muted "+N" after the stored count. */
+.res.fooddays.warn b { color: #d9742e; }
+.res.fooddays.bad { border-color: #c8372d; }
+.res.fooddays.bad b { color: #e9533b; }
 .res .loose { margin-left: 3px; color: #84603f; font-size: 0.85em; }
 .goals h3.fold { cursor: pointer; user-select: none; }
 

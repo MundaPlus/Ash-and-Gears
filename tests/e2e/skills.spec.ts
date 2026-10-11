@@ -14,6 +14,9 @@ test("the skill list shows progress to the next level", async ({ page }, info) =
     g.selectPawn(p.id);
   });
   await expect(page.locator(".skills i.xp").first()).toBeAttached();
+  // The top bar shows all food in days (meals count too), and canned food as "Cans".
+  await expect(page.getByTestId("food-days")).toContainText(" d");
+  await expect(page.getByTestId("resources")).toContainText("Cans");
   await page.screenshot({ path: `artifacts/screens/skills-${info.project.name}.png` });
   expect(errors).toEqual([]);
 });

@@ -194,6 +194,8 @@ export interface UiState {
   /** Story chapter banner (B9): shown at the top until `until` (UI clock seconds). */
   banner: { kicker: string; title: string; until: number } | null;
   resources: { id: string; count: number; loose: number }[];
+  /** Days all the colony's food lasts (null with nobody to feed). */
+  foodDays: number | null;
   /** Open toolbar menu. */
   menu: "build" | "orders" | "zones" | "work" | "research" | "world" | "trade" | null;
   /** Trader caravan near home (A9), or null. */
@@ -256,6 +258,7 @@ class Store {
     toasts: [],
     banner: null,
     resources: [],
+    foodDays: null,
     menu: null,
     toolLabel: null,
     buildOptions: [],
