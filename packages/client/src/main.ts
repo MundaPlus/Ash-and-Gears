@@ -38,7 +38,7 @@ import { loadAiArt } from "./render/aiArt.ts";
 import { ART_SIZES, ART_STYLES, makeTextures, TILE, type ArtSettings } from "./render/textures.ts";
 import { WorldRenderer } from "./render/world.ts";
 import { Hud } from "./ui/Hud.tsx";
-import { actions, store, type BuildOption, type ColonistSummary, type PawnDetail, type WorkRow, type WorldUi, type CaravanUi, type StoryUi, type EndingUi } from "./ui/store.ts";
+import { actions, store, type BuildOption, type ColonistSummary, type PawnDetail, type WorkRow, type WorldUi, type CaravanUi, type StoryUi, type EndingUi, type UiState } from "./ui/store.ts";
 
 /** Most sim ticks per frame, so a slow frame cannot snowball. */
 const MAX_TICKS_PER_FRAME = 12;
@@ -199,6 +199,8 @@ async function boot() {
     camera.zoom = mark.camera.zoom;
     camera.centerOn(mark.camera.x, mark.camera.y);
   }
+  /** Where the view started: the tutorial's first step asks the player to move it. */
+  const camStart = { x: camera.x, y: camera.y, zoom: camera.zoom };
   // This tab now plays this game: a refresh continues it.
   writeMark({ url: location.search, ...(mark?.camera && resumed ? { camera: mark.camera } : {}) });
   camera.onRightClick = (wx, wy) => {
@@ -624,6 +626,7 @@ async function boot() {
   actions.setWork = (id, work, value) => {
     const p = game.pawns.get(id);
     if (p && !p.noWork?.includes(work)) p.work[work] = value;
+    sim.tutorialFlag(game, "work");
     store.set({ workRows: workRows() });
   };
 
@@ -644,7 +647,12 @@ async function boot() {
     speed = s;
     paused = false;
   };
-  actions.togglePause = () => (paused = !paused);
+  actions.togglePause = () => {
+    paused = !paused;
+    if (paused) sim.tutorialFlag(game, "pause");
+  };
+  actions.tutorialSkip = () => sim.skipTutorialStep(game);
+  actions.tutorialEnd = () => sim.endTutorial(game);
   actions.setLayer = (l) => {
     const n = Math.max(0, Math.min(game.map.layers.length - 1, l));
     renderer.setLayer(n);
@@ -664,6 +672,7 @@ async function boot() {
     selected = id;
     pawnsR.selected = id;
     const p = id !== null ? game.pawns.get(id) : undefined;
+    if (p?.faction === "colony") sim.tutorialFlag(game, "select");
     if (p && center) {
       if (p.layer !== renderer.layer) actions.setLayer(p.layer);
       const pos = PawnRenderer.worldPos(p);
@@ -1238,6 +1247,8 @@ async function boot() {
       if (inspected && store.state.inspect) inspectTile(inspected.x, inspected.y);
     }
     if (uiTime > 0.2) {
+      if (game.tutorial && Math.hypot(camera.x - camStart.x, camera.y - camStart.y) > TILE * 3) sim.tutorialFlag(game, "camera");
+      if (game.tutorial && Math.abs(camera.zoom - camStart.zoom) > 0.1) sim.tutorialFlag(game, "camera");
       const tm = game.time;
       const pad = (v: number) => String(v).padStart(2, "0");
       const sel = selected !== null ? game.pawns.get(selected) : undefined;
@@ -1247,7 +1258,9 @@ async function boot() {
         clock: t("clock", { day: tm.day, hh: pad(tm.hour), mm: pad(tm.minute) }),
         season: `${t(`season.${tm.season}`, { year: tm.year })} · ${Math.round(sim.outdoorTemp(game, 0))} °C`,
         weather: game.weather.kind,
-        goals: sim.GOALS.map((id) => ({ id, done: !!game.goals[id] })),
+        // The tutorial has its own panel: no goals beside it.
+        goals: game.tutorial ? [] : sim.GOALS.map((id) => ({ id, done: !!game.goals[id] })),
+        tutorial: tutorialUi(),
         alerts: sim.computeAlerts(game),
         story: storyUi(),
         ...((e) => (e ? { ending: e } : {}))(endingUi()),
@@ -1286,6 +1299,22 @@ async function boot() {
       if (fpsTime > 1) fpsFrames = fpsTime = 0;
       uiTime = 0;
     }
+  }
+  /** Tutorial panel data; a chime when a step is done. */
+  let tutPassed = false;
+  function tutorialUi(): UiState["tutorial"] {
+    const tu = game.tutorial;
+    if (!tu) return null;
+    const id = sim.TUTORIAL_STEPS[tu.step];
+    const passed = tu.passedAt !== null;
+    if (passed && !tutPassed) audio.play("done");
+    tutPassed = passed;
+    const hint = sim.tutorialHint(game, id);
+    const old = store.state.tutorial;
+    const total = sim.TUTORIAL_STEPS.length - 1;
+    const next = { n: Math.min(tu.step + 1, total), total, id, hint: hint.key, highlight: hint.highlight, passed };
+    // Same content: keep the old object, so the panel does not draw again for nothing.
+    return old && JSON.stringify(old) === JSON.stringify(next) ? old : next;
   }
   app.ticker.add((tk) => frame(tk.deltaMS));
   if (params.has("cinematic")) document.body.classList.add("cinematic");

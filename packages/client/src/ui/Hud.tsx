@@ -8,6 +8,7 @@ import { Toasts } from "./Toasts.tsx";
 import { Toolbar } from "./Toolbar.tsx";
 import { MakeWindow } from "./MakeWindow.tsx";
 import { GameMenu } from "./Screens.tsx";
+import { TutorialPanel } from "./Tutorial.tsx";
 
 export function Hud() {
   const [makeOpen, setMakeOpen] = useState(false);
@@ -55,7 +56,8 @@ export function Hud() {
       <Toasts />
       <Toolbar />
       <GameMenu />
-      {((s.goals.length > 0 && !s.goals.every((g) => g.done)) || s.alerts.length > 0 || s.story) && (
+      {s.tutorial && <TutorialPanel alerts={s.alerts} />}
+      {!s.tutorial && ((s.goals.length > 0 && !s.goals.every((g) => g.done)) || s.alerts.length > 0 || s.story) && (
         <aside class="goals" data-testid="goals">
           {s.story && (
             <div class="story" data-testid="story">
@@ -136,13 +138,14 @@ export function Hud() {
           ☰
         </button>
         <div class="speed" role="group">
-          <button class={s.paused ? "on" : ""} onClick={actions.togglePause} title={t("speed.pause")} aria-label={t("speed.pause")}>
+          <button class={s.paused ? "on" : ""} data-testid="speed-pause" onClick={actions.togglePause} title={t("speed.pause")} aria-label={t("speed.pause")}>
             ❚❚
           </button>
           {[1, 2, 3].map((n) => (
             <button
               key={n}
               class={!s.paused && s.speed === n ? "on" : ""}
+              data-testid={`speed-${n}`}
               onClick={() => actions.setSpeed(n)}
               title={t("speed.n", { n })}
               aria-label={t("speed.n", { n })}
