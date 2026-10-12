@@ -113,7 +113,7 @@ describe("gear panel stats", () => {
     p.weapon = items.idx("hunting_rifle");
     p.armor = [items.idx("plate_helmet")];
     const s = charStats(g, p);
-    expect(s.slots).toEqual({ head: "plate_helmet", body: null, weapon: "hunting_rifle" });
+    expect(s.slots).toEqual({ head: "plate_helmet", body: null, weapon: "hunting_rifle", clothes: "patched_clothes" });
     expect(s.attack.melee).toBe(false);
     expect(s.attack.dmg).toBe(items.get("hunting_rifle").weapon!.dmg);
     expect(s.attack.hit).toBeGreaterThan(0);

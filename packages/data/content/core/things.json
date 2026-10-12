@@ -266,6 +266,25 @@
   }
  },
  {
+  "id": "vent",
+  "kind": "structure",
+  "color": "#7d8a8f",
+  "glyph": "=",
+  "hp": 150,
+  "blocks": true,
+  "wall": true,
+  "vent": true,
+  "insulation": 0.3,
+  "blocksSight": true,
+  "build": {
+   "cost": {
+    "scrap": 10
+   },
+   "work": 120,
+   "menu": "structure"
+  }
+ },
+ {
   "id": "bedroll",
   "footprint": [
    1,
@@ -1421,7 +1440,7 @@
   "glyph": "H",
   "hp": 80,
   "blocks": true,
-  "heat": 10,
+  "heat": 30,
   "power": {
    "use": 150
   },
@@ -1433,6 +1452,9 @@
    "work": 200,
    "menu": "power",
    "research": "power_grid"
+  },
+  "thermostat": {
+   "target": 21
   }
  },
  {
@@ -1513,7 +1535,7 @@
   "glyph": "C",
   "hp": 80,
   "blocks": true,
-  "heat": -12,
+  "heat": -30,
   "power": {
    "use": 200
   },
@@ -1525,6 +1547,9 @@
    "work": 220,
    "menu": "power",
    "research": "climate_control"
+  },
+  "thermostat": {
+   "target": 21
   }
  },
  {

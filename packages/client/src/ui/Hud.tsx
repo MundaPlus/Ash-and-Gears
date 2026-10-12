@@ -332,6 +332,25 @@ export function Hud() {
               ))}
             </div>
           )}
+          {s.inspect.climate && (
+            <div class="bills" data-testid="climate">
+              <h3>{t(s.inspect.climate.cools ? "climate.cool_to" : "climate.heat_to")}</h3>
+              <div class="row thermostat">
+                {[-5, -1].map((d) => (
+                  <button key={d} data-testid={`target${d}`} onClick={() => actions.setTarget(s.inspect!.climate!.thingId, s.inspect!.climate!.target + d)}>
+                    {d}
+                  </button>
+                ))}
+                <b data-testid="target">{s.inspect.climate.target} °C</b>
+                {[1, 5].map((d) => (
+                  <button key={d} data-testid={`target+${d}`} onClick={() => actions.setTarget(s.inspect!.climate!.thingId, s.inspect!.climate!.target + d)}>
+                    +{d}
+                  </button>
+                ))}
+              </div>
+              <p class="hint">{t("climate.working", { pct: Math.round(s.inspect.climate.duty * 100) })}</p>
+            </div>
+          )}
           {s.inspect.power && (
             <div class="bills" data-testid="power">
               {s.inspect.power.switchOn !== undefined && (

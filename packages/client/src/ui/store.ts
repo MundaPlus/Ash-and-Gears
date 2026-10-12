@@ -28,6 +28,8 @@ export interface Inspect {
   bed?: { thingId: number; use: "colonist" | "prisoner" | "medical"; owner: number | null; people: { id: number; nick: string }[] };
   /** Power consumers: priority; switches: on or off. */
   power?: { thingId: number; priority?: number; switchOn?: boolean };
+  /** Heater or cooler: target temperature and how hard it works (0..1). */
+  climate?: { thingId: number; target: number; duty: number; cools: boolean };
   /** Sorter belts and robot arms: the one item they handle (null = any). */
   filter?: { thingId: number; current: string | null; options: string[] };
 }
@@ -303,6 +305,7 @@ export const actions = {
   setSpeed: (_s: number) => {},
   togglePause: () => {},
   tutorialSkip: () => {},
+  setTarget: (_thing: number, _target: number) => {},
   tutorialEnd: () => {},
   /** One level up (+1) or down (-1), if there is a layer there. */
   stepLayer: (_d: number) => {},
@@ -317,8 +320,8 @@ export const actions = {
   setZonePriority: (_zone: number, _priority: number) => {},
   setGrowPaused: (_zone: number, _paused: boolean) => {},
   assignBed: (_thing: number, _pawn: number | null) => {},
-  dropGear: (_pawn: number, _slot: "head" | "body" | "weapon") => {},
-  holdGear: (_pawn: number, _slot: "head" | "body" | "weapon", _on: boolean) => {},
+  dropGear: (_pawn: number, _slot: "head" | "body" | "weapon" | "clothes") => {},
+  holdGear: (_pawn: number, _slot: "head" | "body" | "weapon" | "clothes", _on: boolean) => {},
   setZoneAllow: (_zone: number, _category: string, _on: boolean) => {},
   setZoneItem: (_zone: number, _item: string, _on: boolean) => {},
   copyZoneFilter: (_zone: number) => {},

@@ -5,7 +5,7 @@
 import { moveSpeed, WALK_SPEED } from "./ai.ts";
 import { attackOf, isMelee } from "./combat.ts";
 import type { Game } from "./game.ts";
-import { ARMOR_KINDS, armorMove, wornIn } from "./gear.ts";
+import { ARMOR_KINDS, armorMove, comfortRange, wornIn } from "./gear.ts";
 import { manipulation, moving, pain } from "./health.ts";
 import { skillLevel, workSpeed, type Pawn } from "./pawn.ts";
 
@@ -18,12 +18,15 @@ export interface GearSlots {
   head: string | null;
   body: string | null;
   weapon: string | null;
+  clothes: string | null;
 }
 
 export interface CharStats {
   slots: GearSlots;
   /** Slots the player keeps empty. */
   held: string[];
+  /** Comfortable temperatures where the character stands now, with their clothes (°C). */
+  comfort: { min: number; max: number };
   attack: { melee: boolean; kind: string; dmg: number; perSecond: number; range: number; hit: number };
   /** Share stopped per damage kind (0..0.9), for the head and the body slot. */
   protection: { kind: string; head: number; body: number }[];
@@ -38,7 +41,7 @@ export interface CharStats {
 
 export function gearSlots(game: Game, p: Pawn): GearSlots {
   const id = (i: number | undefined | null) => (i === undefined || i === null ? null : game.reg.items.list[i].id);
-  return { head: id(wornIn(game, p, "head")), body: id(wornIn(game, p, "body")), weapon: id(p.weapon) };
+  return { head: id(wornIn(game, p, "head")), body: id(wornIn(game, p, "body")), weapon: id(p.weapon), clothes: id(p.clothes) };
 }
 
 export function charStats(game: Game, p: Pawn): CharStats {
@@ -55,6 +58,7 @@ export function charStats(game: Game, p: Pawn): CharStats {
   return {
     slots: gearSlots(game, p),
     held: [...(p.gearHold ?? [])],
+    comfort: comfortRange(game, p),
     attack: { melee, kind: atk.kind, dmg: atk.dmg, perSecond: (atk.dmg / cooldown) * TICKS_PER_SECOND * hit, range: atk.range, hit },
     protection: ARMOR_KINDS.map((k) => ({ kind: k, head: stop(head, k), body: stop(body, k) })),
     move: moveSpeed(game, p) / (WALK_SPEED * game.reg.content.creatures[p.creature].speed || 1),

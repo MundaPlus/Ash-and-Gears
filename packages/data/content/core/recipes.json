@@ -676,6 +676,44 @@
   "research": "energy_weapons"
  },
  {
+  "id": "make_patched_clothes",
+  "benches": [
+   "scrap_bench",
+   "powered_bench"
+  ],
+  "inputs": [
+   {
+    "item": "cloth",
+    "count": 4
+   }
+  ],
+  "output": {
+   "patched_clothes": 1
+  },
+  "work": 250,
+  "skill": "crafting",
+  "target": 0
+ },
+ {
+  "id": "make_warm_coat",
+  "benches": [
+   "scrap_bench",
+   "powered_bench"
+  ],
+  "inputs": [
+   {
+    "item": "cloth",
+    "count": 10
+   }
+  ],
+  "output": {
+   "warm_coat": 1
+  },
+  "work": 500,
+  "skill": "crafting",
+  "target": 0
+ },
+ {
   "id": "make_rag_armor",
   "benches": [
    "scrap_bench",

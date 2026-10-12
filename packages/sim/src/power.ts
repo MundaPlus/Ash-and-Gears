@@ -20,6 +20,14 @@ const BACKUP_HOURS = 0.5;
 /** A backup battery fills from empty in this many hours (when the network has power to spare). */
 const BANK_FILL_HOURS = 4;
 
+/** Power a consumer draws now (W): heaters and coolers draw in proportion to how hard they work. */
+export function useOf(game: Game, t: Thing): number {
+  const d = game.reg.things.list[t.def];
+  const use = d.power?.use ?? 0;
+  // A little standby draw keeps the thermostat awake.
+  return d.thermostat ? use * Math.max(0.05, t.duty ?? 1) : use;
+}
+
 /** Size of a consumer's backup battery (Wh); 0 for things that use no power. */
 export function bankSize(game: Game, t: Thing): number {
   const p = game.reg.things.list[t.def].power;
@@ -147,7 +155,7 @@ export function tickPower(game: Game): void {
         }
       }
       if (p.use) {
-        use += p.use;
+        use += useOf(game, t);
         users.push(t);
       }
       if (p.store) {
@@ -172,7 +180,7 @@ export function tickPower(game: Game): void {
       // Within one priority, smaller machines may still fit; after a cut, every later priority goes.
       let cutFrom = Infinity;
       for (const u of byPriority) {
-        const w = game.reg.things.list[u.def].power!.use;
+        const w = useOf(game, u);
         const pr = priorityOf(game, u);
         if (pr <= cutFrom && served + w <= avail) served += w;
         else {
@@ -189,7 +197,7 @@ export function tickPower(game: Game): void {
     for (const u of users) {
       u.onBank = false;
       if (!cut.has(u.id)) continue;
-      const need = game.reg.things.list[u.def].power!.use * dtH;
+      const need = useOf(game, u) * dtH;
       if ((u.bank ?? 0) >= need) {
         u.bank! -= need;
         u.onBank = true;

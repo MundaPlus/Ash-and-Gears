@@ -148,6 +148,7 @@ export function setupTutorialStart(game: Game): void {
       p.skills[k] = { level: hi ? 8 : 3, xp: 0, passion: hi ? 1 : 0 };
     });
     p.weapon = game.reg.items.idx(gear[i]);
+    p.clothes = game.reg.items.idx("patched_clothes");
     addMemory(game, p, "survived_the_end");
     game.pawns.set(p.id, p);
   }

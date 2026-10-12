@@ -25,6 +25,10 @@ export interface Thing {
   contamUntil?: number;
   /** Facing for rotatable things: 0 = east, 1 = south, 2 = west, 3 = north. */
   rot?: number;
+  /** Heaters and coolers: the temperature the player wants in the room (absent = the def's default). */
+  target?: number;
+  /** Heaters and coolers: share of full output used at the last update (0..1). Power use follows it. */
+  duty?: number;
   /** Power: true if this consumer has power right now. */
   powered?: boolean;
   /** Generators: fuel units inside. Batteries: stored Wh. */

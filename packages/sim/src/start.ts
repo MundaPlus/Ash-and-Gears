@@ -23,6 +23,7 @@ export function setupStart(game: Game, survivors = 3): void {
     const [dx, dy] = spots[i % spots.length];
     const p = makeSurvivor(game, 0, cx + dx, cy + dy, used);
     p.weapon = game.reg.items.idx(gear[i % gear.length]);
+    p.clothes = game.reg.items.idx("patched_clothes");
     addMemory(game, p, "survived_the_end");
     game.pawns.set(p.id, p);
   }

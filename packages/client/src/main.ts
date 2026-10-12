@@ -540,6 +540,11 @@ async function boot() {
     const p = game.pawns.get(id);
     if (p) sim.release(game, p);
   };
+  actions.setTarget = (thingId, target) => {
+    const th = game.things.get(thingId);
+    if (th) th.target = Math.max(-30, Math.min(40, Math.round(target)));
+    if (inspected) inspectTile(inspected.x, inspected.y);
+  };
   actions.dropGear = (pawnId, slot) => {
     const p = game.pawns.get(pawnId);
     if (p) sim.dropGear(game, p, slot);
@@ -735,6 +740,7 @@ async function boot() {
     let crafter: { thingId: number; current: string | null; options: string[]; needs?: Record<string, string> } | undefined;
     let filter: { thingId: number; current: string | null; options: string[] } | undefined;
     let power: { thingId: number; priority?: number; switchOn?: boolean } | undefined;
+    let climate: { thingId: number; target: number; duty: number; cools: boolean } | undefined;
     let bed: { thingId: number; use: sim.BedUse; owner: number | null; people: { id: number; nick: string }[] } | undefined;
     if (th !== NO_THING) {
       const thing = game.things.get(th)!;
@@ -765,7 +771,10 @@ async function boot() {
         const p = def.power;
         if (p.fuel) lines.push(t("inspect.fuel", { v: Math.round(thing.fuel ?? 0), max: p.fuel.capacity, item: t(`item.${p.fuel.item}`) }));
         if (p.store) lines.push(t("inspect.charge", { v: Math.round(thing.charge ?? 0), max: p.store }));
-        if (p.use) lines.push(sim.isPowered(game, thing) ? t("inspect.powered", { w: p.use }) : t("inspect.unpowered", { w: p.use }));
+        // Heaters and coolers draw what they need now, not their full rating.
+        const w = Math.round(sim.useOf(game, thing));
+        if (p.use) lines.push(sim.isPowered(game, thing) ? t("inspect.powered", { w }) : t("inspect.unpowered", { w: p.use }));
+        if (def.thermostat) climate = { thingId: thing.id, target: sim.thermostatTarget(game, thing), duty: thing.duty ?? 0, cools: def.heat < 0 };
         // Its own battery: how full, and whether it charges, is full, or keeps the machine running now.
         const bank = sim.bankSize(game, thing);
         if (bank > 0) {
@@ -870,7 +879,7 @@ async function boot() {
     // Any zone tile: grow or shrink this zone with the zone tools.
     const zone = zoneHere ? { id: zoneHere.id, kind: zoneHere.kind, ...(zoneHere.crop ? { crop: zoneHere.crop } : {}), ...(zoneHere.paused ? { paused: true } : {}) } : undefined;
     if (zoneHere?.paused) lines.push(t("inspect.grow_paused"));
-    store.set({ inspect: { title, lines, bills, crafter, filter, power, bed, actions: actionsUi, stockpile, make, researchLink, zone } });
+    store.set({ inspect: { title, lines, bills, crafter, filter, power, climate, bed, actions: actionsUi, stockpile, make, researchLink, zone } });
   }
   let inspected: { x: number; y: number } | null = null;
   /** Copied stockpile filter (Copy / Paste filter buttons). */

@@ -25,6 +25,13 @@ export function canHoldItem(game: Game, layer: number, x: number, y: number, def
  * Place `count` items near (x, y). Spills outward in rings. Returns how many could not be placed
  * (0 in normal play; only a full map leaves items over).
  */
+/** `add` items with rot `rot` join stack `s`: the stack's rot becomes the mean of both (before the count grows). */
+export function mixRot(s: ItemStack, add: number, rot: number): void {
+  const old = s.rot ?? 0;
+  if (add <= 0 || (old === 0 && rot === 0)) return;
+  s.rot = (old * s.count + rot * add) / (s.count + add);
+}
+
 export function dropItems(
   game: Game,
   defId: string | number,
@@ -34,6 +41,8 @@ export function dropItems(
   y: number,
   contaminated = false,
   contamUntil?: number,
+  /** Food: how far it has rotted (0..1). It stays with the food when it moves. */
+  rot = 0,
 ): number {
   const def = typeof defId === "string" ? game.reg.items.idx(defId) : defId;
   const L = game.map.layers[layer];
@@ -49,11 +58,12 @@ export function dropItems(
         if (existing !== NO_THING) {
           const s = game.items.get(existing)!;
           const add = Math.min(count, limit - s.count);
+          mixRot(s, add, rot);
           s.count += add;
           count -= add;
         } else {
           const add = Math.min(count, limit);
-          const s: ItemStack = { id: game.newId(), def, count: add, layer, x: tx, y: ty };
+          const s: ItemStack = { id: game.newId(), def, count: add, layer, x: tx, y: ty, ...(rot > 0 ? { rot } : {}) };
           if (contaminated) {
             s.contaminated = true;
             s.contamUntil = contamUntil ?? game.tick + game.opts.seasonDays * game.ticksPerDay;
@@ -107,15 +117,17 @@ export function chestCount(game: Game, t: Thing): number {
 }
 
 /** Put items into a chest, up to its room. One stack per item kind (and contamination). Returns how many went in. */
-export function putInChest(game: Game, t: Thing, def: number, count: number, contaminated = false, contamUntil?: number): number {
+export function putInChest(game: Game, t: Thing, def: number, count: number, contaminated = false, contamUntil?: number, rot = 0): number {
   const cap = game.reg.things.list[t.def].chest ?? 0;
   const stacks = chestStacks(game, t);
   const n = Math.min(count, cap - stacks.reduce((a, s) => a + s.count, 0));
   if (n <= 0) return 0;
   const same = stacks.find((s) => s.def === def && !!s.contaminated === contaminated);
-  if (same) same.count += n;
-  else {
-    const s: ItemStack = { id: game.newId(), def, count: n, layer: t.layer, x: t.x, y: t.y, chest: t.id };
+  if (same) {
+    mixRot(same, n, rot);
+    same.count += n;
+  } else {
+    const s: ItemStack = { id: game.newId(), def, count: n, layer: t.layer, x: t.x, y: t.y, chest: t.id, ...(rot > 0 ? { rot } : {}) };
     if (contaminated) {
       s.contaminated = true;
       s.contamUntil = contamUntil ?? game.tick + game.opts.seasonDays * game.ticksPerDay;

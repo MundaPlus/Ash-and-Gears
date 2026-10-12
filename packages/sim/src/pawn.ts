@@ -105,6 +105,8 @@ export interface Pawn {
   weapon: number | null;
   /** Worn armor (item indices): at most one for the body and one for the head (N2). */
   armor: number[];
+  /** Clothes worn under the armor (item index), if any. */
+  clothes?: number;
   /** Gear slots the player emptied: auto-equip leaves them empty until allowed again. */
   gearHold?: GearSlot[];
   /** Ticks until the next attack. */
@@ -278,7 +280,7 @@ export function makeSurvivor(game: Game, layer: number, x: number, y: number, us
   };
 }
 
-export type GearSlot = "head" | "body" | "weapon";
+export type GearSlot = "head" | "body" | "weapon" | "clothes";
 
 /** A hostile: a raider (human with a weapon) or a creature (rat, hound). */
 export function makeHostile(game: Game, creatureId: string, faction: Faction, layer: number, x: number, y: number, group: number, weapon: string | null): Pawn {

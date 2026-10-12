@@ -275,6 +275,18 @@ const WALLS: Record<string, WallMat> = {
       p.dot(x1 - 16, y0 + 9, 1, "soot").dot(x1 - 9, y0 + 13, 1, "soot");
     },
   },
+  // A vent: a scrap wall with a dark air grille in the middle.
+  vent: {
+    top: "slate",
+    tone: "slateDark",
+    face: "slateDark",
+    marks: (p, x0, y0, x1, y1) => {
+      const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+      p.shape(Print.rect(cx - 13, cy - 11, 26, 22, 2), { fill: "soot", line: 1.4 });
+      for (let y = cy - 7; y <= cy + 7; y += 4.5) p.line([[cx - 10, y], [cx + 10, y]], "slate", 1.6);
+      p.dot(x0 + 5, y0 + 5, 1.2, "soot").dot(x1 - 5, y1 - 5, 1.2, "soot");
+    },
+  },
   bunker_wall: {
     top: "slateDark",
     tone: "soot",

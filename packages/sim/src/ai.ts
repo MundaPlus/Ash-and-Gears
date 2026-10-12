@@ -233,7 +233,7 @@ export function endJob(game: Game, p: Pawn, failed: boolean): void {
   if (p.job) cleanups.get(p.job.kind)?.(game, p, p.job);
   releaseAll(game, p);
   if (p.carrying) {
-    dropItems(game, p.carrying.def, p.carrying.count, p.layer, p.x, p.y, !!p.carrying.contaminated);
+    dropItems(game, p.carrying.def, p.carrying.count, p.layer, p.x, p.y, !!p.carrying.contaminated, p.carrying.contamUntil, p.carrying.rot);
     p.carrying = null;
   }
   p.job = null;

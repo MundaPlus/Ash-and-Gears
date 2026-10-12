@@ -419,3 +419,5 @@ body.cinematic #ui { display: none; }
   .tutorial.menuopen .tutbar, .tutorial.menuopen .row, .tutorial.menuopen .alerts, .tutorial.menuopen h3 { display: none; }
   .tutorial.menuopen .do { margin: 4px 0 0; font-size: 13px; }
 }
+.thermostat { display: flex; align-items: center; gap: 4px; }
+.thermostat b { min-width: 64px; text-align: center; }

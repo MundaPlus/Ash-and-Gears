@@ -191,6 +191,21 @@ const ITEMS: Partial<Record<string, Draw>> = {
     p.shape(Print.rect(22, 25, 22, 6, 2), { fill: "glow", tone: { ink: "teal", amount: 0.3 }, line: 1.2 });
     p.shape([[24, 34], [32, 34], [30, 46], [22, 46]], { fill: "slateDark", line: 1.8 });
   },
+  // Clothes: a folded shirt with patches, and a long coat with a fur collar.
+  patched_clothes: (p) => {
+    drop(p, 20, 7);
+    p.shape([[14, 18], [24, 14], [40, 14], [50, 18], [54, 28], [46, 30], [46, 48], [18, 48], [18, 30], [10, 28]], { fill: "ochreDark", tone: { ink: "soot", amount: 0.2 }, line: true });
+    p.shape(Print.rect(22, 30, 8, 7, 1), { fill: "rust", line: 1.2 });
+    p.shape(Print.rect(36, 38, 7, 6, 1), { fill: "slate", line: 1.2 });
+    p.line([[32, 16], [32, 46]], "soot", 1);
+  },
+  warm_coat: (p) => {
+    drop(p, 20, 6);
+    p.shape([[16, 14], [26, 12], [38, 12], [48, 14], [54, 32], [48, 34], [48, 54], [16, 54], [16, 34], [10, 32]], { fill: "rustDark", tone: { ink: "soot", amount: 0.25 }, line: true });
+    p.shape([[22, 10], [32, 20], [42, 10], [42, 16], [32, 26], [22, 16]], { fill: "bone", tone: { ink: "ochre", amount: 0.3 }, line: 1.6 });
+    p.line([[32, 24], [32, 52]], "soot", 1.2);
+    for (const y of [30, 38, 46]) p.dot(35, y, 1.6, "ochre");
+  },
   rag_armor: vest("ochre", "ochreDark", false),
   scrap_vest: vest("rustDark", "slate", true),
   plate_vest: vest("slate", "slateDark", true),
