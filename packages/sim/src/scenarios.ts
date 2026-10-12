@@ -10,7 +10,7 @@ import { dropItems } from "./items.ts";
 import { NO_THING } from "./map.ts";
 import { spawnPack } from "./storyteller.ts";
 
-export const SCENARIOS = ["standard", "lone", "mall", "bunker", "rad_season"] as const;
+export const SCENARIOS = ["standard", "lone", "mall", "bunker", "rad_season", "tutorial"] as const;
 
 /** Survivors at the start for a scenario. */
 export function startSurvivors(scenario: string): number {

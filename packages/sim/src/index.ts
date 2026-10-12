@@ -49,3 +49,4 @@ export * from "./logistics.ts";
 export * from "./save.ts";
 export * from "./goals.ts";
 export * from "./showcase.ts";
+export * from "./tutorial.ts";

@@ -8,6 +8,7 @@ import { ensureLinks } from "./links.ts";
 import type { Expedition, WorldMap } from "./world.ts";
 import type { Caravan } from "./factions.ts";
 import type { Plot } from "./plot.ts";
+import type { TutorialState } from "./tutorial.ts";
 import type { Content } from "@wc/data";
 import { Game, type GameOptions } from "./game.ts";
 import type { Blueprint, ItemStack, Thing, Zone } from "./map.ts";
@@ -50,6 +51,7 @@ export interface SaveFile {
   rooms: { cells: number[]; temp: number }[];
   deaths: Game["deaths"];
   goals: Record<string, boolean>;
+  tutorial?: TutorialState | null;
   opinions?: [string, number][];
   world?: WorldMap | null;
   goodwill?: Record<string, number>;
@@ -139,6 +141,7 @@ export function saveGame(game: Game): SaveFile {
     }),
     deaths: [...game.deaths],
     goals: { ...game.goals },
+    tutorial: game.tutorial ? { ...game.tutorial, flags: [...game.tutorial.flags] } : null,
     opinions: [...game.opinions],
     world: game.world,
     goodwill: { ...game.goodwill },
@@ -252,6 +255,7 @@ export function loadGame(content: Content, raw: SaveFile): Game {
   for (const [k, v] of data.fires) game.fires.set(k, v);
   game.deaths.push(...data.deaths);
   game.goals = { ...(data.goals ?? {}) };
+  game.tutorial = data.tutorial ? { ...data.tutorial, flags: [...data.tutorial.flags] } : null;
   for (const [k, v] of data.opinions ?? []) game.opinions.set(k, v);
   game.world = data.world ?? null;
   game.goodwill = { ...(data.goodwill ?? {}) };

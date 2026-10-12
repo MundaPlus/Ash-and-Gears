@@ -9,6 +9,7 @@ import type { Game } from "./game.ts";
 import { dropItems } from "./items.ts";
 import { addRad } from "./pawn.ts";
 import { exposureAt, type Exposure } from "./rooms.ts";
+import { tutorialActive } from "./tutorial.ts";
 
 export type WeatherKind = "clear" | "overcast" | "rain" | "toxic_rain" | "rad_cloud";
 
@@ -55,6 +56,8 @@ function setWeather(game: Game, kind: WeatherKind) {
 }
 
 function pickWeather(game: Game): WeatherKind {
+  // The tutorial keeps a clear sky until its last step.
+  if (tutorialActive(game)) return "clear";
   const r = game.aiRng.next();
   // Toxic rain only after the first three days.
   if (r > 0.95 && game.tick > game.ticksPerDay * 3) return "toxic_rain";

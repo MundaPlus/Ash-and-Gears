@@ -2,6 +2,7 @@
  * Fighting behavior: drafted survivors (player orders), self-defense, fleeing,
  * and enemies (raiders, rad-rats, glow-hounds). See spec 06.
  */
+import { tutorialFlag } from "./tutorial.ts";
 import { lairTick } from "./lairs.ts";
 import { atGoal, endJob, goTo } from "./ai.ts";
 import { sharedEvent } from "./social.ts";
@@ -76,6 +77,7 @@ export function orderMove(game: Game, p: Pawn, pos: Pos): void {
   if (!p.drafted) setDrafted(game, p, true);
   p.order = { kind: "move", pos };
   p.goal = null;
+  if (p.faction === "colony") tutorialFlag(game, "draft");
 }
 
 export function orderAttack(game: Game, p: Pawn, target: Pawn): void {

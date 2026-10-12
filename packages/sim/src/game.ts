@@ -34,6 +34,7 @@ import type { Caravan } from "./factions.ts";
 import { newPlot, startPlot, tickPlot, type Plot } from "./plot.ts";
 import { applyScenario, startSurvivors } from "./scenarios.ts";
 import { tickGoals } from "./goals.ts";
+import { buildTutorialMap, setupTutorialStart, tickTutorial, TUTORIAL_OPTIONS, type TutorialState } from "./tutorial.ts";
 
 /** Sim ticks per real second at 1x speed. */
 export const TICKS_PER_SECOND = 20;
@@ -140,6 +141,8 @@ export class Game {
   readonly story: StoryState = { points: 0, lastThreat: 0, lastGood: 0, log: [], raidsSurvived: 0 };
   /** Demo goals reached (see goals.ts). */
   goals: Record<string, boolean> = {};
+  /** Tutorial progress (tutorial scenario only). */
+  tutorial: TutorialState | null = null;
   /** Turret cooldowns by thing id. */
   readonly turretCooldown = new Map<number, number>();
   /** Research state (M6 fills in projects). */
@@ -218,11 +221,18 @@ export class Game {
 
   /** Make a new game with a generated home map. */
   static create(content: Content, opts: Partial<GameOptions> = {}): Game {
-    const g = new Game(content, opts);
+    // The tutorial always plays on the same small hand-built map.
+    const tutorial = opts.scenario === "tutorial";
+    const g = new Game(content, tutorial ? { ...opts, ...TUTORIAL_OPTIONS } : opts);
     if (g.opts.scenario === "rad_season") g.opts.radCloudScale = Math.max(g.opts.radCloudScale, 3);
-    generateHomeMap(g);
-    setupStart(g, startSurvivors(g.opts.scenario));
-    applyScenario(g);
+    if (tutorial) {
+      buildTutorialMap(g);
+      setupTutorialStart(g);
+    } else {
+      generateHomeMap(g);
+      setupStart(g, startSurvivors(g.opts.scenario));
+      applyScenario(g);
+    }
     // Lair enemies (N1) after the colonists, so the colony comes first in the pawn list.
     populateLairs(g);
     // Ruins that still stand closed keep their old roofs.
@@ -231,7 +241,7 @@ export class Game {
     g.tick = Math.round((g.ticksPerDay * 7) / 24);
     g.story.lastThreat = g.tick;
     g.weather.until = g.tick + g.ticksPerDay / 2;
-    g.message("msg.intro", {}, "info");
+    if (!tutorial) g.message("msg.intro", {}, "info");
     startPlot(g, g.opts.storyline);
     // Stairs in pairs, and a way on foot to the old bunker.
     ensureLinks(g);
@@ -396,5 +406,6 @@ export class Game {
     tickTraps(this);
     tickFoodWarning(this);
     tickGoals(this);
+    tickTutorial(this);
   }
 }

@@ -60,6 +60,8 @@ export function goalHint(game: Game, id: GoalId): string {
 }
 
 export function tickGoals(game: Game): void {
+  // The tutorial has its own steps.
+  if (game.tutorial) return;
   if (game.tick % Math.round(game.ticksPerHour) !== 0) return;
   for (const id of GOALS) {
     if (game.goals[id]) continue;

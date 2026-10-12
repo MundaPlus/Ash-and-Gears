@@ -228,6 +228,8 @@ export interface UiState {
   radWarning: number | null;
   /** Power overlay on (networks in colors, cut machines in red). */
   powerOverlay: boolean;
+  /** Tutorial step (tutorial scenario only): number from 1, step id, hint key, test ids to point at. */
+  tutorial: { n: number; total: number; id: string; hint: string; highlight: string[]; passed: boolean } | null;
 }
 
 type Listener = () => void;
@@ -274,6 +276,7 @@ class Store {
     goals: [],
     goalHint: null,
     radWarning: null,
+    tutorial: null,
   };
   private listeners = new Set<Listener>();
 
@@ -299,6 +302,8 @@ export const store = new Store();
 export const actions = {
   setSpeed: (_s: number) => {},
   togglePause: () => {},
+  tutorialSkip: () => {},
+  tutorialEnd: () => {},
   /** One level up (+1) or down (-1), if there is a layer there. */
   stepLayer: (_d: number) => {},
   setLayer: (_l: number) => {},

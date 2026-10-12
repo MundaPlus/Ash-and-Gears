@@ -32,6 +32,12 @@ export function startNewGame(o: NewGameOptions) {
   location.search = q.toString();
 }
 
+/** The tutorial: always the same small map (the sim fixes the seed, size and storyteller). */
+export function startTutorial() {
+  clearMark();
+  location.search = new URLSearchParams({ seed: "tutorial", scen: "tutorial", story: "none" }).toString();
+}
+
 export function loadSlot(id: string) {
   clearMark();
   try {
@@ -191,6 +197,9 @@ export function TitleScreen({ hasAutosave }: { hasAutosave: boolean }) {
             )}
             <button class={hasAutosave ? "" : "primary"} data-testid="new-game-btn" onClick={() => setView("new")}>
               {t("title.new")}
+            </button>
+            <button data-testid="tutorial-btn" onClick={startTutorial} title={t("scen.tutorial.desc")}>
+              {t("title.tutorial")}
             </button>
             <button onClick={() => setView("load")}>{t("title.load")}</button>
             <button data-testid="mods-btn" onClick={() => setView("mods")}>
