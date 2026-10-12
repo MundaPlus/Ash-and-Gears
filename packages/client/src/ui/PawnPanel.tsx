@@ -5,7 +5,7 @@ import { actions, useStore, type PawnDetail } from "./store.ts";
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / Math.max(1, xs.length);
 
-type SlotId = "head" | "body" | "weapon";
+type SlotId = "head" | "body" | "weapon" | "clothes";
 
 /** One gear slot: what sits there, its main number, and Drop (or Allow gear when kept empty). */
 function Slot({ p, slot, item, note }: { p: PawnDetail; slot: SlotId; item: string | null; note: string }) {
@@ -40,6 +40,7 @@ function GearTab({ p }: { p: PawnDetail }) {
       <div class="doll">
         <Slot p={p} slot="head" item={s.slots.head} note={s.slots.head ? t("gear.protects", { v: pct(headAvg) }) : ""} />
         <Slot p={p} slot="body" item={s.slots.body} note={s.slots.body ? t("gear.protects", { v: pct(bodyAvg) }) : ""} />
+        <Slot p={p} slot="clothes" item={s.slots.clothes} note={t("gear.comfort", { min: Math.round(s.comfort.min), max: Math.round(s.comfort.max) })} />
         <Slot p={p} slot="weapon" item={s.slots.weapon} note={t("gear.weapon_note", { dmg: a.dmg, kind: t(`dmg.${a.kind}`) })} />
       </div>
       <h3>{t("gear.combat")}</h3>

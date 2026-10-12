@@ -300,6 +300,30 @@
   "value": 400
  },
  {
+  "id": "patched_clothes",
+  "color": "#8f7a5a",
+  "glyph": "c",
+  "category": "apparel",
+  "stack": 1,
+  "clothes": {
+   "cold": 5,
+   "heat": 1
+  },
+  "value": 10
+ },
+ {
+  "id": "warm_coat",
+  "color": "#6b5a44",
+  "glyph": "C",
+  "category": "apparel",
+  "stack": 1,
+  "clothes": {
+   "cold": 14,
+   "heat": 9
+  },
+  "value": 25
+ },
+ {
   "id": "rag_armor",
   "color": "#b0834e",
   "glyph": "[",

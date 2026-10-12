@@ -90,6 +90,13 @@ export const ThingDef = z.object({
   bed: z.object({ efficiency: z.number().positive(), thought: id }).optional(),
   /** Heat output in degrees per in-game hour into its room. Negative cools. */
   heat: z.number().default(0),
+  /**
+   * Heaters and coolers: `heat` is their full output. They work only as hard as needed to hold their room at
+   * the target (the player sets it), and use power in proportion to how hard they work.
+   */
+  thermostat: z.object({ target: z.number().default(21) }).optional(),
+  /** Vent: a wall piece that lets air (and heat) pass between the rooms on its two sides. */
+  vent: z.boolean().default(false),
   /** Burns fuel without power (campfire): no fuel, no heat, light or cooking. Survivors refuel it. */
   burns: z.object({ item: id, perHour: z.number().positive(), capacity: z.number().int().positive(), whileWorking: z.boolean().default(false) }).optional(),
   /** Light radius in tiles. */
@@ -240,6 +247,11 @@ export const ItemDef = z.object({
       move: z.number().positive().max(1).default(1),
     })
     .optional(),
+  /**
+   * Clothes, worn under armor: `cold` lowers the lowest comfortable temperature, `heat` lowers the highest.
+   * Survivors change clothes for the weather.
+   */
+  clothes: z.object({ cold: z.number().min(0), heat: z.number().min(0) }).optional(),
   /** Medicine: wound tending quality. */
   medicine: z.number().min(0).max(1).optional(),
   /** Hydration per unit (water). */

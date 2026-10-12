@@ -10,7 +10,7 @@ import { registerJob, registerWorkGiver } from "./jobs.ts";
 import type { Game } from "./game.ts";
 import { pain, untendedInjuries } from "./health.ts";
 import { dropItems, takeFromStack } from "./items.ts";
-import { armorScore, gearChecked, gearHeld, UPGRADE_MARGIN, weaponScore, wornIn } from "./gear.ts";
+import { armorScore, CLOTHES_MARGIN, clothesDiscomfort, gearChecked, gearHeld, UPGRADE_MARGIN, weaponScore, wornIn } from "./gear.ts";
 import { NO_THING, type Thing } from "./map.ts";
 import { addMemory, addStat, learn, skillLevel, type Job, type Pawn } from "./pawn.ts";
 import { changeOpinion } from "./social.ts";
@@ -297,6 +297,21 @@ export function equipJob(game: Game, p: Pawn): Job | null {
     const a = findItem(game, p, (d) => list[d].armor?.slot === slot && armorScore(list[d]) > Math.max(0.01, now * UPGRADE_MARGIN));
     if (a !== null && reserve(game, `item:${a}`, p)) return { kind: "equip", stage: 0, targetId: a };
   }
+  // Clothes for the weather: a coat in the cold; in the heat, lighter clothes or none (armor stays on).
+  if (!gearHeld(p, "clothes")) {
+    const now = clothesDiscomfort(game, p.clothes);
+    const kinds = list.map((d, i) => (d.clothes && i !== p.clothes ? i : -1)).filter((i) => i >= 0);
+    const better = kinds.filter((i) => clothesDiscomfort(game, i) < now - CLOTHES_MARGIN).sort((a, b) => clothesDiscomfort(game, a) - clothesDiscomfort(game, b));
+    for (const k of better) {
+      const c = findItem(game, p, (d) => d === k);
+      if (c !== null && reserve(game, `item:${c}`, p)) return { kind: "equip", stage: 0, targetId: c };
+    }
+    // Nothing better in storage, but too hot in what they wear: take it off (it goes to storage).
+    if (p.clothes !== undefined && clothesDiscomfort(game, undefined) < now - CLOTHES_MARGIN) {
+      dropItems(game, p.clothes, 1, p.layer, p.x, p.y);
+      delete p.clothes;
+    }
+  }
   return null;
 }
 
@@ -315,6 +330,9 @@ registerJob("equip", (game, p, job) => {
   if (d.weapon) {
     if (p.weapon !== null) dropItems(game, p.weapon, 1, p.layer, p.x, p.y);
     p.weapon = def;
+  } else if (d.clothes) {
+    if (p.clothes !== undefined) dropItems(game, p.clothes, 1, p.layer, p.x, p.y);
+    p.clothes = def;
   } else if (d.armor) {
     const old = wornIn(game, p, d.armor.slot);
     if (old !== undefined) {

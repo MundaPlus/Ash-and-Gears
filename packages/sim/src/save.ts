@@ -61,7 +61,7 @@ export interface SaveFile {
   bonds?: [string, string][];
 }
 
-export type SavedPawn = Omit<Pawn, "skills" | "traits" | "backstory" | "memories" | "situational" | "creature" | "weapon" | "armor" | "job" | "path" | "goal" | "carrying"> & {
+export type SavedPawn = Omit<Pawn, "skills" | "traits" | "backstory" | "memories" | "situational" | "creature" | "weapon" | "armor" | "clothes" | "job" | "path" | "goal" | "carrying"> & {
   skills: Record<string, { level: number; xp: number; passion: number }>;
   traits: string[];
   backstory?: [string, string];
@@ -69,7 +69,8 @@ export type SavedPawn = Omit<Pawn, "skills" | "traits" | "backstory" | "memories
   creature: string;
   weapon: string | null;
   armor?: string[];
-  carrying: { def: string; count: number; contaminated?: boolean } | null;
+  clothes?: string;
+  carrying: { def: string; count: number; contaminated?: boolean; rot?: number } | null;
 };
 
 // ---------------------------------------------------------------- base64 for typed arrays
@@ -216,7 +217,7 @@ export function loadGame(content: Content, raw: SaveFile): Game {
       const def = reg.items.idx(sp.carrying.def);
       const L = game.map.layers[p.layer];
       const id = game.newId();
-      const st: ItemStack = { id, def, count: sp.carrying.count, layer: p.layer, x: p.x, y: p.y };
+      const st: ItemStack = { id, def, count: sp.carrying.count, layer: p.layer, x: p.x, y: p.y, ...(sp.carrying.rot ? { rot: sp.carrying.rot } : {}) };
       if (L.item[L.i(p.x, p.y)] === -1) {
         game.items.set(id, st);
         L.item[L.i(p.x, p.y)] = id;
@@ -324,7 +325,8 @@ export function pawnOut(game: Game, p: Pawn): SavedPawn {
     creature: reg.content.creatures[p.creature].id,
     weapon: p.weapon !== null ? reg.items.list[p.weapon].id : null,
     armor: p.armor.map((a) => reg.items.list[a].id),
-    carrying: p.carrying ? { def: reg.items.list[p.carrying.def].id, count: p.carrying.count, ...(p.carrying.contaminated ? { contaminated: true } : {}) } : null,
+    clothes: p.clothes !== undefined ? reg.items.list[p.clothes].id : undefined,
+    carrying: p.carrying ? { def: reg.items.list[p.carrying.def].id, count: p.carrying.count, ...(p.carrying.contaminated ? { contaminated: true } : {}), ...(p.carrying.rot ? { rot: p.carrying.rot } : {}) } : null,
   } as unknown as SavedPawn;
 }
 
@@ -344,6 +346,7 @@ export function pawnIn(game: Game, sp: SavedPawn): Pawn {
     weapon: sp.weapon && reg.items.has(sp.weapon) ? reg.items.idx(sp.weapon) : null,
     // Saves from before armor (N2) have none.
     armor: (sp.armor ?? []).filter((a) => reg.items.has(a)).map((a) => reg.items.idx(a)),
+    clothes: sp.clothes && reg.items.has(sp.clothes) ? reg.items.idx(sp.clothes) : undefined,
     carrying: null,
     job: null,
     path: null,

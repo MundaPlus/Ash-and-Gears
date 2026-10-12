@@ -7,7 +7,7 @@
 import { atGoal, goTo, isReserved, reserve } from "./ai.ts";
 import { registerJob, registerWorkGiver } from "./jobs.ts";
 import type { Game } from "./game.ts";
-import { canHoldItem, chestCount, dropItems, putInChest, stackLimit, takeFromStack } from "./items.ts";
+import { canHoldItem, chestCount, dropItems, mixRot, putInChest, stackLimit, takeFromStack } from "./items.ts";
 import { NO_THING, type ItemStack, type Zone } from "./map.ts";
 import type { Pos } from "./path.ts";
 import type { Job, Pawn } from "./pawn.ts";
@@ -22,17 +22,21 @@ export function pickUp(game: Game, p: Pawn, stackId: number, max: number): numbe
   const room = stackLimit(game, s.def) - (p.carrying?.count ?? 0);
   const contaminated = !!s.contaminated;
   const def = s.def;
+  const rot = s.rot ?? 0;
   const n = takeFromStack(game, stackId, Math.min(max, room));
   if (n <= 0) return 0;
-  if (p.carrying) p.carrying.count += n;
-  else p.carrying = { id: game.newId(), def, count: n, layer: -1, x: 0, y: 0, ...(contaminated ? { contaminated } : {}) };
+  // Food keeps its rot in the hands: carrying it somewhere does not make it fresh.
+  if (p.carrying) {
+    mixRot(p.carrying, n, rot);
+    p.carrying.count += n;
+  } else p.carrying = { id: game.newId(), def, count: n, layer: -1, x: 0, y: 0, ...(contaminated ? { contaminated } : {}), ...(rot > 0 ? { rot } : {}) };
   return n;
 }
 
 /** Put down everything the pawn carries at its feet (or nearby). */
 export function dropCarried(game: Game, p: Pawn): void {
   if (!p.carrying) return;
-  dropItems(game, p.carrying.def, p.carrying.count, p.layer, p.x, p.y, !!p.carrying.contaminated);
+  dropItems(game, p.carrying.def, p.carrying.count, p.layer, p.x, p.y, !!p.carrying.contaminated, p.carrying.contamUntil, p.carrying.rot);
   p.carrying = null;
 }
 
@@ -378,7 +382,7 @@ registerJob("haul", (game, p, job: Job) => {
     return "done";
   }
   if (chest && p.carrying) {
-    p.carrying.count -= putInChest(game, chest, p.carrying.def, p.carrying.count, !!p.carrying.contaminated, p.carrying.contamUntil);
+    p.carrying.count -= putInChest(game, chest, p.carrying.def, p.carrying.count, !!p.carrying.contaminated, p.carrying.contamUntil, p.carrying.rot);
     if (p.carrying.count <= 0) p.carrying = null;
   }
   dropCarried(game, p);

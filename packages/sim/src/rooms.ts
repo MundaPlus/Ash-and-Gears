@@ -9,7 +9,7 @@
  * (an airlock) or a door into a closed hall keep radiation out.
  */
 import type { Game } from "./game.ts";
-import { NO_THING } from "./map.ts";
+import { NO_THING, type Thing } from "./map.ts";
 
 export interface Room {
   id: number;
@@ -28,14 +28,19 @@ export interface Room {
 export const MAX_ROOM = 900;
 const TEMP_EVERY = 60;
 const UNDERGROUND_TEMP = 13;
-const SEASON_BASE = [12, 24, 10, -4];
+/** Comfortable temperature range without clothes. Clothes widen it to the cold side (see gear.ts). */
+export const COMFORT_MIN = 12;
+export const COMFORT_MAX = 28;
+export const SEASON_BASE = [12, 24, 10, -4];
+/** Outdoor temperature swing over the day: this much above and below the season base. */
+export const DAILY_SWING = 6;
 
 export function outdoorTemp(game: Game, layer: number): number {
   const lv = game.map.layers[layer].level;
   // Deeper is a little colder; tower floors share the surface weather.
   if (lv < 0) return UNDERGROUND_TEMP - (-lv - 1) * 2;
   const season = Math.floor((game.tick / game.ticksPerDay) / game.opts.seasonDays) % 4;
-  const daily = 6 * Math.sin(((game.hourOfDay - 9) * Math.PI) / 12);
+  const daily = DAILY_SWING * Math.sin(((game.hourOfDay - 9) * Math.PI) / 12);
   return SEASON_BASE[season] + daily + game.weatherTempOffset;
 }
 
@@ -244,16 +249,41 @@ export function coveredAbove(game: Game, layer: number, x: number, y: number): b
   return U.inBounds(x, y) && U.terrain[U.i(x, y)] !== game.reg.terrain.idx("open_air");
 }
 
-/** Move room temperatures toward the outside and add heat from heaters. */
+/** The temperature a heater or cooler aims for. */
+export function thermostatTarget(game: Game, t: Thing): number {
+  return t.target ?? game.reg.things.list[t.def].thermostat?.target ?? 21;
+}
+
+/** Air flow through one vent per hour: share of the gap between the two sides that closes. */
+const VENT_FLOW = 0.6;
+
+/**
+ * Move room temperatures toward the outside, add heat from fires and machines, let vents mix the air
+ * of neighbor rooms, and run heaters and coolers only as hard as needed to hold their target.
+ */
 export function tickTemperature(game: Game): void {
   if (game.tick % TEMP_EVERY !== 0) return;
   const dtH = TEMP_EVERY / game.ticksPerHour;
   const heat = new Map<number, number>();
+  const climate = new Map<number, Thing[]>();
+  const vents: Thing[] = [];
   for (const t of game.things.values()) {
     const d = game.reg.things.list[t.def];
-    if (!d.heat || (d.burns && !(t.fuel ?? 0)) || (d.power?.use && !t.powered)) continue;
-    const r = game.map.layers[t.layer].room[game.map.layers[t.layer].i(t.x, t.y)];
-    if (r !== -1) heat.set(r, (heat.get(r) ?? 0) + d.heat);
+    if (d.vent) vents.push(t);
+    if (!d.heat) continue;
+    // No fuel, no heat: fires and generators. No power: machines.
+    if ((d.burns && !(t.fuel ?? 0)) || (d.power?.fuel && !(t.fuel ?? 0)) || (d.power?.use && !t.powered)) {
+      if (d.thermostat) t.duty = 0;
+      continue;
+    }
+    const L = game.map.layers[t.layer];
+    const r = L.room[L.i(t.x, t.y)];
+    if (d.thermostat) {
+      // Outdoors there is no room to hold: it runs flat out and changes nothing.
+      const room = r === -1 ? undefined : game.rooms.get(r);
+      if (!room || room.outdoor) t.duty = 1;
+      else climate.set(r, [...(climate.get(r) ?? []), t]);
+    } else if (r !== -1) heat.set(r, (heat.get(r) ?? 0) + d.heat);
   }
   for (const r of game.rooms.values()) {
     const out = outdoorTemp(game, r.layer);
@@ -264,6 +294,37 @@ export function tickTemperature(game: Game): void {
     const leak = 0.08 + (1 - r.insulation) * 0.6;
     r.temp += (out - r.temp) * Math.min(1, leak * dtH);
     r.temp += ((heat.get(r.id) ?? 0) * dtH * 16) / Math.max(16, r.size);
-    r.temp = Math.max(-40, Math.min(60, r.temp));
   }
+  // Vents: the air of the two rooms on either side mixes (the bigger room changes less).
+  for (const v of vents) {
+    const L = game.map.layers[v.layer];
+    for (const [dx, dy] of [[1, 0], [0, 1]]) {
+      // Only across the wall: the two tiles along the wall line are walls too.
+      if (!L.inBounds(v.x - dx, v.y - dy) || !L.inBounds(v.x + dx, v.y + dy)) continue;
+      if (isBoundary(game, v.layer, L.i(v.x - dx, v.y - dy)) || isBoundary(game, v.layer, L.i(v.x + dx, v.y + dy))) continue;
+      const a = roomAt(game, v.layer, v.x - dx, v.y - dy), b = roomAt(game, v.layer, v.x + dx, v.y + dy);
+      if (a && a === b) continue;
+      const ta = a ? a.temp : outdoorTemp(game, v.layer), tb = b ? b.temp : outdoorTemp(game, v.layer);
+      // Outdoor air (no room or an outdoor room) does not change: it is as big as the world.
+      const sa = !a || a.outdoor ? Infinity : a.size, sb = !b || b.outdoor ? Infinity : b.size;
+      if (sa === Infinity && sb === Infinity) continue;
+      const share = Math.min(1, VENT_FLOW * dtH);
+      const moved = (ta - tb) * share * (sa === Infinity ? sb : sb === Infinity ? sa : (sa * sb) / (sa + sb));
+      if (a && sa !== Infinity) a.temp -= moved / sa;
+      if (b && sb !== Infinity) b.temp += moved / sb;
+    }
+  }
+  // Heaters and coolers last: they see what the room would be without them and fill the gap.
+  for (const [rid, list] of climate) {
+    const r = game.rooms.get(rid)!;
+    for (const t of list) {
+      const d = game.reg.things.list[t.def];
+      const full = (Math.abs(d.heat) * dtH * 16) / Math.max(16, r.size);
+      const gap = d.heat > 0 ? thermostatTarget(game, t) - r.temp : r.temp - thermostatTarget(game, t);
+      const used = Math.max(0, Math.min(full, gap));
+      r.temp += d.heat > 0 ? used : -used;
+      t.duty = full > 0 ? used / full : 0;
+    }
+  }
+  for (const r of game.rooms.values()) r.temp = Math.max(-40, Math.min(60, r.temp));
 }

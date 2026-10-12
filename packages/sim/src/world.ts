@@ -187,7 +187,7 @@ export function launchExpedition(game: Game, siteId: number, pawnIds: number[], 
     }
   for (const p of pawns) {
     for (const [k, v] of game.reservations) if (v === p.id) game.reservations.delete(k);
-    if (p.carrying) dropItems(game, p.carrying.def, p.carrying.count, p.layer, p.x, p.y, !!p.carrying.contaminated);
+    if (p.carrying) dropItems(game, p.carrying.def, p.carrying.count, p.layer, p.x, p.y, !!p.carrying.contaminated, p.carrying.contamUntil, p.carrying.rot);
     p.carrying = null;
     p.job = null;
     p.path = null;

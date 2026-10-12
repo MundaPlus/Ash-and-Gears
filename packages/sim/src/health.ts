@@ -184,7 +184,8 @@ export function kill(game: Game, p: Pawn, cause: string): void {
   else if (creature.meat > 0) dropItems(game, "mutant_meat", creature.meat, p.layer, p.x, p.y);
   if (p.weapon !== null) dropItems(game, p.weapon, 1, p.layer, p.x, p.y);
   for (const a of p.armor) dropItems(game, a, 1, p.layer, p.x, p.y);
-  if (p.carrying) dropItems(game, p.carrying.def, p.carrying.count, p.layer, p.x, p.y);
+  if (p.clothes !== undefined) dropItems(game, p.clothes, 1, p.layer, p.x, p.y);
+  if (p.carrying) dropItems(game, p.carrying.def, p.carrying.count, p.layer, p.x, p.y, !!p.carrying.contaminated, p.carrying.contamUntil, p.carrying.rot);
   // The one who struck last gets the kill.
   const killer = p.lastAttacker !== undefined ? game.pawns.get(p.lastAttacker) : undefined;
   if (killer && killer.faction === "colony" && p.faction !== "colony") addStat(killer, "kills");

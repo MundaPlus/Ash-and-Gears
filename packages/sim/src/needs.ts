@@ -6,10 +6,9 @@ import type { Game } from "./game.ts";
 import { addMemory, NEED_DECAY, traitMult, type Pawn } from "./pawn.ts";
 import { socialThoughts } from "./social.ts";
 import { isRoofed, tempAt } from "./rooms.ts";
+import { comfortRange } from "./gear.ts";
 
-/** Comfortable temperature range without clothes (spec 01 says 16-26 with clothes widening it). */
-export const COMFORT_MIN = 12;
-export const COMFORT_MAX = 28;
+export { COMFORT_MAX, COMFORT_MIN } from "./rooms.ts";
 
 /** Hours of ground sleep to refill rest from 0 to 1. A bed is faster (M3). */
 const SLEEP_HOURS = 8;
@@ -58,10 +57,11 @@ function situational(game: Game, p: Pawn): string[] {
   if (p.rad >= 0.3) out.push("rad_sick");
   if (game.weather.kind === "rad_cloud" && !game.map.layers[p.layer].underground && !isRoofed(game, p.layer, p.x, p.y)) out.push("in_rad_cloud");
   const temp = tempAt(game, p.layer, p.x, p.y);
-  if (temp < COMFORT_MIN - 12) out.push("freezing");
-  else if (temp < COMFORT_MIN) out.push("cold");
-  else if (temp > COMFORT_MAX + 10) out.push("sweltering");
-  else if (temp > COMFORT_MAX) out.push("hot");
+  const ok = comfortRange(game, p);
+  if (temp < ok.min - 12) out.push("freezing");
+  else if (temp < ok.min) out.push("cold");
+  else if (temp > ok.max + 10) out.push("sweltering");
+  else if (temp > ok.max) out.push("hot");
   if (p.faction === "colony") out.push(...socialThoughts(game, p));
   return out;
 }
