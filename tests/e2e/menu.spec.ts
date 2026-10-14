@@ -5,6 +5,8 @@ test("title screen, new game, save and load", async ({ page }, info) => {
   page.on("pageerror", (e) => errors.push(String(e)));
   await page.goto("/");
   await expect(page.getByTestId("title-screen")).toBeVisible();
+  await expect(page.getByTestId("free-pill")).toHaveAttribute("href", "https://github.com/MundaPlus/Ash-and-Gears");
+  await page.screenshot({ path: `artifacts/screens/${info.project.name}-title.png` });
   await page.getByTestId("new-game-btn").click();
   await expect(page.getByTestId("new-game")).toBeVisible();
   await page.locator("#ng-seed").fill("menu-test");

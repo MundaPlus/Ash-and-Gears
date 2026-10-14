@@ -184,6 +184,8 @@ button.on { background: var(--rust); color: var(--ink); border-color: var(--rust
 .titlebox .eyebrow { margin: 0; font: 600 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
 .titlebox h1 { margin: 0; font: 800 clamp(44px, 9vw, 84px)/0.95 "Big Shoulders Stencil Display", Impact, sans-serif; color: var(--rust); letter-spacing: .02em; }
 .titlebox .tag { margin: 0 0 12px; color: var(--text); }
+.titlebox .freepill { justify-self: center; margin: -8px 0 8px; padding: 3px 12px; border: 1px solid color-mix(in srgb, var(--good) 55%, transparent); border-radius: 999px; background: color-mix(in srgb, var(--good) 14%, transparent); color: var(--good); font: 600 12px var(--mono); letter-spacing: .06em; text-decoration: none; }
+.titlebox .freepill:hover { background: color-mix(in srgb, var(--good) 26%, transparent); }
 .mainbtns { display: grid; gap: 8px; width: min(320px, 100%); margin: 0 auto; }
 .mainbtns button, .row button { min-height: 48px; font-weight: 700; font-size: 16px; }
 button.primary { background: var(--rust); color: var(--ink); border-color: var(--rust); }
