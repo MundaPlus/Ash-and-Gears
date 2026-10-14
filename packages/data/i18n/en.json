@@ -1013,6 +1013,8 @@
   "title.eyebrow": "A colony sim at the end of the world",
   "title.name": "Ash & Gears",
   "title.tagline": "Three survivors. One ruined town. The machines can wait. Dinner cannot.",
+  "title.free": "Free · Open source",
+  "title.free.desc": "Free to play. The source code is on GitHub under the MIT license.",
   "title.continue": "Continue",
   "title.new": "New game",
   "title.load": "Load game",

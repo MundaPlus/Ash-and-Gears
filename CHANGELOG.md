@@ -1,5 +1,8 @@
 # Changelog
 
+## 2026-10-14
+- The title screen shows a green "Free · Open source" pill under the tagline. It links to the source on GitHub (`client/src/ui/Screens.tsx`, `client/src/style.css`, `data/i18n/en.json`, `tests/e2e/menu.spec.ts`) — user request: the game is free, show it like on munda.si. The munda.si badge change is task #38 in claude-tasks (needs the machine with server access).
+
 ## 2026-10-12
 - Heaters and coolers have a thermostat. Each one holds its room at a target temperature (default 21 °C). The inspect panel has −5, −1, +1 and +5 buttons and shows how hard it works. Full output is now 30 heat (it was 10 and −12). Before, a heater made a small room 30–47 °C and a cooler made it −12 to −24 °C, but a 9 × 9 room stayed near 3 °C in winter. Now one heater holds 21 °C in both. A cooler set below 0 °C makes a freezer: food there does not rot (`packages/sim/src/rooms.ts`, `things.json`, `schema.ts`, `client/src/main.ts`, `ui/Hud.tsx`, `ui/store.ts`) — user report: a room with a heater was cold.
 - Heaters and coolers draw power in proportion to how hard they work, with 5% standby (`sim/src/power.ts` `useOf`) — user request.

@@ -188,6 +188,9 @@ export function TitleScreen({ hasAutosave }: { hasAutosave: boolean }) {
         <p class="eyebrow">{t("title.eyebrow")}</p>
         <h1>{t("title.name")}</h1>
         <p class="tag">{t("title.tagline")}</p>
+        <a class="freepill" data-testid="free-pill" href="https://github.com/MundaPlus/Ash-and-Gears" target="_blank" rel="noopener noreferrer" title={t("title.free.desc")}>
+          {t("title.free")}
+        </a>
         {view === "main" && (
           <div class="mainbtns">
             {hasAutosave && (
