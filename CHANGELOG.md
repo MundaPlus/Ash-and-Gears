@@ -1,4 +1,6 @@
 # Changelog
+## 2026-10-15
+- Name Munda Plus as the copyright holder, and add the credit line "Made by Munda Plus — https://munda.si", the same as Printwright (`LICENSE`, `README.md`). Marko asked for it.
 
 ## 2026-10-14
 - The title screen shows a green "Free · Open source" pill under the tagline. It links to the source on GitHub (`client/src/ui/Screens.tsx`, `client/src/style.css`, `data/i18n/en.json`, `tests/e2e/menu.spec.ts`) — user request: the game is free, show it like on munda.si. The munda.si badge change is task #38 in claude-tasks (needs the machine with server access).
