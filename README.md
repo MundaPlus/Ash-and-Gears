@@ -102,6 +102,8 @@ All changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
 ## Credits
 
+Made by Munda Plus — https://munda.si
+
 Code and art by Marko Munda, vibe-coded with Claude Code. Music generated with YuE2 in ComfyUI. Made with TypeScript, PixiJS, Preact and the Web Audio API.
 
 ## License
